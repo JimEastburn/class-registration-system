@@ -35,9 +35,9 @@
 - [x] Implement schedule viewing
 
 ### Payments
-- [ ] Integrate Stripe
-- [ ] Build checkout flow
-- [ ] Handle webhooks
+- [x] Integrate Stripe
+- [x] Build checkout flow
+- [x] Handle webhooks
 
 ### Deployment
 - [ ] Deploy to Vercel

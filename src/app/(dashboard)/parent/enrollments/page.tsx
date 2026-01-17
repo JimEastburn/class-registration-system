@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import CancelEnrollmentButton from '@/components/classes/CancelEnrollmentButton';
+import PayButton, { PaymentAlert } from '@/components/payments/PayButton';
+import { Suspense } from 'react';
 
 export const metadata = {
     title: 'My Enrollments | Class Registration System',
@@ -59,6 +61,9 @@ export default async function EnrollmentsPage() {
 
     return (
         <div className="space-y-6">
+            <Suspense fallback={null}>
+                <PaymentAlert />
+            </Suspense>
             <div>
                 <h2 className="text-xl font-semibold">My Enrollments</h2>
                 <p className="text-slate-500">Track your children&apos;s class enrollments</p>
@@ -120,12 +125,12 @@ export default async function EnrollmentsPage() {
                                             <div className="flex flex-col items-end gap-2">
                                                 <p className="text-xl font-bold">${classData.fee.toFixed(2)}</p>
                                                 {enrollment.status === 'pending' && (
-                                                    <div className="flex gap-2">
-                                                        <Link href={`/parent/enrollments/${enrollment.id}/pay`}>
-                                                            <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600">
-                                                                Pay Now
-                                                            </Button>
-                                                        </Link>
+                                                    <div className="flex flex-col gap-2">
+                                                        <PayButton
+                                                            enrollmentId={enrollment.id}
+                                                            className={classData.name}
+                                                            amount={classData.fee}
+                                                        />
                                                         <CancelEnrollmentButton
                                                             enrollmentId={enrollment.id}
                                                             className={classData.name}
