@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
+import { sendPaymentReceipt } from '@/lib/email';
 
 // Create admin client lazily to avoid build-time errors
 function getSupabaseAdmin() {
@@ -57,6 +58,47 @@ export async function POST(request: Request) {
                     .from('enrollments')
                     .update({ status: 'confirmed' })
                     .eq('id', enrollmentId);
+
+                // Fetch enrollment details for email
+                const { data: enrollment } = await supabaseAdmin
+                    .from('enrollments')
+                    .select(`
+            student:family_members(first_name, last_name, parent_id),
+            class:classes(name, fee)
+          `)
+                    .eq('id', enrollmentId)
+                    .single();
+
+                if (enrollment) {
+                    const student = enrollment.student as unknown as {
+                        first_name: string;
+                        last_name: string;
+                        parent_id: string;
+                    };
+                    const classData = enrollment.class as unknown as {
+                        name: string;
+                        fee: number;
+                    };
+
+                    // Get parent email
+                    const { data: parent } = await supabaseAdmin
+                        .from('profiles')
+                        .select('first_name, email')
+                        .eq('id', student.parent_id)
+                        .single();
+
+                    if (parent) {
+                        await sendPaymentReceipt({
+                            parentEmail: parent.email,
+                            parentName: parent.first_name,
+                            studentName: `${student.first_name} ${student.last_name}`,
+                            className: classData.name,
+                            amount: classData.fee,
+                            paymentDate: new Date().toLocaleDateString(),
+                            transactionId: session.id,
+                        });
+                    }
+                }
 
                 console.log(`Payment completed for enrollment: ${enrollmentId}`);
             }

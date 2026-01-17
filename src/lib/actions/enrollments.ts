@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { sendEnrollmentConfirmation } from '@/lib/email';
 
 export type ActionResult = {
     error?: string;
@@ -35,7 +36,18 @@ export async function createEnrollment(
     // Check if class is active and has capacity
     const { data: classData } = await supabase
         .from('classes')
-        .select('id, status, max_students, current_enrollment')
+        .select(`
+            id, 
+            name,
+            status, 
+            max_students, 
+            current_enrollment,
+            schedule,
+            location,
+            start_date,
+            fee,
+            teacher:profiles!classes_teacher_id_fkey(first_name, last_name)
+        `)
         .eq('id', classId)
         .single();
 
@@ -72,6 +84,34 @@ export async function createEnrollment(
 
     if (error) {
         return { error: error.message };
+    }
+
+    // Send enrollment confirmation email
+    const { data: studentData } = await supabase
+        .from('family_members')
+        .select('first_name, last_name')
+        .eq('id', studentId)
+        .single();
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, email')
+        .eq('id', user.id)
+        .single();
+
+    if (profile && studentData && classData) {
+        const teacher = classData.teacher as unknown as { first_name: string; last_name: string };
+        await sendEnrollmentConfirmation({
+            parentEmail: profile.email,
+            parentName: profile.first_name,
+            studentName: `${studentData.first_name} ${studentData.last_name}`,
+            className: classData.name,
+            teacherName: `${teacher.first_name} ${teacher.last_name}`,
+            schedule: classData.schedule,
+            location: classData.location,
+            startDate: new Date(classData.start_date).toLocaleDateString(),
+            fee: classData.fee,
+        });
     }
 
     revalidatePath('/parent/enrollments');

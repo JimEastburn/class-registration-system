@@ -56,7 +56,7 @@
 ## Optional Enhancements
 
 ### User Experience
-- [ ] Email notifications (enrollment confirmation, payment receipts)
+- [x] Email notifications (enrollment confirmation, payment receipts)
 - [ ] Password reset flow UI
 - [ ] Profile editing for all users
 - [ ] Mobile responsiveness optimization
