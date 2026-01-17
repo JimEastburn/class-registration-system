@@ -51,3 +51,32 @@
 - [ ] Configure environment variables
 - [ ] Set up staging environment
 
+## Optional Enhancements
+
+### User Experience
+- [ ] Email notifications (enrollment confirmation, payment receipts)
+- [ ] Password reset flow UI
+- [ ] Profile editing for all users
+- [ ] Mobile responsiveness optimization
+
+### Admin Features
+- [ ] Search and filtering for admin tables
+- [ ] Reporting and analytics dashboard
+- [ ] Export data (CSV/Excel)
+
+### Payment Features
+- [ ] Refund processing via Stripe
+- [ ] Payment history page
+- [ ] Invoice generation
+
+### Class Features
+- [ ] Waitlist for full classes
+- [ ] Class prerequisites
+- [ ] Recurring class schedules
+- [ ] Class materials/resources upload
+
+### Quality & Testing
+- [ ] Unit tests
+- [ ] Integration tests
+- [ ] E2E tests with Playwright
+- [ ] Error monitoring (Sentry)
