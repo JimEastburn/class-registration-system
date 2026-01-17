@@ -28,8 +28,8 @@
 
 ### Core Features
 - [x] Build authentication pages (login, register)
-- [ ] Create dashboard layouts (parent, teacher, student)
-- [ ] Implement family member management
+- [x] Create dashboard layouts (parent, teacher, student)
+- [x] Implement family member management
 - [ ] Build class management (teacher)
 - [ ] Create class browsing and enrollment
 - [ ] Implement schedule viewing
