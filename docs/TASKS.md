@@ -30,7 +30,7 @@
 - [x] Build authentication pages (login, register)
 - [x] Create dashboard layouts (parent, teacher, student)
 - [x] Implement family member management
-- [ ] Build class management (teacher)
+- [x] Build class management (teacher)
 - [ ] Create class browsing and enrollment
 - [ ] Implement schedule viewing
 
