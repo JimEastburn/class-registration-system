@@ -127,8 +127,10 @@ If you already have an admin user, they can promote other users:
 
 ## Documentation
 
-- [Architecture Decisions](./docs/architecture-decision-document.md)
-- [API Specification](./docs/api-planning-document.md)
+- [System Requirements](./docs/REGISTRATION_SYSTEM_DESCRIPTION.md)
+- [Architecture Decisions](./docs/architecture_decision_document.md)
+- [API Specification](./docs/api_planning_document.md)
+- [Task List](./docs/TASKS.md)
 
 ## License
 

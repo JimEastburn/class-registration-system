@@ -1,1 +1,81 @@
-The code for this repository will be a class registration system for students in high school and middle school.  So there needs to be data entities for students, teachers, classes, parents.  For the website, a parent should be able to login, add family information (including children/students, email address, phone number, other family members).  A teacher should be able to login and create classes, and view their classes, class schedules, and students.  A parent can have multiple family members, and a child/student can have multiple family members.  A parent can enroll their children/students in classes.  A student should be able to login and view their class schedule including the teacher, class time, class materials/syllabus, and class location.   
+# Class Registration System
+
+A web-based class registration system for middle and high school students.
+
+## Overview
+
+This system enables parents to manage their families and enroll children in classes, teachers to create and manage their classes, students to view their schedules, and administrators to oversee all system operations.
+
+## User Roles
+
+| Role | Description |
+|------|-------------|
+| **Parent** | Manage family members, enroll children in classes, make payments |
+| **Teacher** | Create/manage classes, view enrolled students |
+| **Student** | View class schedule, materials, and locations |
+| **Admin** | Full system access - manage all users, classes, enrollments, payments |
+
+## Core Features
+
+### Authentication
+- Email/password registration and login
+- Role-based access control (parent, teacher, student, admin)
+- Protected routes with automatic redirects
+- Session management via Supabase Auth
+
+### Parent Portal (`/parent`)
+- **Dashboard** - Overview of family, enrollments, and quick actions
+- **Family Management** - Add, edit, delete family members (children)
+- **Class Browsing** - View available classes with teacher info and availability
+- **Enrollment** - Enroll children in classes
+- **Payments** - Pay enrollment fees via Stripe
+
+### Teacher Portal (`/teacher`)
+- **Dashboard** - Overview of classes and student counts
+- **Class Management** - Create, edit, delete classes
+- **Class Status** - Publish (draft → active), complete, or cancel classes
+- **Student Roster** - View enrolled students per class
+
+### Student Portal (`/student`)
+- **Dashboard** - Overview of enrolled classes
+- **Schedule View** - Weekly calendar of classes
+- **Class Details** - View class info, teacher, location, syllabus
+
+### Admin Portal (`/admin`)
+- **Dashboard** - System-wide stats and recent activity
+- **User Management** - View all users, change roles, delete accounts
+- **Class Management** - View/edit/delete any class
+- **Enrollment Management** - View/edit/delete any enrollment
+- **Payment Management** - View all payments, update status, revenue tracking
+
+## Data Entities
+
+| Entity | Description |
+|--------|-------------|
+| **Profiles** | User accounts with role, name, email, phone |
+| **Family Members** | Children/students linked to parent accounts |
+| **Classes** | Courses with schedule, location, fee, capacity |
+| **Enrollments** | Student-to-class registrations with status |
+| **Payments** | Payment records for enrollments via Stripe |
+
+## Payment Processing
+
+- **Provider**: Stripe
+- **Flow**: Checkout sessions → Redirect to Stripe → Webhook confirmation
+- **Statuses**: Pending, Completed, Failed, Refunded
+
+## Technical Stack
+
+- **Frontend**: Next.js 16 (App Router), TypeScript, Tailwind CSS, shadcn/ui
+- **Backend**: Next.js Server Actions, API Routes
+- **Database**: Supabase (PostgreSQL) with Row Level Security
+- **Auth**: Supabase Auth
+- **Payments**: Stripe Checkout + Webhooks
+- **Validation**: Zod schemas
+
+## Security
+
+- Row Level Security (RLS) on all database tables
+- Role-based route protection via middleware
+- Server-side role verification on all actions
+- Secure payment handling via Stripe webhooks

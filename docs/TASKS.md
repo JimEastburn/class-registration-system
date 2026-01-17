@@ -2,7 +2,7 @@
 
 ## Planning Phase ✅
 
-- [x] Read system requirements from `REGISTRATION_SYSTEM_DESCRIPTION.md`
+- [x] Read system requirements from `docs/REGISTRATION_SYSTEM_DESCRIPTION.md`
 - [x] Research hosting/deployment platforms (Netlify, Vercel, Render)
 - [x] Research full-stack frameworks (Next.js, Remix, SvelteKit)
 - [x] Research payment gateway options (Stripe, Square, PayPal)

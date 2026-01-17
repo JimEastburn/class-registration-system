@@ -18,22 +18,34 @@ Use Context7 MCP server if that helps you.
 src/
 ├── app/                    # Next.js App Router
 │   ├── (auth)/            # Login, register pages
-│   ├── (dashboard)/       # Parent, teacher, student dashboards
-│   └── api/               # API routes
+│   ├── (dashboard)/       # Role-based dashboards
+│   │   ├── parent/        # Parent portal
+│   │   ├── teacher/       # Teacher portal
+│   │   ├── student/       # Student portal
+│   │   └── admin/         # Admin portal
+│   └── api/               # API routes (checkout, webhooks)
 ├── components/
 │   ├── ui/                # shadcn/ui components
-│   └── ...                # Feature-specific components
-├── lib/supabase/          # Supabase client config
+│   ├── admin/             # Admin action components
+│   ├── auth/              # Auth forms
+│   ├── classes/           # Class & enrollment components
+│   ├── dashboard/         # Shared dashboard layout
+│   ├── family/            # Family member components
+│   └── payments/          # Payment components
+├── lib/
+│   ├── supabase/          # Supabase client config
+│   ├── actions/           # Server actions
+│   └── validations.ts     # Zod schemas
 ├── hooks/                 # Custom React hooks
 └── types/                 # TypeScript types
 ```
 
 ## Documentation
 
+- [System Requirements](./docs/REGISTRATION_SYSTEM_DESCRIPTION.md)
 - [Architecture Decisions](./docs/architecture_decision_document.md)
 - [API Specification](./docs/api_planning_document.md)
 - [Task List](./docs/TASKS.md)
-- [System Requirements](./REGISTRATION_SYSTEM_DESCRIPTION.md)
 
 ## Development Commands
 
@@ -46,7 +58,27 @@ npm run lint   # Run ESLint
 ## Environment Variables
 
 Copy `.env.example` to `.env.local` and configure:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `STRIPE_SECRET_KEY`
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+
+```
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=       # For webhooks
+
+# Stripe
+STRIPE_SECRET_KEY=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+STRIPE_WEBHOOK_SECRET=
+
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+## User Roles
+
+| Role | Access |
+|------|--------|
+| `parent` | Manage family, enroll children, pay fees |
+| `teacher` | Create/manage classes, view students |
+| `student` | View schedule and class details |
+| `admin` | Full system access |
