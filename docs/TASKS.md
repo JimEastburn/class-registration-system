@@ -34,6 +34,13 @@
 - [x] Create class browsing and enrollment
 - [x] Implement schedule viewing
 
+### Admin Portal
+- [x] Create admin dashboard layout
+- [x] Build user management (view/edit/delete)
+- [x] Build class management (view/edit/delete)
+- [x] Build enrollment management
+- [x] Build payment management
+
 ### Payments
 - [x] Integrate Stripe
 - [x] Build checkout flow

@@ -17,8 +17,9 @@ A web-based class registration system for middle and high school students, built
 - 👨‍👩‍👧‍👦 **Parent Portal**: Manage family members, enroll children in classes
 - 👨‍🏫 **Teacher Portal**: Create and manage classes, view enrolled students
 - 👨‍🎓 **Student Portal**: View class schedule, materials, and locations
-- 💳 **Payment Processing**: Secure payments via Stripe
-- 🔐 **Authentication**: Email/password, magic links, OAuth
+- � **Admin Portal**: Full system access - manage users, classes, enrollments, payments
+- �💳 **Payment Processing**: Secure payments via Stripe
+- 🔐 **Authentication**: Email/password with role-based access
 
 ## Getting Started
 
@@ -65,7 +66,8 @@ src/
 │   ├── (dashboard)/       # Protected dashboard pages
 │   │   ├── parent/        # Parent dashboard
 │   │   ├── teacher/       # Teacher dashboard
-│   │   └── student/       # Student dashboard
+│   │   ├── student/       # Student dashboard
+│   │   └── admin/         # Admin dashboard
 │   └── api/               # API routes
 ├── components/
 │   ├── ui/                # shadcn/ui components
@@ -94,6 +96,34 @@ npm start
 # Run linting
 npm run lint
 ```
+
+## Creating an Admin User
+
+Administrators have full access to manage all users, classes, enrollments, and payments.
+
+### Option 1: Via Supabase Dashboard
+
+1. Register a new user through the application at `/register`
+2. Go to your Supabase project dashboard
+3. Navigate to **Authentication** → **Users**
+4. Find the user and click to view details
+5. Under **user_metadata**, update the `role` field to `"admin"`
+
+### Option 2: Via SQL (Supabase SQL Editor)
+
+```sql
+-- Update a user's role to admin
+UPDATE profiles
+SET role = 'admin'
+WHERE email = 'admin@example.com';
+```
+
+### Option 3: Via Existing Admin
+
+If you already have an admin user, they can promote other users:
+1. Log in as admin
+2. Go to `/admin/users`
+3. Find the user and click **Actions** → **Set as Admin**
 
 ## Documentation
 

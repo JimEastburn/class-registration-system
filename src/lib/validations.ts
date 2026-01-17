@@ -12,7 +12,7 @@ export const registerSchema = z.object({
     confirmPassword: z.string(),
     firstName: z.string().min(1, 'First name is required'),
     lastName: z.string().min(1, 'Last name is required'),
-    role: z.enum(['parent', 'teacher', 'student']),
+    role: z.enum(['parent', 'teacher', 'student', 'admin']),
     phone: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
