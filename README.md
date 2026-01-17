@@ -130,6 +130,7 @@ If you already have an admin user, they can promote other users:
 - [System Requirements](./docs/REGISTRATION_SYSTEM_DESCRIPTION.md)
 - [Architecture Decisions](./docs/architecture_decision_document.md)
 - [API Specification](./docs/api_planning_document.md)
+- [Deployment Guide](./docs/DEPLOYMENT.md)
 - [Task List](./docs/TASKS.md)
 
 ## License

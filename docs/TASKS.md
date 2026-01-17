@@ -47,9 +47,11 @@
 - [x] Handle webhooks
 
 ### Deployment
-- [ ] Deploy to Vercel
-- [ ] Configure environment variables
-- [ ] Set up staging environment
+- [x] Create Vercel configuration (vercel.json)
+- [x] Create deployment guide (docs/DEPLOYMENT.md)
+- [ ] Deploy to Vercel (user action required)
+- [ ] Configure environment variables (user action required)
+- [ ] Set up Stripe webhooks (user action required)
 
 ## Optional Enhancements
 
