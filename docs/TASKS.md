@@ -31,8 +31,8 @@
 - [x] Create dashboard layouts (parent, teacher, student)
 - [x] Implement family member management
 - [x] Build class management (teacher)
-- [ ] Create class browsing and enrollment
-- [ ] Implement schedule viewing
+- [x] Create class browsing and enrollment
+- [x] Implement schedule viewing
 
 ### Payments
 - [ ] Integrate Stripe
