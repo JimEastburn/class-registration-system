@@ -57,7 +57,7 @@
 
 ### User Experience
 - [x] Email notifications (enrollment confirmation, payment receipts)
-- [ ] Password reset flow UI
+- [x] Password reset flow UI
 - [ ] Profile editing for all users
 - [ ] Mobile responsiveness optimization
 
