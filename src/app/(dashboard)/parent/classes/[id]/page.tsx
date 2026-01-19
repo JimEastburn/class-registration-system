@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import EnrollmentForm from '@/components/classes/EnrollmentForm';
+import WaitlistButton from '@/components/classes/WaitlistButton';
 
 export const metadata = {
     title: 'Class Details | Class Registration System',
@@ -50,6 +51,21 @@ export default async function ClassDetailPage({
         existingEnrollments?.map((e) => e.student_id) || []
     );
 
+    // Get waitlist entries for this parent
+    const { data: waitlistEntries } = await supabase
+        .from('waitlist')
+        .select('id, position, student_id')
+        .eq('class_id', id)
+        .eq('parent_id', user?.id)
+        .eq('status', 'waiting');
+
+    // Get total waitlist count
+    const { count: waitlistCount } = await supabase
+        .from('waitlist')
+        .select('*', { count: 'exact', head: true })
+        .eq('class_id', id)
+        .eq('status', 'waiting');
+
     const teacher = classData.teacher as unknown as {
         first_name: string;
         last_name: string;
@@ -71,10 +87,10 @@ export default async function ClassDetailPage({
                     </p>
                 </div>
                 <Badge
-                    variant={spotsLeft <= 3 ? 'destructive' : 'secondary'}
+                    variant={spotsLeft <= 0 ? 'destructive' : spotsLeft <= 3 ? 'secondary' : 'default'}
                     className="text-lg px-4 py-2"
                 >
-                    {spotsLeft} spots left
+                    {spotsLeft <= 0 ? 'Class Full' : `${spotsLeft} spots left`}
                 </Badge>
             </div>
 
@@ -168,7 +184,7 @@ export default async function ClassDetailPage({
                 <div>
                     <Card className="border-0 shadow-lg sticky top-24">
                         <CardHeader>
-                            <CardTitle>Enroll Now</CardTitle>
+                            <CardTitle>{spotsLeft > 0 ? 'Enroll Now' : 'Join Waitlist'}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="text-center py-4 border-b">
@@ -182,12 +198,13 @@ export default async function ClassDetailPage({
                                     students={availableStudents}
                                 />
                             ) : (
-                                <div className="text-center py-4">
-                                    <p className="text-red-600 font-medium">Class is Full</p>
-                                    <p className="text-sm text-slate-500 mt-1">
-                                        Check back later or browse other classes.
-                                    </p>
-                                </div>
+                                <WaitlistButton
+                                    classId={id}
+                                    className={classData.name}
+                                    familyMembers={familyMembers || []}
+                                    waitlistEntries={waitlistEntries || []}
+                                    waitlistCount={waitlistCount || 0}
+                                />
                             )}
                         </CardContent>
                     </Card>

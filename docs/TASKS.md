@@ -72,7 +72,7 @@
 - [x] Invoice generation
 
 ### Class Features
-- [ ] Waitlist for full classes
+- [x] Waitlist for full classes
 - [ ] Recurring class schedules
 - [ ] Class materials/resources upload
 
