@@ -68,7 +68,7 @@
 
 ### Payment Features
 - [x] Refund processing via Stripe
-- [ ] Payment history page
+- [x] Payment history page
 - [ ] Invoice generation
 
 ### Class Features
