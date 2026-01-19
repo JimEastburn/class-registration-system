@@ -9,6 +9,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { ResponsiveTable } from '@/components/ui/responsive-table';
 import AdminClassActions from '@/components/admin/AdminClassActions';
 
 export const metadata = {
@@ -45,46 +46,55 @@ export default async function AdminClassesPage() {
                     <CardTitle>All Classes ({classes?.length || 0})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Class Name</TableHead>
-                                <TableHead>Teacher</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Enrollment</TableHead>
-                                <TableHead>Fee</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {classes?.map((classItem) => {
-                                const teacher = classItem.teacher as unknown as { first_name: string; last_name: string };
-                                return (
-                                    <TableRow key={classItem.id}>
-                                        <TableCell className="font-medium">{classItem.name}</TableCell>
-                                        <TableCell>
-                                            {teacher.first_name} {teacher.last_name}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge className={statusColors[classItem.status as keyof typeof statusColors]}>
-                                                {classItem.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            {classItem.current_enrollment}/{classItem.max_students}
-                                        </TableCell>
-                                        <TableCell>${classItem.fee.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right">
-                                            <AdminClassActions
-                                                classId={classItem.id}
-                                                currentStatus={classItem.status}
-                                            />
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })}
-                        </TableBody>
-                    </Table>
+                    <ResponsiveTable>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Class Name</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Teacher</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="hidden md:table-cell">Enrollment</TableHead>
+                                    <TableHead>Fee</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {classes?.map((classItem) => {
+                                    const teacher = classItem.teacher as unknown as { first_name: string; last_name: string };
+                                    return (
+                                        <TableRow key={classItem.id}>
+                                            <TableCell className="font-medium">
+                                                <div>
+                                                    {classItem.name}
+                                                    <div className="sm:hidden text-xs text-slate-500">
+                                                        {teacher.first_name} {teacher.last_name}
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="hidden sm:table-cell">
+                                                {teacher.first_name} {teacher.last_name}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge className={statusColors[classItem.status as keyof typeof statusColors]}>
+                                                    {classItem.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="hidden md:table-cell">
+                                                {classItem.current_enrollment}/{classItem.max_students}
+                                            </TableCell>
+                                            <TableCell>${classItem.fee.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">
+                                                <AdminClassActions
+                                                    classId={classItem.id}
+                                                    currentStatus={classItem.status}
+                                                />
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    </ResponsiveTable>
                 </CardContent>
             </Card>
         </div>

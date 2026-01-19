@@ -59,7 +59,7 @@
 - [x] Email notifications (enrollment confirmation, payment receipts)
 - [x] Password reset flow UI
 - [x] Profile editing for all users
-- [ ] Mobile responsiveness optimization
+- [x] Mobile responsiveness optimization
 
 ### Admin Features
 - [ ] Search and filtering for admin tables

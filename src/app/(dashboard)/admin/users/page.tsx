@@ -9,6 +9,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { ResponsiveTable } from '@/components/ui/responsive-table';
 import AdminUserActions from '@/components/admin/AdminUserActions';
 
 export const metadata = {
@@ -42,38 +43,45 @@ export default async function AdminUsersPage() {
                     <CardTitle>All Users ({users?.length || 0})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Role</TableHead>
-                                <TableHead>Joined</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {users?.map((user) => (
-                                <TableRow key={user.id}>
-                                    <TableCell className="font-medium">
-                                        {user.first_name} {user.last_name}
-                                    </TableCell>
-                                    <TableCell>{user.email}</TableCell>
-                                    <TableCell>
-                                        <Badge className={roleColors[user.role as keyof typeof roleColors]}>
-                                            {user.role}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        {new Date(user.created_at).toLocaleDateString()}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <AdminUserActions userId={user.id} currentRole={user.role} />
-                                    </TableCell>
+                    <ResponsiveTable>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Email</TableHead>
+                                    <TableHead>Role</TableHead>
+                                    <TableHead className="hidden md:table-cell">Joined</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {users?.map((user) => (
+                                    <TableRow key={user.id}>
+                                        <TableCell className="font-medium">
+                                            <div>
+                                                {user.first_name} {user.last_name}
+                                                <div className="sm:hidden text-xs text-slate-500 truncate max-w-[150px]">
+                                                    {user.email}
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="hidden sm:table-cell">{user.email}</TableCell>
+                                        <TableCell>
+                                            <Badge className={roleColors[user.role as keyof typeof roleColors]}>
+                                                {user.role}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="hidden md:table-cell">
+                                            {new Date(user.created_at).toLocaleDateString()}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <AdminUserActions userId={user.id} currentRole={user.role} />
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </ResponsiveTable>
                 </CardContent>
             </Card>
         </div>

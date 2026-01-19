@@ -9,6 +9,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { ResponsiveTable } from '@/components/ui/responsive-table';
 import AdminEnrollmentActions from '@/components/admin/AdminEnrollmentActions';
 
 export const metadata = {
@@ -46,45 +47,52 @@ export default async function AdminEnrollmentsPage() {
                     <CardTitle>All Enrollments ({enrollments?.length || 0})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Student</TableHead>
-                                <TableHead>Class</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Enrolled On</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {enrollments?.map((enrollment) => {
-                                const student = enrollment.student as unknown as { first_name: string; last_name: string };
-                                const classData = enrollment.class as unknown as { name: string };
-                                return (
-                                    <TableRow key={enrollment.id}>
-                                        <TableCell className="font-medium">
-                                            {student.first_name} {student.last_name}
-                                        </TableCell>
-                                        <TableCell>{classData.name}</TableCell>
-                                        <TableCell>
-                                            <Badge className={statusColors[enrollment.status as keyof typeof statusColors]}>
-                                                {enrollment.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            {new Date(enrollment.enrolled_at).toLocaleDateString()}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <AdminEnrollmentActions
-                                                enrollmentId={enrollment.id}
-                                                currentStatus={enrollment.status}
-                                            />
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })}
-                        </TableBody>
-                    </Table>
+                    <ResponsiveTable>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Student</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Class</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="hidden md:table-cell">Enrolled On</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {enrollments?.map((enrollment) => {
+                                    const student = enrollment.student as unknown as { first_name: string; last_name: string };
+                                    const classData = enrollment.class as unknown as { name: string };
+                                    return (
+                                        <TableRow key={enrollment.id}>
+                                            <TableCell className="font-medium">
+                                                <div>
+                                                    {student.first_name} {student.last_name}
+                                                    <div className="sm:hidden text-xs text-slate-500 truncate max-w-[120px]">
+                                                        {classData.name}
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="hidden sm:table-cell">{classData.name}</TableCell>
+                                            <TableCell>
+                                                <Badge className={statusColors[enrollment.status as keyof typeof statusColors]}>
+                                                    {enrollment.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="hidden md:table-cell">
+                                                {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <AdminEnrollmentActions
+                                                    enrollmentId={enrollment.id}
+                                                    currentStatus={enrollment.status}
+                                                />
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    </ResponsiveTable>
                 </CardContent>
             </Card>
         </div>

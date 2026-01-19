@@ -9,6 +9,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { ResponsiveTable } from '@/components/ui/responsive-table';
 import AdminPaymentActions from '@/components/admin/AdminPaymentActions';
 
 export const metadata = {
@@ -51,7 +52,7 @@ export default async function AdminPaymentsPage() {
             <Card className="border-0 shadow-lg bg-gradient-to-r from-green-500 to-emerald-600 text-white">
                 <CardContent className="py-6">
                     <p className="text-green-100">Total Revenue</p>
-                    <p className="text-4xl font-bold">${totalRevenue.toFixed(2)}</p>
+                    <p className="text-3xl sm:text-4xl font-bold">${totalRevenue.toFixed(2)}</p>
                 </CardContent>
             </Card>
 
@@ -60,49 +61,56 @@ export default async function AdminPaymentsPage() {
                     <CardTitle>All Payments ({payments?.length || 0})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Student</TableHead>
-                                <TableHead>Class</TableHead>
-                                <TableHead>Amount</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Date</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {payments?.map((payment) => {
-                                const enrollment = payment.enrollment as unknown as {
-                                    student: { first_name: string; last_name: string };
-                                    class: { name: string };
-                                };
-                                return (
-                                    <TableRow key={payment.id}>
-                                        <TableCell className="font-medium">
-                                            {enrollment?.student?.first_name} {enrollment?.student?.last_name}
-                                        </TableCell>
-                                        <TableCell>{enrollment?.class?.name}</TableCell>
-                                        <TableCell>${payment.amount.toFixed(2)}</TableCell>
-                                        <TableCell>
-                                            <Badge className={statusColors[payment.status as keyof typeof statusColors]}>
-                                                {payment.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            {new Date(payment.created_at).toLocaleDateString()}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <AdminPaymentActions
-                                                paymentId={payment.id}
-                                                currentStatus={payment.status}
-                                            />
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })}
-                        </TableBody>
-                    </Table>
+                    <ResponsiveTable>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Student</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Class</TableHead>
+                                    <TableHead>Amount</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="hidden md:table-cell">Date</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {payments?.map((payment) => {
+                                    const enrollment = payment.enrollment as unknown as {
+                                        student: { first_name: string; last_name: string };
+                                        class: { name: string };
+                                    };
+                                    return (
+                                        <TableRow key={payment.id}>
+                                            <TableCell className="font-medium">
+                                                <div>
+                                                    {enrollment?.student?.first_name} {enrollment?.student?.last_name}
+                                                    <div className="sm:hidden text-xs text-slate-500 truncate max-w-[100px]">
+                                                        {enrollment?.class?.name}
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="hidden sm:table-cell">{enrollment?.class?.name}</TableCell>
+                                            <TableCell>${payment.amount.toFixed(2)}</TableCell>
+                                            <TableCell>
+                                                <Badge className={statusColors[payment.status as keyof typeof statusColors]}>
+                                                    {payment.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="hidden md:table-cell">
+                                                {new Date(payment.created_at).toLocaleDateString()}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <AdminPaymentActions
+                                                    paymentId={payment.id}
+                                                    currentStatus={payment.status}
+                                                />
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    </ResponsiveTable>
                 </CardContent>
             </Card>
         </div>
