@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/table';
 import { ResponsiveTable } from '@/components/ui/responsive-table';
 import AdminUserActions from '@/components/admin/AdminUserActions';
+import { SearchBar, FilterSelect, ClearFilters } from '@/components/admin/SearchFilters';
 
 export const metadata = {
     title: 'User Management | Admin Portal',
@@ -23,13 +24,39 @@ const roleColors = {
     admin: 'bg-red-100 text-red-700',
 };
 
-export default async function AdminUsersPage() {
-    const supabase = await createClient();
+const roleOptions = [
+    { value: 'parent', label: 'Parent' },
+    { value: 'teacher', label: 'Teacher' },
+    { value: 'student', label: 'Student' },
+    { value: 'admin', label: 'Admin' },
+];
 
-    const { data: users } = await supabase
+interface PageProps {
+    searchParams: Promise<{ q?: string; role?: string }>;
+}
+
+export default async function AdminUsersPage({ searchParams }: PageProps) {
+    const supabase = await createClient();
+    const params = await searchParams;
+    const searchQuery = params.q || '';
+    const roleFilter = params.role || '';
+
+    let query = supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
+
+    // Apply search filter
+    if (searchQuery) {
+        query = query.or(`first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`);
+    }
+
+    // Apply role filter
+    if (roleFilter) {
+        query = query.eq('role', roleFilter);
+    }
+
+    const { data: users } = await query;
 
     return (
         <div className="space-y-6">
@@ -40,7 +67,19 @@ export default async function AdminUsersPage() {
 
             <Card className="border-0 shadow-lg">
                 <CardHeader>
-                    <CardTitle>All Users ({users?.length || 0})</CardTitle>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <CardTitle>All Users ({users?.length || 0})</CardTitle>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <SearchBar placeholder="Search users..." />
+                            <FilterSelect
+                                options={roleOptions}
+                                paramName="role"
+                                placeholder="All Roles"
+                                allLabel="All Roles"
+                            />
+                            <ClearFilters paramNames={['q', 'role']} />
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <ResponsiveTable>
@@ -55,6 +94,13 @@ export default async function AdminUsersPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
+                                {users?.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                                            No users found matching your criteria
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                                 {users?.map((user) => (
                                     <TableRow key={user.id}>
                                         <TableCell className="font-medium">

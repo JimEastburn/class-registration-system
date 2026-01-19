@@ -62,7 +62,7 @@
 - [x] Mobile responsiveness optimization
 
 ### Admin Features
-- [ ] Search and filtering for admin tables
+- [x] Search and filtering for admin tables
 - [ ] Reporting and analytics dashboard
 - [ ] Export data (CSV/Excel)
 

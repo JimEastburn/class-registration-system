@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/table';
 import { ResponsiveTable } from '@/components/ui/responsive-table';
 import AdminPaymentActions from '@/components/admin/AdminPaymentActions';
+import { SearchBar, FilterSelect, ClearFilters } from '@/components/admin/SearchFilters';
 
 export const metadata = {
     title: 'Payment Management | Admin Portal',
@@ -23,10 +24,24 @@ const statusColors = {
     refunded: 'bg-purple-100 text-purple-700',
 };
 
-export default async function AdminPaymentsPage() {
-    const supabase = await createClient();
+const statusOptions = [
+    { value: 'pending', label: 'Pending' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'failed', label: 'Failed' },
+    { value: 'refunded', label: 'Refunded' },
+];
 
-    const { data: payments } = await supabase
+interface PageProps {
+    searchParams: Promise<{ q?: string; status?: string }>;
+}
+
+export default async function AdminPaymentsPage({ searchParams }: PageProps) {
+    const supabase = await createClient();
+    const params = await searchParams;
+    const searchQuery = params.q || '';
+    const statusFilter = params.status || '';
+
+    let query = supabase
         .from('payments')
         .select(`
       *,
@@ -36,6 +51,28 @@ export default async function AdminPaymentsPage() {
       )
     `)
         .order('created_at', { ascending: false });
+
+    // Apply status filter
+    if (statusFilter) {
+        query = query.eq('status', statusFilter);
+    }
+
+    const { data: payments } = await query;
+
+    // Client-side search filter for student/class names
+    const filteredPayments = searchQuery
+        ? payments?.filter((payment) => {
+            const enrollment = payment.enrollment as unknown as {
+                student: { first_name: string; last_name: string };
+                class: { name: string };
+            };
+            const searchLower = searchQuery.toLowerCase();
+            return (
+                `${enrollment?.student?.first_name} ${enrollment?.student?.last_name}`.toLowerCase().includes(searchLower) ||
+                enrollment?.class?.name?.toLowerCase().includes(searchLower)
+            );
+        })
+        : payments;
 
     // Calculate totals
     const totalRevenue = payments?.filter(p => p.status === 'completed')
@@ -58,7 +95,19 @@ export default async function AdminPaymentsPage() {
 
             <Card className="border-0 shadow-lg">
                 <CardHeader>
-                    <CardTitle>All Payments ({payments?.length || 0})</CardTitle>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <CardTitle>All Payments ({filteredPayments?.length || 0})</CardTitle>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <SearchBar placeholder="Search student or class..." />
+                            <FilterSelect
+                                options={statusOptions}
+                                paramName="status"
+                                placeholder="All Statuses"
+                                allLabel="All Statuses"
+                            />
+                            <ClearFilters paramNames={['q', 'status']} />
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <ResponsiveTable>
@@ -74,7 +123,14 @@ export default async function AdminPaymentsPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {payments?.map((payment) => {
+                                {filteredPayments?.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                                            No payments found matching your criteria
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                                {filteredPayments?.map((payment) => {
                                     const enrollment = payment.enrollment as unknown as {
                                         student: { first_name: string; last_name: string };
                                         class: { name: string };

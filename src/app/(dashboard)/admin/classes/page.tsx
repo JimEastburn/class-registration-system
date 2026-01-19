@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/table';
 import { ResponsiveTable } from '@/components/ui/responsive-table';
 import AdminClassActions from '@/components/admin/AdminClassActions';
+import { SearchBar, FilterSelect, ClearFilters } from '@/components/admin/SearchFilters';
 
 export const metadata = {
     title: 'Class Management | Admin Portal',
@@ -23,16 +24,42 @@ const statusColors = {
     completed: 'bg-blue-100 text-blue-700',
 };
 
-export default async function AdminClassesPage() {
-    const supabase = await createClient();
+const statusOptions = [
+    { value: 'draft', label: 'Draft' },
+    { value: 'active', label: 'Active' },
+    { value: 'cancelled', label: 'Cancelled' },
+    { value: 'completed', label: 'Completed' },
+];
 
-    const { data: classes } = await supabase
+interface PageProps {
+    searchParams: Promise<{ q?: string; status?: string }>;
+}
+
+export default async function AdminClassesPage({ searchParams }: PageProps) {
+    const supabase = await createClient();
+    const params = await searchParams;
+    const searchQuery = params.q || '';
+    const statusFilter = params.status || '';
+
+    let query = supabase
         .from('classes')
         .select(`
       *,
       teacher:profiles!classes_teacher_id_fkey(first_name, last_name)
     `)
         .order('created_at', { ascending: false });
+
+    // Apply search filter
+    if (searchQuery) {
+        query = query.ilike('name', `%${searchQuery}%`);
+    }
+
+    // Apply status filter
+    if (statusFilter) {
+        query = query.eq('status', statusFilter);
+    }
+
+    const { data: classes } = await query;
 
     return (
         <div className="space-y-6">
@@ -43,7 +70,19 @@ export default async function AdminClassesPage() {
 
             <Card className="border-0 shadow-lg">
                 <CardHeader>
-                    <CardTitle>All Classes ({classes?.length || 0})</CardTitle>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <CardTitle>All Classes ({classes?.length || 0})</CardTitle>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <SearchBar placeholder="Search classes..." />
+                            <FilterSelect
+                                options={statusOptions}
+                                paramName="status"
+                                placeholder="All Statuses"
+                                allLabel="All Statuses"
+                            />
+                            <ClearFilters paramNames={['q', 'status']} />
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <ResponsiveTable>
@@ -59,6 +98,13 @@ export default async function AdminClassesPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
+                                {classes?.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                                            No classes found matching your criteria
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                                 {classes?.map((classItem) => {
                                     const teacher = classItem.teacher as unknown as { first_name: string; last_name: string };
                                     return (
