@@ -72,9 +72,13 @@ npm run test:coverage
 
 1. Go to your Supabase project
 2. Navigate to **SQL Editor**
-3. Run the migration file: `supabase/migrations/001_initial_schema.sql`
+3. Run the following migration files in order:
+    - `supabase/migrations/001_initial_schema.sql` (Initial Setup)
+    - `supabase/migrations/004_waitlist.sql` (Waitlist feature)
+    - `supabase/migrations/005_recurring_schedules.sql` (Recurring Schedules)
+    - `supabase/migrations/006_class_materials.sql` (Class Materials)
 
-Or use Supabase CLI:
+Or, if you have the Supabase CLI installed, you can simply run:
 ```bash
 supabase db push
 ```
