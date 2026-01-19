@@ -95,7 +95,26 @@ npm start
 
 # Run linting
 npm run lint
+
+# Run all tests (Vitest + Playwright)
+npm test
+
+# Run Vitest tests only
+npm run test:run
+
+# Run Vitest tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run E2E tests (Playwright)
+npm run test:e2e
 ```
+
+## Testing
+
+For more detailed information about our testing strategy, including component, server action, and E2E testing, please refer to the [Testing Guide](./docs/TESTING.md).
 
 ## Creating an Admin User
 

@@ -45,6 +45,18 @@ In the Vercel project settings, add these environment variables:
 2. Wait for the build to complete
 3. Your app is now live at `your-app.vercel.app`
 
+## Pre-deployment Verification
+
+Before deploying or merging changes, ensure that all tests are passing:
+
+```bash
+# Run all tests
+npm test
+
+# Check code coverage
+npm run test:coverage
+```
+
 ## Step 4: Configure Stripe Webhooks
 
 1. Go to [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks)

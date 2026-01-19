@@ -46,6 +46,7 @@ src/
 - [Architecture Decisions](./docs/architecture_decision_document.md)
 - [API Specification](./docs/api_planning_document.md)
 - [Deployment Guide](./docs/DEPLOYMENT.md)
+- [Testing Guide](./docs/TESTING.md)
 - [Task List](./docs/TASKS.md)
 
 ## Development Commands
