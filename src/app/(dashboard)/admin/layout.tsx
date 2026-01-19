@@ -6,6 +6,7 @@ import DashboardLayout, {
     BookOpenIcon,
     CreditCardIcon,
     ClipboardListIcon,
+    ChartBarIcon,
 } from '@/components/dashboard/DashboardLayout';
 
 const navItems = [
@@ -14,6 +15,7 @@ const navItems = [
     { href: '/admin/classes', label: 'Classes', icon: <BookOpenIcon className="h-5 w-5" /> },
     { href: '/admin/enrollments', label: 'Enrollments', icon: <ClipboardListIcon className="h-5 w-5" /> },
     { href: '/admin/payments', label: 'Payments', icon: <CreditCardIcon className="h-5 w-5" /> },
+    { href: '/admin/reports', label: 'Reports', icon: <ChartBarIcon className="h-5 w-5" /> },
 ];
 
 export default async function AdminLayout({

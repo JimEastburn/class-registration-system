@@ -63,7 +63,7 @@
 
 ### Admin Features
 - [x] Search and filtering for admin tables
-- [ ] Reporting and analytics dashboard
+- [x] Reporting and analytics dashboard
 - [ ] Export data (CSV/Excel)
 
 ### Payment Features
