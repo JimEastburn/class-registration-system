@@ -77,6 +77,6 @@
 - [x] Class materials/resources upload
 
 ### Quality & Testing
-- [ ] Unit tests
-- [ ] Integration tests
-- [ ] E2E tests with Playwright
+- [x] Unit tests
+- [x] Integration tests
+- [x] E2E tests with Playwright
