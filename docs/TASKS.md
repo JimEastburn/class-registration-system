@@ -67,7 +67,7 @@
 - [x] Export data (CSV/Excel)
 
 ### Payment Features
-- [ ] Refund processing via Stripe
+- [x] Refund processing via Stripe
 - [ ] Payment history page
 - [ ] Invoice generation
 
