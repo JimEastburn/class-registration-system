@@ -80,3 +80,10 @@
 - [x] Unit tests
 - [x] Integration tests
 - [x] E2E tests with Playwright
+
+### Test Coverage Expansion
+- [x] Extract and test utility functions (src/lib/utils.ts)
+- [ ] Component tests (React Testing Library)
+- [ ] Server action tests
+- [ ] API route tests
+- [ ] Hook tests
