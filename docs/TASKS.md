@@ -64,7 +64,7 @@
 ### Admin Features
 - [x] Search and filtering for admin tables
 - [x] Reporting and analytics dashboard
-- [ ] Export data (CSV/Excel)
+- [x] Export data (CSV/Excel)
 
 ### Payment Features
 - [ ] Refund processing via Stripe
