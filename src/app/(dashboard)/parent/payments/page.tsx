@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 export const metadata = {
     title: 'Payment History | Parent Portal',
@@ -141,6 +142,13 @@ export default async function PaymentHistoryPage() {
                                                 }`}>
                                                 ${payment.amount.toFixed(2)}
                                             </span>
+                                            <Link
+                                                href={`/api/invoice?id=${payment.id}`}
+                                                target="_blank"
+                                                className="text-sm text-purple-600 hover:text-purple-800 underline"
+                                            >
+                                                Invoice
+                                            </Link>
                                         </div>
                                     </div>
                                 );

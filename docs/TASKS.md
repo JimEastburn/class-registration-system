@@ -69,7 +69,7 @@
 ### Payment Features
 - [x] Refund processing via Stripe
 - [x] Payment history page
-- [ ] Invoice generation
+- [x] Invoice generation
 
 ### Class Features
 - [ ] Waitlist for full classes
