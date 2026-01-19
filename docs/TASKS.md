@@ -58,7 +58,7 @@
 ### User Experience
 - [x] Email notifications (enrollment confirmation, payment receipts)
 - [x] Password reset flow UI
-- [ ] Profile editing for all users
+- [x] Profile editing for all users
 - [ ] Mobile responsiveness optimization
 
 ### Admin Features
@@ -73,7 +73,6 @@
 
 ### Class Features
 - [ ] Waitlist for full classes
-- [ ] Class prerequisites
 - [ ] Recurring class schedules
 - [ ] Class materials/resources upload
 
@@ -81,4 +80,3 @@
 - [ ] Unit tests
 - [ ] Integration tests
 - [ ] E2E tests with Playwright
-- [ ] Error monitoring (Sentry)
