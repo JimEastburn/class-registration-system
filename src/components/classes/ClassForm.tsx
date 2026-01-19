@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import RecurringScheduleInput from '@/components/classes/RecurringScheduleInput';
 
 interface ClassFormProps {
     classData?: {
@@ -23,6 +24,10 @@ interface ClassFormProps {
         max_students: number;
         fee: number;
         syllabus: string | null;
+        recurrence_pattern?: string;
+        recurrence_days?: string[];
+        recurrence_time?: string;
+        recurrence_duration?: number;
     };
 }
 
@@ -140,7 +145,7 @@ export default function ClassForm({ classData }: ClassFormProps) {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="schedule">Schedule</Label>
+                        <Label htmlFor="schedule">Schedule (Manual Entry)</Label>
                         <Input
                             id="schedule"
                             placeholder="e.g., Mon/Wed 3:00 PM - 4:30 PM"
@@ -149,6 +154,20 @@ export default function ClassForm({ classData }: ClassFormProps) {
                         {errors.schedule && (
                             <p className="text-red-500 text-sm">{errors.schedule.message}</p>
                         )}
+                        <p className="text-xs text-slate-500">
+                            Or use the recurring schedule builder below for automatic formatting
+                        </p>
+                    </div>
+
+                    {/* Recurring Schedule Section */}
+                    <div className="space-y-2">
+                        <Label>Recurring Schedule Builder (Optional)</Label>
+                        <RecurringScheduleInput
+                            defaultPattern={classData?.recurrence_pattern}
+                            defaultDays={classData?.recurrence_days}
+                            defaultTime={classData?.recurrence_time}
+                            defaultDuration={classData?.recurrence_duration}
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

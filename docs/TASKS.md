@@ -73,7 +73,7 @@
 
 ### Class Features
 - [x] Waitlist for full classes
-- [ ] Recurring class schedules
+- [x] Recurring class schedules
 - [ ] Class materials/resources upload
 
 ### Quality & Testing
