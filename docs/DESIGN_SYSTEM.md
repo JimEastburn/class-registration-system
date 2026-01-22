@@ -7,20 +7,20 @@
 
 ### Primary Colors
 Used for main actions, headers, and brand identity.
-- **Deep Indigo**: `#4C1D95` (Academic, Professional) - *Similar to a "Riverbat" purple but distinct.*
-- **Vibrant Teal**: `#0D9488` (Creative, Energetic) - *A nod to the arts and creativity.*
+- **Deep Indigo**: ![#4C1D95](https://img.shields.io/badge/-4C1D95-4C1D95) `#4C1D95` (Academic, Professional) - *Similar to a "Riverbat" purple but distinct.*
+- **Vibrant Teal**: ![#0D9488](https://img.shields.io/badge/-0D9488-0D9488) `#0D9488` (Creative, Energetic) - *A nod to the arts and creativity.*
 
 ### Secondary & Accents
 Used for highlights, call-to-actions (secondary), and visual interest.
-- **Limestone Cream**: `#F8FAF8` (Backgrounds, Soft) - *Evocative of Austin limestone.*
-- **Sunset Gold**: `#FBBF24` (Accents, Warnings, Highlights) - *Warmth and energy.*
-- **Slate Gray**: `#334155` (Text, Borders, neutral UI elements).
+- **Limestone Cream**: ![#F8FAF8](https://img.shields.io/badge/-F8FAF8-F8FAF8) `#F8FAF8` (Backgrounds, Soft) - *Evocative of Austin limestone.*
+- **Sunset Gold**: ![#FBBF24](https://img.shields.io/badge/-FBBF24-FBBF24) `#FBBF24` (Accents, Warnings, Highlights) - *Warmth and energy.*
+- **Slate Gray**: ![#334155](https://img.shields.io/badge/-334155-334155) `#334155` (Text, Borders, neutral UI elements).
 
 ### Functional Colors
-- **Success**: `#10B981` (Emerald Green)
-- **Error**: `#EF4444` (Red)
-- **Warning**: `#F59E0B` (Amber)
-- **Info**: `#3B82F6` (Blue)
+- **Success**: ![#10B981](https://img.shields.io/badge/-10B981-10B981) `#10B981` (Emerald Green)
+- **Error**: ![#EF4444](https://img.shields.io/badge/-EF4444-EF4444) `#EF4444` (Red)
+- **Warning**: ![#F59E0B](https://img.shields.io/badge/-F59E0B-F59E0B) `#F59E0B` (Amber)
+- **Info**: ![#3B82F6](https://img.shields.io/badge/-3B82F6-3B82F6) `#3B82F6` (Blue)
 
 ## 2. Typography
 
