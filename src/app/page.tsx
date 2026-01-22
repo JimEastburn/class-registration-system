@@ -70,7 +70,7 @@ export default async function HomePage() {
                 </Button>
               </Link>
               <Link href="/login">
-                <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10 text-lg px-8 py-6 h-auto w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="bg-transparent text-white border-white/30 hover:bg-white/10 text-lg px-8 py-6 h-auto w-full sm:w-auto">
                   Sign In
                 </Button>
               </Link>
