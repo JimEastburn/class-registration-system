@@ -87,3 +87,10 @@
 - [x] Server action tests
 - [x] API route tests
 - [x] Hook tests (N/A - no custom hooks in project)
+
+## Recent Refactors & Stability ✅
+- [x] Fix: Foreign key violation on family member insertion (Missing profile)
+- [x] Refactor: Use Profiles table as single source of truth for all role-based logic
+- [x] Resilience: Implement self-healing profile sync on sign-in
+- [x] Feature: Multi-role Portal Access (allow admins to access parent portal)
+- [x] UI: Portal Switcher for users with management roles

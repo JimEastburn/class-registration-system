@@ -77,6 +77,7 @@ npm run test:coverage
     - `supabase/migrations/004_waitlist.sql` (Waitlist feature)
     - `supabase/migrations/005_recurring_schedules.sql` (Recurring Schedules)
     - `supabase/migrations/006_class_materials.sql` (Class Materials)
+    - `supabase/migrations/20260122112000_robust_profile_trigger.sql` (Robust Profile Trigger)
 
 Or, if you have the Supabase CLI installed, you can simply run:
 ```bash

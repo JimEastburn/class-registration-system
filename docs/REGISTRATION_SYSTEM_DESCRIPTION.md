@@ -13,7 +13,7 @@ This system enables parents to manage their families and enroll children in clas
 | **Parent** | Manage family members, enroll children in classes, make payments |
 | **Teacher** | Create/manage classes, view enrolled students |
 | **Student** | View class schedule, materials, and locations |
-| **Admin** | Full system access - manage all users, classes, enrollments, payments |
+| **Admin** | Full system access - manage all users, classes, enrollments, payments. **Note**: Admins can also access the Parent Portal to manage their own family data. |
 
 ## Core Features
 

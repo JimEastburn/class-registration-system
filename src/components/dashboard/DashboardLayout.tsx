@@ -113,6 +113,15 @@ export default function DashboardLayout({
                             <DropdownMenuItem asChild>
                                 <Link href={`/${user.role}/profile`}>Profile Settings</Link>
                             </DropdownMenuItem>
+                            {user.role === 'admin' && (
+                                <DropdownMenuItem asChild>
+                                    {pathname.startsWith('/admin') ? (
+                                        <Link href="/parent">Switch to Parent Portal</Link>
+                                    ) : (
+                                        <Link href="/admin">Switch to Admin Portal</Link>
+                                    )}
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 className="text-destructive cursor-pointer focus:text-destructive"

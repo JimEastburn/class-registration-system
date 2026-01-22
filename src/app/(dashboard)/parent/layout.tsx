@@ -34,7 +34,7 @@ export default async function ParentLayout({
         .eq('id', user.id)
         .single();
 
-    if (!profile || profile.role !== 'parent') {
+    if (!profile || (profile.role !== 'parent' && profile.role !== 'admin')) {
         redirect(`/${profile?.role || user.user_metadata?.role || 'parent'}`);
     }
 

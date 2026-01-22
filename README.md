@@ -14,12 +14,12 @@ A web-based class registration system for middle and high school students, built
 
 ## Features
 
-- 👨‍👩‍👧‍👦 **Parent Portal**: Manage family members, enroll children in classes
-- 👨‍🏫 **Teacher Portal**: Create and manage classes, view enrolled students
-- 👨‍🎓 **Student Portal**: View class schedule, materials, and locations
-- � **Admin Portal**: Full system access - manage users, classes, enrollments, payments
-- �💳 **Payment Processing**: Secure payments via Stripe
-- 🔐 **Authentication**: Email/password with role-based access
+- 👨‍👩‍👧‍👦 **Parent Portal**: Manage family members, enroll children in classes.
+- 👨‍🏫 **Teacher Portal**: Create and manage classes, view enrolled students.
+- 👨‍🎓 **Student Portal**: View class schedule, materials, and locations.
+- 🛠️ **Admin Portal**: Full system access. Admins can also switch to the **Parent Portal** to manage personal family data.
+- 💳 **Payment Processing**: Secure payments via Stripe.
+- 🔐 **Authentication**: Email/password with centralized role-based access (Profiles table).
 
 ## Getting Started
 
@@ -74,10 +74,12 @@ src/
 │   ├── auth/              # Authentication components
 │   ├── dashboard/         # Dashboard components
 │   ├── classes/           # Class-related components
-│   └── family/            # Family member components
+│   ├── family/            # Family member components
+│   └── payments/          # Payment components
 ├── hooks/                 # Custom React hooks
 ├── lib/
-│   └── supabase/          # Supabase client configuration
+│   ├── supabase/          # Supabase client configuration
+│   └── actions/           # Server actions
 └── types/                 # TypeScript type definitions
 ```
 
@@ -116,33 +118,18 @@ npm run test:e2e
 
 For more detailed information about our testing strategy, including component, server action, and E2E testing, please refer to the [Testing Guide](./docs/TESTING.md).
 
-## Creating an Admin User
+### User Roles & Permissions
 
-Administrators have full access to manage all users, classes, enrollments, and payments.
+The system uses the `public.profiles` table as the **single source of truth** for roles. Role changes take effect immediately and are checked on every page load.
 
-### Option 1: Via Supabase Dashboard
+### Promoting a User to Admin
 
-1. Register a new user through the application at `/register`
-2. Go to your Supabase project dashboard
-3. Navigate to **Authentication** → **Users**
-4. Find the user and click to view details
-5. Under **user_metadata**, update the `role` field to `"admin"`
-
-### Option 2: Via SQL (Supabase SQL Editor)
-
-```sql
--- Update a user's role to admin
-UPDATE profiles
-SET role = 'admin'
-WHERE email = 'admin@example.com';
-```
-
-### Option 3: Via Existing Admin
-
-If you already have an admin user, they can promote other users:
-1. Log in as admin
-2. Go to `/admin/users`
-3. Find the user and click **Actions** → **Set as Admin**
+1.  **Via Admin Portal**: If you are already an admin, go to `/admin/users` and promote the user.
+2.  **Via SQL**: Run the following in the Supabase SQL Editor:
+    ```sql
+    UPDATE profiles SET role = 'admin' WHERE email = 'user@example.com';
+    ```
+3.  **Via Supabase Dashboard**: Update the `role` field in the user's metadata under Authentication, and ensure the `profiles` table is updated to match.
 
 ## Documentation
 

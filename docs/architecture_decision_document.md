@@ -349,11 +349,53 @@ flowchart TD
     H -->|Parent| I[Parent Dashboard]
     H -->|Teacher| J[Teacher Dashboard]
     H -->|Student| K[Student Dashboard]
+    H -->|Admin| L[Admin Dashboard]
+    
+    subgraph "Source of Truth"
+        L --> M[(Profiles Table)]
+        I --> M
+        J --> M
+        K --> M
+    end
 ```
 
 ---
 
-## Decision 6: UI Component Library
+## Decision 7: Role Source of Truth
+
+### Decision
+The `public.profiles` table is the **single source of truth** for user roles and permissions.
+
+### Rationale
+Previously, the system partially relied on `user_metadata` within the Supabase Auth session. However, metadata can become stale when a role is changed in the database. By refactoring the `signIn` action and all `layout.tsx` files to fetch the role directly from the `profiles` table:
+- Role changes take effect immediately without requiring a logout.
+- Direct database updates (e.g., via Admin Portal) are instantly recognized by the application.
+- Security is hardened as authorization is verified against the database on every page load.
+
+---
+
+## Decision 8: Multi-Role Portal Access
+
+### Decision
+Administrators are granted access to the **Parent Portal** to manage personal family data.
+
+### Rationale
+In a school system, administrators often have children enrolled as students. Strictly separating roles would prevent an Admin from enrolling their own children.
+- **Access**: The `/parent` layout allows both `parent` and `admin` roles.
+- **Switching**: A "Portal Switcher" is provided in the `DashboardLayout` for users with the `admin` role, allowing them to toggle between the Admin and Parent views.
+- **Consistency**: All family and enrollment data remains linked to the user's UUID, ensuring it persists even if the user's role changes.
+
+---
+
+## Decision 9: Profile Self-Healing
+
+### Decision
+The system implements a "Belt and Suspenders" approach to profile management.
+
+### Rationale
+To prevent foreign key violations, every authenticated user must have a profile record.
+1. **Hardened Trigger**: The `handle_new_user` Postgres trigger uses `ON CONFLICT DO NOTHING` to prevent registration failures if a profile already exists.
+2. **SignIn Fallback**: The `signIn` server action includes a check to verify a profile exists and creates one if it's missing. This handles cases where users are created manually in the Supabase dashboard or if the database trigger fails.
 
 ### Recommendation
 

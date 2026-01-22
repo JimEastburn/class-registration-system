@@ -1,6 +1,7 @@
 # Project Guidelines
 
 Use Context7 MCP server if that helps you.
+Reminder that database schema changes may need to have a migration script created in the `db/migrations` directory.
 
 ## Tech Stack
 
