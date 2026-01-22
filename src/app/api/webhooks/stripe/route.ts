@@ -44,6 +44,18 @@ export async function POST(request: Request) {
             const enrollmentId = session.metadata?.enrollmentId;
 
             if (enrollmentId) {
+                // Check if payment is already processed (idempotency)
+                const { data: existingPayment } = await supabaseAdmin
+                    .from('payments')
+                    .select('status, id')
+                    .eq('transaction_id', session.id)
+                    .single();
+
+                if (existingPayment?.status === 'completed') {
+                    console.log(`Payment already processed for session: ${session.id}`);
+                    return NextResponse.json({ received: true, already_processed: true });
+                }
+
                 // Get the payment ID to trigger Zoho sync
                 const { data: updatedPayment } = await supabaseAdmin
                     .from('payments')
