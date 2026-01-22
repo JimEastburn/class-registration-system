@@ -48,110 +48,123 @@
 
 :root {
   --radius: 0.625rem;
-  /* Austin AAC "Arts + Academic" Palette - Light Mode */
-  
-  /* Background: Limestone Cream / Clean White */
-  --background: oklch(0.99 0.005 100); 
+  /* Austin AAC "Arts + Academic" Palette */
+
+  /* Background: Limestone Cream */
+  --background: #F8FAF8;
   /* Foreground: Deep Slate (Professional Text) */
-  --foreground: oklch(0.35 0.04 260); 
+  --foreground: #334155;
 
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.35 0.04 260);
-  
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.35 0.04 260);
+  --card: #FFFFFF;
+  --card-foreground: #334155;
 
-  /* Primary: Deep Indigo (Academic/Regal) */
-  --primary: oklch(0.35 0.18 290);
-  --primary-foreground: oklch(0.985 0 0);
+  --popover: #FFFFFF;
+  --popover-foreground: #334155;
 
-  /* Secondary: Vibrant Teal (Creative) */
-  --secondary: oklch(0.96 0.04 180); /* Very light teal tint for backgrounds */
-  --secondary-foreground: oklch(0.4 0.12 180); /* Darker teal for text on secondary bg */
+  /* Primary: Deep Indigo (Academic/Professional) */
+  --primary: #4C1D95;
+  --primary-foreground: #FFFFFF;
 
-  /* Muted: Soft Gray */
-  --muted: oklch(0.96 0.01 260);
-  --muted-foreground: oklch(0.55 0.04 260);
+  /* Secondary: Vibrant Teal (Creative/Energetic) */
+  --secondary: #0D9488;
+  --secondary-foreground: #FFFFFF;
+
+  /* Muted: Soft Gray for backgrounds */
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
 
   /* Accent: Sunset Gold */
-  --accent: oklch(0.96 0.01 260); /* Same as muted typical for light mode accents unless active */
-  --accent-foreground: oklch(0.35 0.18 290);
+  --accent: #FBBF24;
+  --accent-foreground: #4C1D95;
 
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
 
-  --border: oklch(0.92 0.01 260);
-  --input: oklch(0.92 0.01 260);
-  --ring: oklch(0.35 0.18 290); /* Ring matches primary */
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #4C1D95;
 
-  --chart-1: oklch(0.35 0.18 290); /* Purple */
-  --chart-2: oklch(0.65 0.15 180); /* Teal */
-  --chart-3: oklch(0.85 0.18 85);  /* Gold */
-  --chart-4: oklch(0.60 0.20 30);  /* Burnt Orange */
-  --chart-5: oklch(0.50 0.15 200); /* Blue */
+  --chart-1: #4C1D95;
+  /* Deep Indigo */
+  --chart-2: #0D9488;
+  /* Vibrant Teal */
+  --chart-3: #FBBF24;
+  /* Sunset Gold */
+  --chart-4: #334155;
+  /* Slate Gray */
+  --chart-5: #10B981;
+  /* Success Green */
 
-  --sidebar: oklch(0.99 0.005 100);
-  --sidebar-foreground: oklch(0.35 0.04 260);
-  --sidebar-primary: oklch(0.35 0.18 290);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.96 0.04 180);
-  --sidebar-accent-foreground: oklch(0.35 0.18 290);
-  --sidebar-border: oklch(0.92 0.01 260);
-  --sidebar-ring: oklch(0.35 0.18 290);
+  --sidebar: #F8FAF8;
+  --sidebar-foreground: #334155;
+  --sidebar-primary: #4C1D95;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F1F5F9;
+  --sidebar-accent-foreground: #4C1D95;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #4C1D95;
 }
 
 .dark {
-  /* Austin AAC "Arts + Academic" Palette - Dark Mode */
-  
-  /* Background: Deep Slate/Navy */
-  --background: oklch(0.15 0.04 260);
-  --foreground: oklch(0.98 0.01 260);
+  /* Dark Mode Adaptation - Keeping consistency but readable on dark */
 
-  --card: oklch(0.20 0.04 260);
-  --card-foreground: oklch(0.98 0.01 260);
+  /* Background: Darker Deep Indigo variant or Slate */
+  --background: #0F172A;
+  /* Slate 900 */
+  --foreground: #F8FAF8;
+  /* Limestone Cream */
 
-  --popover: oklch(0.20 0.04 260);
-  --popover-foreground: oklch(0.98 0.01 260);
+  --card: #1E293B;
+  /* Slate 800 */
+  --card-foreground: #F8FAF8;
 
-  /* Primary: Lighter Indigo for dark mode visibility */
-  --primary: oklch(0.65 0.18 290);
-  --primary-foreground: oklch(0.10 0.04 260);
+  --popover: #1E293B;
+  --popover-foreground: #F8FAF8;
 
-  /* Secondary: Deep Teal */
-  --secondary: oklch(0.25 0.08 180);
-  --secondary-foreground: oklch(0.90 0.04 180);
+  /* Primary: Lighten Deep Indigo for dark mode or keep as brand color if contrast allows */
+  --primary: #818CF8;
+  /* Indogo 400 for better visibility in dark mode? Or stick to brand. Let's stick closer to brand but readable. */
+  --primary-foreground: #FFFFFF;
 
-  --muted: oklch(0.25 0.04 260);
-  --muted-foreground: oklch(0.70 0.04 260);
+  /* Secondary: Vibrant Teal */
+  --secondary: #14B8A6;
+  /* Teal 500 */
+  --secondary-foreground: #FFFFFF;
 
-  --accent: oklch(0.25 0.04 260);
-  --accent-foreground: oklch(0.98 0.01 260);
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
 
-  --destructive: oklch(0.704 0.191 22.216);
+  --accent: #1E293B;
+  --accent-foreground: #F8FAF8;
 
-  --border: oklch(0.25 0.04 260);
-  --input: oklch(0.25 0.04 260);
-  --ring: oklch(0.65 0.18 290);
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
 
-  --chart-1: oklch(0.65 0.18 290);
-  --chart-2: oklch(0.75 0.15 180);
-  --chart-3: oklch(0.85 0.18 85);
-  --chart-4: oklch(0.70 0.20 30);
-  --chart-5: oklch(0.60 0.15 200);
+  --border: #1E293B;
+  --input: #1E293B;
+  --ring: #818CF8;
 
-  --sidebar: oklch(0.18 0.04 260);
-  --sidebar-foreground: oklch(0.98 0.01 260);
-  --sidebar-primary: oklch(0.65 0.18 290);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.25 0.04 260);
-  --sidebar-accent-foreground: oklch(0.98 0.01 260);
-  --sidebar-border: oklch(0.25 0.04 260);
-  --sidebar-ring: oklch(0.65 0.18 290);
+  --chart-1: #818CF8;
+  --chart-2: #14B8A6;
+  --chart-3: #FBBF24;
+  --chart-4: #94A3B8;
+  --chart-5: #34D399;
+
+  --sidebar: #0F172A;
+  --sidebar-foreground: #F8FAF8;
+  --sidebar-primary: #818CF8;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #1E293B;
+  --sidebar-accent-foreground: #F8FAF8;
+  --sidebar-border: #1E293B;
+  --sidebar-ring: #818CF8;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
