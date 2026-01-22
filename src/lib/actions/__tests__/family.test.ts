@@ -136,5 +136,21 @@ describe('Family Server Actions implementation', () => {
             expect(revalidatePath).toHaveBeenCalledWith('/parent/family');
             expect(result).toEqual({ success: true });
         });
+
+        it('should strictly filter by parent_id during deletion to prevent cross-parent exploitation', async () => {
+            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'maliciousParent' } }, error: null });
+
+            const mockDelete = vi.fn().mockResolvedValue({ error: null });
+            const mockEq = vi.fn().mockReturnValue({ eq: mockDelete });
+            mockSupabase.from.mockReturnValue({
+                delete: vi.fn().mockReturnValue({ eq: mockEq })
+            });
+
+            await deleteFamilyMember('victim_fm_123');
+
+            // Crucial: Ensure the second filter is always the user's actual ID
+            expect(mockEq).toHaveBeenCalledWith('id', 'victim_fm_123');
+            expect(mockDelete).toHaveBeenCalledWith('parent_id', 'maliciousParent');
+        });
     });
 });

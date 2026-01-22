@@ -119,6 +119,35 @@ describe('Waitlist Server Actions implementation', () => {
             expect(mockSupabase.from).toHaveBeenCalledWith('waitlist');
             expect(revalidatePath).toHaveBeenCalled();
         });
+
+        it('should join waitlist at position 1 if waitlist is empty', async () => {
+            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+
+            // Student check
+            mockSupabase.from.mockReturnValueOnce({
+                select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: { parent_id: 'parent123' }, error: null })
+            });
+            // Class check
+            mockSupabase.from.mockReturnValueOnce({
+                select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: { current_enrollment: 10, max_students: 10, status: 'active' }, error: null })
+            });
+            // Existing enrollment check
+            mockSupabase.from.mockReturnValueOnce({
+                select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), not: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: null, error: null })
+            });
+            // Existing waitlist check
+            mockSupabase.from.mockReturnValueOnce({
+                select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: null, error: null })
+            });
+            // Max position check - empty waitlist
+            mockSupabase.from.mockReturnValueOnce({
+                select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), order: vi.fn().mockReturnThis(), limit: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: null, error: null })
+            });
+
+            const result = await joinWaitlist('class123', 'student123');
+
+            expect(result).toEqual({ success: true, position: 1 });
+        });
     });
 
     describe('leaveWaitlist', () => {
