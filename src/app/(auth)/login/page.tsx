@@ -24,7 +24,7 @@ export default async function LoginPage() {
             <div className="absolute inset-0 z-0">
                 <div className="absolute inset-0 bg-slate-900/80 z-10" />
                 <Image
-                    src="/Together FADE.avif"
+                    src="/AAC FINAL.avif"
                     alt="Background"
                     fill
                     className="object-cover"
