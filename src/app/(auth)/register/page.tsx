@@ -19,29 +19,44 @@ export default async function RegisterPage() {
     }
 
     return (
-        <div className="min-h-screen relative flex items-center justify-center p-4">
-            {/* Background Image & Overlay */}
-            <div className="absolute inset-0 z-0">
-                <div className="absolute inset-0 bg-slate-900/80 z-10" />
-                <Image
-                    src="/AAC FINAL.avif"
-                    alt="Background"
-                    fill
-                    className="object-cover"
-                    priority
-                />
-            </div>
-
-            <div className="w-full max-w-md relative z-20">
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-white mb-2">
-                        Create Account
-                    </h1>
-                    <p className="text-gray-200">
-                        Join our class registration system
-                    </p>
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+            <div className="flex flex-col lg:flex-row items-center justify-center gap-12 w-full max-w-7xl">
+                {/* Left Image */}
+                <div className="hidden lg:block flex-shrink-0">
+                    <Image
+                        src="/AAC FINAL.avif"
+                        alt="Decoration Left"
+                        width={300}
+                        height={300}
+                        className="rounded-xl shadow-2xl object-contain"
+                        priority
+                    />
                 </div>
-                <RegisterForm />
+
+                {/* Form Container */}
+                <div className="w-full max-w-md bg-slate-800/50 p-8 rounded-2xl border border-slate-700 shadow-xl backdrop-blur-sm">
+                    <div className="text-center mb-8">
+                        <h1 className="text-3xl font-bold text-white mb-2">
+                            Create Account
+                        </h1>
+                        <p className="text-gray-300">
+                            Join our class registration system
+                        </p>
+                    </div>
+                    <RegisterForm />
+                </div>
+
+                {/* Right Image */}
+                <div className="hidden lg:block flex-shrink-0">
+                    <Image
+                        src="/AAC FINAL.avif"
+                        alt="Decoration Right"
+                        width={300}
+                        height={300}
+                        className="rounded-xl shadow-2xl object-contain"
+                        priority
+                    />
+                </div>
             </div>
         </div>
     );
