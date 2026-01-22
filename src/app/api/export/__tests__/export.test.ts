@@ -74,6 +74,80 @@ describe('Export API Route', () => {
         expect(text).toContain('Doe');
     });
 
+    it('should return CSV data for classes with teacher names', async () => {
+        mockSupabase.auth.getUser.mockResolvedValue({
+            data: { user: { user_metadata: { role: 'admin' } } },
+            error: null
+        });
+
+        const mockClasses = [
+            { id: 'c1', name: 'Art 101', status: 'active', teacher: { first_name: 'Dali', last_name: 'Salvador' }, fee: 100 }
+        ];
+
+        mockSupabase.from.mockReturnValueOnce({
+            select: vi.fn().mockReturnThis(),
+            order: vi.fn().mockResolvedValue({ data: mockClasses, error: null })
+        });
+
+        const request = new Request('http://localhost:3000/api/export?type=classes');
+        const response = await GET(request);
+        const text = await response.text();
+
+        expect(response.status).toBe(200);
+        expect(text).toContain('Art 101');
+        expect(text).toContain('Dali Salvador');
+    });
+
+    it('should return CSV data for enrollments with names', async () => {
+        mockSupabase.auth.getUser.mockResolvedValue({
+            data: { user: { user_metadata: { role: 'admin' } } },
+            error: null
+        });
+
+        const mockEnrollments = [
+            { id: 'e1', status: 'confirmed', student: { first_name: 'Jane', last_name: 'Doe' }, class: { name: 'Art 101', fee: 100 } }
+        ];
+
+        mockSupabase.from.mockReturnValueOnce({
+            select: vi.fn().mockReturnThis(),
+            order: vi.fn().mockResolvedValue({ data: mockEnrollments, error: null })
+        });
+
+        const request = new Request('http://localhost:3000/api/export?type=enrollments');
+        const response = await GET(request);
+        const text = await response.text();
+
+        expect(text).toContain('Jane Doe');
+        expect(text).toContain('Art 101');
+    });
+
+    it('should identify CSV injection vulnerability in data', async () => {
+        mockSupabase.auth.getUser.mockResolvedValue({
+            data: { user: { user_metadata: { role: 'admin' } } },
+            error: null
+        });
+
+        const mockMaliciousUsers = [
+            { id: '1', email: '=SUM(1,2)', first_name: '@John', last_name: '+Doe', role: 'parent', created_at: '2024-01-01' }
+        ];
+
+        mockSupabase.from.mockReturnValueOnce({
+            select: vi.fn().mockReturnThis(),
+            order: vi.fn().mockResolvedValue({ data: mockMaliciousUsers, error: null })
+        });
+
+        const request = new Request('http://localhost:3000/api/export?type=users');
+        const response = await GET(request);
+        const text = await response.text();
+
+        // If the implementation is secure, it should escape the leading characters
+        // Standard security practice is to prefix with a single quote '
+        // Let's see if it currently does (it probably doesn't based on the code I saw)
+        expect(text).toContain('\"\'=SUM(1,2)\"');
+        expect(text).toContain('\"\'@John\"');
+        expect(text).toContain('\"\'+Doe\"');
+    });
+
     it('should return 400 for invalid export type', async () => {
         mockSupabase.auth.getUser.mockResolvedValue({
             data: { user: { user_metadata: { role: 'admin' } } },

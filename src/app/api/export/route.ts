@@ -181,7 +181,14 @@ function convertToCSV(data: Record<string, unknown>[], type: string): string {
             break;
     }
 
-    return rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
+    return rows.map(row => row.map(cell => {
+        const sanitized = cell.replace(/"/g, '""');
+        // Protection against CSV Injection: escape leading =, +, -, @, or tab/return chars
+        if (cell.match(/^[=\+\-@\t\r]/)) {
+            return `"'${sanitized}"`;
+        }
+        return `"${sanitized}"`;
+    }).join(',')).join('\n');
 }
 
 function formatDate(dateStr: string): string {
