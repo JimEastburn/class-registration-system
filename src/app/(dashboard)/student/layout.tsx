@@ -24,17 +24,22 @@ export default async function StudentLayout({
         redirect('/login');
     }
 
-    // Check role
-    const role = user.user_metadata?.role;
-    if (role !== 'student') {
-        redirect(`/${role}`);
+    // Check role from profiles table (Source of Truth)
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, first_name, last_name')
+        .eq('id', user.id)
+        .single();
+
+    if (!profile || profile.role !== 'student') {
+        redirect(`/${profile?.role || user.user_metadata?.role || 'parent'}`);
     }
 
     const userData = {
-        firstName: user.user_metadata?.first_name || 'User',
-        lastName: user.user_metadata?.last_name || '',
+        firstName: profile.first_name || user.user_metadata?.first_name || 'User',
+        lastName: profile.last_name || user.user_metadata?.last_name || '',
         email: user.email || '',
-        role: 'student',
+        role: profile.role,
     };
 
     return (

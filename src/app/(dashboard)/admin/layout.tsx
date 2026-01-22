@@ -30,17 +30,22 @@ export default async function AdminLayout({
         redirect('/login');
     }
 
-    // Check role - only admins allowed
-    const role = user.user_metadata?.role;
-    if (role !== 'admin') {
-        redirect(`/${role || 'parent'}`);
+    // Check role from profiles table (Source of Truth)
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, first_name, last_name')
+        .eq('id', user.id)
+        .single();
+
+    if (!profile || profile.role !== 'admin') {
+        redirect(`/${profile?.role || user.user_metadata?.role || 'parent'}`);
     }
 
     const userData = {
-        firstName: user.user_metadata?.first_name || 'Admin',
-        lastName: user.user_metadata?.last_name || '',
+        firstName: profile.first_name || user.user_metadata?.first_name || 'Admin',
+        lastName: profile.last_name || user.user_metadata?.last_name || '',
         email: user.email || '',
-        role: 'admin',
+        role: profile.role,
     };
 
     return (
