@@ -44,20 +44,30 @@ export async function POST(request: Request) {
             const enrollmentId = session.metadata?.enrollmentId;
 
             if (enrollmentId) {
-                // Update payment status
-                await supabaseAdmin
+                // Get the payment ID to trigger Zoho sync
+                const { data: updatedPayment } = await supabaseAdmin
                     .from('payments')
                     .update({
                         status: 'completed',
                         paid_at: new Date().toISOString(),
                     })
-                    .eq('transaction_id', session.id);
+                    .eq('transaction_id', session.id)
+                    .select('id')
+                    .single();
 
                 // Update enrollment status to confirmed
                 await supabaseAdmin
                     .from('enrollments')
                     .update({ status: 'confirmed' })
                     .eq('id', enrollmentId);
+
+                // Trigger Zoho Sync asynchronously (don't block the webhook response)
+                if (updatedPayment?.id) {
+                    const { syncPaymentToZoho } = await import('@/lib/zoho');
+                    syncPaymentToZoho(updatedPayment.id).catch(err => {
+                        console.error('Initial Zoho sync trigger failed:', err);
+                    });
+                }
 
                 // Fetch enrollment details for email
                 const { data: enrollment } = await supabaseAdmin

@@ -45,6 +45,7 @@ src/
 - [System Requirements](./docs/REGISTRATION_SYSTEM_DESCRIPTION.md)
 - [Architecture Decisions](./docs/architecture_decision_document.md)
 - [API Specification](./docs/api_planning_document.md)
+- [Zoho Integration Flow](./docs/zoho_integration_flow.md)
 - [Deployment Guide](./docs/DEPLOYMENT.md)
 - [Testing Guide](./docs/TESTING.md)
 - [Task List](./docs/TASKS.md)
