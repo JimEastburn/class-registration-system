@@ -14,10 +14,10 @@ A web-based class registration system for middle and high school students, built
 
 ## Features
 
-- 👨‍👩‍👧‍👦 **Parent Portal**: Manage family members, enroll children in classes.
-- 👨‍🏫 **Teacher Portal**: Create and manage classes, view enrolled students.
+- 👨‍👩‍👧‍👦 **Parent Portal**: Manage family members, enroll children in classes. (Accessible by all roles).
+- 👨‍🏫 **Teacher Portal**: Create and manage classes, view enrolled students. Includes access to the Parent Portal.
 - 👨‍🎓 **Student Portal**: View class schedule, materials, and locations.
-- 🛠️ **Admin Portal**: Full system access. Admins can also switch to the **Parent Portal** to manage personal family data.
+- 🛠️ **Admin Portal**: Full system access. Includes access to the Parent Portal.
 - 💳 **Payment Processing**: Secure payments via Stripe.
 - 🔐 **Authentication**: Email/password with centralized role-based access (Profiles table).
 

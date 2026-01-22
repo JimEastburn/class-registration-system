@@ -377,13 +377,13 @@ Previously, the system partially relied on `user_metadata` within the Supabase A
 ## Decision 8: Multi-Role Portal Access
 
 ### Decision
-Administrators are granted access to the **Parent Portal** to manage personal family data.
+Administrators and Teachers are granted access to the **Parent Portal** to manage personal family data.
 
 ### Rationale
-In a school system, administrators often have children enrolled as students. Strictly separating roles would prevent an Admin from enrolling their own children.
-- **Access**: The `/parent` layout allows both `parent` and `admin` roles.
-- **Switching**: A "Portal Switcher" is provided in the `DashboardLayout` for users with the `admin` role, allowing them to toggle between the Admin and Parent views.
-- **Consistency**: All family and enrollment data remains linked to the user's UUID, ensuring it persists even if the user's role changes.
+In a school system, both administrators and teachers often have children enrolled as students. Strictly separating roles would prevent them from enrolling their own children.
+- **Access**: The `/parent` layout allows `parent`, `teacher`, and `admin` roles.
+- **Switching**: A "Portal Switcher" is provided in the `DashboardLayout` for users with `admin` or `teacher` roles, allowing them to toggle between their professional portal and the personal Parent view.
+- **Consistency**: All family and enrollment data remains linked to the user's UUID.
 
 ---
 

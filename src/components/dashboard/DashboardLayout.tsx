@@ -113,12 +113,12 @@ export default function DashboardLayout({
                             <DropdownMenuItem asChild>
                                 <Link href={`/${user.role}/profile`}>Profile Settings</Link>
                             </DropdownMenuItem>
-                            {user.role === 'admin' && (
+                            {(user.role === 'admin' || user.role === 'teacher') && (
                                 <DropdownMenuItem asChild>
-                                    {pathname.startsWith('/admin') ? (
+                                    {pathname.startsWith(`/${user.role}`) ? (
                                         <Link href="/parent">Switch to Parent Portal</Link>
                                     ) : (
-                                        <Link href="/admin">Switch to Admin Portal</Link>
+                                        <Link href={`/${user.role}`}>Switch to {user.role.charAt(0).toUpperCase() + user.role.slice(1)} Portal</Link>
                                     )}
                                 </DropdownMenuItem>
                             )}
