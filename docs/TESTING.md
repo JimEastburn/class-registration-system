@@ -38,6 +38,9 @@ npm run test:coverage
 ### End-to-End Tests
 
 ```bash
+# First-time setup: Install Playwright browsers
+npx playwright install
+
 # Run Playwright tests
 npm run test:e2e
 

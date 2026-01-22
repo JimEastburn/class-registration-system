@@ -15,7 +15,7 @@ test.describe('Authentication Pages', () => {
         await page.goto('/register');
 
         await expect(page).toHaveTitle(/Register/);
-        await expect(page.getByRole('heading', { name: /create.*account/i })).toBeVisible();
+        await expect(page.getByRole('heading', { name: /create.*account/i }).first()).toBeVisible();
         await expect(page.getByLabel(/first name/i)).toBeVisible();
         await expect(page.getByLabel(/last name/i)).toBeVisible();
         await expect(page.getByLabel(/email/i)).toBeVisible();
