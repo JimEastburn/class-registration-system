@@ -129,5 +129,52 @@ describe('Refunds Server Actions implementation', () => {
             expect(result).toEqual({ success: true, refundId: 'ref_123' });
             expect(revalidatePath).toHaveBeenCalledWith('/admin/payments');
         });
+        it('should return error if payment is already refunded', async () => {
+            mockSupabase.auth.getUser.mockResolvedValue({
+                data: { user: { user_metadata: { role: 'admin' } } },
+                error: null
+            });
+            mockSupabase.from.mockReturnValue({
+                select: vi.fn().mockReturnThis(),
+                eq: vi.fn().mockReturnThis(),
+                single: vi.fn().mockResolvedValue({ data: { status: 'refunded' }, error: null })
+            });
+
+            const result = await processRefund('pay123');
+            expect(result.error).toBe('Payment has already been refunded');
+        });
+
+        it('should return success even if Supabase update fails after Stripe succeeds', async () => {
+            mockSupabase.auth.getUser.mockResolvedValue({
+                data: { user: { user_metadata: { role: 'admin' } } },
+                error: null
+            });
+
+            // Payment check
+            mockSupabase.from.mockReturnValueOnce({
+                select: vi.fn().mockReturnThis(),
+                eq: vi.fn().mockReturnThis(),
+                single: vi.fn().mockResolvedValue({
+                    data: {
+                        id: 'pay123', status: 'completed',
+                        stripe_payment_id: 'pi_123', enrollment_id: 'enroll123'
+                    },
+                    error: null
+                })
+            });
+
+            // Refund update fails in DB
+            mockSupabase.from.mockReturnValue({
+                update: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockResolvedValue({ error: { message: 'DB Error' } })
+                })
+            });
+
+            const result = await processRefund('pay123');
+
+            // Based on code: // Still return success since Stripe refund went through
+            expect(result.success).toBe(true);
+            expect(result.refundId).toBe('ref_123');
+        });
     });
 });

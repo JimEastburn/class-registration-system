@@ -17,6 +17,11 @@ vi.mock('@supabase/supabase-js', () => ({
     createClient: vi.fn(),
 }));
 
+// Mock Zoho library
+vi.mock('@/lib/zoho', () => ({
+    syncPaymentToZoho: vi.fn().mockResolvedValue({ success: true }),
+}));
+
 vi.mock('@/lib/email', () => ({
     sendPaymentReceipt: vi.fn().mockResolvedValue({ success: true }),
 }));
@@ -33,21 +38,37 @@ describe('Stripe Webhook API Route', () => {
     beforeEach(() => {
         vi.clearAllMocks();
 
-        const mockUpdate = vi.fn().mockReturnThis();
-        const mockEq = vi.fn().mockReturnThis();
-        const mockSingle = vi.fn();
-        const mockSelect = vi.fn().mockReturnThis();
-
-        const fromObj = {
-            update: mockUpdate,
-            eq: mockEq,
-            single: mockSingle,
-            select: mockSelect,
+        const createQueryBuilder = (initialResult = { data: null, error: null }) => {
+            const builder: any = {
+                select: vi.fn().mockImplementation(() => builder),
+                eq: vi.fn().mockImplementation(() => builder),
+                update: vi.fn().mockImplementation(() => builder),
+                single: vi.fn().mockResolvedValue(initialResult),
+            };
+            return builder;
         };
 
-        // Setup mock Supabase admin client
         mockSupabase = {
-            from: vi.fn(() => fromObj),
+            from: vi.fn().mockImplementation((table) => {
+                if (table === 'payments') {
+                    return createQueryBuilder({ data: { id: 'payment123' }, error: null });
+                }
+                if (table === 'enrollments') {
+                    const mockEnrollment = {
+                        student: { first_name: 'Jane', last_name: 'Smith', parent_id: 'parent123' },
+                        class: { name: 'Art 101', fee: 150 }
+                    };
+                    return createQueryBuilder({ data: mockEnrollment, error: null });
+                }
+                if (table === 'profiles') {
+                    const mockParent = {
+                        first_name: 'John',
+                        email: 'john@example.com'
+                    };
+                    return createQueryBuilder({ data: mockParent, error: null });
+                }
+                return createQueryBuilder();
+            }),
         };
 
         (createClient as Mock).mockReturnValue(mockSupabase);
@@ -95,7 +116,10 @@ describe('Stripe Webhook API Route', () => {
         };
 
         // Mock updates for payment and enrollment
-        const mockUpdatePayment = vi.fn().mockResolvedValue({ error: null });
+        const mockSingle = vi.fn().mockResolvedValue({ data: { id: 'payment123' }, error: null });
+        const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
+        const mockUpdatePayment = vi.fn().mockReturnValue({ select: mockSelect });
+
         mockSupabase.from.mockReturnValueOnce({
             update: vi.fn().mockReturnValue({ eq: mockUpdatePayment })
         });
@@ -145,11 +169,6 @@ describe('Stripe Webhook API Route', () => {
 
         (stripe.webhooks.constructEvent as Mock).mockReturnValue(mockEvent);
 
-        const mockUpdatePayment = vi.fn().mockResolvedValue({ error: null });
-        mockSupabase.from.mockReturnValueOnce({
-            update: vi.fn().mockReturnValue({ eq: mockUpdatePayment })
-        });
-
         const request = new Request('http://localhost:3000/api/webhooks/stripe', {
             method: 'POST',
             body: 'payload',
@@ -160,6 +179,6 @@ describe('Stripe Webhook API Route', () => {
 
         expect(response.status).toBe(200);
         expect(data.received).toBe(true);
-        expect(mockUpdatePayment).toHaveBeenCalled();
+        expect(mockSupabase.from).toHaveBeenCalledWith('payments');
     });
 });

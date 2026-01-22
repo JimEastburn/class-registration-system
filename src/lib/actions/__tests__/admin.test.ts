@@ -78,7 +78,7 @@ describe('Admin Server Actions implementation', () => {
     });
 
     describe('deleteUser', () => {
-        it('should not allow deleting own account', async () => {
+        it('should not allow deleting own account and not trigger database delete', async () => {
             mockSupabase.auth.getUser.mockResolvedValue({
                 data: { user: { id: 'admin123', user_metadata: { role: 'admin' } } },
                 error: null
@@ -86,6 +86,7 @@ describe('Admin Server Actions implementation', () => {
 
             const result = await deleteUser('admin123');
             expect(result).toEqual({ error: 'Cannot delete your own account' });
+            expect(mockSupabase.from).not.toHaveBeenCalled();
         });
 
         it('should delete user and revalidate', async () => {
