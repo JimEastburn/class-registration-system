@@ -34,41 +34,20 @@ vi.mock('next/headers', () => ({
 
 describe('Stripe Webhook API Route', () => {
     let mockSupabase: any;
+    let mockBuilder: any;
 
     beforeEach(() => {
         vi.clearAllMocks();
 
-        const createQueryBuilder = (initialResult = { data: null, error: null }) => {
-            const builder: any = {
-                select: vi.fn().mockImplementation(() => builder),
-                eq: vi.fn().mockImplementation(() => builder),
-                update: vi.fn().mockImplementation(() => builder),
-                single: vi.fn().mockResolvedValue(initialResult),
-            };
-            return builder;
+        mockBuilder = {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            update: vi.fn().mockReturnThis(),
+            single: vi.fn().mockImplementation(() => Promise.resolve({ data: null, error: null })),
         };
 
         mockSupabase = {
-            from: vi.fn().mockImplementation((table) => {
-                if (table === 'payments') {
-                    return createQueryBuilder({ data: { id: 'payment123' }, error: null });
-                }
-                if (table === 'enrollments') {
-                    const mockEnrollment = {
-                        student: { first_name: 'Jane', last_name: 'Smith', parent_id: 'parent123' },
-                        class: { name: 'Art 101', fee: 150 }
-                    };
-                    return createQueryBuilder({ data: mockEnrollment, error: null });
-                }
-                if (table === 'profiles') {
-                    const mockParent = {
-                        first_name: 'John',
-                        email: 'john@example.com'
-                    };
-                    return createQueryBuilder({ data: mockParent, error: null });
-                }
-                return createQueryBuilder();
-            }),
+            from: vi.fn().mockReturnValue(mockBuilder),
         };
 
         (createClient as Mock).mockReturnValue(mockSupabase);
@@ -115,31 +94,27 @@ describe('Stripe Webhook API Route', () => {
             email: 'john@example.com'
         };
 
-        // Mock updates for payment and enrollment
-        const mockSingle = vi.fn().mockResolvedValue({ data: { id: 'payment123' }, error: null });
-        const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
-        const mockUpdatePayment = vi.fn().mockReturnValue({ select: mockSelect });
+        // 1. Initial Idempotency check: status is 'pending'
+        // 2. Update payment execution
+        // 3. Update enrollment execution
+        // 4. Fetch enrollment data
+        // 5. Fetch profile data
 
-        mockSupabase.from.mockReturnValueOnce({
-            update: vi.fn().mockReturnValue({ eq: mockUpdatePayment })
-        });
-
-        const mockUpdateEnrollment = vi.fn().mockResolvedValue({ error: null });
-        mockSupabase.from.mockReturnValueOnce({
-            update: vi.fn().mockReturnValue({ eq: mockUpdateEnrollment })
-        });
-
-        // Mock selects for email data
-        mockSupabase.from.mockReturnValueOnce({
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: mockEnrollment, error: null })
-        });
-
-        mockSupabase.from.mockReturnValueOnce({
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: mockParent, error: null })
+        mockBuilder.single.mockImplementation(() => {
+            // First time called (idempotency check): status is pending
+            if (mockBuilder.single.mock.calls.length === 1) {
+                return Promise.resolve({ data: { status: 'pending' }, error: null });
+            }
+            // Second time called (update payment returns id):
+            if (mockBuilder.single.mock.calls.length === 2) {
+                return Promise.resolve({ data: { id: 'payment123' }, error: null });
+            }
+            // Third time: fetch enrollment
+            if (mockBuilder.single.mock.calls.length === 3) {
+                return Promise.resolve({ data: mockEnrollment, error: null });
+            }
+            // Fourth time: fetch profile
+            return Promise.resolve({ data: mockParent, error: null });
         });
 
         const request = new Request('http://localhost:3000/api/webhooks/stripe', {
@@ -152,8 +127,7 @@ describe('Stripe Webhook API Route', () => {
 
         expect(response.status).toBe(200);
         expect(data.received).toBe(true);
-        expect(mockUpdatePayment).toHaveBeenCalled();
-        expect(mockUpdateEnrollment).toHaveBeenCalled();
+        expect(mockBuilder.update).toHaveBeenCalledTimes(2); // One for payments, one for enrollments
         expect(sendPaymentReceipt).toHaveBeenCalled();
     });
 
@@ -180,5 +154,6 @@ describe('Stripe Webhook API Route', () => {
         expect(response.status).toBe(200);
         expect(data.received).toBe(true);
         expect(mockSupabase.from).toHaveBeenCalledWith('payments');
+        expect(mockBuilder.update).toHaveBeenCalled();
     });
 });
