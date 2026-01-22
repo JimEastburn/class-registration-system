@@ -29,7 +29,7 @@ export async function signUp(formData: FormData): Promise<AuthActionResult> {
                 role,
                 phone,
             },
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+            emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm`,
         },
     });
 

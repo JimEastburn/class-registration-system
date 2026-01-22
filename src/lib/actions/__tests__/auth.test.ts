@@ -70,7 +70,7 @@ describe('Auth Server Actions implementation', () => {
                         role: 'parent',
                         phone: '1234567890',
                     },
-                    emailRedirectTo: expect.stringContaining('/auth/callback'),
+                    emailRedirectTo: expect.stringContaining('/auth/confirm'),
                 },
             });
             expect(result).toEqual({ success: true });
