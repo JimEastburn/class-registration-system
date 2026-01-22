@@ -77,7 +77,7 @@ export default function LoginForm() {
                             </Label>
                             <Link
                                 href="/forgot-password"
-                                className="text-sm text-purple-300 hover:text-purple-200 transition-colors"
+                                className="text-sm text-teal-400 hover:text-teal-300 transition-colors"
                             >
                                 Forgot password?
                             </Link>
@@ -98,7 +98,7 @@ export default function LoginForm() {
                 <CardFooter className="flex flex-col space-y-4">
                     <Button
                         type="submit"
-                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold"
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                         disabled={isLoading}
                     >
                         {isLoading ? 'Signing in...' : 'Sign In'}
@@ -108,7 +108,7 @@ export default function LoginForm() {
                         Don&apos;t have an account?{' '}
                         <Link
                             href="/register"
-                            className="text-purple-300 hover:text-purple-200 font-medium transition-colors"
+                            className="text-teal-400 hover:text-teal-300 font-medium transition-colors"
                         >
                             Create account
                         </Link>

@@ -44,9 +44,9 @@ export default function DashboardLayout({
     const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+        <div className="min-h-screen bg-background">
             {/* Top Navigation */}
-            <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur-lg dark:bg-slate-900/80 dark:border-slate-700">
+            <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-lg">
                 <div className="container flex h-16 items-center justify-between px-4">
                     <div className="flex items-center gap-4">
                         {/* Mobile Navigation */}
@@ -57,9 +57,9 @@ export default function DashboardLayout({
                                     <span className="sr-only">Toggle menu</span>
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent side="left" className="w-64 p-0">
-                                <div className="flex h-16 items-center border-b px-6">
-                                    <span className="text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            <SheetContent side="left" className="w-64 p-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+                                <div className="flex h-16 items-center border-b border-sidebar-border px-6">
+                                    <span className="text-lg font-semibold text-primary">
                                         ClassReg
                                     </span>
                                 </div>
@@ -71,8 +71,8 @@ export default function DashboardLayout({
                                             className={cn(
                                                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                                                 pathname === item.href
-                                                    ? 'bg-purple-100 text-purple-900 dark:bg-purple-900/20 dark:text-purple-100'
-                                                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                                                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                                                    : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
                                             )}
                                         >
                                             {item.icon}
@@ -85,7 +85,7 @@ export default function DashboardLayout({
 
                         {/* Logo */}
                         <Link href="/" className="flex items-center gap-2">
-                            <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                                 ClassReg
                             </span>
                         </Link>
@@ -95,8 +95,8 @@ export default function DashboardLayout({
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                                <Avatar className="h-10 w-10">
-                                    <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white">
+                                <Avatar className="h-10 w-10 border border-border">
+                                    <AvatarFallback className="bg-primary/10 text-primary">
                                         {initials}
                                     </AvatarFallback>
                                 </Avatar>
@@ -106,7 +106,7 @@ export default function DashboardLayout({
                             <div className="flex items-center justify-start gap-2 p-2">
                                 <div className="flex flex-col space-y-1 leading-none">
                                     <p className="font-medium">{user.firstName} {user.lastName}</p>
-                                    <p className="text-xs text-slate-500">{user.email}</p>
+                                    <p className="text-xs text-muted-foreground">{user.email}</p>
                                 </div>
                             </div>
                             <DropdownMenuSeparator />
@@ -115,7 +115,7 @@ export default function DashboardLayout({
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                                className="text-red-600 cursor-pointer"
+                                className="text-destructive cursor-pointer focus:text-destructive"
                                 onClick={() => signOut()}
                             >
                                 Sign Out
@@ -127,7 +127,7 @@ export default function DashboardLayout({
 
             <div className="flex">
                 {/* Desktop Sidebar */}
-                <aside className="hidden lg:flex w-64 flex-col border-r bg-white dark:bg-slate-900 dark:border-slate-700">
+                <aside className="hidden lg:flex w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground min-h-[calc(100vh-4rem)]">
                     <nav className="flex flex-col gap-1 p-4">
                         {navItems.map((item) => (
                             <Link
@@ -136,8 +136,8 @@ export default function DashboardLayout({
                                 className={cn(
                                     'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                                     pathname === item.href
-                                        ? 'bg-purple-100 text-purple-900 dark:bg-purple-900/20 dark:text-purple-100'
-                                        : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+                                        ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                                        : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
                                 )}
                             >
                                 {item.icon}
@@ -148,9 +148,9 @@ export default function DashboardLayout({
                 </aside>
 
                 {/* Main Content */}
-                <main className="flex-1 p-6">
+                <main className="flex-1 p-6 bg-background text-foreground">
                     <div className="mb-6">
-                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                        <h1 className="text-2xl font-bold text-foreground">
                             {title}
                         </h1>
                     </div>

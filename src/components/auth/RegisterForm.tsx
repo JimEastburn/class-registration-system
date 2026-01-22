@@ -85,7 +85,7 @@ export default function RegisterForm() {
                             verify your account.
                         </p>
                         <Link href="/login">
-                            <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                            <Button className="bg-primary hover:bg-primary/90">
                                 Back to Login
                             </Button>
                         </Link>
@@ -228,7 +228,7 @@ export default function RegisterForm() {
                 <CardFooter className="flex flex-col space-y-4">
                     <Button
                         type="submit"
-                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold"
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                         disabled={isLoading}
                     >
                         {isLoading ? 'Creating account...' : 'Create Account'}
@@ -238,7 +238,7 @@ export default function RegisterForm() {
                         Already have an account?{' '}
                         <Link
                             href="/login"
-                            className="text-purple-300 hover:text-purple-200 font-medium transition-colors"
+                            className="text-teal-400 hover:text-teal-300 font-medium transition-colors"
                         >
                             Sign in
                         </Link>
