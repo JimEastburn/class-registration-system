@@ -20,15 +20,15 @@ export default async function LoginPage() {
 
     return (
         <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-            <div className="flex flex-col lg:flex-row items-center justify-center gap-12 w-full max-w-7xl">
+            <div className="flex flex-col lg:flex-row items-center justify-center gap-16 w-full max-w-7xl">
                 {/* Left Image */}
-                <div className="hidden lg:block flex-shrink-0">
+                <div className="hidden lg:block flex-shrink-0 w-[165px]">
                     <Image
                         src="/AAC FINAL.avif"
                         alt="Decoration Left"
-                        width={300}
-                        height={300}
-                        className="rounded-xl shadow-2xl object-contain"
+                        width={165}
+                        height={152}
+                        className="object-contain"
                         priority
                     />
                 </div>
@@ -47,13 +47,13 @@ export default async function LoginPage() {
                 </div>
 
                 {/* Right Image */}
-                <div className="hidden lg:block flex-shrink-0">
+                <div className="hidden lg:block flex-shrink-0 w-[165px]">
                     <Image
                         src="/AAC FINAL.avif"
                         alt="Decoration Right"
-                        width={300}
-                        height={300}
-                        className="rounded-xl shadow-2xl object-contain"
+                        width={165}
+                        height={152}
+                        className="object-contain"
                         priority
                     />
                 </div>
