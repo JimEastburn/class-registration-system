@@ -89,15 +89,31 @@ describe('Auth Server Actions implementation', () => {
     });
 
     describe('signIn', () => {
-        it('should call signInWithPassword and redirect', async () => {
+        it('should call signInWithPassword, sync profile if missing, and redirect', async () => {
             const formData = new FormData();
             formData.append('email', 'test@example.com');
             formData.append('password', 'password123');
 
             mockSupabase.auth.signInWithPassword.mockResolvedValue({ data: {}, error: null });
             mockSupabase.auth.getUser.mockResolvedValue({
-                data: { user: { user_metadata: { role: 'teacher' } } },
+                data: { user: { id: 'user123', email: 'test@example.com', user_metadata: { role: 'teacher' } } },
                 error: null
+            });
+
+            // Mock profile check finding no profile
+            const mockSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+            const mockInsert = vi.fn().mockResolvedValue({ error: null });
+            const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
+            const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
+
+            mockSupabase.from.mockImplementation((table: string) => {
+                if (table === 'profiles') {
+                    return {
+                        select: mockSelect,
+                        insert: mockInsert
+                    };
+                }
+                return {};
             });
 
             try {
@@ -111,6 +127,12 @@ describe('Auth Server Actions implementation', () => {
                 email: 'test@example.com',
                 password: 'password123',
             });
+            expect(mockSelect).toHaveBeenCalledWith('role');
+            expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
+                id: 'user123',
+                email: 'test@example.com',
+                role: 'teacher'
+            }));
             expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
         });
 

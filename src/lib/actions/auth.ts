@@ -57,6 +57,26 @@ export async function signIn(formData: FormData): Promise<AuthActionResult> {
 
     // Get user role to redirect to appropriate dashboard
     const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+        // Ensure profile exists (Self-healing fallback)
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (!profile) {
+            await supabase.from('profiles').insert({
+                id: user.id,
+                email: user.email,
+                role: user.user_metadata?.role || 'parent',
+                first_name: user.user_metadata?.first_name || 'User',
+                last_name: user.user_metadata?.last_name || '',
+            });
+        }
+    }
+
     const role = user?.user_metadata?.role || 'parent';
 
     revalidatePath('/', 'layout');
