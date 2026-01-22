@@ -49,3 +49,11 @@ Used for highlights, call-to-actions (secondary), and visual interest.
 - White background.
 - Slate gray border (light).
 - Usage of `shadcn/ui` default input styles but tinted to match the slate theme.
+
+## 4. Assets
+
+Images and icons are stored in the `public/` directory and can be referenced directly (e.g., `/image-name.ext`).
+
+### Available Images
+- **`Together FADE.avif`**: A high-resolution image suitable for hero backgrounds or banners.
+- **Icons**: `globe.svg`, `file.svg`, `window.svg`, `next.svg`, `vercel.svg`.
