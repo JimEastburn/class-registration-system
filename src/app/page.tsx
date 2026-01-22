@@ -15,7 +15,7 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="min-h-screen relative text-white">
+    <div className="min-h-screen relative text-white bg-slate-900">
       {/* Background Image & Overlay */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-slate-900/80 z-10" /> {/* Dark overlay for readability */}
@@ -23,7 +23,7 @@ export default async function HomePage() {
           src="/Together FADE.avif"
           alt="Class Registration Background"
           fill
-          className="object-cover"
+          className="object-contain object-center"
           priority
         />
       </div>
