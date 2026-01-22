@@ -57,6 +57,7 @@ src/
 npm run dev    # Start dev server (Turbopack)
 npm run build  # Production build
 npm run lint   # Run ESLint
+npm run test   # Run all tests
 ```
 
 ## Environment Variables
@@ -83,6 +84,16 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 | Role | Access |
 |------|--------|
 | `parent` | Manage family, enroll children, pay fees |
-| `teacher` | Create/manage classes, view students |
+| `teacher` | Create/manage classes, view students, AND manage own family |
 | `student` | View schedule and class details |
-| `admin` | Full system access |
+| `admin` | Full system access, data exports, AND manage own family |
+
+## Safety & Integrity Constraints
+
+The following business logic safeguards are strictly enforced:
+
+- **Webhook Idempotency**: Stripe `checkout.session.completed` events are checked against the database. Duplicate webhooks skip side-effects (Sync/Email) to prevent redundant billing.
+- **Fault Tolerance**: Zoho sync failures do not block enrollment confirmation. Data is preserved for later manual or automated retry.
+- **Capacity Hand-off**: Class capacity is atomically checked. Vacated spots (cancellations/deletions) correctly release capacity for the waitlist.
+- **CSV Hardening**: All administrative data exports are escaped using `'` to prevent spreadsheet formula injection.
+- **Privilege Revocation**: Role demotions (Admin/Teacher -> Parent) immediately revoke all elevated action access.

@@ -4,22 +4,33 @@ A web-based class registration system for middle and high school students, built
 
 ## Tech Stack
 
-- **Framework**: Next.js 15 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4 + shadcn/ui
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
 - **Payments**: Stripe
+- **Accounting**: Zoho Books (Integration)
 - **Deployment**: Vercel
 
 ## Features
 
-- 👨‍👩‍👧‍👦 **Parent Portal**: Manage family members, enroll children in classes. (Accessible by all roles).
-- 👨‍🏫 **Teacher Portal**: Create and manage classes, view enrolled students. Includes access to the Parent Portal.
+- 👨‍👩‍👧‍👦 **Parent Portal**: Manage family members, enroll children in classes.
+- 👨‍🏫 **Teacher Portal**: Manage own classes AND their own family members (Dual-Role support).
 - 👨‍🎓 **Student Portal**: View class schedule, materials, and locations.
-- 🛠️ **Admin Portal**: Full system access. Includes access to the Parent Portal.
-- 💳 **Payment Processing**: Secure payments via Stripe.
-- 🔐 **Authentication**: Email/password with centralized role-based access (Profiles table).
+- 🛠️ **Admin Portal**: Full system access, users management, and data exports.
+- 💳 **Reliable Payments**: Secure Stripe integration with idempotency safeguards.
+- 📊 **Accounting Sync**: Automatic synchronization of payments to Zoho Books.
+
+## Safety & Integrity Constraints
+
+The system implements mission-critical safeguards to ensure data integrity:
+
+- **Webhook Idempotency**: Prevents double-billing or redundant syncing from duplicate Stripe events.
+- **Fault Tolerance**: Registration completes even if external services (Zoho) are temporarily unavailable.
+- **Capacity Hand-off**: Atomically managed class capacity and waitlist transitions.
+- **CSV Hardening**: Data exports are hardened against spreadsheet formula injection.
+- **Privilege Revocation**: Immediate permission lockout upon role demotion.
 
 ## Getting Started
 
@@ -83,59 +94,29 @@ src/
 └── types/                 # TypeScript type definitions
 ```
 
-## Development
+## Testing
+
+The system is backed by a comprehensive test suite of **217+ tests** covering unit, integration, and security boundaries.
 
 ```bash
-# Run development server with Turbopack
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
-
-# Run linting
-npm run lint
-
 # Run all tests (Vitest + Playwright)
 npm test
 
-# Run Vitest tests only
+# Run Vitest tests only (currently 217 passing)
 npm run test:run
 
 # Run Vitest tests in watch mode
 npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run E2E tests (Playwright)
-npm run test:e2e
 ```
 
-## Testing
-
-For more detailed information about our testing strategy, including component, server action, and E2E testing, please refer to the [Testing Guide](./docs/TESTING.md).
-
-### User Roles & Permissions
-
-The system uses the `public.profiles` table as the **single source of truth** for roles. Role changes take effect immediately and are checked on every page load.
-
-### Promoting a User to Admin
-
-1.  **Via Admin Portal**: If you are already an admin, go to `/admin/users` and promote the user.
-2.  **Via SQL**: Run the following in the Supabase SQL Editor:
-    ```sql
-    UPDATE profiles SET role = 'admin' WHERE email = 'user@example.com';
-    ```
-3.  **Via Supabase Dashboard**: Update the `role` field in the user's metadata under Authentication, and ensure the `profiles` table is updated to match.
+For more detailed information, refer to the [Testing Guide](./docs/TESTING.md).
 
 ## Documentation
 
 - [System Requirements](./docs/REGISTRATION_SYSTEM_DESCRIPTION.md)
 - [Architecture Decisions](./docs/architecture_decision_document.md)
 - [API Specification](./docs/api_planning_document.md)
+- [Zoho Integration Flow](./docs/zoho_integration_flow.md)
 - [Deployment Guide](./docs/DEPLOYMENT.md)
 - [Task List](./docs/TASKS.md)
 
