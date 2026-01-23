@@ -62,14 +62,23 @@ export const profileSchema = z.object({
 
 export type ProfileFormData = z.infer<typeof profileSchema>;
 
-// Family member schema
+// Family Member schema
 export const familyMemberSchema = z.object({
     firstName: z.string().min(1, 'First name is required'),
     lastName: z.string().min(1, 'Last name is required'),
     relationship: z.enum(['child', 'spouse', 'guardian', 'other']),
-    gradeLevel: z.enum(['6', '7', '8', '9', '10', '11', '12']).optional(),
-    birthDate: z.string().optional(),
-    notes: z.string().optional(),
+    gradeLevel: z.preprocess(
+        (val) => (val === '' || val === null ? undefined : val),
+        z.enum(['6', '7', '8', '9', '10', '11', '12']).optional()
+    ),
+    birthDate: z.preprocess(
+        (val) => (val === '' || val === null ? undefined : val),
+        z.string().optional()
+    ),
+    notes: z.preprocess(
+        (val) => (val === '' || val === null ? undefined : val),
+        z.string().optional()
+    ),
 });
 
 export type FamilyMemberFormData = z.infer<typeof familyMemberSchema>;

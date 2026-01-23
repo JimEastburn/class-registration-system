@@ -47,7 +47,7 @@ export default function FamilyMemberForm({ member }: FamilyMemberFormProps) {
                 firstName: member.first_name,
                 lastName: member.last_name,
                 relationship: member.relationship as 'child' | 'spouse' | 'guardian' | 'other',
-                gradeLevel: member.grade_level as '6' | '7' | '8' | '9' | '10' | '11' | '12' | undefined,
+                gradeLevel: (member.grade_level as any) || undefined,
                 birthDate: member.birth_date || undefined,
                 notes: member.notes || undefined,
             }
