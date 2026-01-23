@@ -2,6 +2,26 @@
 
 This guide covers deploying the Class Registration System to Vercel.
 
+## Live Environments
+
+| Environment | URL |
+|-------------|-----|
+| **Production** | https://class-registration-system-two.vercel.app |
+| **Vercel Dashboard** | https://vercel.com/jimeastburns-projects/class-registration-system |
+
+## Quick CLI Commands
+
+```bash
+# Deploy preview/staging (creates unique URL)
+npx vercel
+
+# Deploy to production
+npx vercel --prod
+
+# Sync environment variables from Vercel
+npx vercel env pull
+```
+
 ## Prerequisites
 
 - GitHub repository with the project

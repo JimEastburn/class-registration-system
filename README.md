@@ -111,6 +111,25 @@ npm run test:watch
 
 For more detailed information, refer to the [Testing Guide](./docs/TESTING.md).
 
+## Deployment
+
+The application is deployed to Vercel with the following environments:
+
+| Environment | URL |
+|-------------|-----|
+| **Production** | https://class-registration-system-two.vercel.app |
+| **Preview** | Created per-branch on push or via CLI |
+
+### Quick Commands
+
+```bash
+npx vercel          # Deploy preview/staging
+npx vercel --prod   # Deploy to production
+npx vercel env pull # Sync env vars from Vercel
+```
+
+For detailed setup instructions, see the [Deployment Guide](./docs/DEPLOYMENT.md).
+
 ## Documentation
 
 - [System Requirements](./docs/REGISTRATION_SYSTEM_DESCRIPTION.md)
