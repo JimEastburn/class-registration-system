@@ -68,10 +68,10 @@ describe('ClassSearchList Component', () => {
         expect(screen.getByText('by Jane Doe')).toBeInTheDocument();
     });
 
-    it('filters classes based on search term', () => {
+    it('filters classes based on class name search term', () => {
         render(<ClassSearchList initialClasses={mockClasses} />);
 
-        const searchInput = screen.getByPlaceholderText(/Search classes by name/i);
+        const searchInput = screen.getByPlaceholderText(/Search by class or teacher name/i);
 
         // Search for "Math"
         fireEvent.change(searchInput, { target: { value: 'Math' } });
@@ -86,10 +86,34 @@ describe('ClassSearchList Component', () => {
         expect(screen.getByText('Advanced Science')).toBeInTheDocument();
     });
 
+    it('filters classes based on teacher name search term', () => {
+        render(<ClassSearchList initialClasses={mockClasses} />);
+
+        const searchInput = screen.getByPlaceholderText(/Search by class or teacher name/i);
+
+        // Search for teacher first name "John"
+        fireEvent.change(searchInput, { target: { value: 'John' } });
+
+        expect(screen.getByText('Beginner Math')).toBeInTheDocument();
+        expect(screen.queryByText('Advanced Science')).not.toBeInTheDocument();
+
+        // Search for teacher last name "Doe"
+        fireEvent.change(searchInput, { target: { value: 'Doe' } });
+
+        expect(screen.queryByText('Beginner Math')).not.toBeInTheDocument();
+        expect(screen.getByText('Advanced Science')).toBeInTheDocument();
+
+        // Search for full teacher name "Jane Doe"
+        fireEvent.change(searchInput, { target: { value: 'Jane Doe' } });
+
+        expect(screen.queryByText('Beginner Math')).not.toBeInTheDocument();
+        expect(screen.getByText('Advanced Science')).toBeInTheDocument();
+    });
+
     it('shows "No Match Found" when no classes match', () => {
         render(<ClassSearchList initialClasses={mockClasses} />);
 
-        const searchInput = screen.getByPlaceholderText(/Search classes by name/i);
+        const searchInput = screen.getByPlaceholderText(/Search by class or teacher name/i);
 
         fireEvent.change(searchInput, { target: { value: 'Nonexistent Class' } });
 
@@ -104,15 +128,23 @@ describe('ClassSearchList Component', () => {
         expect(screen.getByText('Advanced Science')).toBeInTheDocument();
     });
 
-    it('is case insensitive', () => {
+    it('is case insensitive for class and teacher names', () => {
         render(<ClassSearchList initialClasses={mockClasses} />);
 
-        const searchInput = screen.getByPlaceholderText(/Search classes by name/i);
+        const searchInput = screen.getByPlaceholderText(/Search by class or teacher name/i);
 
+        // Case insensitive class name search
         fireEvent.change(searchInput, { target: { value: 'math' } });
         expect(screen.getByText('Beginner Math')).toBeInTheDocument();
 
         fireEvent.change(searchInput, { target: { value: 'MATH' } });
+        expect(screen.getByText('Beginner Math')).toBeInTheDocument();
+
+        // Case insensitive teacher name search
+        fireEvent.change(searchInput, { target: { value: 'john' } });
+        expect(screen.getByText('Beginner Math')).toBeInTheDocument();
+
+        fireEvent.change(searchInput, { target: { value: 'SMITH' } });
         expect(screen.getByText('Beginner Math')).toBeInTheDocument();
     });
 });
