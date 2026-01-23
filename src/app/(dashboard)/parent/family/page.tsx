@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import DeleteFamilyMemberButton from '@/components/family/DeleteFamilyMemberButton';
+import InviteCodeButton from '@/components/family/InviteCodeButton';
 
 export const metadata = {
     title: 'Family Members | Class Registration System',
@@ -42,9 +43,16 @@ export default async function FamilyPage() {
                                     <CardTitle className="text-lg">
                                         {member.first_name} {member.last_name}
                                     </CardTitle>
-                                    <Badge variant="secondary" className="capitalize">
-                                        {member.relationship}
-                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                        {member.user_id && (
+                                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                Linked
+                                            </Badge>
+                                        )}
+                                        <Badge variant="secondary" className="capitalize">
+                                            {member.relationship}
+                                        </Badge>
+                                    </div>
                                 </div>
                             </CardHeader>
                             <CardContent className="space-y-3">
@@ -62,6 +70,17 @@ export default async function FamilyPage() {
                                 {member.notes && (
                                     <p className="text-sm text-slate-500 italic">{member.notes}</p>
                                 )}
+
+                                {/* Invite Code Section - only show if not already linked */}
+                                {!member.user_id && (
+                                    <div className="pt-2 border-t">
+                                        <InviteCodeButton
+                                            familyMemberId={member.id}
+                                            memberName={member.first_name}
+                                        />
+                                    </div>
+                                )}
+
                                 <div className="flex gap-2 pt-2">
                                     <Link href={`/parent/family/${member.id}/edit`} className="flex-1">
                                         <Button variant="outline" size="sm" className="w-full">

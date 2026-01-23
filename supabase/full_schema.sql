@@ -64,6 +64,7 @@ CREATE POLICY "Admin metadata manage profiles" ON public.profiles FOR ALL TO aut
 CREATE TABLE IF NOT EXISTS public.family_members (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     parent_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL, -- Links student account to family member
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
     grade_level TEXT CHECK (grade_level IN ('6', '7', '8', '9', '10', '11', '12')),
@@ -75,10 +76,12 @@ CREATE TABLE IF NOT EXISTS public.family_members (
 );
 
 CREATE INDEX IF NOT EXISTS idx_family_members_parent ON public.family_members(parent_id);
+CREATE INDEX IF NOT EXISTS idx_family_members_user_id ON public.family_members(user_id);
 ALTER TABLE public.family_members ENABLE ROW LEVEL SECURITY;
 
 -- Family members policies
 CREATE POLICY "Family - Parent manage own" ON public.family_members FOR ALL TO authenticated USING (auth.uid() = parent_id) WITH CHECK (auth.uid() = parent_id);
+CREATE POLICY "Family - Student view self" ON public.family_members FOR SELECT TO authenticated USING (user_id = auth.uid());
 CREATE POLICY "Family - Admin and Service Role bypass" ON public.family_members FOR ALL TO authenticated, service_role 
     USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role')
     WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role');
@@ -148,6 +151,8 @@ ALTER TABLE public.enrollments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enrollments - Parent manage family" ON public.enrollments FOR ALL TO authenticated 
     USING (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = student_id AND fm.parent_id = auth.uid()))
     WITH CHECK (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = student_id AND fm.parent_id = auth.uid()));
+CREATE POLICY "Enrollments - Student view own" ON public.enrollments FOR SELECT TO authenticated
+    USING (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = student_id AND fm.user_id = auth.uid()));
 CREATE POLICY "Enrollments - Teacher view class" ON public.enrollments FOR SELECT TO authenticated 
     USING (EXISTS (SELECT 1 FROM public.classes c WHERE c.id = class_id AND c.teacher_id = auth.uid()));
 CREATE POLICY "Enrollments - Admin and Service Role bypass" ON public.enrollments FOR ALL TO authenticated, service_role 
@@ -217,6 +222,33 @@ CREATE POLICY "Waitlist - Parent manage own" ON public.waitlist FOR ALL TO authe
 CREATE POLICY "Waitlist - Service role and admin bypass" ON public.waitlist FOR ALL TO service_role, authenticated 
     USING (current_role = 'service_role' OR (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin')
     WITH CHECK (current_role = 'service_role' OR (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+
+-- ============================================
+-- 7. FAMILY_MEMBER_INVITES TABLE
+-- ============================================
+CREATE TABLE public.family_member_invites (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    family_member_id UUID NOT NULL REFERENCES public.family_members(id) ON DELETE CASCADE,
+    code TEXT NOT NULL UNIQUE,
+    created_by UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    redeemed_at TIMESTAMPTZ,
+    redeemed_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_family_member_invites_code ON public.family_member_invites(code);
+CREATE INDEX idx_family_member_invites_family_member ON public.family_member_invites(family_member_id);
+ALTER TABLE public.family_member_invites ENABLE ROW LEVEL SECURITY;
+
+-- Invites policies
+CREATE POLICY "Invites - Parent manage own" ON public.family_member_invites FOR ALL TO authenticated 
+    USING (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = family_member_id AND fm.parent_id = auth.uid()))
+    WITH CHECK (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = family_member_id AND fm.parent_id = auth.uid()));
+CREATE POLICY "Invites - Student redeem by code" ON public.family_member_invites FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Invites - Admin and Service Role bypass" ON public.family_member_invites FOR ALL TO authenticated, service_role 
+    USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role')
+    WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role');
 
 -- ============================================
 -- 7. CLASS_MATERIALS TABLE
