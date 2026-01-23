@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import UserRoleLegend from '@/components/admin/UserRoleLegend';
+import EnrollmentStatusLegend from '@/components/admin/EnrollmentStatusLegend';
+import PaymentStatusLegend from '@/components/admin/PaymentStatusLegend';
 
 export const metadata = {
     title: 'Analytics & Reports | Admin Portal',
@@ -210,175 +213,184 @@ export default async function AdminReportsPage() {
             {/* Detailed Stats */}
             <div className="grid gap-6 lg:grid-cols-3">
                 {/* Users by Role */}
-                <Card className="border-0 shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="text-base">Users by Role</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-600">Parents</span>
-                            <div className="flex items-center gap-2">
-                                <div className="w-24 bg-slate-100 rounded-full h-2">
-                                    <div
-                                        className="bg-purple-500 h-2 rounded-full"
-                                        style={{ width: `${((usersByRole.parent / (users?.length || 1)) * 100)}%` }}
-                                    />
+                <div className="space-y-4">
+                    <Card className="border-0 shadow-lg">
+                        <CardHeader>
+                            <CardTitle className="text-base">Users by Role</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-slate-600">Parents</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-24 bg-slate-100 rounded-full h-2">
+                                        <div
+                                            className="bg-purple-500 h-2 rounded-full"
+                                            style={{ width: `${((usersByRole.parent / (users?.length || 1)) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-semibold w-8">{usersByRole.parent}</span>
                                 </div>
-                                <span className="text-sm font-semibold w-8">{usersByRole.parent}</span>
                             </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-600">Teachers</span>
-                            <div className="flex items-center gap-2">
-                                <div className="w-24 bg-slate-100 rounded-full h-2">
-                                    <div
-                                        className="bg-blue-500 h-2 rounded-full"
-                                        style={{ width: `${((usersByRole.teacher / (users?.length || 1)) * 100)}%` }}
-                                    />
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-slate-600">Teachers</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-24 bg-slate-100 rounded-full h-2">
+                                        <div
+                                            className="bg-blue-500 h-2 rounded-full"
+                                            style={{ width: `${((usersByRole.teacher / (users?.length || 1)) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-semibold w-8">{usersByRole.teacher}</span>
                                 </div>
-                                <span className="text-sm font-semibold w-8">{usersByRole.teacher}</span>
                             </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-600">Students</span>
-                            <div className="flex items-center gap-2">
-                                <div className="w-24 bg-slate-100 rounded-full h-2">
-                                    <div
-                                        className="bg-green-500 h-2 rounded-full"
-                                        style={{ width: `${((usersByRole.student / (users?.length || 1)) * 100)}%` }}
-                                    />
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-slate-600">Students</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-24 bg-slate-100 rounded-full h-2">
+                                        <div
+                                            className="bg-green-500 h-2 rounded-full"
+                                            style={{ width: `${((usersByRole.student / (users?.length || 1)) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-semibold w-8">{usersByRole.student}</span>
                                 </div>
-                                <span className="text-sm font-semibold w-8">{usersByRole.student}</span>
                             </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-600">Admins</span>
-                            <div className="flex items-center gap-2">
-                                <div className="w-24 bg-slate-100 rounded-full h-2">
-                                    <div
-                                        className="bg-red-500 h-2 rounded-full"
-                                        style={{ width: `${((usersByRole.admin / (users?.length || 1)) * 100)}%` }}
-                                    />
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-slate-600">Admins</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-24 bg-slate-100 rounded-full h-2">
+                                        <div
+                                            className="bg-red-500 h-2 rounded-full"
+                                            style={{ width: `${((usersByRole.admin / (users?.length || 1)) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-semibold w-8">{usersByRole.admin}</span>
                                 </div>
-                                <span className="text-sm font-semibold w-8">{usersByRole.admin}</span>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                    <UserRoleLegend />
+                </div>
 
                 {/* Enrollment Status */}
-                <Card className="border-0 shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="text-base">Enrollment Status</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-600">Pending</span>
-                            <div className="flex items-center gap-2">
-                                <div className="w-24 bg-slate-100 rounded-full h-2">
-                                    <div
-                                        className="bg-yellow-500 h-2 rounded-full"
-                                        style={{ width: `${((enrollmentStats.pending / (enrollmentStats.total || 1)) * 100)}%` }}
-                                    />
+                <div className="space-y-4">
+                    <Card className="border-0 shadow-lg">
+                        <CardHeader>
+                            <CardTitle className="text-base">Enrollment Status</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-slate-600">Pending</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-24 bg-slate-100 rounded-full h-2">
+                                        <div
+                                            className="bg-yellow-500 h-2 rounded-full"
+                                            style={{ width: `${((enrollmentStats.pending / (enrollmentStats.total || 1)) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-semibold w-8">{enrollmentStats.pending}</span>
                                 </div>
-                                <span className="text-sm font-semibold w-8">{enrollmentStats.pending}</span>
                             </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-600">Confirmed</span>
-                            <div className="flex items-center gap-2">
-                                <div className="w-24 bg-slate-100 rounded-full h-2">
-                                    <div
-                                        className="bg-green-500 h-2 rounded-full"
-                                        style={{ width: `${((enrollmentStats.confirmed / (enrollmentStats.total || 1)) * 100)}%` }}
-                                    />
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-slate-600">Confirmed</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-24 bg-slate-100 rounded-full h-2">
+                                        <div
+                                            className="bg-green-500 h-2 rounded-full"
+                                            style={{ width: `${((enrollmentStats.confirmed / (enrollmentStats.total || 1)) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-semibold w-8">{enrollmentStats.confirmed}</span>
                                 </div>
-                                <span className="text-sm font-semibold w-8">{enrollmentStats.confirmed}</span>
                             </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-600">Completed</span>
-                            <div className="flex items-center gap-2">
-                                <div className="w-24 bg-slate-100 rounded-full h-2">
-                                    <div
-                                        className="bg-blue-500 h-2 rounded-full"
-                                        style={{ width: `${((enrollmentStats.completed / (enrollmentStats.total || 1)) * 100)}%` }}
-                                    />
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-slate-600">Completed</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-24 bg-slate-100 rounded-full h-2">
+                                        <div
+                                            className="bg-blue-500 h-2 rounded-full"
+                                            style={{ width: `${((enrollmentStats.completed / (enrollmentStats.total || 1)) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-semibold w-8">{enrollmentStats.completed}</span>
                                 </div>
-                                <span className="text-sm font-semibold w-8">{enrollmentStats.completed}</span>
                             </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-600">Cancelled</span>
-                            <div className="flex items-center gap-2">
-                                <div className="w-24 bg-slate-100 rounded-full h-2">
-                                    <div
-                                        className="bg-red-500 h-2 rounded-full"
-                                        style={{ width: `${((enrollmentStats.cancelled / (enrollmentStats.total || 1)) * 100)}%` }}
-                                    />
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-slate-600">Cancelled</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-24 bg-slate-100 rounded-full h-2">
+                                        <div
+                                            className="bg-red-500 h-2 rounded-full"
+                                            style={{ width: `${((enrollmentStats.cancelled / (enrollmentStats.total || 1)) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-semibold w-8">{enrollmentStats.cancelled}</span>
                                 </div>
-                                <span className="text-sm font-semibold w-8">{enrollmentStats.cancelled}</span>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                    <EnrollmentStatusLegend />
+                </div>
 
                 {/* Payment Status */}
-                <Card className="border-0 shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="text-base">Payment Status</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-600">Completed</span>
-                            <div className="flex items-center gap-2">
-                                <div className="w-24 bg-slate-100 rounded-full h-2">
-                                    <div
-                                        className="bg-green-500 h-2 rounded-full"
-                                        style={{ width: `${((paymentStats.completed / (paymentStats.total || 1)) * 100)}%` }}
-                                    />
+                <div className="space-y-4">
+                    <Card className="border-0 shadow-lg">
+                        <CardHeader>
+                            <CardTitle className="text-base">Payment Status</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-slate-600">Completed</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-24 bg-slate-100 rounded-full h-2">
+                                        <div
+                                            className="bg-green-500 h-2 rounded-full"
+                                            style={{ width: `${((paymentStats.completed / (paymentStats.total || 1)) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-semibold w-8">{paymentStats.completed}</span>
                                 </div>
-                                <span className="text-sm font-semibold w-8">{paymentStats.completed}</span>
                             </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-600">Pending</span>
-                            <div className="flex items-center gap-2">
-                                <div className="w-24 bg-slate-100 rounded-full h-2">
-                                    <div
-                                        className="bg-yellow-500 h-2 rounded-full"
-                                        style={{ width: `${((paymentStats.pending / (paymentStats.total || 1)) * 100)}%` }}
-                                    />
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-slate-600">Pending</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-24 bg-slate-100 rounded-full h-2">
+                                        <div
+                                            className="bg-yellow-500 h-2 rounded-full"
+                                            style={{ width: `${((paymentStats.pending / (paymentStats.total || 1)) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-semibold w-8">{paymentStats.pending}</span>
                                 </div>
-                                <span className="text-sm font-semibold w-8">{paymentStats.pending}</span>
                             </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-600">Refunded</span>
-                            <div className="flex items-center gap-2">
-                                <div className="w-24 bg-slate-100 rounded-full h-2">
-                                    <div
-                                        className="bg-purple-500 h-2 rounded-full"
-                                        style={{ width: `${((paymentStats.refunded / (paymentStats.total || 1)) * 100)}%` }}
-                                    />
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-slate-600">Refunded</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-24 bg-slate-100 rounded-full h-2">
+                                        <div
+                                            className="bg-purple-500 h-2 rounded-full"
+                                            style={{ width: `${((paymentStats.refunded / (paymentStats.total || 1)) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-semibold w-8">{paymentStats.refunded}</span>
                                 </div>
-                                <span className="text-sm font-semibold w-8">{paymentStats.refunded}</span>
                             </div>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-600">Failed</span>
-                            <div className="flex items-center gap-2">
-                                <div className="w-24 bg-slate-100 rounded-full h-2">
-                                    <div
-                                        className="bg-red-500 h-2 rounded-full"
-                                        style={{ width: `${((paymentStats.failed / (paymentStats.total || 1)) * 100)}%` }}
-                                    />
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-slate-600">Failed</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-24 bg-slate-100 rounded-full h-2">
+                                        <div
+                                            className="bg-red-500 h-2 rounded-full"
+                                            style={{ width: `${((paymentStats.failed / (paymentStats.total || 1)) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-semibold w-8">{paymentStats.failed}</span>
                                 </div>
-                                <span className="text-sm font-semibold w-8">{paymentStats.failed}</span>
                             </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                    <PaymentStatusLegend />
+                </div>
             </div>
         </div>
     );
