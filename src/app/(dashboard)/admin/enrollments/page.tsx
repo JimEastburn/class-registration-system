@@ -12,6 +12,7 @@ import {
 import { ResponsiveTable } from '@/components/ui/responsive-table';
 import AdminEnrollmentActions from '@/components/admin/AdminEnrollmentActions';
 import { SearchBar, FilterSelect, ClearFilters } from '@/components/admin/SearchFilters';
+import EnrollmentStatusLegend from '@/components/admin/EnrollmentStatusLegend';
 
 export const metadata = {
     title: 'Enrollment Management | Admin Portal',
@@ -76,6 +77,8 @@ export default async function AdminEnrollmentsPage({ searchParams }: PageProps) 
                 <h2 className="text-xl font-semibold">Enrollment Management</h2>
                 <p className="text-slate-500">View and manage all enrollments</p>
             </div>
+
+            <EnrollmentStatusLegend />
 
             <Card className="border-0 shadow-lg">
                 <CardHeader>
