@@ -112,6 +112,49 @@ describe('Family Actions (Integration)', () => {
         }
     });
 
+    it('should successfully update a family member with null/empty values (regression test)', async () => {
+        // Pre-insert
+        const { data: member } = await (getAdminClient()
+            .from('family_members')
+            .insert({
+                parent_id: testUser.id,
+                first_name: 'Regression',
+                last_name: 'Test',
+                relationship: 'child',
+                grade_level: '8',
+            } as any) as any)
+            .select()
+            .single();
+
+        expect(member).not.toBeNull();
+
+        const formData = new FormData();
+        formData.append('firstName', 'Regression');
+        formData.append('lastName', 'Test');
+        formData.append('relationship', 'child');
+        formData.append('gradeLevel', ''); // Empty string should be handled
+        formData.append('birthDate', ''); // Empty string should be handled
+        formData.append('notes', ''); // Empty string should be handled
+
+        const result = await updateFamilyMember((member as any).id, formData);
+
+        expect(result.success).toBe(true);
+
+        // Verify update in DB
+        const { data } = await (getAdminClient()
+            .from('family_members')
+            .select('*')
+            .eq('id', (member as any).id) as any)
+            .single();
+
+        expect(data).not.toBeNull();
+        if (data) {
+            expect((data as any).grade_level).toBeNull();
+            expect((data as any).birth_date).toBeNull();
+            expect((data as any).notes).toBeNull();
+        }
+    });
+
     it('should successfully delete a family member', async () => {
         // Pre-insert
         const { data: member } = await (getAdminClient()
