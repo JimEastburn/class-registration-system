@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import CancelEnrollmentButton from '@/components/classes/CancelEnrollmentButton';
 import PayButton, { PaymentAlert } from '@/components/payments/PayButton';
 import { Suspense } from 'react';
+import EnrollmentStatusLegend from '@/components/admin/EnrollmentStatusLegend';
 
 export const metadata = {
     title: 'My Enrollments | Class Registration System',
@@ -68,6 +69,8 @@ export default async function EnrollmentsPage() {
                 <h2 className="text-xl font-semibold">My Enrollments</h2>
                 <p className="text-slate-500">Track your children&apos;s class enrollments</p>
             </div>
+
+            <EnrollmentStatusLegend />
 
             {/* Active Enrollments */}
             <div>
