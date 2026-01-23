@@ -7,11 +7,17 @@ export default defineConfig({
     retries: process.env.CI ? 2 : 0,
     workers: process.env.CI ? 1 : undefined,
     reporter: 'html',
+
+    // Global setup and teardown for test isolation
+    globalSetup: require.resolve('./e2e/global-setup'),
+    globalTeardown: require.resolve('./e2e/global-teardown'),
+
     use: {
         baseURL: 'http://localhost:3000',
         trace: 'on-first-retry',
         screenshot: 'only-on-failure',
     },
+
     projects: [
         // Setup project
         {
