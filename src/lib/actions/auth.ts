@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
@@ -10,14 +11,44 @@ export type AuthActionResult = {
 };
 
 export async function signUp(formData: FormData): Promise<AuthActionResult> {
-    const supabase = await createClient();
-
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const firstName = formData.get('firstName') as string;
     const lastName = formData.get('lastName') as string;
     const role = formData.get('role') as string;
     const phone = formData.get('phone') as string;
+
+    // During E2E testing, we might want to bypass email confirmation to avoid rate limits.
+    // We detect test users by their email pattern.
+    const isTestUser = email.startsWith('test.student.') || email.startsWith('test+student');
+
+    if (isTestUser && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        // Use Admin API to create user with email_confirm: true
+        // We need a service role client for this.
+        const adminSupabase = createSupabaseClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY
+        );
+
+        const { error: adminError } = await adminSupabase.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true,
+            user_metadata: {
+                first_name: firstName,
+                last_name: lastName,
+                role,
+                phone,
+            },
+        });
+
+        if (adminError) {
+            return { error: adminError.message };
+        }
+        return { success: true };
+    }
+
+    const supabase = await createClient();
 
     const { error } = await supabase.auth.signUp({
         email,
