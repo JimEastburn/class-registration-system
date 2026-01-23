@@ -17,12 +17,16 @@ test.describe('Teacher Dashboard Flows', () => {
         await expect(page.getByText('Chess Masterclass')).toBeVisible();
     });
 
-    // TODO: This test is skipped because teacher class cards don't have 
-    // a direct link to class details. Need to add data-testid to class cards.
-    test.skip('should view students in a class', async ({ page }) => {
+    test('should view students in a class', async ({ page }) => {
         await page.goto('/teacher/classes');
-        await page.getByRole('link', { name: /advanced python/i }).first().click();
-        await expect(page).toHaveURL(/\/teacher\/classes\/[a-zA-Z0-9-]+/);
-        await expect(page.getByText('Jane Doe')).toBeVisible();
+
+        // Click the "View Students" button for a class
+        await page.getByRole('button', { name: /view students/i }).first().click();
+
+        // Should navigate to the students page
+        await expect(page).toHaveURL(/\/teacher\/classes\/[a-zA-Z0-9-]+\/students/);
+
+        // Use specific heading that includes class name
+        await expect(page.getByRole('heading', { name: /students in/i })).toBeVisible();
     });
 });

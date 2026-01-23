@@ -163,19 +163,20 @@ export default function RegisterForm() {
                             I am a...
                         </Label>
                         <Select onValueChange={(value) => setValue('role', value as 'parent' | 'teacher' | 'student')}>
-                            <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                            <SelectTrigger className="bg-white/10 border-white/20 text-white" data-testid="role-select-trigger">
                                 <SelectValue placeholder="Select your role" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="parent">Parent / Guardian</SelectItem>
-                                <SelectItem value="teacher">Teacher</SelectItem>
-                                <SelectItem value="student">Student</SelectItem>
+                                <SelectItem value="parent" data-testid="role-option-parent">Parent / Guardian</SelectItem>
+                                <SelectItem value="teacher" data-testid="role-option-teacher">Teacher</SelectItem>
+                                <SelectItem value="student" data-testid="role-option-student">Student</SelectItem>
                             </SelectContent>
                         </Select>
                         {errors.role && (
                             <p className="text-red-400 text-sm">{errors.role.message}</p>
                         )}
                     </div>
+
 
                     <div className="space-y-2">
                         <Label htmlFor="phone" className="text-slate-200">

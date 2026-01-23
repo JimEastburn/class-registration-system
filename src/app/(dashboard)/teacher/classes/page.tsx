@@ -77,20 +77,21 @@ export default async function TeacherClassesPage() {
 
                                 <div className="flex flex-wrap gap-2">
                                     <Link href={`/teacher/classes/${classItem.id}`}>
-                                        <Button variant="outline" size="sm">
+                                        <Button variant="outline" size="sm" data-testid={`view-details-${classItem.id}`}>
                                             View Details
                                         </Button>
                                     </Link>
                                     <Link href={`/teacher/classes/${classItem.id}/edit`}>
-                                        <Button variant="outline" size="sm">
+                                        <Button variant="outline" size="sm" data-testid={`edit-class-${classItem.id}`}>
                                             Edit
                                         </Button>
                                     </Link>
                                     <Link href={`/teacher/classes/${classItem.id}/students`}>
-                                        <Button variant="outline" size="sm">
+                                        <Button variant="outline" size="sm" data-testid={`view-students-${classItem.id}`}>
                                             View Students
                                         </Button>
                                     </Link>
+
                                     <ClassStatusButton
                                         classId={classItem.id}
                                         currentStatus={classItem.status}
