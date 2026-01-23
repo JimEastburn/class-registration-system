@@ -18,11 +18,12 @@ export async function signUp(formData: FormData): Promise<AuthActionResult> {
     const role = formData.get('role') as string;
     const phone = formData.get('phone') as string;
 
-    // During E2E testing, we might want to bypass email confirmation to avoid rate limits.
-    // We detect test users by their email pattern.
+    // During E2E testing or development, we might want to bypass email confirmation to avoid rate limits.
+    // We detect test users by their email pattern or via an environment variable.
     const isTestUser = email?.startsWith('test.student.') || email?.startsWith('test+student');
+    const shouldBypass = isTestUser || process.env.BYPASS_EMAIL_CONFIRMATION === 'true';
 
-    if (isTestUser && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (shouldBypass && process.env.SUPABASE_SERVICE_ROLE_KEY) {
         // Use Admin API to create user with email_confirm: true
         // We need a service role client for this.
         const adminSupabase = createSupabaseClient(

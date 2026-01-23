@@ -58,6 +58,7 @@ In the Vercel project settings, add these environment variables:
 | Variable | Description |
 |----------|-------------|
 | `NEXT_PUBLIC_APP_URL` | Your Vercel deployment URL (e.g., `https://your-app.vercel.app`) |
+| `BYPASS_EMAIL_CONFIRMATION` | Set to `true` to skip email verification (use for testing) |
 
 ## Step 3: Deploy
 
@@ -135,9 +136,29 @@ supabase db push
 
 ### Auth Issues
 - Ensure `NEXT_PUBLIC_SUPABASE_URL` is correct
+- **Email Rate Limits**: Supabase's default email service has strict limits (3 per hour).
+  - **Option A (Fixed)**: [Configure Custom SMTP](#setup-custom-smtp-recommended).
+  - **Option B (Bypass)**: Set `BYPASS_EMAIL_CONFIRMATION=true` in Vercel env vars.
 - Add your Vercel domain to Supabase Auth settings:
   - Go to **Authentication → URL Configuration**
   - Add your domain to **Redirect URLs**
+
+## Setup Custom SMTP (Recommended)
+
+To avoid "email rate limit exceeded" errors in production, you should use a custom SMTP provider like [Resend](https://resend.com).
+
+1.  **Get SMTP Credentials**:
+    - Sign up for Resend (or SendGrid/Postmark).
+    - Create an API key.
+    - Find your SMTP settings (Host: `smtp.resend.com`, Port: `587`, User: `resend`).
+2.  **Configure Supabase**:
+    - Go to your **Supabase Dashboard**.
+    - Navigate to **Authentication → Settings → SMTP Settings**.
+    - Toggle **Enable Custom SMTP** to ON.
+    - Fill in the host, port, user, and password (your Resend API key).
+    - Save changes.
+3.  **Disable Link Tracking**:
+    - In your SMTP provider settings, ensure "Link Tracking" is disabled to prevent breaking Supabase's confirmation links.
 
 ## Custom Domain (Optional)
 
