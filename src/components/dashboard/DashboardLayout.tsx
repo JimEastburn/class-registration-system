@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { signOut } from '@/lib/actions/auth';
 import { Button } from '@/components/ui/button';
@@ -58,7 +59,14 @@ export default function DashboardLayout({
                                 </Button>
                             </SheetTrigger>
                             <SheetContent side="left" className="w-64 p-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
-                                <div className="flex h-16 items-center border-b border-sidebar-border px-6">
+                                <div className="flex h-16 items-center border-b border-sidebar-border px-6 gap-2">
+                                    <Image
+                                        src="/AAC FINAL.avif"
+                                        alt="Logo"
+                                        width={28}
+                                        height={26}
+                                        className="object-contain"
+                                    />
                                     <span className="text-lg font-semibold text-primary">
                                         ClassReg
                                     </span>
@@ -86,6 +94,13 @@ export default function DashboardLayout({
 
                         {/* Logo */}
                         <Link href="/" className="flex items-center gap-2">
+                            <Image
+                                src="/AAC FINAL.avif"
+                                alt="Logo"
+                                width={32}
+                                height={30}
+                                className="object-contain"
+                            />
                             <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                                 ClassReg
                             </span>
