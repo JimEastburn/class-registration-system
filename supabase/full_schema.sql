@@ -8,7 +8,6 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Clean up existing objects (uncomment if you want a complete wipe)
 -- DROP TABLE IF EXISTS public.class_materials CASCADE;
 -- DROP TABLE IF EXISTS public.waitlist CASCADE;
 -- DROP TABLE IF EXISTS public.payments CASCADE;
@@ -16,6 +15,17 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- DROP TABLE IF EXISTS public.classes CASCADE;
 -- DROP TABLE IF EXISTS public.family_members CASCADE;
 -- DROP TABLE IF EXISTS public.profiles CASCADE;
+
+-- Cleanup utility: Drop all policies on a table
+-- This ensures no stale policies from previous versions interfere
+DO $$ 
+DECLARE 
+    r RECORD;
+BEGIN
+    FOR r IN (SELECT policyname, tablename FROM pg_policies WHERE schemaname = 'public' AND tablename IN ('profiles', 'family_members', 'classes', 'enrollments', 'payments', 'waitlist', 'class_materials')) LOOP
+        EXECUTE 'DROP POLICY IF EXISTS ' || quote_ident(r.policyname) || ' ON ' || quote_ident(r.tablename);
+    END LOOP;
+END $$;
 
 -- ============================================
 -- 1. PROFILES TABLE (extends Supabase auth.users)
@@ -38,14 +48,15 @@ CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
-DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
-CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
-CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Public can view teacher profiles" ON public.profiles;
-CREATE POLICY "Public can view teacher profiles" ON public.profiles FOR SELECT USING (role = 'teacher');
+CREATE POLICY "Profiles - Self access" ON public.profiles FOR ALL TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+CREATE POLICY "Profiles - Teacher public view" ON public.profiles FOR SELECT TO public USING (role = 'teacher');
+CREATE POLICY "Profiles - Admin and Service Role bypass" ON public.profiles FOR ALL TO authenticated, service_role 
+    USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role')
+    WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role');
+CREATE POLICY "Service role manage profiles" ON public.profiles FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Admin metadata manage profiles" ON public.profiles FOR ALL TO authenticated 
+    USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin')
+    WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
 
 -- ============================================
 -- 2. FAMILY_MEMBERS TABLE
@@ -67,17 +78,11 @@ CREATE INDEX IF NOT EXISTS idx_family_members_parent ON public.family_members(pa
 ALTER TABLE public.family_members ENABLE ROW LEVEL SECURITY;
 
 -- Family members policies
-DROP POLICY IF EXISTS "Parents can view their own family members" ON public.family_members;
-CREATE POLICY "Parents can view their own family members" ON public.family_members FOR SELECT USING (auth.uid() = parent_id);
-
-DROP POLICY IF EXISTS "Parents can insert their own family members" ON public.family_members;
-CREATE POLICY "Parents can insert their own family members" ON public.family_members FOR INSERT WITH CHECK (auth.uid() = parent_id);
-
-DROP POLICY IF EXISTS "Parents can update their own family members" ON public.family_members;
-CREATE POLICY "Parents can update their own family members" ON public.family_members FOR UPDATE USING (auth.uid() = parent_id);
-
-DROP POLICY IF EXISTS "Parents can delete their own family members" ON public.family_members;
-CREATE POLICY "Parents can delete their own family members" ON public.family_members FOR DELETE USING (auth.uid() = parent_id);
+CREATE POLICY "Family - Parent manage own" ON public.family_members FOR ALL TO authenticated USING (auth.uid() = parent_id) WITH CHECK (auth.uid() = parent_id);
+CREATE POLICY "Family - Admin and Service Role bypass" ON public.family_members FOR ALL TO authenticated, service_role 
+    USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role')
+    WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role');
+CREATE POLICY "Family - Teachers view enrolled" ON public.family_members FOR SELECT TO authenticated USING (is_teacher_of_student(id));
 
 -- ============================================
 -- 3. CLASSES TABLE
@@ -115,20 +120,11 @@ CREATE INDEX IF NOT EXISTS idx_classes_dates ON public.classes(start_date, end_d
 ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
 
 -- Classes policies
-DROP POLICY IF EXISTS "Anyone can view active classes" ON public.classes;
-CREATE POLICY "Anyone can view active classes" ON public.classes FOR SELECT USING (status = 'active');
-
-DROP POLICY IF EXISTS "Teachers can view all their own classes" ON public.classes;
-CREATE POLICY "Teachers can view all their own classes" ON public.classes FOR SELECT USING (auth.uid() = teacher_id);
-
-DROP POLICY IF EXISTS "Teachers can insert their own classes" ON public.classes;
-CREATE POLICY "Teachers can insert their own classes" ON public.classes FOR INSERT WITH CHECK (auth.uid() = teacher_id);
-
-DROP POLICY IF EXISTS "Teachers can update their own classes" ON public.classes;
-CREATE POLICY "Teachers can update their own classes" ON public.classes FOR UPDATE USING (auth.uid() = teacher_id);
-
-DROP POLICY IF EXISTS "Teachers can delete their own draft classes" ON public.classes;
-CREATE POLICY "Teachers can delete their own draft classes" ON public.classes FOR DELETE USING (auth.uid() = teacher_id AND status = 'draft');
+CREATE POLICY "Classes - Public view active" ON public.classes FOR SELECT TO public USING (status = 'active');
+CREATE POLICY "Classes - Teacher manage own" ON public.classes FOR ALL TO authenticated USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
+CREATE POLICY "Classes - Admin and Service Role bypass" ON public.classes FOR ALL TO authenticated, service_role 
+    USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role')
+    WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role');
 
 -- ============================================
 -- 4. ENROLLMENTS TABLE
@@ -149,21 +145,14 @@ CREATE INDEX IF NOT EXISTS idx_enrollments_status ON public.enrollments(status);
 ALTER TABLE public.enrollments ENABLE ROW LEVEL SECURITY;
 
 -- Enrollments policies
-DROP POLICY IF EXISTS "Parents can view enrollments for their children" ON public.enrollments;
-CREATE POLICY "Parents can view enrollments for their children" 
-    ON public.enrollments FOR SELECT USING (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = student_id AND fm.parent_id = auth.uid()));
-
-DROP POLICY IF EXISTS "Parents can insert enrollments for their children" ON public.enrollments;
-CREATE POLICY "Parents can insert enrollments for their children" 
-    ON public.enrollments FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = student_id AND fm.parent_id = auth.uid()));
-
-DROP POLICY IF EXISTS "Parents can update enrollments for their children" ON public.enrollments;
-CREATE POLICY "Parents can update enrollments for their children" 
-    ON public.enrollments FOR UPDATE USING (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = student_id AND fm.parent_id = auth.uid()));
-
-DROP POLICY IF EXISTS "Teachers can view enrollments for their classes" ON public.enrollments;
-CREATE POLICY "Teachers can view enrollments for their classes" 
-    ON public.enrollments FOR SELECT USING (EXISTS (SELECT 1 FROM public.classes c WHERE c.id = class_id AND c.teacher_id = auth.uid()));
+CREATE POLICY "Enrollments - Parent manage family" ON public.enrollments FOR ALL TO authenticated 
+    USING (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = student_id AND fm.parent_id = auth.uid()))
+    WITH CHECK (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = student_id AND fm.parent_id = auth.uid()));
+CREATE POLICY "Enrollments - Teacher view class" ON public.enrollments FOR SELECT TO authenticated 
+    USING (EXISTS (SELECT 1 FROM public.classes c WHERE c.id = class_id AND c.teacher_id = auth.uid()));
+CREATE POLICY "Enrollments - Admin and Service Role bypass" ON public.enrollments FOR ALL TO authenticated, service_role 
+    USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role')
+    WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role');
 
 -- ============================================
 -- 5. PAYMENTS TABLE
@@ -193,13 +182,13 @@ CREATE INDEX IF NOT EXISTS idx_payments_sync_status ON public.payments(sync_stat
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 
 -- Payments policies
-DROP POLICY IF EXISTS "Parents can view payments for their enrollments" ON public.payments;
-CREATE POLICY "Parents can view payments for their enrollments" 
-    ON public.payments FOR SELECT USING (EXISTS (SELECT 1 FROM public.enrollments e JOIN public.family_members fm ON fm.id = e.student_id WHERE e.id = enrollment_id AND fm.parent_id = auth.uid()));
-
-DROP POLICY IF EXISTS "Teachers can view payments for their class enrollments" ON public.payments;
-CREATE POLICY "Teachers can view payments for their class enrollments" 
-    ON public.payments FOR SELECT USING (EXISTS (SELECT 1 FROM public.enrollments e JOIN public.classes c ON c.id = e.class_id WHERE e.id = enrollment_id AND c.teacher_id = auth.uid()));
+CREATE POLICY "Payments - Parent view family" ON public.payments FOR SELECT TO authenticated 
+    USING (EXISTS (SELECT 1 FROM public.enrollments e JOIN public.family_members fm ON fm.id = e.student_id WHERE e.id = enrollment_id AND fm.parent_id = auth.uid()));
+CREATE POLICY "Payments - Teacher view class" ON public.payments FOR SELECT TO authenticated 
+    USING (EXISTS (SELECT 1 FROM public.enrollments e JOIN public.classes c ON c.id = e.class_id WHERE e.id = enrollment_id AND c.teacher_id = auth.uid()));
+CREATE POLICY "Payments - Admin and Service Role bypass" ON public.payments FOR ALL TO authenticated, service_role 
+    USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role')
+    WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role');
 
 -- ============================================
 -- 6. WAITLIST TABLE
@@ -224,20 +213,10 @@ CREATE INDEX IF NOT EXISTS idx_waitlist_status ON public.waitlist(status);
 ALTER TABLE public.waitlist ENABLE ROW LEVEL SECURITY;
 
 -- Waitlist policies
-DROP POLICY IF EXISTS "Parents can view their own waitlist entries" ON public.waitlist;
-CREATE POLICY "Parents can view their own waitlist entries" ON public.waitlist FOR SELECT USING (auth.uid() = parent_id);
-
-DROP POLICY IF EXISTS "Parents can insert waitlist entries for their family" ON public.waitlist;
-CREATE POLICY "Parents can insert waitlist entries for their family" ON public.waitlist FOR INSERT WITH CHECK (auth.uid() = parent_id);
-
-DROP POLICY IF EXISTS "Parents can cancel their own waitlist entries" ON public.waitlist;
-CREATE POLICY "Parents can cancel their own waitlist entries" ON public.waitlist FOR UPDATE USING (auth.uid() = parent_id) WITH CHECK (auth.uid() = parent_id);
-
-DROP POLICY IF EXISTS "Admins can view all waitlist entries" ON public.waitlist;
-CREATE POLICY "Admins can view all waitlist entries" ON public.waitlist FOR SELECT USING (EXISTS (SELECT 1 FROM public.profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'));
-
-DROP POLICY IF EXISTS "Admins can manage all waitlist entries" ON public.waitlist;
-CREATE POLICY "Admins can manage all waitlist entries" ON public.waitlist FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'));
+CREATE POLICY "Waitlist - Parent manage own" ON public.waitlist FOR ALL TO authenticated USING (auth.uid() = parent_id) WITH CHECK (auth.uid() = parent_id);
+CREATE POLICY "Waitlist - Service role and admin bypass" ON public.waitlist FOR ALL TO service_role, authenticated 
+    USING (current_role = 'service_role' OR (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin')
+    WITH CHECK (current_role = 'service_role' OR (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
 
 -- ============================================
 -- 7. CLASS_MATERIALS TABLE
@@ -289,7 +268,7 @@ BEGIN
     ON CONFLICT (id) DO NOTHING;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- Function to handle enrollment counts
 CREATE OR REPLACE FUNCTION public.update_enrollment_count()
@@ -397,22 +376,37 @@ ON public.family_members FOR SELECT TO public USING (is_teacher_of_student(id));
 -- ============================================
 
 -- Auth trigger
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Enrollment count trigger
+DROP TRIGGER IF EXISTS update_class_enrollment_count ON public.enrollments;
 CREATE TRIGGER update_class_enrollment_count
     AFTER INSERT OR UPDATE OR DELETE ON public.enrollments
     FOR EACH ROW EXECUTE FUNCTION public.update_enrollment_count();
 
 -- Updated_at triggers
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
 CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
+DROP TRIGGER IF EXISTS update_family_members_updated_at ON public.family_members;
 CREATE TRIGGER update_family_members_updated_at BEFORE UPDATE ON public.family_members FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
+DROP TRIGGER IF EXISTS update_classes_updated_at ON public.classes;
 CREATE TRIGGER update_classes_updated_at BEFORE UPDATE ON public.classes FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
+DROP TRIGGER IF EXISTS update_enrollments_updated_at ON public.enrollments;
 CREATE TRIGGER update_enrollments_updated_at BEFORE UPDATE ON public.enrollments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
+DROP TRIGGER IF EXISTS update_payments_updated_at ON public.payments;
 CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
+DROP TRIGGER IF EXISTS update_waitlist_updated_at ON public.waitlist;
 CREATE TRIGGER update_waitlist_updated_at BEFORE UPDATE ON public.waitlist FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
+DROP TRIGGER IF EXISTS update_class_materials_updated_at ON public.class_materials;
 CREATE TRIGGER update_class_materials_updated_at BEFORE UPDATE ON public.class_materials FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 
 -- ============================================

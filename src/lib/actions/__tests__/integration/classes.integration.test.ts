@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { createClass, updateClass, updateClassStatus, deleteClass } from '../../classes';
 import { createClient } from '@/lib/supabase/server';
-import { createTestUser, deleteTestUser, adminClient } from './utils';
+import { createTestUser, deleteTestUser, getAdminClient } from './utils';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -15,7 +15,9 @@ describe('Teacher Classes Actions (Integration)', () => {
     beforeEach(async () => {
         teacherUser = await createTestUser('teacher');
 
-        const { data: signInData, error: signInError } = await adminClient.auth.signInWithPassword({
+        // Sign in using a fresh client to avoid polluting the setup/teardown client
+        const authClient = getAdminClient();
+        const { data: signInData, error: signInError } = await authClient.auth.signInWithPassword({
             email: teacherUser.email,
             password: teacherUser.password,
         });
@@ -56,7 +58,7 @@ describe('Teacher Classes Actions (Integration)', () => {
         const createResult = await createClass(formData);
         expect(createResult.success).toBe(true);
 
-        const { data: createdClass } = await (adminClient
+        const { data: createdClass } = await (getAdminClient()
             .from('classes')
             .select('*')
             .eq('teacher_id', teacherUser.id) as any)
@@ -69,7 +71,7 @@ describe('Teacher Classes Actions (Integration)', () => {
             const publishResult = await updateClassStatus((createdClass as any).id, 'active');
             expect(publishResult.success).toBe(true);
 
-            const { data: publishedClass } = await (adminClient
+            const { data: publishedClass } = await (getAdminClient()
                 .from('classes')
                 .select('status')
                 .eq('id', (createdClass as any).id) as any)
@@ -84,7 +86,7 @@ describe('Teacher Classes Actions (Integration)', () => {
 
     it('should allow a teacher to update their own class', async () => {
         // Pre-insert
-        const { data: member } = await (adminClient
+        const { data: member } = await (getAdminClient()
             .from('classes')
             .insert({
                 teacher_id: teacherUser.id,
@@ -113,7 +115,7 @@ describe('Teacher Classes Actions (Integration)', () => {
         const result = await updateClass((member as any).id, formData);
         expect(result.success).toBe(true);
 
-        const { data: updated } = await (adminClient
+        const { data: updated } = await (getAdminClient()
             .from('classes')
             .select('name, max_students')
             .eq('id', (member as any).id) as any)
@@ -128,7 +130,7 @@ describe('Teacher Classes Actions (Integration)', () => {
 
     it('should allow a teacher to delete only draft classes', async () => {
         // 1. Create a draft class
-        const { data: draftClass } = await (adminClient
+        const { data: draftClass } = await (getAdminClient()
             .from('classes')
             .insert({
                 teacher_id: teacherUser.id,
@@ -150,7 +152,7 @@ describe('Teacher Classes Actions (Integration)', () => {
         expect(deleteDraftResult.success).toBe(true);
 
         // 2. Create an active class
-        const { data: activeClass } = await (adminClient
+        const { data: activeClass } = await (getAdminClient()
             .from('classes')
             .insert({
                 teacher_id: teacherUser.id,
@@ -171,7 +173,7 @@ describe('Teacher Classes Actions (Integration)', () => {
         const deleteActiveResult = await deleteClass((activeClass as any).id);
         expect(deleteActiveResult.error).toBeDefined();
 
-        const { data: stillExists } = await (adminClient
+        const { data: stillExists } = await (getAdminClient()
             .from('classes')
             .select('*')
             .eq('id', (activeClass as any).id) as any)

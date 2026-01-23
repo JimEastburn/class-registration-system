@@ -13,13 +13,21 @@ if (!supabaseUrl || !serviceRoleKey) {
     throw new Error('Missing Supabase environment variables for integration tests.');
 }
 
-// Admin client for setup/teardown
-export const adminClient = createClient<Database>(supabaseUrl, serviceRoleKey, {
-    auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-    },
-});
+/**
+ * Creates a fresh Supabase client using the service role key.
+ * Used for setup and teardown to ensure isolation from user sessions.
+ */
+export function getAdminClient() {
+    return createClient<Database>(supabaseUrl, serviceRoleKey, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+        },
+    });
+}
+
+// Cached admin client for simple tasks, but fresh is preferred for setup
+export const adminClient = getAdminClient();
 
 /**
  * Creates a unique test user with the specified role.
@@ -27,8 +35,9 @@ export const adminClient = createClient<Database>(supabaseUrl, serviceRoleKey, {
 export async function createTestUser(role: 'parent' | 'teacher' | 'student' | 'admin' = 'parent') {
     const email = `test-${role}-${Date.now()}@example.com`;
     const password = 'TestPassword123!';
+    const admin = getAdminClient();
 
-    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
+    const { data: authData, error: authError } = await admin.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
@@ -53,7 +62,8 @@ export async function createTestUser(role: 'parent' | 'teacher' | 'student' | 'a
  * Deletes a test user and all their associated data (via cascade).
  */
 export async function deleteTestUser(userId: string) {
-    const { error } = await adminClient.auth.admin.deleteUser(userId);
+    const admin = getAdminClient();
+    const { error } = await admin.auth.admin.deleteUser(userId);
     if (error) {
         console.error(`Failed to delete test user ${userId}:`, error.message);
     }

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { createEnrollment, cancelEnrollment } from '../../enrollments';
 import { createClient } from '@/lib/supabase/server';
-import { createTestUser, deleteTestUser, adminClient } from './utils';
+import { createTestUser, deleteTestUser, getAdminClient } from './utils';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -16,9 +16,10 @@ describe('Enrollments Actions (Integration)', () => {
     let teacherUser: any;
 
     beforeEach(async () => {
+        const admin = getAdminClient();
         // 1. Create teacher and a class
         teacherUser = await createTestUser('teacher');
-        const { data: testClass } = await (adminClient
+        const { data: testClass } = await (admin
             .from('classes')
             .insert({
                 teacher_id: teacherUser.id,
@@ -39,7 +40,7 @@ describe('Enrollments Actions (Integration)', () => {
 
         // 2. Create parent and a family member (student)
         parentUser = await createTestUser('parent');
-        const { data: student } = await (adminClient
+        const { data: student } = await (admin
             .from('family_members')
             .insert({
                 parent_id: parentUser.id,
@@ -53,8 +54,9 @@ describe('Enrollments Actions (Integration)', () => {
         expect(student).not.toBeNull();
         studentId = (student as any).id;
 
-        // 3. Setup auth
-        const { data: signInData } = await adminClient.auth.signInWithPassword({
+        // 3. Setup auth - use a FRESH client for sign-in to avoid pollution
+        const authClient = getAdminClient();
+        const { data: signInData } = await authClient.auth.signInWithPassword({
             email: parentUser.email,
             password: parentUser.password,
         });
@@ -86,7 +88,7 @@ describe('Enrollments Actions (Integration)', () => {
 
         expect(result.success).toBe(true);
 
-        const { data: enrollment, error } = await (adminClient
+        const { data: enrollment, error } = await (getAdminClient()
             .from('enrollments')
             .select('*')
             .eq('student_id', studentId)
@@ -102,7 +104,7 @@ describe('Enrollments Actions (Integration)', () => {
 
     it('should allow a parent to cancel their childs enrollment', async () => {
         // Pre-enroll
-        const { data: enrollment } = await (adminClient
+        const { data: enrollment } = await (getAdminClient()
             .from('enrollments')
             .insert({
                 student_id: studentId,
@@ -117,7 +119,7 @@ describe('Enrollments Actions (Integration)', () => {
         const result = await cancelEnrollment((enrollment as any).id);
         expect(result.success).toBe(true);
 
-        const { data: updated } = await (adminClient
+        const { data: updated } = await (getAdminClient()
             .from('enrollments')
             .select('status')
             .eq('id', (enrollment as any).id) as any)
@@ -133,11 +135,12 @@ describe('Enrollments Actions (Integration)', () => {
         // Class has capacity 2. Let's fill it.
         const p1 = await createTestUser('parent');
         const p2 = await createTestUser('parent');
+        const admin = getAdminClient();
 
-        const { data: s1 } = await (adminClient.from('family_members').insert({ parent_id: p1.id, first_name: 'S1', last_name: 'X', relationship: 'child' } as any) as any).select().single();
-        const { data: s2 } = await (adminClient.from('family_members').insert({ parent_id: p2.id, first_name: 'S2', last_name: 'X', relationship: 'child' } as any) as any).select().single();
+        const { data: s1 } = await (admin.from('family_members').insert({ parent_id: p1.id, first_name: 'S1', last_name: 'X', relationship: 'child' } as any) as any).select().single();
+        const { data: s2 } = await (admin.from('family_members').insert({ parent_id: p2.id, first_name: 'S2', last_name: 'X', relationship: 'child' } as any) as any).select().single();
 
-        await (adminClient.from('enrollments').insert([
+        await (admin.from('enrollments').insert([
             { student_id: (s1 as any).id, class_id: classId, status: 'confirmed' },
             { student_id: (s2 as any).id, class_id: classId, status: 'confirmed' },
         ] as any) as any);

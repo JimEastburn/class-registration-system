@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { addFamilyMember, updateFamilyMember, deleteFamilyMember } from '../../family';
 import { createClient } from '@/lib/supabase/server';
-import { createTestUser, deleteTestUser, adminClient } from './utils';
+import { createTestUser, deleteTestUser, getAdminClient } from './utils';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 // Mock the server client creation to return our authed test client
@@ -17,8 +17,9 @@ describe('Family Actions (Integration)', () => {
         // 1. Create a fresh test user
         testUser = await createTestUser('parent');
 
-        // 2. Sign in the user to get a session/token
-        const { data: signInData, error: signInError } = await adminClient.auth.signInWithPassword({
+        // 2. Sign in the user to get a session/token - use a FRESH client to avoid polluting setup
+        const authClient = getAdminClient();
+        const { data: signInData, error: signInError } = await authClient.auth.signInWithPassword({
             email: testUser.email,
             password: testUser.password,
         });
@@ -60,7 +61,7 @@ describe('Family Actions (Integration)', () => {
         expect(result.success).toBe(true);
 
         // Verify in DB
-        const { data, error } = await (adminClient
+        const { data, error } = await (getAdminClient()
             .from('family_members')
             .select('*')
             .eq('parent_id', testUser.id) as any)
@@ -76,7 +77,7 @@ describe('Family Actions (Integration)', () => {
 
     it('should successfully update an existing family member', async () => {
         // Pre-insert a family member directly
-        const { data: member } = await (adminClient
+        const { data: member } = await (getAdminClient()
             .from('family_members')
             .insert({
                 parent_id: testUser.id,
@@ -99,7 +100,7 @@ describe('Family Actions (Integration)', () => {
         expect(result.success).toBe(true);
 
         // Verify update
-        const { data } = await (adminClient
+        const { data } = await (getAdminClient()
             .from('family_members')
             .select('first_name')
             .eq('id', (member as any).id) as any)
@@ -113,7 +114,7 @@ describe('Family Actions (Integration)', () => {
 
     it('should successfully delete a family member', async () => {
         // Pre-insert
-        const { data: member } = await (adminClient
+        const { data: member } = await (getAdminClient()
             .from('family_members')
             .insert({
                 parent_id: testUser.id,
@@ -131,7 +132,7 @@ describe('Family Actions (Integration)', () => {
         expect(result.success).toBe(true);
 
         // Verify deletion
-        const { data } = await (adminClient
+        const { data } = await (getAdminClient()
             .from('family_members')
             .select('*')
             .eq('id', (member as any).id) as any)
@@ -143,7 +144,7 @@ describe('Family Actions (Integration)', () => {
     it('should prevent deleting a family member that belongs to another user', async () => {
         // Create another user and member
         const otherUser = await createTestUser('parent');
-        const { data: otherMember } = await (adminClient
+        const { data: otherMember } = await (getAdminClient()
             .from('family_members')
             .insert({
                 parent_id: otherUser.id,
@@ -163,7 +164,7 @@ describe('Family Actions (Integration)', () => {
         expect(result.success).toBe(true);
 
         // Let's check if the member still exists.
-        const { data } = await (adminClient
+        const { data } = await (getAdminClient()
             .from('family_members')
             .select('*')
             .eq('id', (otherMember as any).id) as any)

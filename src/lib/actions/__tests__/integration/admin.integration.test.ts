@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { updateUserRole, deleteUser, adminUpdateClass } from '../../admin';
 import { createClient } from '@/lib/supabase/server';
-import { createTestUser, deleteTestUser, adminClient } from './utils';
+import { createTestUser, deleteTestUser, getAdminClient } from './utils';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -16,7 +16,9 @@ describe('Admin Actions (Integration)', () => {
         // Create an admin user
         adminUser = await createTestUser('admin');
 
-        const { data: signInData, error: signInError } = await adminClient.auth.signInWithPassword({
+        // Use a fresh client for sign-in to avoid polluting the setup client
+        const authClient = getAdminClient();
+        const { data: signInData, error: signInError } = await authClient.auth.signInWithPassword({
             email: adminUser.email,
             password: adminUser.password,
         });
@@ -52,7 +54,7 @@ describe('Admin Actions (Integration)', () => {
         expect(result.success).toBe(true);
 
         // Verify in DB
-        const { data } = await (adminClient
+        const { data } = await (getAdminClient()
             .from('profiles')
             .select('role')
             .eq('id', targetUser.id) as any)
@@ -72,7 +74,7 @@ describe('Admin Actions (Integration)', () => {
 
         // Promote to teacher
         await updateUserRole(targetUser.id, 'teacher');
-        let { data: profile } = await (adminClient.from('profiles').select('role').eq('id', targetUser.id) as any).single();
+        let { data: profile } = await (getAdminClient().from('profiles').select('role').eq('id', targetUser.id) as any).single();
         expect(profile).not.toBeNull();
         if (profile) {
             expect((profile as any).role).toBe('teacher');
@@ -80,7 +82,7 @@ describe('Admin Actions (Integration)', () => {
 
         // Demote back to student
         await updateUserRole(targetUser.id, 'student');
-        ({ data: profile } = await (adminClient.from('profiles').select('role').eq('id', targetUser.id) as any).single());
+        ({ data: profile } = await (getAdminClient().from('profiles').select('role').eq('id', targetUser.id) as any).single());
         expect(profile).not.toBeNull();
         if (profile) {
             expect((profile as any).role).toBe('student');
@@ -92,7 +94,7 @@ describe('Admin Actions (Integration)', () => {
     it('should allow an admin to update any class', async () => {
         // Create a teacher and a class
         const teacher = await createTestUser('teacher');
-        const { data: newClass } = await (adminClient
+        const { data: newClass } = await (getAdminClient()
             .from('classes')
             .insert({
                 teacher_id: teacher.id,
@@ -117,7 +119,7 @@ describe('Admin Actions (Integration)', () => {
 
         expect(result.success).toBe(true);
 
-        const { data: updatedClass } = await (adminClient
+        const { data: updatedClass } = await (getAdminClient()
             .from('classes')
             .select('name, status')
             .eq('id', (newClass as any).id) as any)
