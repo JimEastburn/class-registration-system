@@ -2,6 +2,7 @@
 
 Use Context7 MCP server if that helps you.
 Reminder that database schema changes may need to have a migration script created in the `db/migrations` directory.
+Write tests for all new code first, run the tests to make sure they fail, then write the code to make the tests pass. Run the tests again to make sure they pass.
 
 ## Tech Stack
 
