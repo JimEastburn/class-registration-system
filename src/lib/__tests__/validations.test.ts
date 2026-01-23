@@ -274,6 +274,34 @@ describe('familyMemberSchema', () => {
         const result = familyMemberSchema.safeParse(validData);
         expect(result.success).toBe(true);
     });
+
+    it('allows null values for optional fields (regression test)', () => {
+        const dataWithNulls = {
+            firstName: 'Jane',
+            lastName: 'Doe',
+            relationship: 'child' as const,
+            gradeLevel: null,
+            birthDate: null,
+            notes: null,
+        };
+
+        const result = familyMemberSchema.safeParse(dataWithNulls);
+        expect(result.success).toBe(true);
+    });
+
+    it('allows empty strings for optional fields (regression test)', () => {
+        const dataWithEmptyStrings = {
+            firstName: 'Jane',
+            lastName: 'Doe',
+            relationship: 'child' as const,
+            gradeLevel: '',
+            birthDate: '',
+            notes: '',
+        };
+
+        const result = familyMemberSchema.safeParse(dataWithEmptyStrings);
+        expect(result.success).toBe(true);
+    });
 });
 
 describe('classSchema', () => {
