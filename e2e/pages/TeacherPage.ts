@@ -15,4 +15,9 @@ export class TeacherPage extends BasePage {
     async goToClasses() {
         await this.classesLink.first().click();
     }
+
+    async goToStudents() {
+        await this.studentsLink.first().click();
+    }
 }
+

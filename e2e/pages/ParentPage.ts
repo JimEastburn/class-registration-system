@@ -20,4 +20,9 @@ export class ParentPage extends BasePage {
     async goToBrowseClasses() {
         await this.browseClassesLink.first().click();
     }
+
+    async goToEnrollments() {
+        await this.enrollmentsLink.first().click();
+    }
 }
+
