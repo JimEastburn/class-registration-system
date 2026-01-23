@@ -11,13 +11,15 @@ export default async function ParentDashboardPage() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    // Fetch family members count
-    const { count: familyCount } = await supabase
+    // Fetch family members for this parent
+    const { data: familyMembers, count: familyCount } = await supabase
         .from('family_members')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .eq('parent_id', user?.id);
 
-    // Fetch active enrollments
+    const familyMemberIds = familyMembers?.map((fm) => fm.id) || [];
+
+    // Fetch active enrollments for this parent's family members only
     const { data: enrollments } = await supabase
         .from('enrollments')
         .select(`
@@ -25,6 +27,7 @@ export default async function ParentDashboardPage() {
       status,
       class:classes(name, teacher_id)
     `)
+        .in('student_id', familyMemberIds)
         .in('status', ['pending', 'confirmed']);
 
     const activeEnrollments = enrollments?.length || 0;
