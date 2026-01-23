@@ -20,7 +20,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- ============================================
 -- 1. PROFILES TABLE (extends Supabase auth.users)
 -- ============================================
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('parent', 'teacher', 'student', 'admin')),
@@ -34,18 +34,23 @@ CREATE TABLE public.profiles (
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-CREATE INDEX idx_profiles_role ON public.profiles(role);
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
 CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Public can view teacher profiles" ON public.profiles;
 CREATE POLICY "Public can view teacher profiles" ON public.profiles FOR SELECT USING (role = 'teacher');
 
 -- ============================================
 -- 2. FAMILY_MEMBERS TABLE
 -- ============================================
-CREATE TABLE public.family_members (
+CREATE TABLE IF NOT EXISTS public.family_members (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     parent_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     first_name TEXT NOT NULL,
@@ -58,19 +63,26 @@ CREATE TABLE public.family_members (
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-CREATE INDEX idx_family_members_parent ON public.family_members(parent_id);
+CREATE INDEX IF NOT EXISTS idx_family_members_parent ON public.family_members(parent_id);
 ALTER TABLE public.family_members ENABLE ROW LEVEL SECURITY;
 
 -- Family members policies
+DROP POLICY IF EXISTS "Parents can view their own family members" ON public.family_members;
 CREATE POLICY "Parents can view their own family members" ON public.family_members FOR SELECT USING (auth.uid() = parent_id);
+
+DROP POLICY IF EXISTS "Parents can insert their own family members" ON public.family_members;
 CREATE POLICY "Parents can insert their own family members" ON public.family_members FOR INSERT WITH CHECK (auth.uid() = parent_id);
+
+DROP POLICY IF EXISTS "Parents can update their own family members" ON public.family_members;
 CREATE POLICY "Parents can update their own family members" ON public.family_members FOR UPDATE USING (auth.uid() = parent_id);
+
+DROP POLICY IF EXISTS "Parents can delete their own family members" ON public.family_members;
 CREATE POLICY "Parents can delete their own family members" ON public.family_members FOR DELETE USING (auth.uid() = parent_id);
 
 -- ============================================
 -- 3. CLASSES TABLE
 -- ============================================
-CREATE TABLE public.classes (
+CREATE TABLE IF NOT EXISTS public.classes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -97,22 +109,31 @@ CREATE TABLE public.classes (
     CONSTRAINT valid_date_range CHECK (end_date >= start_date)
 );
 
-CREATE INDEX idx_classes_teacher ON public.classes(teacher_id);
-CREATE INDEX idx_classes_status ON public.classes(status);
-CREATE INDEX idx_classes_dates ON public.classes(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_classes_teacher ON public.classes(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_classes_status ON public.classes(status);
+CREATE INDEX IF NOT EXISTS idx_classes_dates ON public.classes(start_date, end_date);
 ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
 
 -- Classes policies
+DROP POLICY IF EXISTS "Anyone can view active classes" ON public.classes;
 CREATE POLICY "Anyone can view active classes" ON public.classes FOR SELECT USING (status = 'active');
+
+DROP POLICY IF EXISTS "Teachers can view all their own classes" ON public.classes;
 CREATE POLICY "Teachers can view all their own classes" ON public.classes FOR SELECT USING (auth.uid() = teacher_id);
+
+DROP POLICY IF EXISTS "Teachers can insert their own classes" ON public.classes;
 CREATE POLICY "Teachers can insert their own classes" ON public.classes FOR INSERT WITH CHECK (auth.uid() = teacher_id);
+
+DROP POLICY IF EXISTS "Teachers can update their own classes" ON public.classes;
 CREATE POLICY "Teachers can update their own classes" ON public.classes FOR UPDATE USING (auth.uid() = teacher_id);
+
+DROP POLICY IF EXISTS "Teachers can delete their own draft classes" ON public.classes;
 CREATE POLICY "Teachers can delete their own draft classes" ON public.classes FOR DELETE USING (auth.uid() = teacher_id AND status = 'draft');
 
 -- ============================================
 -- 4. ENROLLMENTS TABLE
 -- ============================================
-CREATE TABLE public.enrollments (
+CREATE TABLE IF NOT EXISTS public.enrollments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     student_id UUID NOT NULL REFERENCES public.family_members(id) ON DELETE CASCADE,
     class_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
@@ -122,25 +143,32 @@ CREATE TABLE public.enrollments (
     UNIQUE(student_id, class_id)
 );
 
-CREATE INDEX idx_enrollments_student ON public.enrollments(student_id);
-CREATE INDEX idx_enrollments_class ON public.enrollments(class_id);
-CREATE INDEX idx_enrollments_status ON public.enrollments(status);
+CREATE INDEX IF NOT EXISTS idx_enrollments_student ON public.enrollments(student_id);
+CREATE INDEX IF NOT EXISTS idx_enrollments_class ON public.enrollments(class_id);
+CREATE INDEX IF NOT EXISTS idx_enrollments_status ON public.enrollments(status);
 ALTER TABLE public.enrollments ENABLE ROW LEVEL SECURITY;
 
 -- Enrollments policies
+DROP POLICY IF EXISTS "Parents can view enrollments for their children" ON public.enrollments;
 CREATE POLICY "Parents can view enrollments for their children" 
     ON public.enrollments FOR SELECT USING (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = student_id AND fm.parent_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Parents can insert enrollments for their children" ON public.enrollments;
 CREATE POLICY "Parents can insert enrollments for their children" 
     ON public.enrollments FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = student_id AND fm.parent_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Parents can update enrollments for their children" ON public.enrollments;
 CREATE POLICY "Parents can update enrollments for their children" 
     ON public.enrollments FOR UPDATE USING (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = student_id AND fm.parent_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Teachers can view enrollments for their classes" ON public.enrollments;
 CREATE POLICY "Teachers can view enrollments for their classes" 
     ON public.enrollments FOR SELECT USING (EXISTS (SELECT 1 FROM public.classes c WHERE c.id = class_id AND c.teacher_id = auth.uid()));
 
 -- ============================================
 -- 5. PAYMENTS TABLE
 -- ============================================
-CREATE TABLE public.payments (
+CREATE TABLE IF NOT EXISTS public.payments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     enrollment_id UUID NOT NULL REFERENCES public.enrollments(id) ON DELETE CASCADE,
     amount DECIMAL(10, 2) NOT NULL CHECK (amount > 0),
@@ -159,21 +187,24 @@ CREATE TABLE public.payments (
     updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-CREATE INDEX idx_payments_enrollment ON public.payments(enrollment_id);
-CREATE INDEX idx_payments_status ON public.payments(status);
-CREATE INDEX idx_payments_sync_status ON public.payments(sync_status) WHERE sync_status = 'failed' OR sync_status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_payments_enrollment ON public.payments(enrollment_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON public.payments(status);
+CREATE INDEX IF NOT EXISTS idx_payments_sync_status ON public.payments(sync_status) WHERE sync_status = 'failed' OR sync_status = 'pending';
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 
 -- Payments policies
+DROP POLICY IF EXISTS "Parents can view payments for their enrollments" ON public.payments;
 CREATE POLICY "Parents can view payments for their enrollments" 
     ON public.payments FOR SELECT USING (EXISTS (SELECT 1 FROM public.enrollments e JOIN public.family_members fm ON fm.id = e.student_id WHERE e.id = enrollment_id AND fm.parent_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Teachers can view payments for their class enrollments" ON public.payments;
 CREATE POLICY "Teachers can view payments for their class enrollments" 
     ON public.payments FOR SELECT USING (EXISTS (SELECT 1 FROM public.enrollments e JOIN public.classes c ON c.id = e.class_id WHERE e.id = enrollment_id AND c.teacher_id = auth.uid()));
 
 -- ============================================
 -- 6. WAITLIST TABLE
 -- ============================================
-CREATE TABLE public.waitlist (
+CREATE TABLE IF NOT EXISTS public.waitlist (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     class_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
     student_id UUID NOT NULL REFERENCES public.family_members(id) ON DELETE CASCADE,
@@ -187,22 +218,31 @@ CREATE TABLE public.waitlist (
     UNIQUE(class_id, student_id)
 );
 
-CREATE INDEX idx_waitlist_class_id ON public.waitlist(class_id);
-CREATE INDEX idx_waitlist_parent_id ON public.waitlist(parent_id);
-CREATE INDEX idx_waitlist_status ON public.waitlist(status);
+CREATE INDEX IF NOT EXISTS idx_waitlist_class_id ON public.waitlist(class_id);
+CREATE INDEX IF NOT EXISTS idx_waitlist_parent_id ON public.waitlist(parent_id);
+CREATE INDEX IF NOT EXISTS idx_waitlist_status ON public.waitlist(status);
 ALTER TABLE public.waitlist ENABLE ROW LEVEL SECURITY;
 
 -- Waitlist policies
+DROP POLICY IF EXISTS "Parents can view their own waitlist entries" ON public.waitlist;
 CREATE POLICY "Parents can view their own waitlist entries" ON public.waitlist FOR SELECT USING (auth.uid() = parent_id);
+
+DROP POLICY IF EXISTS "Parents can insert waitlist entries for their family" ON public.waitlist;
 CREATE POLICY "Parents can insert waitlist entries for their family" ON public.waitlist FOR INSERT WITH CHECK (auth.uid() = parent_id);
+
+DROP POLICY IF EXISTS "Parents can cancel their own waitlist entries" ON public.waitlist;
 CREATE POLICY "Parents can cancel their own waitlist entries" ON public.waitlist FOR UPDATE USING (auth.uid() = parent_id) WITH CHECK (auth.uid() = parent_id);
+
+DROP POLICY IF EXISTS "Admins can view all waitlist entries" ON public.waitlist;
 CREATE POLICY "Admins can view all waitlist entries" ON public.waitlist FOR SELECT USING (EXISTS (SELECT 1 FROM public.profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'));
+
+DROP POLICY IF EXISTS "Admins can manage all waitlist entries" ON public.waitlist;
 CREATE POLICY "Admins can manage all waitlist entries" ON public.waitlist FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'));
 
 -- ============================================
 -- 7. CLASS_MATERIALS TABLE
 -- ============================================
-CREATE TABLE public.class_materials (
+CREATE TABLE IF NOT EXISTS public.class_materials (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     class_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -216,13 +256,18 @@ CREATE TABLE public.class_materials (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_class_materials_class_id ON public.class_materials(class_id);
-CREATE INDEX idx_class_materials_uploaded_by ON public.class_materials(uploaded_by);
+CREATE INDEX IF NOT EXISTS idx_class_materials_class_id ON public.class_materials(class_id);
+CREATE INDEX IF NOT EXISTS idx_class_materials_uploaded_by ON public.class_materials(uploaded_by);
 ALTER TABLE public.class_materials ENABLE ROW LEVEL SECURITY;
 
 -- Class Materials policies
+DROP POLICY IF EXISTS "Teachers can manage their class materials" ON public.class_materials;
 CREATE POLICY "Teachers can manage their class materials" ON public.class_materials FOR ALL USING (EXISTS (SELECT 1 FROM public.classes WHERE classes.id = class_materials.class_id AND classes.teacher_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Enrolled students can view public materials" ON public.class_materials;
 CREATE POLICY "Enrolled students can view public materials" ON public.class_materials FOR SELECT USING (is_public = true AND EXISTS (SELECT 1 FROM public.enrollments e JOIN public.family_members fm ON fm.id = e.student_id WHERE e.class_id = class_materials.class_id AND e.status IN ('confirmed', 'completed') AND fm.parent_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Admins can manage all materials" ON public.class_materials;
 CREATE POLICY "Admins can manage all materials" ON public.class_materials FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'));
 
 -- ============================================

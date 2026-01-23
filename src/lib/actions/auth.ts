@@ -20,7 +20,7 @@ export async function signUp(formData: FormData): Promise<AuthActionResult> {
 
     // During E2E testing, we might want to bypass email confirmation to avoid rate limits.
     // We detect test users by their email pattern.
-    const isTestUser = email.startsWith('test.student.') || email.startsWith('test+student');
+    const isTestUser = email?.startsWith('test.student.') || email?.startsWith('test+student');
 
     if (isTestUser && process.env.SUPABASE_SERVICE_ROLE_KEY) {
         // Use Admin API to create user with email_confirm: true

@@ -23,6 +23,11 @@ vi.mock('next/navigation', () => ({
     notFound: vi.fn(),
 }));
 
+// Mock Next.js cache
+vi.mock('next/cache', () => ({
+    revalidatePath: vi.fn(),
+}));
+
 // Mock Supabase client
 vi.mock('@/lib/supabase/client', () => ({
     createClient: vi.fn(() => ({
