@@ -15,9 +15,19 @@ interface ClassSearchListProps {
 export default function ClassSearchList({ initialClasses }: ClassSearchListProps) {
     const [searchTerm, setSearchTerm] = useState('');
 
-    const filteredClasses = initialClasses.filter((classItem) =>
-        classItem.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredClasses = initialClasses.filter((classItem) => {
+        const searchLower = searchTerm.toLowerCase();
+        const teacher = classItem.teacher as unknown as {
+            first_name: string;
+            last_name: string;
+        };
+        const teacherFullName = `${teacher.first_name} ${teacher.last_name}`.toLowerCase();
+
+        return (
+            classItem.name.toLowerCase().includes(searchLower) ||
+            teacherFullName.includes(searchLower)
+        );
+    });
 
     return (
         <div className="space-y-6">
@@ -39,7 +49,7 @@ export default function ClassSearchList({ initialClasses }: ClassSearchListProps
                 </div>
                 <Input
                     type="text"
-                    placeholder="Search classes by name..."
+                    placeholder="Search by class or teacher name..."
                     className="pl-10"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
