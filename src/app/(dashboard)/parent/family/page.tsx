@@ -20,6 +20,16 @@ export default async function FamilyPage() {
         .eq('parent_id', user?.id)
         .order('created_at', { ascending: false });
 
+    // Sort family members: children first, then others
+    const sortedFamilyMembers = familyMembers?.sort((a, b) => {
+        const aIsChild = a.relationship === 'child' ? 0 : 1;
+        const bIsChild = b.relationship === 'child' ? 0 : 1;
+        return aIsChild - bIsChild;
+    });
+
+    // Check if there are any children to show the link code explanation
+    const hasChildren = sortedFamilyMembers?.some((m) => m.relationship === 'child') ?? false;
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -34,32 +44,33 @@ export default async function FamilyPage() {
                 </Link>
             </div>
 
-            {/* Student Link Code Explanation */}
-            <Card className="border-0 shadow-md bg-gradient-to-r from-purple-50 to-pink-50">
-                <CardContent className="py-4">
-                    <div className="flex gap-3">
-                        <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 className="font-semibold text-slate-800 mb-1">Link Your Child&apos;s Student Account</h3>
-                            <ol className="text-sm text-slate-600 space-y-1 list-decimal list-inside">
-                                <li>Click <span className="font-medium text-purple-600">&quot;Generate Student Link Code&quot;</span> on your child&apos;s card below</li>
-                                <li>Share the 6-character code with your child</li>
-                                <li>Your child logs into their student account and enters the code</li>
-                                <li>They&apos;ll instantly see their enrolled classes!</li>
-                            </ol>
-                            <p className="text-xs text-slate-500 mt-2">Codes expire after 7 days. The &quot;Linked&quot; badge shows when connected.</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {familyMembers && familyMembers.length > 0 ? (
+            {sortedFamilyMembers && sortedFamilyMembers.length > 0 ? (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {familyMembers.map((member) => (
+                    {/* Student Link Code Explanation - only show when there are children */}
+                    {hasChildren && (
+                        <Card className="border-0 shadow-md bg-gradient-to-r from-purple-50 to-pink-50">
+                            <CardContent className="py-4">
+                                <div className="flex gap-3">
+                                    <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                        <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-slate-800 mb-1">Link Your Child&apos;s Student Account</h3>
+                                        <ol className="text-sm text-slate-600 space-y-1 list-decimal list-inside">
+                                            <li>Click <span className="font-medium text-purple-600">&quot;Generate Student Link Code&quot;</span> on your child&apos;s card below</li>
+                                            <li>Share the 6-character code with your child</li>
+                                            <li>Your child logs into their student account and enters the code</li>
+                                            <li>They&apos;ll instantly see their enrolled classes!</li>
+                                        </ol>
+                                        <p className="text-xs text-slate-500 mt-2">Codes expire after 7 days. The &quot;Linked&quot; badge shows when connected.</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+                    {sortedFamilyMembers.map((member) => (
                         <Card key={member.id} className="border-0 shadow-lg">
                             <CardHeader className="pb-2">
                                 <div className="flex items-center justify-between">
