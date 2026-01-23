@@ -68,6 +68,7 @@ export default function DashboardLayout({
                                         <Link
                                             key={item.href}
                                             href={item.href}
+                                            data-testid={`nav-link-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                                             className={cn(
                                                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                                                 pathname === item.href
@@ -94,7 +95,7 @@ export default function DashboardLayout({
                     {/* User Menu */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                            <Button variant="ghost" className="relative h-10 w-10 rounded-full" data-testid="user-menu-button">
                                 <Avatar className="h-10 w-10 border border-border">
                                     <AvatarFallback className="bg-primary/10 text-primary">
                                         {initials}
@@ -126,6 +127,7 @@ export default function DashboardLayout({
                             <DropdownMenuItem
                                 className="text-destructive cursor-pointer focus:text-destructive"
                                 onClick={() => signOut()}
+                                data-testid="sign-out-button"
                             >
                                 Sign Out
                             </DropdownMenuItem>
@@ -142,6 +144,7 @@ export default function DashboardLayout({
                             <Link
                                 key={item.href}
                                 href={item.href}
+                                data-testid={`nav-link-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                                 className={cn(
                                     'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
                                     pathname === item.href

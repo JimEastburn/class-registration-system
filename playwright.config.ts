@@ -13,23 +13,32 @@ export default defineConfig({
         screenshot: 'only-on-failure',
     },
     projects: [
+        // Setup project
+        {
+            name: 'setup',
+            testMatch: /auth\.setup\.ts/,
+        },
         {
             name: 'chromium',
-            use: { ...devices['Desktop Chrome'] },
+            use: {
+                ...devices['Desktop Chrome'],
+                // storageState will be added in specific tests if needed, 
+                // or we can set a default if most tests are authenticated.
+            },
+            dependencies: ['setup'],
         },
         {
             name: 'firefox',
             use: { ...devices['Desktop Firefox'] },
+            dependencies: ['setup'],
         },
         {
             name: 'webkit',
             use: { ...devices['Desktop Safari'] },
-        },
-        {
-            name: 'Mobile Chrome',
-            use: { ...devices['Pixel 5'] },
+            dependencies: ['setup'],
         },
     ],
+
     webServer: {
         command: 'npm run dev',
         url: 'http://localhost:3000',

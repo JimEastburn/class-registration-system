@@ -64,6 +64,7 @@ export default function LoginForm() {
                             placeholder="you@example.com"
                             className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
                             {...register('email')}
+                            data-testid="email-input"
                         />
                         {errors.email && (
                             <p className="text-red-400 text-sm">{errors.email.message}</p>
@@ -88,6 +89,7 @@ export default function LoginForm() {
                             placeholder="••••••••"
                             className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
                             {...register('password')}
+                            data-testid="password-input"
                         />
                         {errors.password && (
                             <p className="text-red-400 text-sm">{errors.password.message}</p>
@@ -100,6 +102,7 @@ export default function LoginForm() {
                         type="submit"
                         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                         disabled={isLoading}
+                        data-testid="login-submit-button"
                     >
                         {isLoading ? 'Signing in...' : 'Sign In'}
                     </Button>

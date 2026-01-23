@@ -82,10 +82,11 @@ export default async function BrowseClassesPage() {
                                     </div>
 
                                     <Link href={`/parent/classes/${classItem.id}`} className="block">
-                                        <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600">
+                                        <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600" data-testid={`view-details-button-${classItem.id}`}>
                                             View Details & Enroll
                                         </Button>
                                     </Link>
+
                                 </CardContent>
                             </Card>
                         );
