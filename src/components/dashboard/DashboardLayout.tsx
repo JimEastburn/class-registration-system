@@ -63,8 +63,8 @@ export default function DashboardLayout({
                                     <Image
                                         src="/AAC FINAL.avif"
                                         alt="Logo"
-                                        width={28}
-                                        height={26}
+                                        width={36}
+                                        height={33}
                                         className="object-contain"
                                     />
                                     <span className="text-lg font-semibold text-primary">
@@ -97,8 +97,8 @@ export default function DashboardLayout({
                             <Image
                                 src="/AAC FINAL.avif"
                                 alt="Logo"
-                                width={32}
-                                height={30}
+                                width={42}
+                                height={39}
                                 className="object-contain"
                             />
                             <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
