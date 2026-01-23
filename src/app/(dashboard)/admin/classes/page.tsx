@@ -12,6 +12,7 @@ import {
 import { ResponsiveTable } from '@/components/ui/responsive-table';
 import AdminClassActions from '@/components/admin/AdminClassActions';
 import { SearchBar, FilterSelect, ClearFilters } from '@/components/admin/SearchFilters';
+import ClassStatusLegend from '@/components/admin/ClassStatusLegend';
 
 export const metadata = {
     title: 'Class Management | Admin Portal',
@@ -67,6 +68,8 @@ export default async function AdminClassesPage({ searchParams }: PageProps) {
                 <h2 className="text-xl font-semibold">Class Management</h2>
                 <p className="text-slate-500">View and manage all classes</p>
             </div>
+
+            <ClassStatusLegend />
 
             <Card className="border-0 shadow-lg">
                 <CardHeader>
