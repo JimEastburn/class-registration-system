@@ -88,5 +88,71 @@ export default async function globalSetup(config: FullConfig) {
         }
     }
 
+    // Seed enrollment for teacher tests
+    console.log('📝 Seeding test enrollments...');
+    const { data: parentUser } = await supabase.from('profiles').select('id').eq('email', 'john@example.com').single();
+    const { data: teacherClass } = await supabase.from('classes').select('id').eq('name', 'Advanced Python for AI').single();
+
+    if (parentUser && teacherClass) {
+        // 1. Ensure a family member exists for John
+        let { data: familyMember } = await supabase
+            .from('family_members')
+            .select('id')
+            .eq('parent_id', parentUser.id)
+            .eq('first_name', 'Test')
+            .eq('last_name', 'Student')
+            .single();
+
+        if (!familyMember) {
+            const { data: newMember, error: memberError } = await supabase
+                .from('family_members')
+                .insert({
+                    parent_id: parentUser.id,
+                    first_name: 'Test',
+                    last_name: 'Student',
+                    grade_level: '10',
+                    relationship: 'child',
+                })
+
+                .select()
+                .single();
+
+            if (memberError) {
+                console.error('  ❌ Failed to seed family member:', memberError.message);
+            } else {
+                familyMember = newMember;
+                console.log('  ✅ Seeded family member "Test Student" for John');
+            }
+        }
+
+        // 2. Ensure the family member is enrolled in Alice's class
+        if (familyMember) {
+            const { data: existingEnrollment } = await supabase
+                .from('enrollments')
+                .select('id')
+                .eq('student_id', familyMember.id)
+                .eq('class_id', teacherClass.id)
+                .single();
+
+            if (!existingEnrollment) {
+                const { error: enrollmentError } = await supabase.from('enrollments').insert({
+                    student_id: familyMember.id,
+                    class_id: teacherClass.id,
+                    status: 'confirmed',
+                });
+
+                if (enrollmentError) {
+                    console.error('  ❌ Failed to seed enrollment:', enrollmentError.message);
+                } else {
+                    console.log('  ✅ Seeded enrollment for "Test Student" in Advanced Python');
+                }
+            } else {
+                console.log('  ⏭️  Enrollment already exists, skipping...');
+            }
+        }
+    }
+
     console.log('🌱 Global Setup: Complete!\n');
+
+
 }

@@ -20,13 +20,14 @@ test.describe('Teacher Dashboard Flows', () => {
     test('should view students in a class', async ({ page }) => {
         await page.goto('/teacher/classes');
 
-        // Click the "View Students" button for a class
+        // Click the "View Students" button for the "Advanced Python for AI" class
         await page.getByRole('button', { name: /view students/i }).first().click();
 
         // Should navigate to the students page
         await expect(page).toHaveURL(/\/teacher\/classes\/[a-zA-Z0-9-]+\/students/);
 
-        // Use specific heading that includes class name
+        // Verify that "Test Student" is visible in the list
         await expect(page.getByRole('heading', { name: /students in/i })).toBeVisible();
+        await expect(page.getByText('Test Student')).toBeVisible();
     });
 });

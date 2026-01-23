@@ -37,8 +37,13 @@ export default async function globalTeardown(config: FullConfig) {
         'student@example.com',
     ];
 
-    // Pattern for dynamically created test users (e.g., student-1234567890@example.com)
-    const dynamicTestPattern = /^student-\d+@example\.com$/;
+    // Pattern for dynamically created test users
+    // Matches: student-123@example.com, test+student123@gmail.com, etc.
+    const dynamicTestPatterns = [
+        /^student-\d+@/i,
+        /^test\+student\d+@/i,
+    ];
+
 
     const { data: users, error } = await supabase.auth.admin.listUsers();
 
@@ -49,8 +54,13 @@ export default async function globalTeardown(config: FullConfig) {
 
     let deletedCount = 0;
     for (const user of users?.users || []) {
-        // Delete dynamically created test users
-        if (user.email && dynamicTestPattern.test(user.email)) {
+        // Skip preserved emails
+        if (user.email && preserveEmails.includes(user.email)) continue;
+
+        // Delete if matches any dynamic pattern
+        const isDynamic = dynamicTestPatterns.some(pattern => pattern.test(user.email || ''));
+
+        if (user.email && isDynamic) {
             const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
             if (deleteError) {
                 console.error(`  ❌ Failed to delete ${user.email}:`, deleteError.message);
@@ -60,6 +70,7 @@ export default async function globalTeardown(config: FullConfig) {
             }
         }
     }
+
 
     if (deletedCount === 0) {
         console.log('  ✨ No dynamic test users to clean up.');
