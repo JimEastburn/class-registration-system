@@ -42,7 +42,9 @@ export default async function globalTeardown(config: FullConfig) {
     const dynamicTestPatterns = [
         /^student-\d+@/i,
         /^test\+student\d+@/i,
+        /^test\.student\.\d+@/i,
     ];
+
 
 
     const { data: users, error } = await supabase.auth.admin.listUsers();

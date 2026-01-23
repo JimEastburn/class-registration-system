@@ -15,7 +15,9 @@ test.describe('Parent Dashboard Flows', () => {
         await expect(page).toHaveURL(/\/parent\/family/);
         await expect(page.getByText('Jane Doe')).toBeVisible();
         await expect(page.getByText('Jack Doe')).toBeVisible();
+        await expect(page.getByText('Test Student')).toBeVisible();
     });
+
 
     test('should browse classes', async ({ page }) => {
         const parentPage = new ParentPage(page);

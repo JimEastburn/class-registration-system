@@ -94,49 +94,62 @@ export default async function globalSetup(config: FullConfig) {
     const { data: teacherClass } = await supabase.from('classes').select('id').eq('name', 'Advanced Python for AI').single();
 
     if (parentUser && teacherClass) {
-        // 1. Ensure a family member exists for John
-        let { data: familyMember } = await supabase
-            .from('family_members')
-            .select('id')
-            .eq('parent_id', parentUser.id)
-            .eq('first_name', 'Test')
-            .eq('last_name', 'Student')
-            .single();
+        // 1. Ensure family members exist for John
+        const familyMembersData = [
+            { firstName: 'Jane', lastName: 'Doe', gradeLevel: '8' },
+            { firstName: 'Jack', lastName: 'Doe', gradeLevel: '12' },
+            { firstName: 'Test', lastName: 'Student', gradeLevel: '10' },
+        ];
 
-        if (!familyMember) {
-            const { data: newMember, error: memberError } = await supabase
+        let testStudentId: string | null = null;
+
+        for (const member of familyMembersData) {
+            let { data: existingMember } = await supabase
                 .from('family_members')
-                .insert({
-                    parent_id: parentUser.id,
-                    first_name: 'Test',
-                    last_name: 'Student',
-                    grade_level: '10',
-                    relationship: 'child',
-                })
-
-                .select()
+                .select('id')
+                .eq('parent_id', parentUser.id)
+                .eq('first_name', member.firstName)
+                .eq('last_name', member.lastName)
                 .single();
 
-            if (memberError) {
-                console.error('  ❌ Failed to seed family member:', memberError.message);
-            } else {
-                familyMember = newMember;
-                console.log('  ✅ Seeded family member "Test Student" for John');
+            if (!existingMember) {
+                const { data: newMember, error: memberError } = await supabase
+                    .from('family_members')
+                    .insert({
+                        parent_id: parentUser.id,
+                        first_name: member.firstName,
+                        last_name: member.lastName,
+                        grade_level: member.gradeLevel,
+                        relationship: 'child',
+                    })
+                    .select()
+                    .single();
+
+                if (memberError) {
+                    console.error(`  ❌ Failed to seed family member ${member.firstName}:`, memberError.message);
+                } else {
+                    existingMember = newMember;
+                    console.log(`  ✅ Seeded family member "${member.firstName} ${member.lastName}" for John`);
+                }
+            }
+
+            if (member.firstName === 'Test' && existingMember) {
+                testStudentId = existingMember.id;
             }
         }
 
-        // 2. Ensure the family member is enrolled in Alice's class
-        if (familyMember) {
+        // 2. Ensure "Test Student" is enrolled in Alice's class
+        if (testStudentId) {
             const { data: existingEnrollment } = await supabase
                 .from('enrollments')
                 .select('id')
-                .eq('student_id', familyMember.id)
+                .eq('student_id', testStudentId)
                 .eq('class_id', teacherClass.id)
                 .single();
 
             if (!existingEnrollment) {
                 const { error: enrollmentError } = await supabase.from('enrollments').insert({
-                    student_id: familyMember.id,
+                    student_id: testStudentId,
                     class_id: teacherClass.id,
                     status: 'confirmed',
                 });
@@ -151,6 +164,7 @@ export default async function globalSetup(config: FullConfig) {
             }
         }
     }
+
 
     console.log('🌱 Global Setup: Complete!\n');
 

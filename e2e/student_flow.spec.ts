@@ -2,9 +2,10 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Student Dashboard Flows', () => {
     test('should allow a student to register and view dashboard', async ({ page }) => {
-        // Use plus addressing for unique emails that are more likely to pass validation
+        // Use unique email without + to avoid potential validation issues
         const timestamp = Date.now();
-        const studentEmail = `test+student${timestamp}@gmail.com`;
+        const studentEmail = `test.student.${timestamp}@gmail.com`;
+
         const student = {
             email: studentEmail,
             password: 'Password123',
