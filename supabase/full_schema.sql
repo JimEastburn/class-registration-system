@@ -1,0 +1,379 @@
+-- =================================================================================
+-- CLASS REGISTRATION SYSTEM - FULL DATABASE SCHEMA
+-- This script recreates the entire database structure (excluding data).
+-- Use seed.sql to populate the database after running this script.
+-- =================================================================================
+
+-- Enable necessary extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- Clean up existing objects (uncomment if you want a complete wipe)
+-- DROP TABLE IF EXISTS public.class_materials CASCADE;
+-- DROP TABLE IF EXISTS public.waitlist CASCADE;
+-- DROP TABLE IF EXISTS public.payments CASCADE;
+-- DROP TABLE IF EXISTS public.enrollments CASCADE;
+-- DROP TABLE IF EXISTS public.classes CASCADE;
+-- DROP TABLE IF EXISTS public.family_members CASCADE;
+-- DROP TABLE IF EXISTS public.profiles CASCADE;
+
+-- ============================================
+-- 1. PROFILES TABLE (extends Supabase auth.users)
+-- ============================================
+CREATE TABLE public.profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('parent', 'teacher', 'student', 'admin')),
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    phone TEXT,
+    avatar_url TEXT,
+    bio TEXT, -- For teachers
+    specializations TEXT[], -- For teachers
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_profiles_role ON public.profiles(role);
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- Profiles policies
+CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Public can view teacher profiles" ON public.profiles FOR SELECT USING (role = 'teacher');
+
+-- ============================================
+-- 2. FAMILY_MEMBERS TABLE
+-- ============================================
+CREATE TABLE public.family_members (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    parent_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    grade_level TEXT CHECK (grade_level IN ('6', '7', '8', '9', '10', '11', '12')),
+    relationship TEXT NOT NULL CHECK (relationship IN ('child', 'spouse', 'guardian', 'other')),
+    birth_date DATE,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_family_members_parent ON public.family_members(parent_id);
+ALTER TABLE public.family_members ENABLE ROW LEVEL SECURITY;
+
+-- Family members policies
+CREATE POLICY "Parents can view their own family members" ON public.family_members FOR SELECT USING (auth.uid() = parent_id);
+CREATE POLICY "Parents can insert their own family members" ON public.family_members FOR INSERT WITH CHECK (auth.uid() = parent_id);
+CREATE POLICY "Parents can update their own family members" ON public.family_members FOR UPDATE USING (auth.uid() = parent_id);
+CREATE POLICY "Parents can delete their own family members" ON public.family_members FOR DELETE USING (auth.uid() = parent_id);
+
+-- ============================================
+-- 3. CLASSES TABLE
+-- ============================================
+CREATE TABLE public.classes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    teacher_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'cancelled', 'completed')),
+    location TEXT NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    schedule TEXT NOT NULL, -- Human readable schedule e.g., "Mon/Wed 3:00 PM - 4:30 PM"
+    max_students INTEGER NOT NULL CHECK (max_students > 0),
+    current_enrollment INTEGER DEFAULT 0 NOT NULL,
+    fee DECIMAL(10, 2) NOT NULL CHECK (fee >= 0),
+    syllabus TEXT,
+    
+    -- Recurring Schedule Fields (Combined from migration 005)
+    recurrence_pattern TEXT DEFAULT 'none' CHECK (recurrence_pattern IN ('none', 'daily', 'weekly', 'biweekly', 'monthly')),
+    recurrence_days TEXT[], -- Array of days: ['monday', 'wednesday', 'friday']
+    recurrence_time TIME,
+    recurrence_duration INTEGER, -- In minutes
+    recurrence_end_date DATE,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    CONSTRAINT valid_date_range CHECK (end_date >= start_date)
+);
+
+CREATE INDEX idx_classes_teacher ON public.classes(teacher_id);
+CREATE INDEX idx_classes_status ON public.classes(status);
+CREATE INDEX idx_classes_dates ON public.classes(start_date, end_date);
+ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
+
+-- Classes policies
+CREATE POLICY "Anyone can view active classes" ON public.classes FOR SELECT USING (status = 'active');
+CREATE POLICY "Teachers can view all their own classes" ON public.classes FOR SELECT USING (auth.uid() = teacher_id);
+CREATE POLICY "Teachers can insert their own classes" ON public.classes FOR INSERT WITH CHECK (auth.uid() = teacher_id);
+CREATE POLICY "Teachers can update their own classes" ON public.classes FOR UPDATE USING (auth.uid() = teacher_id);
+CREATE POLICY "Teachers can delete their own draft classes" ON public.classes FOR DELETE USING (auth.uid() = teacher_id AND status = 'draft');
+
+-- ============================================
+-- 4. ENROLLMENTS TABLE
+-- ============================================
+CREATE TABLE public.enrollments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    student_id UUID NOT NULL REFERENCES public.family_members(id) ON DELETE CASCADE,
+    class_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'cancelled', 'completed')),
+    enrolled_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    UNIQUE(student_id, class_id)
+);
+
+CREATE INDEX idx_enrollments_student ON public.enrollments(student_id);
+CREATE INDEX idx_enrollments_class ON public.enrollments(class_id);
+CREATE INDEX idx_enrollments_status ON public.enrollments(status);
+ALTER TABLE public.enrollments ENABLE ROW LEVEL SECURITY;
+
+-- Enrollments policies
+CREATE POLICY "Parents can view enrollments for their children" 
+    ON public.enrollments FOR SELECT USING (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = student_id AND fm.parent_id = auth.uid()));
+CREATE POLICY "Parents can insert enrollments for their children" 
+    ON public.enrollments FOR INSERT WITH CHECK (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = student_id AND fm.parent_id = auth.uid()));
+CREATE POLICY "Parents can update enrollments for their children" 
+    ON public.enrollments FOR UPDATE USING (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = student_id AND fm.parent_id = auth.uid()));
+CREATE POLICY "Teachers can view enrollments for their classes" 
+    ON public.enrollments FOR SELECT USING (EXISTS (SELECT 1 FROM public.classes c WHERE c.id = class_id AND c.teacher_id = auth.uid()));
+
+-- ============================================
+-- 5. PAYMENTS TABLE
+-- ============================================
+CREATE TABLE public.payments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    enrollment_id UUID NOT NULL REFERENCES public.enrollments(id) ON DELETE CASCADE,
+    amount DECIMAL(10, 2) NOT NULL CHECK (amount > 0),
+    currency TEXT DEFAULT 'USD' NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed', 'refunded')),
+    provider TEXT NOT NULL CHECK (provider IN ('stripe', 'paypal')),
+    transaction_id TEXT,
+    paid_at TIMESTAMPTZ,
+    
+    -- Zoho Sync Fields (Combined from migration 005)
+    sync_status TEXT DEFAULT 'pending' CHECK (sync_status IN ('pending', 'synced', 'failed')),
+    zoho_invoice_id TEXT,
+    sync_error TEXT,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_payments_enrollment ON public.payments(enrollment_id);
+CREATE INDEX idx_payments_status ON public.payments(status);
+CREATE INDEX idx_payments_sync_status ON public.payments(sync_status) WHERE sync_status = 'failed' OR sync_status = 'pending';
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+
+-- Payments policies
+CREATE POLICY "Parents can view payments for their enrollments" 
+    ON public.payments FOR SELECT USING (EXISTS (SELECT 1 FROM public.enrollments e JOIN public.family_members fm ON fm.id = e.student_id WHERE e.id = enrollment_id AND fm.parent_id = auth.uid()));
+CREATE POLICY "Teachers can view payments for their class enrollments" 
+    ON public.payments FOR SELECT USING (EXISTS (SELECT 1 FROM public.enrollments e JOIN public.classes c ON c.id = e.class_id WHERE e.id = enrollment_id AND c.teacher_id = auth.uid()));
+
+-- ============================================
+-- 6. WAITLIST TABLE
+-- ============================================
+CREATE TABLE public.waitlist (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    class_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
+    student_id UUID NOT NULL REFERENCES public.family_members(id) ON DELETE CASCADE,
+    parent_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'waiting' CHECK (status IN ('waiting', 'notified', 'enrolled', 'expired', 'cancelled')),
+    notified_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(class_id, student_id)
+);
+
+CREATE INDEX idx_waitlist_class_id ON public.waitlist(class_id);
+CREATE INDEX idx_waitlist_parent_id ON public.waitlist(parent_id);
+CREATE INDEX idx_waitlist_status ON public.waitlist(status);
+ALTER TABLE public.waitlist ENABLE ROW LEVEL SECURITY;
+
+-- Waitlist policies
+CREATE POLICY "Parents can view their own waitlist entries" ON public.waitlist FOR SELECT USING (auth.uid() = parent_id);
+CREATE POLICY "Parents can insert waitlist entries for their family" ON public.waitlist FOR INSERT WITH CHECK (auth.uid() = parent_id);
+CREATE POLICY "Parents can cancel their own waitlist entries" ON public.waitlist FOR UPDATE USING (auth.uid() = parent_id) WITH CHECK (auth.uid() = parent_id);
+CREATE POLICY "Admins can view all waitlist entries" ON public.waitlist FOR SELECT USING (EXISTS (SELECT 1 FROM public.profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'));
+CREATE POLICY "Admins can manage all waitlist entries" ON public.waitlist FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'));
+
+-- ============================================
+-- 7. CLASS_MATERIALS TABLE
+-- ============================================
+CREATE TABLE public.class_materials (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    class_id UUID NOT NULL REFERENCES public.classes(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT,
+    file_url TEXT NOT NULL,
+    file_type TEXT NOT NULL, -- 'pdf', 'doc', 'image', 'video', 'link', 'other'
+    file_size INTEGER, -- Size in bytes
+    uploaded_by UUID NOT NULL REFERENCES public.profiles(id),
+    is_public BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_class_materials_class_id ON public.class_materials(class_id);
+CREATE INDEX idx_class_materials_uploaded_by ON public.class_materials(uploaded_by);
+ALTER TABLE public.class_materials ENABLE ROW LEVEL SECURITY;
+
+-- Class Materials policies
+CREATE POLICY "Teachers can manage their class materials" ON public.class_materials FOR ALL USING (EXISTS (SELECT 1 FROM public.classes WHERE classes.id = class_materials.class_id AND classes.teacher_id = auth.uid()));
+CREATE POLICY "Enrolled students can view public materials" ON public.class_materials FOR SELECT USING (is_public = true AND EXISTS (SELECT 1 FROM public.enrollments e JOIN public.family_members fm ON fm.id = e.student_id WHERE e.class_id = class_materials.class_id AND e.status IN ('confirmed', 'completed') AND fm.parent_id = auth.uid()));
+CREATE POLICY "Admins can manage all materials" ON public.class_materials FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'));
+
+-- ============================================
+-- 8. FUNCTIONS AND TRIGGERS
+-- ============================================
+
+-- Robust handles new user registration
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.profiles (id, email, role, first_name, last_name)
+    VALUES (
+        NEW.id,
+        NEW.email,
+        COALESCE(NEW.raw_user_meta_data->>'role', 'parent'),
+        COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
+        COALESCE(NEW.raw_user_meta_data->>'last_name', '')
+    )
+    ON CONFLICT (id) DO NOTHING;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to handle enrollment counts
+CREATE OR REPLACE FUNCTION public.update_enrollment_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' AND NEW.status = 'confirmed' THEN
+        UPDATE public.classes SET current_enrollment = current_enrollment + 1 WHERE id = NEW.class_id;
+    ELSIF TG_OP = 'UPDATE' THEN
+        IF OLD.status != 'confirmed' AND NEW.status = 'confirmed' THEN
+            UPDATE public.classes SET current_enrollment = current_enrollment + 1 WHERE id = NEW.class_id;
+        ELSIF OLD.status = 'confirmed' AND NEW.status != 'confirmed' THEN
+            UPDATE public.classes SET current_enrollment = current_enrollment - 1 WHERE id = NEW.class_id;
+        END IF;
+    ELSIF TG_OP = 'DELETE' AND OLD.status = 'confirmed' THEN
+        UPDATE public.classes SET current_enrollment = current_enrollment - 1 WHERE id = OLD.class_id;
+    END IF;
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Utility: Update updated_at timestamp
+CREATE OR REPLACE FUNCTION public.update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Waitlist: Get next position
+CREATE OR REPLACE FUNCTION public.get_next_waitlist_position(p_class_id UUID)
+RETURNS INTEGER AS $$
+DECLARE
+    next_pos INTEGER;
+BEGIN
+    SELECT COALESCE(MAX(position), 0) + 1 INTO next_pos
+    FROM public.waitlist
+    WHERE class_id = p_class_id AND status = 'waiting';
+    RETURN next_pos;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Schedule: generate schedule text helper
+CREATE OR REPLACE FUNCTION public.generate_schedule_text(
+    p_recurrence_pattern TEXT,
+    p_recurrence_days TEXT[],
+    p_recurrence_time TIME,
+    p_recurrence_duration INTEGER
+)
+RETURNS TEXT AS $$
+DECLARE
+    days_text TEXT;
+    time_text TEXT;
+    duration_text TEXT;
+BEGIN
+    IF p_recurrence_pattern = 'none' OR p_recurrence_pattern IS NULL THEN
+        RETURN NULL;
+    END IF;
+    IF p_recurrence_days IS NOT NULL AND array_length(p_recurrence_days, 1) > 0 THEN
+        days_text := array_to_string(ARRAY(SELECT initcap(unnest(p_recurrence_days))), ', ');
+    ELSE
+        days_text := initcap(p_recurrence_pattern);
+    END IF;
+    IF p_recurrence_time IS NOT NULL THEN
+        time_text := to_char(p_recurrence_time, 'HH:MI AM');
+    ELSE
+        time_text := 'TBD';
+    END IF;
+    IF p_recurrence_duration IS NOT NULL THEN
+        IF p_recurrence_duration >= 60 THEN
+            duration_text := (p_recurrence_duration / 60)::TEXT || ' hour' || CASE WHEN p_recurrence_duration >= 120 THEN 's' ELSE '' END;
+        ELSE
+            duration_text := p_recurrence_duration::TEXT || ' min';
+        END IF;
+    ELSE
+        duration_text := '';
+    END IF;
+    RETURN days_text || ' at ' || time_text || CASE WHEN duration_text != '' THEN ' (' || duration_text || ')' ELSE '' END;
+END;
+$$ LANGUAGE plpgsql;
+
+-- RLS Fix: Check if teacher teaches student
+CREATE OR REPLACE FUNCTION public.is_teacher_of_student(check_student_id uuid)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM enrollments e
+    JOIN classes c ON c.id = e.class_id
+    WHERE e.student_id = check_student_id
+    AND c.teacher_id = auth.uid()
+  );
+$$;
+
+-- Create the refined family_member policy using the function
+DROP POLICY IF EXISTS "Teachers can view students enrolled in their classes" ON public.family_members;
+CREATE POLICY "Teachers can view students enrolled in their classes"
+ON public.family_members FOR SELECT TO public USING (is_teacher_of_student(id));
+
+-- ============================================
+-- 9. TRIGGERS
+-- ============================================
+
+-- Auth trigger
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Enrollment count trigger
+CREATE TRIGGER update_class_enrollment_count
+    AFTER INSERT OR UPDATE OR DELETE ON public.enrollments
+    FOR EACH ROW EXECUTE FUNCTION public.update_enrollment_count();
+
+-- Updated_at triggers
+CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+CREATE TRIGGER update_family_members_updated_at BEFORE UPDATE ON public.family_members FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+CREATE TRIGGER update_classes_updated_at BEFORE UPDATE ON public.classes FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+CREATE TRIGGER update_enrollments_updated_at BEFORE UPDATE ON public.enrollments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+CREATE TRIGGER update_waitlist_updated_at BEFORE UPDATE ON public.waitlist FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+CREATE TRIGGER update_class_materials_updated_at BEFORE UPDATE ON public.class_materials FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
+
+-- ============================================
+-- 10. COMMENTS
+-- ============================================
+COMMENT ON COLUMN public.payments.sync_status IS 'Status of synchronization with Zoho Books';
+COMMENT ON COLUMN public.payments.zoho_invoice_id IS 'The ID of the corresponding invoice in Zoho Books';
+COMMENT ON COLUMN public.payments.sync_error IS 'Last error message encountered during Zoho sync';
+COMMENT ON TABLE public.class_materials IS 'Stores metadata for class materials and resources uploaded by teachers';
