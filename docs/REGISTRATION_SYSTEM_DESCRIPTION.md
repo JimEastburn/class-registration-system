@@ -26,6 +26,7 @@ This system enables parents to manage their families and enroll children in clas
 ### Parent Portal (`/parent`)
 - **Dashboard** - Overview of family, enrollments, and quick actions
 - **Family Management** - Add, edit, delete family members (children)
+- **Student Linking** - Generate invite codes for children to link their student accounts
 - **Class Browsing** - View available classes with teacher info and availability
 - **Enrollment** - Enroll children in classes
 - **Payments** - Pay enrollment fees via Stripe
@@ -37,7 +38,8 @@ This system enables parents to manage their families and enroll children in clas
 - **Student Roster** - View enrolled students per class
 
 ### Student Portal (`/student`)
-- **Dashboard** - Overview of enrolled classes
+- **Account Linking** - Enter invite code from parent to link account to family
+- **Dashboard** - Overview of enrolled classes (requires linked account)
 - **Schedule View** - Weekly calendar of classes
 - **Class Details** - View class info, teacher, location, syllabus
 
@@ -53,7 +55,8 @@ This system enables parents to manage their families and enroll children in clas
 | Entity | Description |
 |--------|-------------|
 | **Profiles** | User accounts with role, name, email, phone |
-| **Family Members** | Children/students linked to parent accounts |
+| **Family Members** | Children/students linked to parent accounts (optionally linked to student user account via `user_id`) |
+| **Family Member Invites** | Invite codes for linking student accounts to family members |
 | **Classes** | Courses with schedule, location, fee, capacity |
 | **Enrollments** | Student-to-class registrations with status |
 | **Payments** | Payment records for enrollments via Stripe |

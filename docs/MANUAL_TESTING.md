@@ -48,6 +48,14 @@ Before testing, ensure you have:
 - [ ] **Edit Member**: Change a child's grade level and verify the update.
 - [ ] **Delete Member**: Remove a child and verify they no longer appear in the family list.
 
+### Student Link Codes
+- [ ] **Generate Code**: Click "Generate Student Link Code" on a child's card. Verify a 6-character code is displayed.
+- [ ] **Copy Code**: Click the "Copy" button and verify the code is copied to clipboard.
+- [ ] **Code Persistence**: Refresh the page; verify clicking the button again shows the same code (not a new one).
+- [ ] **Linked Badge**: After a student redeems the code, verify the "Linked" badge appears on the family member card.
+- [ ] **Button Hidden When Linked**: Verify the "Generate Student Link Code" button no longer appears for linked family members.
+- [ ] **Only Children**: Verify the link code button only appears for family members with relationship "child".
+
 ### Class Browsing
 - [ ] **Search/Filter**: View the "Browse Classes" page. Ensure only "Active" classes are visible.
 - [ ] **Detail View**: Click "View Details" on a class; verify all information (Teacher, Fee, Schedule) is accurate.
@@ -85,8 +93,17 @@ Before testing, ensure you have:
 ## 5. Student Portal Testing
 *Goal: View own schedule and materials.*
 
+### Account Linking
+- [ ] **Unlinked State**: Log in as a new student; verify the dashboard prompts to enter an invite code.
+- [ ] **Enter Code**: Enter the 6-character code from parent. Verify success message and redirect to classes.
+- [ ] **Invalid Code**: Enter an incorrect code. Verify error message is displayed.
+- [ ] **Expired Code**: Test with a code older than 7 days. Verify "code expired" error.
+- [ ] **Already Used**: Test with a code that was already redeemed. Verify "already used" error.
+- [ ] **Already Linked**: Attempt to enter a code when already linked. Verify appropriate error.
+
 ### Dashboard & Schedule
-- [ ] **Weekly Schedule**: Log in as a student; verify that confirmed enrollments appear in the calendar/list view.
+- [ ] **Linked Dashboard**: After linking, verify the full dashboard with schedule/classes cards is shown.
+- [ ] **Weekly Schedule**: Verify that confirmed enrollments appear in the calendar/list view.
 - [ ] **Class Materials**: Access class details to view materials provided by the teacher.
 
 ---
