@@ -71,8 +71,8 @@ export default async function FamilyPage() {
                                     <p className="text-sm text-slate-500 italic">{member.notes}</p>
                                 )}
 
-                                {/* Invite Code Section - only show if not already linked */}
-                                {!member.user_id && (
+                                {/* Invite Code Section - only show for children who are not already linked */}
+                                {!member.user_id && member.relationship === 'child' && (
                                     <div className="pt-2 border-t">
                                         <InviteCodeButton
                                             familyMemberId={member.id}
