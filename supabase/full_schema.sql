@@ -47,16 +47,33 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+-- 1.1 Secure Admin Check Function
+-- Defined here so it can be used in policies immediately
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM profiles
+    WHERE id = auth.uid()
+    AND role = 'admin'
+  );
+$$;
+
 -- Profiles policies
 CREATE POLICY "Profiles - Self access" ON public.profiles FOR ALL TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 CREATE POLICY "Profiles - Teacher public view" ON public.profiles FOR SELECT TO public USING (role = 'teacher');
 CREATE POLICY "Profiles - Admin and Service Role bypass" ON public.profiles FOR ALL TO authenticated, service_role 
-    USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role')
-    WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role');
+    USING (is_admin() OR current_role = 'service_role')
+    WITH CHECK (is_admin() OR current_role = 'service_role');
 CREATE POLICY "Service role manage profiles" ON public.profiles FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY "Admin metadata manage profiles" ON public.profiles FOR ALL TO authenticated 
-    USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin')
-    WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+    USING (is_admin())
+    WITH CHECK (is_admin());
 
 -- ============================================
 -- 2. FAMILY_MEMBERS TABLE
@@ -83,8 +100,8 @@ ALTER TABLE public.family_members ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Family - Parent manage own" ON public.family_members FOR ALL TO authenticated USING (auth.uid() = parent_id) WITH CHECK (auth.uid() = parent_id);
 CREATE POLICY "Family - Student view self" ON public.family_members FOR SELECT TO authenticated USING (user_id = auth.uid());
 CREATE POLICY "Family - Admin and Service Role bypass" ON public.family_members FOR ALL TO authenticated, service_role 
-    USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role')
-    WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role');
+    USING (is_admin() OR current_role = 'service_role')
+    WITH CHECK (is_admin() OR current_role = 'service_role');
 CREATE POLICY "Family - Teachers view enrolled" ON public.family_members FOR SELECT TO authenticated USING (is_teacher_of_student(id));
 
 -- ============================================
@@ -126,8 +143,8 @@ ALTER TABLE public.classes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Classes - Public view active" ON public.classes FOR SELECT TO public USING (status = 'active');
 CREATE POLICY "Classes - Teacher manage own" ON public.classes FOR ALL TO authenticated USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
 CREATE POLICY "Classes - Admin and Service Role bypass" ON public.classes FOR ALL TO authenticated, service_role 
-    USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role')
-    WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role');
+    USING (is_admin() OR current_role = 'service_role')
+    WITH CHECK (is_admin() OR current_role = 'service_role');
 
 -- ============================================
 -- 4. ENROLLMENTS TABLE
@@ -156,8 +173,8 @@ CREATE POLICY "Enrollments - Student view own" ON public.enrollments FOR SELECT 
 CREATE POLICY "Enrollments - Teacher view class" ON public.enrollments FOR SELECT TO authenticated 
     USING (EXISTS (SELECT 1 FROM public.classes c WHERE c.id = class_id AND c.teacher_id = auth.uid()));
 CREATE POLICY "Enrollments - Admin and Service Role bypass" ON public.enrollments FOR ALL TO authenticated, service_role 
-    USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role')
-    WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role');
+    USING (is_admin() OR current_role = 'service_role')
+    WITH CHECK (is_admin() OR current_role = 'service_role');
 
 -- ============================================
 -- 5. PAYMENTS TABLE
@@ -192,8 +209,8 @@ CREATE POLICY "Payments - Parent view family" ON public.payments FOR SELECT TO a
 CREATE POLICY "Payments - Teacher view class" ON public.payments FOR SELECT TO authenticated 
     USING (EXISTS (SELECT 1 FROM public.enrollments e JOIN public.classes c ON c.id = e.class_id WHERE e.id = enrollment_id AND c.teacher_id = auth.uid()));
 CREATE POLICY "Payments - Admin and Service Role bypass" ON public.payments FOR ALL TO authenticated, service_role 
-    USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role')
-    WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role');
+    USING (is_admin() OR current_role = 'service_role')
+    WITH CHECK (is_admin() OR current_role = 'service_role');
 
 -- ============================================
 -- 6. WAITLIST TABLE
@@ -220,8 +237,8 @@ ALTER TABLE public.waitlist ENABLE ROW LEVEL SECURITY;
 -- Waitlist policies
 CREATE POLICY "Waitlist - Parent manage own" ON public.waitlist FOR ALL TO authenticated USING (auth.uid() = parent_id) WITH CHECK (auth.uid() = parent_id);
 CREATE POLICY "Waitlist - Service role and admin bypass" ON public.waitlist FOR ALL TO service_role, authenticated 
-    USING (current_role = 'service_role' OR (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin')
-    WITH CHECK (current_role = 'service_role' OR (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+    USING (current_role = 'service_role' OR is_admin())
+    WITH CHECK (current_role = 'service_role' OR is_admin());
 
 -- ============================================
 -- 7. FAMILY_MEMBER_INVITES TABLE
@@ -247,8 +264,8 @@ CREATE POLICY "Invites - Parent manage own" ON public.family_member_invites FOR 
     WITH CHECK (EXISTS (SELECT 1 FROM public.family_members fm WHERE fm.id = family_member_id AND fm.parent_id = auth.uid()));
 CREATE POLICY "Invites - Student redeem by code" ON public.family_member_invites FOR SELECT TO authenticated USING (true);
 CREATE POLICY "Invites - Admin and Service Role bypass" ON public.family_member_invites FOR ALL TO authenticated, service_role 
-    USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role')
-    WITH CHECK ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin' OR current_role = 'service_role');
+    USING (is_admin() OR current_role = 'service_role')
+    WITH CHECK (is_admin() OR current_role = 'service_role');
 
 -- ============================================
 -- 7. CLASS_MATERIALS TABLE
@@ -279,7 +296,7 @@ DROP POLICY IF EXISTS "Enrolled students can view public materials" ON public.cl
 CREATE POLICY "Enrolled students can view public materials" ON public.class_materials FOR SELECT USING (is_public = true AND EXISTS (SELECT 1 FROM public.enrollments e JOIN public.family_members fm ON fm.id = e.student_id WHERE e.class_id = class_materials.class_id AND e.status IN ('confirmed', 'completed') AND fm.parent_id = auth.uid()));
 
 DROP POLICY IF EXISTS "Admins can manage all materials" ON public.class_materials;
-CREATE POLICY "Admins can manage all materials" ON public.class_materials FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE profiles.id = auth.uid() AND profiles.role = 'admin'));
+CREATE POLICY "Admins can manage all materials" ON public.class_materials FOR ALL USING (is_admin());
 
 -- ============================================
 -- 8. FUNCTIONS AND TRIGGERS
