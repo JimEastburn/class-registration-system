@@ -48,18 +48,7 @@ export default async function RegisterPage() {
                         <RegisterForm />
                     </div>
 
-                    {/* Support Info Card */}
-                    <div className="w-full bg-slate-800/50 backdrop-blur-md rounded-xl p-4 border border-slate-700 shadow-lg text-center">
-                        <p className="text-slate-300 text-sm">
-                            For help please email{' '}
-                            <a
-                                href="mailto:communitysupport@austinaac.org"
-                                className="text-teal-400 font-medium hover:text-teal-300 transition-colors"
-                            >
-                                communitysupport@austinaac.org
-                            </a>
-                        </p>
-                    </div>
+
                 </div>
 
                 {/* Right Image */}
