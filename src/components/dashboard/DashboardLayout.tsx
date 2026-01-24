@@ -7,7 +7,7 @@ import { signOut } from '@/lib/actions/auth';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -132,18 +132,20 @@ export default function DashboardLayout({
                     {/* User Menu */}
                     <div className="flex items-center gap-4">
                         {showPortalSwitch && (
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm text-muted-foreground hidden md:inline-block">
-                                    {isRolePortal
-                                        ? `${user.role.charAt(0).toUpperCase() + user.role.slice(1)} View`
-                                        : 'Parent View'}
-                                </span>
-                                <Switch
-                                    checked={isRolePortal}
-                                    onCheckedChange={handlePortalSwitch}
-                                    aria-label="Switch Portal"
-                                />
-                            </div>
+                            <Tabs
+                                value={isRolePortal ? 'role' : 'parent'}
+                                onValueChange={(val) => handlePortalSwitch(val === 'role')}
+                                className="w-[300px]"
+                            >
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="role">
+                                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)} View
+                                    </TabsTrigger>
+                                    <TabsTrigger value="parent">
+                                        Parent View
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                         )}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
