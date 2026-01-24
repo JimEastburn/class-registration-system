@@ -92,9 +92,6 @@ export default function DashboardLayout({
                                     </nav>
                                 </div>
                                 <div className="p-4 border-t border-sidebar-border mt-auto flex-shrink-0 text-center">
-                                    <p className="text-xs text-muted-foreground">
-                                        For help, please email <a href="mailto:communitysupport@austinaac.org" className="text-primary hover:underline">communitysupport@austinaac.org</a>
-                                    </p>
                                 </div>
                             </SheetContent>
                         </Sheet>
@@ -180,9 +177,6 @@ export default function DashboardLayout({
                         ))}
                     </nav>
                     <div className="mt-auto p-4 border-t border-sidebar-border text-center">
-                        <p className="text-xs text-muted-foreground">
-                            For help, please email <a href="mailto:communitysupport@austinaac.org" className="text-primary hover:underline">communitysupport@austinaac.org</a>
-                        </p>
                     </div>
                 </aside>
 
