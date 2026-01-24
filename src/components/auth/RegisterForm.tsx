@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useGlobalLoading } from '@/components/providers/GlobalLoadingProvider';
+import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -20,7 +19,7 @@ import {
 } from '@/components/ui/select';
 
 export default function RegisterForm() {
-    const { startLoading, stopLoading, isLoading } = useGlobalLoading();
+    const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
@@ -33,34 +32,32 @@ export default function RegisterForm() {
         resolver: zodResolver(registerSchema),
     });
 
-    const onSubmit = async (data: RegisterFormData) => {
-        startLoading();
+    const onSubmit = (data: RegisterFormData) => {
         setError(null);
 
-        try {
-            const formData = new FormData();
-            formData.append('email', data.email);
-            formData.append('password', data.password);
-            formData.append('firstName', data.firstName);
-            formData.append('lastName', data.lastName);
-            formData.append('role', data.role);
-            if (data.phone) {
-                formData.append('phone', data.phone);
-            }
+        startTransition(async () => {
+            try {
+                const formData = new FormData();
+                formData.append('email', data.email);
+                formData.append('password', data.password);
+                formData.append('firstName', data.firstName);
+                formData.append('lastName', data.lastName);
+                formData.append('role', data.role);
+                if (data.phone) {
+                    formData.append('phone', data.phone);
+                }
 
-            const result = await signUp(formData);
+                const result = await signUp(formData);
 
-            if (result.error) {
-                setError(result.error);
-                stopLoading();
-            } else {
-                setSuccess(true);
-                stopLoading();
+                if (result.error) {
+                    setError(result.error);
+                } else {
+                    setSuccess(true);
+                }
+            } catch (e) {
+                setError('An unexpected error occurred');
             }
-        } catch (e) {
-            setError('An unexpected error occurred');
-            stopLoading();
-        }
+        });
     };
 
     if (success) {
@@ -233,7 +230,7 @@ export default function RegisterForm() {
                     <Button
                         type="submit"
                         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-                        disabled={isLoading}
+                        isLoading={isPending}
                     >
                         Create Account
                     </Button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -32,7 +32,7 @@ interface FamilyMemberFormProps {
 
 export default function FamilyMemberForm({ member }: FamilyMemberFormProps) {
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
+    const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
 
     const {
@@ -54,28 +54,28 @@ export default function FamilyMemberForm({ member }: FamilyMemberFormProps) {
             : undefined,
     });
 
-    const onSubmit = async (data: FamilyMemberFormData) => {
-        setIsLoading(true);
+    const onSubmit = (data: FamilyMemberFormData) => {
         setError(null);
 
-        const formData = new FormData();
-        formData.append('firstName', data.firstName);
-        formData.append('lastName', data.lastName);
-        formData.append('relationship', data.relationship);
-        if (data.gradeLevel) formData.append('gradeLevel', data.gradeLevel);
-        if (data.birthDate) formData.append('birthDate', data.birthDate);
-        if (data.notes) formData.append('notes', data.notes);
+        startTransition(async () => {
+            const formData = new FormData();
+            formData.append('firstName', data.firstName);
+            formData.append('lastName', data.lastName);
+            formData.append('relationship', data.relationship);
+            if (data.gradeLevel) formData.append('gradeLevel', data.gradeLevel);
+            if (data.birthDate) formData.append('birthDate', data.birthDate);
+            if (data.notes) formData.append('notes', data.notes);
 
-        const result = member
-            ? await updateFamilyMember(member.id, formData)
-            : await addFamilyMember(formData);
+            const result = member
+                ? await updateFamilyMember(member.id, formData)
+                : await addFamilyMember(formData);
 
-        if (result.error) {
-            setError(result.error);
-            setIsLoading(false);
-        } else {
-            router.push('/parent/family');
-        }
+            if (result.error) {
+                setError(result.error);
+            } else {
+                router.push('/parent/family');
+            }
+        });
     };
 
     return (
@@ -174,9 +174,9 @@ export default function FamilyMemberForm({ member }: FamilyMemberFormProps) {
                         <Button
                             type="submit"
                             className="bg-gradient-to-r from-purple-600 to-pink-600"
-                            disabled={isLoading}
+                            isLoading={isPending}
                         >
-                            {isLoading ? 'Saving...' : member ? 'Update' : 'Add Family Member'}
+                            {member ? 'Update' : 'Add Family Member'}
                         </Button>
                     </div>
                 </CardContent>

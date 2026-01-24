@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useGlobalLoading } from '@/components/providers/GlobalLoadingProvider';
+import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -13,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 
 export default function LoginForm() {
-    const { startLoading, stopLoading, isLoading } = useGlobalLoading();
+    const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
 
     const {
@@ -24,25 +23,24 @@ export default function LoginForm() {
         resolver: zodResolver(loginSchema),
     });
 
-    const onSubmit = async (data: LoginFormData) => {
-        startLoading();
+    const onSubmit = (data: LoginFormData) => {
         setError(null);
 
-        try {
-            const formData = new FormData();
-            formData.append('email', data.email);
-            formData.append('password', data.password);
+        startTransition(async () => {
+            try {
+                const formData = new FormData();
+                formData.append('email', data.email);
+                formData.append('password', data.password);
 
-            const result = await signIn(formData);
+                const result = await signIn(formData);
 
-            if (result?.error) {
-                setError(result.error);
-                stopLoading();
+                if (result?.error) {
+                    setError(result.error);
+                }
+            } catch (e) {
+                setError('An unexpected error occurred');
             }
-        } catch (e) {
-            setError('An unexpected error occurred');
-            stopLoading();
-        }
+        });
     };
 
     return (
@@ -106,7 +104,7 @@ export default function LoginForm() {
                     <Button
                         type="submit"
                         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-                        disabled={isLoading}
+                        isLoading={isPending}
                         data-testid="login-submit-button"
                     >
                         Sign In
