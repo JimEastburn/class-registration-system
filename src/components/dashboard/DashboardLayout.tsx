@@ -172,6 +172,11 @@ export default function DashboardLayout({
                             </Link>
                         ))}
                     </nav>
+                    <div className="mt-auto p-4 border-t border-sidebar-border">
+                        <p className="text-xs text-muted-foreground">
+                            For help, please email <a href="mailto:communitysupport@austinaac.org" className="text-primary hover:underline">communitysupport@austinaac.org</a>
+                        </p>
+                    </div>
                 </aside>
 
                 {/* Main Content */}
