@@ -56,7 +56,7 @@ async function checkUser(email) {
 }
 
 async function main() {
-    await checkUser('test-a@b.com');
+    await checkUser('test-b@a.com');
 }
 
 main();
