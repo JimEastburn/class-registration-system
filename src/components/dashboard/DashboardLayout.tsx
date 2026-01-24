@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from '@/lib/actions/auth';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -41,8 +42,19 @@ export default function DashboardLayout({
     title,
 }: DashboardLayoutProps) {
     const pathname = usePathname();
+    const router = useRouter();
 
     const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+    const showPortalSwitch = user.role === 'admin' || user.role === 'teacher';
+    const isRolePortal = pathname.startsWith(`/${user.role}`);
+
+    const handlePortalSwitch = (checked: boolean) => {
+        if (checked) {
+            router.push(`/${user.role}`);
+        } else {
+            router.push('/parent');
+        }
+    };
 
     return (
         <div className="min-h-screen bg-background">
@@ -112,46 +124,53 @@ export default function DashboardLayout({
                     </div>
 
                     {/* User Menu */}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="relative h-10 w-10 rounded-full" data-testid="user-menu-button">
-                                <Avatar className="h-10 w-10 border border-border">
-                                    <AvatarFallback className="bg-primary/10 text-primary">
-                                        {initials}
-                                    </AvatarFallback>
-                                </Avatar>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-56" align="end">
-                            <div className="flex items-center justify-start gap-2 p-2">
-                                <div className="flex flex-col space-y-1 leading-none">
-                                    <p className="font-medium">{user.firstName} {user.lastName}</p>
-                                    <p className="text-xs text-muted-foreground">{user.email}</p>
-                                </div>
+                    <div className="flex items-center gap-4">
+                        {showPortalSwitch && (
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground hidden md:inline-block">
+                                    {isRolePortal
+                                        ? `${user.role.charAt(0).toUpperCase() + user.role.slice(1)} View`
+                                        : 'Parent View'}
+                                </span>
+                                <Switch
+                                    checked={isRolePortal}
+                                    onCheckedChange={handlePortalSwitch}
+                                    aria-label="Switch Portal"
+                                />
                             </div>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild>
-                                <Link href={`/${user.role}/profile`}>Profile Settings</Link>
-                            </DropdownMenuItem>
-                            {(user.role === 'admin' || user.role === 'teacher') && (
+                        )}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="relative h-10 w-10 rounded-full" data-testid="user-menu-button">
+                                    <Avatar className="h-10 w-10 border border-border">
+                                        <AvatarFallback className="bg-primary/10 text-primary">
+                                            {initials}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56" align="end">
+                                <div className="flex items-center justify-start gap-2 p-2">
+                                    <div className="flex flex-col space-y-1 leading-none">
+                                        <p className="font-medium">{user.firstName} {user.lastName}</p>
+                                        <p className="text-xs text-muted-foreground">{user.email}</p>
+                                    </div>
+                                </div>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuItem asChild>
-                                    {pathname.startsWith(`/${user.role}`) ? (
-                                        <Link href="/parent">Switch to Parent Portal</Link>
-                                    ) : (
-                                        <Link href={`/${user.role}`}>Switch to {user.role.charAt(0).toUpperCase() + user.role.slice(1)} Portal</Link>
-                                    )}
+                                    <Link href={`/${user.role}/profile`}>Profile Settings</Link>
                                 </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                                className="text-destructive cursor-pointer focus:text-destructive"
-                                onClick={() => signOut()}
-                                data-testid="sign-out-button"
-                            >
-                                Sign Out
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    className="text-destructive cursor-pointer focus:text-destructive"
+                                    onClick={() => signOut()}
+                                    data-testid="sign-out-button"
+                                >
+                                    Sign Out
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </div>
             </header>
 
