@@ -39,8 +39,12 @@ export async function updateUserRole(
     );
 
     if (metadataError) {
-        // Log error but don't fail the request since profile was updated
+        // Return the error so the UI can display it
         console.error('Failed to sync user role to auth metadata:', metadataError);
+        return {
+            error: `Profile updated, but metadata sync failed: ${metadataError.message}`,
+            success: false
+        };
     }
 
     revalidatePath('/admin/users');

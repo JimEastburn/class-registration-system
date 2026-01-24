@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { updateUserRole, deleteUser } from '@/lib/actions/admin';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -35,6 +36,11 @@ export default function AdminUserActions({ userId, currentRole }: AdminUserActio
         const result = await updateUserRole(userId, newRole);
         if (result.error) {
             setError(result.error);
+            toast.error('Failed to update role', {
+                description: result.error,
+            });
+        } else {
+            toast.success('Role updated successfully');
         }
         setIsLoading(false);
     };
