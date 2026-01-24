@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect } from 'vitest';
 import LoginForm from '../LoginForm';
 
@@ -20,5 +20,23 @@ describe('LoginForm', () => {
         render(<LoginForm />);
         const passwordInput = screen.getByTestId('password-input');
         expect(passwordInput).not.toHaveAttribute('placeholder');
+    });
+
+    it('does not display error when redirecting', async () => {
+        const { signIn } = await import('@/lib/actions/auth');
+        // Mock signIn to simulate a redirect error
+        (signIn as any).mockRejectedValueOnce(new Error('NEXT_REDIRECT'));
+
+        render(<LoginForm />);
+
+        fireEvent.change(screen.getByTestId('email-input'), { target: { value: 'test@example.com' } });
+        fireEvent.change(screen.getByTestId('password-input'), { target: { value: 'password123' } });
+
+        fireEvent.click(screen.getByTestId('login-submit-button'));
+
+        // Expect no error message to appear
+        await waitFor(() => {
+            expect(screen.queryByText(/unexpected error/i)).not.toBeInTheDocument();
+        });
     });
 });

@@ -38,6 +38,10 @@ export default function LoginForm() {
                     setError(result.error);
                 }
             } catch (e) {
+                if ((e as Error).message === 'NEXT_REDIRECT' || (e as any)?.digest === 'NEXT_REDIRECT') {
+                    throw e;
+                }
+                console.error('Login error:', e);
                 setError('An unexpected error occurred');
             }
         });

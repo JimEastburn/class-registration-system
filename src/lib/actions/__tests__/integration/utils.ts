@@ -33,7 +33,7 @@ export const adminClient = getAdminClient();
  * Creates a unique test user with the specified role.
  */
 export async function createTestUser(role: 'parent' | 'teacher' | 'student' | 'admin' = 'parent') {
-    const email = `test-${role}-${Date.now()}@example.com`;
+    const email = `test-${role}-${Date.now()}-${Math.floor(Math.random() * 10000)}@example.com`;
     const password = 'TestPassword123!';
     const admin = getAdminClient();
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi, type Mock } from 'vitest';
 import { addFamilyMember, updateFamilyMember, deleteFamilyMember } from '../../family';
 import { createClient } from '@/lib/supabase/server';
 import { createTestUser, deleteTestUser, getAdminClient } from './utils';
@@ -13,7 +13,7 @@ describe('Family Actions (Integration)', () => {
     let testUser: any;
     let authedClient: any;
 
-    beforeEach(async () => {
+    beforeAll(async () => {
         // 1. Create a fresh test user
         testUser = await createTestUser('parent');
 
@@ -42,7 +42,7 @@ describe('Family Actions (Integration)', () => {
         (createClient as Mock).mockResolvedValue(authedClient);
     });
 
-    afterEach(async () => {
+    afterAll(async () => {
         // Clean up the test user and their family members (cascades)
         if (testUser?.id) {
             await deleteTestUser(testUser.id);
