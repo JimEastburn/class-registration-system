@@ -27,7 +27,7 @@ export default async function TeacherDashboardPage() {
             {/* Welcome Section */}
             <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-6 text-white">
                 <h2 className="text-2xl font-bold mb-2">
-                    Welcome back, {user?.user_metadata?.first_name}!
+                    Hi {user?.user_metadata?.first_name}!
                 </h2>
                 <p className="text-blue-100">
                     Manage your classes and track student enrollments.

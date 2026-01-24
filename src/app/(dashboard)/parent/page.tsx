@@ -37,7 +37,7 @@ export default async function ParentDashboardPage() {
             {/* Welcome Section */}
             <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 text-white">
                 <h2 className="text-2xl font-bold mb-2">
-                    Welcome back, {user?.user_metadata?.first_name}!
+                    Hi {user?.user_metadata?.first_name}!
                 </h2>
                 <p className="text-purple-100">
                     Manage your family and class enrollments from your dashboard.

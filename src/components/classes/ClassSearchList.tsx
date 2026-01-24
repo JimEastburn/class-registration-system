@@ -50,7 +50,7 @@ export default function ClassSearchList({ initialClasses }: ClassSearchListProps
                 <Input
                     type="text"
                     placeholder="Search by class or teacher name..."
-                    className="pl-10"
+                    className="pl-10 border-purple-200 focus-visible:ring-purple-500"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     data-testid="class-search-input"

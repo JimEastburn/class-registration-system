@@ -78,11 +78,10 @@ export default function RegisterForm() {
                             </svg>
                         </div>
                         <h3 className="text-xl font-semibold text-white">
-                            Check Your Email
+                            Your registration is complete
                         </h3>
                         <p className="text-slate-300">
-                            We&apos;ve sent you a confirmation link. Please check your email to
-                            verify your account.
+                            Please click the Back to Login button below
                         </p>
                         <Link href="/login">
                             <Button className="bg-primary hover:bg-primary/90">
@@ -162,7 +161,7 @@ export default function RegisterForm() {
                         <Label htmlFor="role" className="text-slate-200">
                             I am a...
                         </Label>
-                        <Select onValueChange={(value) => setValue('role', value as 'parent' | 'teacher' | 'student')}>
+                        <Select onValueChange={(value) => setValue('role', value as 'parent' | 'teacher' | 'student', { shouldValidate: true })}>
                             <SelectTrigger className="bg-white/10 border-white/20 text-white" data-testid="role-select-trigger">
                                 <SelectValue placeholder="Select your role" />
                             </SelectTrigger>

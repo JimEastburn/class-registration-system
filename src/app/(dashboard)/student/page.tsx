@@ -26,7 +26,7 @@ export default async function StudentDashboardPage() {
             {/* Welcome Section */}
             <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-6 text-white">
                 <h2 className="text-2xl font-bold mb-2">
-                    Welcome back, {user?.user_metadata?.first_name}!
+                    Hi {user?.user_metadata?.first_name}!
                 </h2>
                 <p className="text-green-100">
                     {isLinked
