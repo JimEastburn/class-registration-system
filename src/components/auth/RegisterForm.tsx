@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useGlobalLoading } from '@/components/providers/GlobalLoadingProvider';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -19,7 +20,7 @@ import {
 } from '@/components/ui/select';
 
 export default function RegisterForm() {
-    const [isLoading, setIsLoading] = useState(false);
+    const { startLoading, stopLoading, isLoading } = useGlobalLoading();
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
@@ -33,27 +34,32 @@ export default function RegisterForm() {
     });
 
     const onSubmit = async (data: RegisterFormData) => {
-        setIsLoading(true);
+        startLoading();
         setError(null);
 
-        const formData = new FormData();
-        formData.append('email', data.email);
-        formData.append('password', data.password);
-        formData.append('firstName', data.firstName);
-        formData.append('lastName', data.lastName);
-        formData.append('role', data.role);
-        if (data.phone) {
-            formData.append('phone', data.phone);
-        }
+        try {
+            const formData = new FormData();
+            formData.append('email', data.email);
+            formData.append('password', data.password);
+            formData.append('firstName', data.firstName);
+            formData.append('lastName', data.lastName);
+            formData.append('role', data.role);
+            if (data.phone) {
+                formData.append('phone', data.phone);
+            }
 
-        const result = await signUp(formData);
+            const result = await signUp(formData);
 
-        if (result.error) {
-            setError(result.error);
-            setIsLoading(false);
-        } else {
-            setSuccess(true);
-            setIsLoading(false);
+            if (result.error) {
+                setError(result.error);
+                stopLoading();
+            } else {
+                setSuccess(true);
+                stopLoading();
+            }
+        } catch (e) {
+            setError('An unexpected error occurred');
+            stopLoading();
         }
     };
 
@@ -229,7 +235,7 @@ export default function RegisterForm() {
                         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                         disabled={isLoading}
                     >
-                        {isLoading ? 'Creating account...' : 'Create Account'}
+                        Create Account
                     </Button>
 
                     <p className="text-sm text-slate-300 text-center">
@@ -243,6 +249,6 @@ export default function RegisterForm() {
                     </p>
                 </CardFooter>
             </form>
-        </Card>
+        </Card >
     );
 }

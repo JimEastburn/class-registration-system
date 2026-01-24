@@ -8,6 +8,14 @@ vi.mock('@/lib/actions/auth', () => ({
     signUp: vi.fn(),
 }));
 
+vi.mock('@/components/providers/GlobalLoadingProvider', () => ({
+    useGlobalLoading: () => ({
+        startLoading: vi.fn(),
+        stopLoading: vi.fn(),
+        isLoading: false,
+    }),
+}));
+
 // Fix for Radix UI Select in jsdom
 beforeAll(() => {
     // @ts-ignore

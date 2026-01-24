@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useGlobalLoading } from '@/components/providers/GlobalLoadingProvider';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -12,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 
 export default function LoginForm() {
-    const [isLoading, setIsLoading] = useState(false);
+    const { startLoading, stopLoading, isLoading } = useGlobalLoading();
     const [error, setError] = useState<string | null>(null);
 
     const {
@@ -24,18 +25,23 @@ export default function LoginForm() {
     });
 
     const onSubmit = async (data: LoginFormData) => {
-        setIsLoading(true);
+        startLoading();
         setError(null);
 
-        const formData = new FormData();
-        formData.append('email', data.email);
-        formData.append('password', data.password);
+        try {
+            const formData = new FormData();
+            formData.append('email', data.email);
+            formData.append('password', data.password);
 
-        const result = await signIn(formData);
+            const result = await signIn(formData);
 
-        if (result?.error) {
-            setError(result.error);
-            setIsLoading(false);
+            if (result?.error) {
+                setError(result.error);
+                stopLoading();
+            }
+        } catch (e) {
+            setError('An unexpected error occurred');
+            stopLoading();
         }
     };
 
@@ -103,7 +109,7 @@ export default function LoginForm() {
                         disabled={isLoading}
                         data-testid="login-submit-button"
                     >
-                        {isLoading ? 'Signing in...' : 'Sign In'}
+                        Sign In
                     </Button>
 
                     <p className="text-sm text-slate-300 text-center">

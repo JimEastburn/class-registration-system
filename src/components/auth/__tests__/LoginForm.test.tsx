@@ -7,6 +7,14 @@ vi.mock('@/lib/actions/auth', () => ({
     signIn: vi.fn(),
 }));
 
+vi.mock('@/components/providers/GlobalLoadingProvider', () => ({
+    useGlobalLoading: () => ({
+        startLoading: vi.fn(),
+        stopLoading: vi.fn(),
+        isLoading: false,
+    }),
+}));
+
 describe('LoginForm', () => {
     it('does not have a placeholder for the password field', () => {
         render(<LoginForm />);
