@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Footer } from "@/components/layout/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,9 +29,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased pb-12`}
       >
         {children}
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-gray-200 p-2 text-center text-sm text-muted-foreground z-50 backdrop-blur-sm">
-          For help, please email <a href="mailto:communitysupport@austinaac.org" className="text-blue-600 hover:underline font-medium">communitysupport@austinaac.org</a>
-        </div>
+        <Footer />
       </body>
     </html>
   );
