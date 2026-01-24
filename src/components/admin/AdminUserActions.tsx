@@ -33,16 +33,22 @@ export default function AdminUserActions({ userId, currentRole }: AdminUserActio
     const handleRoleChange = async (newRole: 'parent' | 'teacher' | 'student' | 'admin') => {
         setIsLoading(true);
         setError(null);
-        const result = await updateUserRole(userId, newRole);
-        if (result.error) {
-            setError(result.error);
-            toast.error('Failed to update role', {
-                description: result.error,
-            });
-        } else {
-            toast.success('Role updated successfully');
+        try {
+            const result = await updateUserRole(userId, newRole);
+            if (result.error) {
+                setError(result.error);
+                toast.error('Failed to update role', {
+                    description: result.error,
+                });
+            } else {
+                toast.success('Role updated successfully');
+            }
+        } catch (err) {
+            console.error('Unexpected error updating role:', err);
+            toast.error('An unexpected error occurred');
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     };
 
     const handleDelete = async () => {

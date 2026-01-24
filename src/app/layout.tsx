@@ -4,6 +4,7 @@ import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
 import { GlobalLoadingProvider } from "@/components/providers/GlobalLoadingProvider";
 import { GlobalSpinner } from "@/components/ui/global-spinner";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,6 +35,7 @@ export default function RootLayout({
           {children}
           <Footer />
           <GlobalSpinner />
+          <Toaster />
         </GlobalLoadingProvider>
       </body>
     </html>
