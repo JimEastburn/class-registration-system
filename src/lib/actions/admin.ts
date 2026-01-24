@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
 export type AdminActionResult = {
@@ -28,6 +29,18 @@ export async function updateUserRole(
 
     if (error) {
         return { error: error.message };
+    }
+
+    // Sync role to auth metadata
+    const adminClient = createAdminClient();
+    const { error: metadataError } = await adminClient.auth.admin.updateUserById(
+        userId,
+        { user_metadata: { role } }
+    );
+
+    if (metadataError) {
+        // Log error but don't fail the request since profile was updated
+        console.error('Failed to sync user role to auth metadata:', metadataError);
     }
 
     revalidatePath('/admin/users');
