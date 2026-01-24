@@ -123,18 +123,23 @@ describe('registerSchema', () => {
         expect(result.success).toBe(false);
     });
 
-    it('rejects invalid role', () => {
+    it('rejects invalid role with custom message', () => {
         const invalidData = {
             email: 'test@example.com',
             password: 'Password123',
             confirmPassword: 'Password123',
             firstName: 'John',
             lastName: 'Doe',
-            role: 'invalid' as const,
+            role: 'invalid', // not cast as const to allow invalid string
         };
 
         const result = registerSchema.safeParse(invalidData);
         expect(result.success).toBe(false);
+        if (!result.success) {
+            expect(result.error.issues[0].message).toBe(
+                'Please select Parent/Guardian or Student or Teacher'
+            );
+        }
     });
 });
 

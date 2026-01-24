@@ -198,7 +198,6 @@ export default function RegisterForm() {
                         <Input
                             id="password"
                             type="password"
-                            placeholder="••••••••"
                             className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
                             {...register('password')}
                         />
@@ -214,7 +213,6 @@ export default function RegisterForm() {
                         <Input
                             id="confirmPassword"
                             type="password"
-                            placeholder="••••••••"
                             className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
                             {...register('confirmPassword')}
                         />
