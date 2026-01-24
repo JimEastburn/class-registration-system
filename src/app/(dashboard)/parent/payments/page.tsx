@@ -163,7 +163,7 @@ export default async function PaymentHistoryPage() {
                 <CardContent className="py-4">
                     <p className="text-sm text-slate-600">
                         <strong>Need help?</strong> If you have questions about a payment or need to request a refund,
-                        please contact us at <a href="mailto:support@example.com" className="text-purple-600 underline">support@example.com</a>
+                        please contact us at <a href="mailto:communitysupport@austinaac.org" className="text-purple-600 underline">communitysupport@austinaac.org</a>
                     </p>
                 </CardContent>
             </Card>

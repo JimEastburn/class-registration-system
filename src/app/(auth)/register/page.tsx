@@ -33,17 +33,33 @@ export default async function RegisterPage() {
                     />
                 </div>
 
-                {/* Form Container */}
-                <div className="w-full max-w-md bg-slate-800/50 p-8 rounded-2xl border border-slate-700 shadow-xl backdrop-blur-sm">
-                    <div className="text-center mb-8">
-                        <h1 className="text-3xl font-bold text-white mb-2">
-                            Create Account
-                        </h1>
-                        <p className="text-gray-300">
-                            Join our class registration system
+                {/* Center Column */}
+                <div className="flex flex-col w-full max-w-md gap-6">
+                    {/* Form Container */}
+                    <div className="w-full bg-slate-800/50 p-8 rounded-2xl border border-slate-700 shadow-xl backdrop-blur-sm">
+                        <div className="text-center mb-8">
+                            <h1 className="text-3xl font-bold text-white mb-2">
+                                Create Account
+                            </h1>
+                            <p className="text-gray-300">
+                                Join our class registration system
+                            </p>
+                        </div>
+                        <RegisterForm />
+                    </div>
+
+                    {/* Support Info Card */}
+                    <div className="w-full bg-slate-800/50 backdrop-blur-md rounded-xl p-4 border border-slate-700 shadow-lg text-center">
+                        <p className="text-slate-300 text-sm">
+                            For help please email{' '}
+                            <a
+                                href="mailto:communitysupport@austinaac.org"
+                                className="text-teal-400 font-medium hover:text-teal-300 transition-colors"
+                            >
+                                communitysupport@austinaac.org
+                            </a>
                         </p>
                     </div>
-                    <RegisterForm />
                 </div>
 
                 {/* Right Image */}

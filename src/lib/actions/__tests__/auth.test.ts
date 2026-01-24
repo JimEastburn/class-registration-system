@@ -1,8 +1,14 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
 import { signUp, signIn, signOut, forgotPassword, resetPassword, updateProfile } from '../auth';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
+
+interface RedirectError extends Error {
+    digest: string;
+}
 
 // Mock the dependencies
 vi.mock('@/lib/supabase/server', () => ({
@@ -11,8 +17,8 @@ vi.mock('@/lib/supabase/server', () => ({
 
 vi.mock('next/navigation', () => ({
     redirect: vi.fn((url: string) => {
-        const error = new Error('NEXT_REDIRECT');
-        (error as any).digest = `NEXT_REDIRECT;${url}`;
+        const error = new Error('NEXT_REDIRECT') as RedirectError;
+        error.digest = `NEXT_REDIRECT;${url}`;
         throw error;
     }),
 }));
@@ -22,7 +28,7 @@ vi.mock('next/cache', () => ({
 }));
 
 describe('Auth Server Actions implementation', () => {
-    let mockSupabase: any;
+    let mockSupabase: Mocked<SupabaseClient<Database>>;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -41,7 +47,7 @@ describe('Auth Server Actions implementation', () => {
                 update: vi.fn().mockReturnThis(),
                 eq: vi.fn().mockReturnThis(),
             })),
-        };
+        } as unknown as Mocked<SupabaseClient<Database>>;
 
         (createClient as Mock).mockResolvedValue(mockSupabase);
     });
@@ -56,7 +62,7 @@ describe('Auth Server Actions implementation', () => {
             formData.append('role', 'parent');
             formData.append('phone', '1234567890');
 
-            mockSupabase.auth.signUp.mockResolvedValue({ data: {}, error: null });
+            (mockSupabase.auth.signUp as Mock).mockResolvedValue({ data: {}, error: null });
 
             const result = await signUp(formData);
 
@@ -78,7 +84,7 @@ describe('Auth Server Actions implementation', () => {
 
         it('should return error if signUp fails', async () => {
             const formData = new FormData();
-            mockSupabase.auth.signUp.mockResolvedValue({
+            (mockSupabase.auth.signUp as Mock).mockResolvedValue({
                 data: {},
                 error: { message: 'Signup failed' }
             });
@@ -94,8 +100,8 @@ describe('Auth Server Actions implementation', () => {
             formData.append('email', 'test@example.com');
             formData.append('password', 'password123');
 
-            mockSupabase.auth.signInWithPassword.mockResolvedValue({ data: {}, error: null });
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.signInWithPassword as Mock).mockResolvedValue({ data: {}, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { id: 'user123', email: 'test@example.com', user_metadata: { role: 'teacher' } } },
                 error: null
             });
@@ -118,9 +124,10 @@ describe('Auth Server Actions implementation', () => {
 
             try {
                 await signIn(formData);
-            } catch (e: any) {
-                expect(e.message).toBe('NEXT_REDIRECT');
-                expect(e.digest).toBe('NEXT_REDIRECT;/teacher');
+            } catch (e) {
+                const error = e as RedirectError;
+                expect(error.message).toBe('NEXT_REDIRECT');
+                expect(error.digest).toBe('NEXT_REDIRECT;/teacher');
             }
 
             expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalledWith({
@@ -138,7 +145,7 @@ describe('Auth Server Actions implementation', () => {
 
         it('should return error if signIn fails', async () => {
             const formData = new FormData();
-            mockSupabase.auth.signInWithPassword.mockResolvedValue({
+            (mockSupabase.auth.signInWithPassword as Mock).mockResolvedValue({
                 data: {},
                 error: { message: 'Invalid credentials' }
             });
@@ -152,9 +159,10 @@ describe('Auth Server Actions implementation', () => {
         it('should call signOut and redirect to login', async () => {
             try {
                 await signOut();
-            } catch (e: any) {
-                expect(e.message).toBe('NEXT_REDIRECT');
-                expect(e.digest).toBe('NEXT_REDIRECT;/login');
+            } catch (e) {
+                const error = e as RedirectError;
+                expect(error.message).toBe('NEXT_REDIRECT');
+                expect(error.digest).toBe('NEXT_REDIRECT;/login');
             }
 
             expect(mockSupabase.auth.signOut).toHaveBeenCalled();
@@ -167,7 +175,7 @@ describe('Auth Server Actions implementation', () => {
             const formData = new FormData();
             formData.append('email', 'test@example.com');
 
-            mockSupabase.auth.resetPasswordForEmail.mockResolvedValue({ error: null });
+            (mockSupabase.auth.resetPasswordForEmail as Mock).mockResolvedValue({ error: null });
 
             const result = await forgotPassword(formData);
 
@@ -181,7 +189,7 @@ describe('Auth Server Actions implementation', () => {
         it('should return error if resetPasswordForEmail fails', async () => {
             const formData = new FormData();
             formData.append('email', 'test@example.com');
-            mockSupabase.auth.resetPasswordForEmail.mockResolvedValue({
+            (mockSupabase.auth.resetPasswordForEmail as Mock).mockResolvedValue({
                 error: { message: 'Failed to send email' }
             });
 
@@ -195,7 +203,7 @@ describe('Auth Server Actions implementation', () => {
             const formData = new FormData();
             formData.append('password', 'newpassword123');
 
-            mockSupabase.auth.updateUser.mockResolvedValue({ error: null });
+            (mockSupabase.auth.updateUser as Mock).mockResolvedValue({ error: null });
 
             const result = await resetPassword(formData);
 
@@ -208,7 +216,7 @@ describe('Auth Server Actions implementation', () => {
         it('should return error if updateUser fails', async () => {
             const formData = new FormData();
             formData.append('password', 'newpassword123');
-            mockSupabase.auth.updateUser.mockResolvedValue({
+            (mockSupabase.auth.updateUser as Mock).mockResolvedValue({
                 error: { message: 'Update failed' }
             });
 
@@ -225,7 +233,7 @@ describe('Auth Server Actions implementation', () => {
             formData.append('phone', '0987654321');
             formData.append('bio', 'Hello');
 
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { id: 'user123' } },
                 error: null
             });
@@ -249,7 +257,7 @@ describe('Auth Server Actions implementation', () => {
             const formData = new FormData();
             formData.append('firstName', 'Jane');
 
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { id: 'user123' } },
                 error: null
             });
@@ -258,7 +266,7 @@ describe('Auth Server Actions implementation', () => {
                 update: vi.fn().mockReturnValue({
                     eq: vi.fn().mockResolvedValue({ error: { message: 'Database error' } })
                 })
-            });
+            } as any);
 
             const result = await updateProfile(formData);
             expect(result).toEqual({ error: 'Database error' });
@@ -266,7 +274,7 @@ describe('Auth Server Actions implementation', () => {
 
         it('should return error if not authenticated', async () => {
             const formData = new FormData();
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: null }, error: null });
 
             const result = await updateProfile(formData);
             expect(result).toEqual({ error: 'Not authenticated' });

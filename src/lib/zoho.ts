@@ -8,6 +8,41 @@ const ZOHO_REFRESH_TOKEN = process.env.ZOHO_REFRESH_TOKEN;
 const ZOHO_ORGANIZATION_ID = process.env.ZOHO_ORGANIZATION_ID;
 const ZOHO_BASE_URL = 'https://www.zohoapis.com/books/v3';
 
+// Type definitions for Zoho integration
+interface ParentInfo {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone?: string;
+}
+
+interface StudentInfo {
+    first_name: string;
+    last_name: string;
+}
+
+interface ClassInfo {
+    name: string;
+    fee: number;
+    description?: string;
+}
+
+interface PaymentEnrollment {
+    id: string;
+    student: StudentInfo;
+    class: ClassInfo;
+    parent: ParentInfo;
+}
+
+interface PaymentWithEnrollment {
+    id: string;
+    amount: number;
+    transaction_id: string;
+    paid_at?: string;
+    created_at: string;
+    enrollment: PaymentEnrollment;
+}
+
 // Supabase Admin Client
 const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -54,10 +89,9 @@ export async function syncPaymentToZoho(paymentId: string) {
             throw new Error(`Payment ${paymentId} not found in database`);
         }
 
-        const enrollment = payment.enrollment as any;
+        const typedPayment = payment as unknown as PaymentWithEnrollment;
+        const enrollment = typedPayment.enrollment;
         const parent = enrollment.parent;
-        const student = enrollment.student;
-        const classData = enrollment.class;
 
         const accessToken = await getAccessToken();
 
@@ -87,20 +121,21 @@ export async function syncPaymentToZoho(paymentId: string) {
         console.log(`Successfully synced payment ${paymentId} to Zoho Books (Invoice: ${invoiceId})`);
         return { success: true, invoiceId };
 
-    } catch (error: any) {
-        console.error(`Zoho Sync Error for payment ${paymentId}:`, error.message);
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`Zoho Sync Error for payment ${paymentId}:`, errorMessage);
 
         // Log failure to database
         await supabaseAdmin
             .from('payments')
             .update({
                 sync_status: 'failed',
-                sync_error: error.message,
+                sync_error: errorMessage,
                 updated_at: new Date().toISOString()
             })
             .eq('id', paymentId);
 
-        return { success: false, error: error.message };
+        return { success: false, error: errorMessage };
     }
 }
 
@@ -112,7 +147,7 @@ async function findZohoContact(email: string, token: string): Promise<string | n
     return data.contacts?.[0]?.contact_id || null;
 }
 
-async function createZohoContact(parent: any, token: string): Promise<string> {
+async function createZohoContact(parent: ParentInfo, token: string): Promise<string> {
     const response = await fetch(`${ZOHO_BASE_URL}/contacts?organization_id=${ZOHO_ORGANIZATION_ID}`, {
         method: 'POST',
         headers: {
@@ -135,7 +170,7 @@ async function createZohoContact(parent: any, token: string): Promise<string> {
     return data.contact.contact_id;
 }
 
-async function createZohoInvoice(contactId: string, enrollment: any, payment: any, token: string): Promise<string> {
+async function createZohoInvoice(contactId: string, enrollment: PaymentEnrollment, payment: PaymentWithEnrollment, token: string): Promise<string> {
     const response = await fetch(`${ZOHO_BASE_URL}/invoices?organization_id=${ZOHO_ORGANIZATION_ID}`, {
         method: 'POST',
         headers: {
@@ -159,7 +194,7 @@ async function createZohoInvoice(contactId: string, enrollment: any, payment: an
     return data.invoice.invoice_id;
 }
 
-async function recordZohoPayment(invoiceId: string, contactId: string, payment: any, token: string) {
+async function recordZohoPayment(invoiceId: string, contactId: string, payment: PaymentWithEnrollment, token: string) {
     const response = await fetch(`${ZOHO_BASE_URL}/customerpayments?organization_id=${ZOHO_ORGANIZATION_ID}`, {
         method: 'POST',
         headers: {

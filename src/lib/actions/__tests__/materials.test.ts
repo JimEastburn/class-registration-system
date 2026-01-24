@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
 import { addMaterial, deleteMaterial, updateMaterial } from '../materials';
 import { createClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
 
 // Mock the dependencies
 vi.mock('@/lib/supabase/server', () => ({
@@ -13,7 +14,7 @@ vi.mock('next/cache', () => ({
 }));
 
 describe('Materials Server Actions implementation', () => {
-    let mockSupabase: any;
+    let mockSupabase: Mocked<SupabaseClient<Database>>;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -42,14 +43,14 @@ describe('Materials Server Actions implementation', () => {
                 getUser: vi.fn(),
             },
             from: vi.fn(() => fromObj),
-        };
+        } as unknown as Mocked<SupabaseClient<Database>>;
 
         (createClient as Mock).mockResolvedValue(mockSupabase);
     });
 
     describe('addMaterial', () => {
         it('should return error if not a teacher/admin', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { id: 'user123', user_metadata: { role: 'parent' } } },
                 error: null
             });
@@ -58,7 +59,7 @@ describe('Materials Server Actions implementation', () => {
                 select: vi.fn().mockReturnThis(),
                 eq: vi.fn().mockReturnThis(),
                 single: vi.fn().mockResolvedValue({ data: { teacher_id: 'otherTeacher' }, error: null })
-            });
+            } as unknown as any); // eslint-disable-line @typescript-eslint/no-explicit-any
 
             const result = await addMaterial('class123', {
                 name: 'Syllabus',
@@ -69,7 +70,7 @@ describe('Materials Server Actions implementation', () => {
         });
 
         it('should add material if teacher', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { id: 'teacher123', user_metadata: { role: 'teacher' } } },
                 error: null
             });
@@ -78,7 +79,7 @@ describe('Materials Server Actions implementation', () => {
                 select: vi.fn().mockReturnThis(),
                 eq: vi.fn().mockReturnThis(),
                 single: vi.fn().mockResolvedValue({ data: { teacher_id: 'teacher123' }, error: null })
-            });
+            } as unknown as any); // eslint-disable-line @typescript-eslint/no-explicit-any
 
             // Mock insert with select().single()
             const mockSingle = vi.fn().mockResolvedValue({ data: { id: 'mat123' }, error: null });
@@ -100,19 +101,19 @@ describe('Materials Server Actions implementation', () => {
 
     describe('deleteMaterial', () => {
         it('should return error if material not found', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'teacher123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'teacher123' } }, error: null });
             mockSupabase.from.mockReturnValueOnce({
                 select: vi.fn().mockReturnThis(),
                 eq: vi.fn().mockReturnThis(),
                 single: vi.fn().mockResolvedValue({ data: null, error: null })
-            });
+            } as unknown as any); // eslint-disable-line @typescript-eslint/no-explicit-any
 
             const result = await deleteMaterial('mat123');
             expect(result.error).toBe('Material not found');
         });
 
         it('should delete material if authorized', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { id: 'teacher123', user_metadata: { role: 'teacher' } } },
                 error: null
             });
@@ -138,7 +139,7 @@ describe('Materials Server Actions implementation', () => {
 
     describe('updateMaterial', () => {
         it('should update material if authorized', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { id: 'teacher123', user_metadata: { role: 'teacher' } } },
                 error: null
             });

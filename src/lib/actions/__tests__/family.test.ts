@@ -1,7 +1,9 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
 import { addFamilyMember, updateFamilyMember, deleteFamilyMember } from '../family';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
 
 // Mock the dependencies
 vi.mock('@/lib/supabase/server', () => ({
@@ -13,7 +15,7 @@ vi.mock('next/cache', () => ({
 }));
 
 describe('Family Server Actions implementation', () => {
-    let mockSupabase: any;
+    let mockSupabase: Mocked<SupabaseClient<Database>>;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -38,20 +40,20 @@ describe('Family Server Actions implementation', () => {
                 getUser: vi.fn(),
             },
             from: vi.fn(() => fromObj),
-        };
+        } as unknown as Mocked<SupabaseClient<Database>>;
 
         (createClient as Mock).mockResolvedValue(mockSupabase);
     });
 
     describe('addFamilyMember', () => {
         it('should return error if not authenticated', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: null }, error: null });
             const result = await addFamilyMember(new FormData());
             expect(result).toEqual({ error: 'Not authenticated' });
         });
 
         it('should insert family member and revalidate', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
 
             const formData = new FormData();
             formData.append('firstName', 'Jane');
@@ -78,7 +80,7 @@ describe('Family Server Actions implementation', () => {
         });
 
         it('should handle optional fields as null', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
 
             const formData = new FormData();
             formData.append('firstName', 'Jane');
@@ -97,7 +99,7 @@ describe('Family Server Actions implementation', () => {
 
     describe('updateFamilyMember', () => {
         it('should update family member and revalidate', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
 
             const formData = new FormData();
             formData.append('firstName', 'Jane');
@@ -121,7 +123,7 @@ describe('Family Server Actions implementation', () => {
 
     describe('deleteFamilyMember', () => {
         it('should delete family member and revalidate', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
 
             const mockDelete = vi.fn().mockResolvedValue({ error: null });
             const mockEq = vi.fn().mockReturnValue({ eq: mockDelete });
@@ -138,7 +140,7 @@ describe('Family Server Actions implementation', () => {
         });
 
         it('should strictly filter by parent_id during deletion to prevent cross-parent exploitation', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'maliciousParent' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'maliciousParent' } }, error: null });
 
             const mockDelete = vi.fn().mockResolvedValue({ error: null });
             const mockEq = vi.fn().mockReturnValue({ eq: mockDelete });

@@ -1,7 +1,9 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { joinWaitlist, leaveWaitlist, getWaitlistPosition } from '../waitlist';
+import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
+import { joinWaitlist, leaveWaitlist } from '../waitlist';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
 
 // Mock the dependencies
 vi.mock('@/lib/supabase/server', () => ({
@@ -13,7 +15,7 @@ vi.mock('next/cache', () => ({
 }));
 
 describe('Waitlist Server Actions implementation', () => {
-    let mockSupabase: any;
+    let mockSupabase: Mocked<SupabaseClient<Database>>;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -53,13 +55,13 @@ describe('Waitlist Server Actions implementation', () => {
 
     describe('joinWaitlist', () => {
         it('should return error if not authenticated', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: null }, error: null });
             const result = await joinWaitlist('class123', 'student123');
             expect(result.error).toContain('log in');
         });
 
         it('should return error if student not owned', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
             mockSupabase.from.mockReturnValueOnce({
                 select: vi.fn().mockReturnThis(),
                 eq: vi.fn().mockReturnThis(),
@@ -71,7 +73,7 @@ describe('Waitlist Server Actions implementation', () => {
         });
 
         it('should return error if class is not full', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
             // Student check
             mockSupabase.from.mockReturnValueOnce({
                 select: vi.fn().mockReturnThis(),
@@ -90,7 +92,7 @@ describe('Waitlist Server Actions implementation', () => {
         });
 
         it('should join waitlist at next position', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
 
             // Student check
             mockSupabase.from.mockReturnValueOnce({
@@ -121,7 +123,7 @@ describe('Waitlist Server Actions implementation', () => {
         });
 
         it('should join waitlist at position 1 if waitlist is empty', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
 
             // Student check
             mockSupabase.from.mockReturnValueOnce({
@@ -152,7 +154,7 @@ describe('Waitlist Server Actions implementation', () => {
 
     describe('leaveWaitlist', () => {
         it('should update waitlist status to cancelled', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
 
             const mockUpdate = vi.fn().mockResolvedValue({ error: null });
             const mockEq = vi.fn().mockReturnValue({ eq: mockUpdate });

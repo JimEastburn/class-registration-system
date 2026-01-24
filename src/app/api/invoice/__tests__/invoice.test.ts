@@ -1,6 +1,8 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
 import { GET } from '../route';
 import { createClient } from '@/lib/supabase/server';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
 
 // Mock the dependencies
 vi.mock('@/lib/supabase/server', () => ({
@@ -8,7 +10,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 describe('Invoice API Route', () => {
-    let mockSupabase: any;
+    let mockSupabase: Mocked<SupabaseClient<Database>>;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -29,13 +31,13 @@ describe('Invoice API Route', () => {
                 getUser: vi.fn(),
             },
             from: vi.fn(() => fromObj),
-        };
+        } as unknown as Mocked<SupabaseClient<Database>>;
 
         (createClient as Mock).mockResolvedValue(mockSupabase);
     });
 
     it('should return 401 if not authenticated', async () => {
-        mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+        (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: null }, error: null });
 
         const request = new Request('http://localhost:3000/api/invoice?id=pay123');
 
@@ -47,7 +49,7 @@ describe('Invoice API Route', () => {
     });
 
     it('should return 400 if id is missing', async () => {
-        mockSupabase.auth.getUser.mockResolvedValue({
+        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
             data: { user: { id: 'parent123' } },
             error: null
         });
@@ -62,7 +64,7 @@ describe('Invoice API Route', () => {
     });
 
     it('should return 403 if user not authorized to view invoice', async () => {
-        mockSupabase.auth.getUser.mockResolvedValue({
+        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
             data: { user: { id: 'parent123', user_metadata: { role: 'parent' } } },
             error: null
         });
@@ -104,7 +106,7 @@ describe('Invoice API Route', () => {
     });
 
     it('should return HTML invoice for authorized user', async () => {
-        mockSupabase.auth.getUser.mockResolvedValue({
+        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
             data: { user: { id: 'parent123', user_metadata: { role: 'parent' } } },
             error: null
         });

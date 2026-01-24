@@ -1,8 +1,10 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
 import { POST } from '../route';
 import { stripe } from '@/lib/stripe';
 import { sendPaymentReceipt } from '@/lib/email';
 import { createClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
 
 // Mock the dependencies
 vi.mock('@/lib/stripe', () => ({
@@ -32,9 +34,17 @@ vi.mock('next/headers', () => ({
     }),
 }));
 
+interface MockBuilder {
+    select: ReturnType<typeof vi.fn>;
+    eq: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    single: ReturnType<typeof vi.fn>;
+}
+
+
 describe('Stripe Webhook API Route', () => {
-    let mockSupabase: any;
-    let mockBuilder: any;
+    let mockSupabase: Mocked<SupabaseClient<Database>>;
+    let mockBuilder: MockBuilder;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -48,7 +58,7 @@ describe('Stripe Webhook API Route', () => {
 
         mockSupabase = {
             from: vi.fn().mockReturnValue(mockBuilder),
-        };
+        } as unknown as Mocked<SupabaseClient<Database>>;
 
         (createClient as Mock).mockReturnValue(mockSupabase);
     });

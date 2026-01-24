@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
 import { processRefund } from '../refunds';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import Stripe from 'stripe';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
 
 // Mock the dependencies
 vi.mock('@/lib/supabase/server', () => ({
@@ -25,9 +26,10 @@ vi.mock('stripe', () => {
     };
 });
 
+type MockSupabaseClient = Mocked<SupabaseClient<Database>>;
+
 describe('Refunds Server Actions implementation', () => {
-    let mockSupabase: any;
-    let mockStripe: any;
+    let mockSupabase: MockSupabaseClient;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -61,7 +63,7 @@ describe('Refunds Server Actions implementation', () => {
 
     describe('processRefund', () => {
         it('should return error if not admin', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { user_metadata: { role: 'parent' } } },
                 error: null
             });
@@ -70,7 +72,7 @@ describe('Refunds Server Actions implementation', () => {
         });
 
         it('should return error if payment not found', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { user_metadata: { role: 'admin' } } },
                 error: null
             });
@@ -85,7 +87,7 @@ describe('Refunds Server Actions implementation', () => {
         });
 
         it('should return error if payment is not completed', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { user_metadata: { role: 'admin' } } },
                 error: null
             });
@@ -100,7 +102,7 @@ describe('Refunds Server Actions implementation', () => {
         });
 
         it('should process refund, update database, and revalidate', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { user_metadata: { role: 'admin' } } },
                 error: null
             });
@@ -130,7 +132,7 @@ describe('Refunds Server Actions implementation', () => {
             expect(revalidatePath).toHaveBeenCalledWith('/admin/payments');
         });
         it('should return error if payment is already refunded', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { user_metadata: { role: 'admin' } } },
                 error: null
             });
@@ -145,7 +147,7 @@ describe('Refunds Server Actions implementation', () => {
         });
 
         it('should return success even if Supabase update fails after Stripe succeeds', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { user_metadata: { role: 'admin' } } },
                 error: null
             });

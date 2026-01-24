@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
 import { POST } from '../route';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
-import { NextResponse } from 'next/server';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
 
 // Mock the dependencies
 vi.mock('@/lib/supabase/server', () => ({
@@ -21,7 +22,7 @@ vi.mock('@/lib/stripe', () => ({
 }));
 
 describe('Checkout API Route', () => {
-    let mockSupabase: any;
+    let mockSupabase: Mocked<SupabaseClient<Database>>;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -43,13 +44,13 @@ describe('Checkout API Route', () => {
                 getUser: vi.fn(),
             },
             from: vi.fn(() => fromObj),
-        };
+        } as unknown as Mocked<SupabaseClient<Database>>;
 
         (createClient as Mock).mockResolvedValue(mockSupabase);
     });
 
     it('should return 401 if not authenticated', async () => {
-        mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+        (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: null }, error: null });
 
         const request = new Request('http://localhost:3000/api/checkout', {
             method: 'POST',
@@ -64,7 +65,7 @@ describe('Checkout API Route', () => {
     });
 
     it('should return 400 if enrollmentId is missing', async () => {
-        mockSupabase.auth.getUser.mockResolvedValue({
+        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
             data: { user: { id: 'parent123' } },
             error: null
         });
@@ -82,7 +83,7 @@ describe('Checkout API Route', () => {
     });
 
     it('should return 403 if user does not own the enrollment', async () => {
-        mockSupabase.auth.getUser.mockResolvedValue({
+        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
             data: { user: { id: 'parent123' } },
             error: null
         });
@@ -110,7 +111,7 @@ describe('Checkout API Route', () => {
     });
 
     it('should create checkout session and payment record', async () => {
-        mockSupabase.auth.getUser.mockResolvedValue({
+        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
             data: { user: { id: 'parent123' } },
             error: null
         });

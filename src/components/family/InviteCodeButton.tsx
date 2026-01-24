@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { generateFamilyInviteCode, getActiveInviteCode } from '@/lib/actions/invites';
+import { generateFamilyInviteCode } from '@/lib/actions/invites';
 
 interface InviteCodeButtonProps {
     familyMemberId: string;

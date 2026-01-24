@@ -1,11 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
-import { createClient } from '@/lib/supabase/server';
-import { createTestUser, deleteTestUser, getAdminClient, getAuthenticatedClient } from './utils';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { createTestUser, deleteTestUser, getAdminClient } from './utils';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-
-vi.mock('@/lib/supabase/server', () => ({
-    createClient: vi.fn(),
-}));
 
 describe('Student Access (Integration)', () => {
     let parentUser: { id: string; email: string; password: string };

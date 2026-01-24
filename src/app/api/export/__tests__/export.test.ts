@@ -1,6 +1,8 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
 import { GET } from '../route';
 import { createClient } from '@/lib/supabase/server';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
 
 // Mock the dependencies
 vi.mock('@/lib/supabase/server', () => ({
@@ -8,7 +10,7 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 describe('Export API Route', () => {
-    let mockSupabase: any;
+    let mockSupabase: Mocked<SupabaseClient<Database>>;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -27,13 +29,13 @@ describe('Export API Route', () => {
                 getUser: vi.fn(),
             },
             from: vi.fn(() => fromObj),
-        };
+        } as unknown as Mocked<SupabaseClient<Database>>;
 
         (createClient as Mock).mockResolvedValue(mockSupabase);
     });
 
     it('should return 401 if not an admin', async () => {
-        mockSupabase.auth.getUser.mockResolvedValue({
+        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
             data: { user: { user_metadata: { role: 'parent' } } },
             error: null
         });
@@ -48,7 +50,7 @@ describe('Export API Route', () => {
     });
 
     it('should return CSV data for users', async () => {
-        mockSupabase.auth.getUser.mockResolvedValue({
+        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
             data: { user: { user_metadata: { role: 'admin' } } },
             error: null
         });
@@ -75,7 +77,7 @@ describe('Export API Route', () => {
     });
 
     it('should return CSV data for classes with teacher names', async () => {
-        mockSupabase.auth.getUser.mockResolvedValue({
+        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
             data: { user: { user_metadata: { role: 'admin' } } },
             error: null
         });
@@ -99,7 +101,7 @@ describe('Export API Route', () => {
     });
 
     it('should return CSV data for enrollments with names', async () => {
-        mockSupabase.auth.getUser.mockResolvedValue({
+        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
             data: { user: { user_metadata: { role: 'admin' } } },
             error: null
         });
@@ -122,7 +124,7 @@ describe('Export API Route', () => {
     });
 
     it('should identify CSV injection vulnerability in data', async () => {
-        mockSupabase.auth.getUser.mockResolvedValue({
+        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
             data: { user: { user_metadata: { role: 'admin' } } },
             error: null
         });
@@ -149,7 +151,7 @@ describe('Export API Route', () => {
     });
 
     it('should return 400 for invalid export type', async () => {
-        mockSupabase.auth.getUser.mockResolvedValue({
+        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
             data: { user: { user_metadata: { role: 'admin' } } },
             error: null
         });

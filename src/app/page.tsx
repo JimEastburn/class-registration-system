@@ -73,6 +73,21 @@ export default async function HomePage() {
                 </Button>
               </Link>
             </div>
+
+            {/* Support Info Card */}
+            <div className="mt-12 flex justify-center">
+              <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10 max-w-lg">
+                <p className="text-slate-300 text-lg">
+                  For help please email{' '}
+                  <a
+                    href="mailto:communitysupport@austinaac.org"
+                    className="text-teal-400 font-medium hover:text-teal-300 transition-colors"
+                  >
+                    communitysupport@austinaac.org
+                  </a>
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Features Grid */}

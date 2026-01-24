@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import ParentDashboardPage from '../page';
 import { createClient } from '@/lib/supabase/server';
 
@@ -6,6 +6,16 @@ import { createClient } from '@/lib/supabase/server';
 vi.mock('@/lib/supabase/server', () => ({
     createClient: vi.fn(),
 }));
+
+interface MockSupabaseClient {
+    auth: {
+        getUser: ReturnType<typeof vi.fn>;
+    };
+    from: ReturnType<typeof vi.fn>;
+    select: ReturnType<typeof vi.fn>;
+    eq: ReturnType<typeof vi.fn>;
+    in: ReturnType<typeof vi.fn>;
+}
 
 describe('ParentDashboardPage', () => {
     const mockUser = {
@@ -30,10 +40,8 @@ describe('ParentDashboardPage', () => {
     });
 
     it('should filter enrollments by family member IDs', async () => {
-        const mockFn = vi.fn().mockReturnThis();
-
         // Define specific return values for the terminal calls in the chains
-        const mockSupabase = {
+        const mockSupabase: MockSupabaseClient = {
             auth: {
                 getUser: vi.fn().mockResolvedValue({ data: { user: mockUser } }),
             },
@@ -45,7 +53,7 @@ describe('ParentDashboardPage', () => {
 
         // We use mockImplementation to return data at the end of the chain
         mockSupabase.eq.mockImplementation(() => Promise.resolve({ data: mockFamilyMembers, count: 2 }));
-        mockSupabase.in.mockImplementation((column, values) => {
+        mockSupabase.in.mockImplementation((column: string) => {
             // Second call to .in() in the chain will be status, so we check the column
             if (column === 'status') {
                 return Promise.resolve({ data: mockEnrollments });
@@ -53,7 +61,7 @@ describe('ParentDashboardPage', () => {
             return mockSupabase; // return the same mock for chaining
         });
 
-        (createClient as any).mockResolvedValue(mockSupabase);
+        (createClient as Mock).mockResolvedValue(mockSupabase);
 
         await ParentDashboardPage();
 
@@ -68,7 +76,7 @@ describe('ParentDashboardPage', () => {
     });
 
     it('should handle zero family members correctly', async () => {
-        const mockSupabase = {
+        const mockSupabase: MockSupabaseClient = {
             auth: {
                 getUser: vi.fn().mockResolvedValue({ data: { user: mockUser } }),
             },
@@ -79,14 +87,14 @@ describe('ParentDashboardPage', () => {
         };
 
         mockSupabase.eq.mockImplementation(() => Promise.resolve({ data: [], count: 0 }));
-        mockSupabase.in.mockImplementation((column) => {
+        mockSupabase.in.mockImplementation((column: string) => {
             if (column === 'status') {
                 return Promise.resolve({ data: [] });
             }
             return mockSupabase;
         });
 
-        (createClient as any).mockResolvedValue(mockSupabase);
+        (createClient as Mock).mockResolvedValue(mockSupabase);
 
         await ParentDashboardPage();
 

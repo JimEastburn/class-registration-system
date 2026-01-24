@@ -149,7 +149,7 @@ info:
   version: 1.0.0
   contact:
     name: API Support
-    email: support@example.com
+    email: communitysupport@austinaac.org
   license:
     name: MIT
     

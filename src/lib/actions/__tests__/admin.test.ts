@@ -1,7 +1,9 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
 import { updateUserRole, deleteUser, adminUpdateClass, adminDeleteClass, adminUpdateEnrollment, adminDeleteEnrollment, adminUpdatePayment } from '../admin';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
 
 // Mock the dependencies
 vi.mock('@/lib/supabase/server', () => ({
@@ -13,7 +15,7 @@ vi.mock('next/cache', () => ({
 }));
 
 describe('Admin Server Actions implementation', () => {
-    let mockSupabase: any;
+    let mockSupabase: Mocked<SupabaseClient<Database>>;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -40,14 +42,14 @@ describe('Admin Server Actions implementation', () => {
                 getUser: vi.fn(),
             },
             from: vi.fn(() => fromObj),
-        };
+        } as unknown as Mocked<SupabaseClient<Database>>;
 
         (createClient as Mock).mockResolvedValue(mockSupabase);
     });
 
     describe('Authorization', () => {
         it('should return error if not admin', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { user_metadata: { role: 'parent' } } },
                 error: null
             });
@@ -58,7 +60,7 @@ describe('Admin Server Actions implementation', () => {
 
     describe('updateUserRole', () => {
         it('should update role and revalidate', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { user_metadata: { role: 'admin' } } },
                 error: null
             });
@@ -79,7 +81,7 @@ describe('Admin Server Actions implementation', () => {
 
     describe('deleteUser', () => {
         it('should not allow deleting own account and not trigger database delete', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { id: 'admin123', user_metadata: { role: 'admin' } } },
                 error: null
             });
@@ -90,7 +92,7 @@ describe('Admin Server Actions implementation', () => {
         });
 
         it('should delete user and revalidate', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { id: 'admin123', user_metadata: { role: 'admin' } } },
                 error: null
             });
@@ -111,7 +113,7 @@ describe('Admin Server Actions implementation', () => {
 
     describe('adminUpdateClass', () => {
         it('should update class and revalidate', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { user_metadata: { role: 'admin' } } },
                 error: null
             });
@@ -131,7 +133,7 @@ describe('Admin Server Actions implementation', () => {
 
     describe('adminUpdateEnrollment', () => {
         it('should update enrollment status', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { user_metadata: { role: 'admin' } } },
                 error: null
             });
@@ -151,7 +153,7 @@ describe('Admin Server Actions implementation', () => {
 
     describe('adminUpdatePayment', () => {
         it('should update payment status', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { user_metadata: { role: 'admin' } } },
                 error: null
             });

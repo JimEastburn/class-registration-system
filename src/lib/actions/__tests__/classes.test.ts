@@ -1,7 +1,9 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
 import { createClass, updateClass, updateClassStatus, deleteClass } from '../classes';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
 
 // Mock the dependencies
 vi.mock('@/lib/supabase/server', () => ({
@@ -13,7 +15,7 @@ vi.mock('next/cache', () => ({
 }));
 
 describe('Classes Server Actions implementation', () => {
-    let mockSupabase: any;
+    let mockSupabase: Mocked<SupabaseClient<Database>>;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -39,14 +41,14 @@ describe('Classes Server Actions implementation', () => {
                 getUser: vi.fn(),
             },
             from: vi.fn(() => fromObj),
-        };
+        } as unknown as Mocked<SupabaseClient<Database>>;
 
         (createClient as Mock).mockResolvedValue(mockSupabase);
     });
 
     describe('createClass', () => {
         it('should return error if not a teacher', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { user_metadata: { role: 'parent' } } },
                 error: null
             });
@@ -55,7 +57,7 @@ describe('Classes Server Actions implementation', () => {
         });
 
         it('should create class and revalidate', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { id: 'teacher123', user_metadata: { role: 'teacher' } } },
                 error: null
             });
@@ -94,7 +96,7 @@ describe('Classes Server Actions implementation', () => {
 
     describe('updateClass', () => {
         it('should update class and revalidate', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { id: 'teacher123' } },
                 error: null
             });
@@ -120,7 +122,7 @@ describe('Classes Server Actions implementation', () => {
 
     describe('updateClassStatus', () => {
         it('should update status and revalidate', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { id: 'teacher123' } },
                 error: null
             });
@@ -141,7 +143,7 @@ describe('Classes Server Actions implementation', () => {
 
     describe('deleteClass', () => {
         it('should only delete draft classes', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { id: 'teacher123' } },
                 error: null
             });
@@ -158,7 +160,7 @@ describe('Classes Server Actions implementation', () => {
         });
 
         it('should delete draft class and revalidate', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: { id: 'teacher123' } },
                 error: null
             });

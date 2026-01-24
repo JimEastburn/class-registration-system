@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { syncPaymentToZoho } from '../zoho';
 
 // Mock Supabase
@@ -40,7 +40,7 @@ describe('syncPaymentToZoho', () => {
         vi.clearAllMocks();
 
         // Mock Zoho OAuth response
-        (fetch as any).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({ access_token: 'fake_token' })
         });
@@ -48,25 +48,25 @@ describe('syncPaymentToZoho', () => {
 
     it('should successfully sync a payment to Zoho', async () => {
         // Mock Contact Search (Not found)
-        (fetch as any).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({ contacts: [] })
         });
 
         // Mock Contact Creation
-        (fetch as any).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({ code: 0, contact: { contact_id: 'zc_111' } })
         });
 
         // Mock Invoice Creation
-        (fetch as any).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({ code: 0, invoice: { invoice_id: 'zi_222' } })
         });
 
         // Mock Payment Creation
-        (fetch as any).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve({ code: 0 })
         });
@@ -80,7 +80,7 @@ describe('syncPaymentToZoho', () => {
 
     it('should handle API failures gracefully', async () => {
         // Mock Contact Search (Failure)
-        (fetch as any).mockResolvedValueOnce({
+        (global.fetch as Mock).mockResolvedValueOnce({
             ok: false,
             statusText: 'Service Unavailable',
             json: () => Promise.resolve({ message: 'Error' })

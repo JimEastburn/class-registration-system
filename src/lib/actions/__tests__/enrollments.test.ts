@@ -1,8 +1,10 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
 import { createEnrollment, cancelEnrollment, confirmEnrollment } from '../enrollments';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { sendEnrollmentConfirmation } from '@/lib/email';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
 
 // Mock the dependencies
 vi.mock('@/lib/supabase/server', () => ({
@@ -18,7 +20,7 @@ vi.mock('@/lib/email', () => ({
 }));
 
 describe('Enrollment Server Actions implementation', () => {
-    let mockSupabase: any;
+    let mockSupabase: Mocked<SupabaseClient<Database>>;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -35,20 +37,20 @@ describe('Enrollment Server Actions implementation', () => {
                 insert: vi.fn(),
                 update: vi.fn().mockReturnThis(),
             })),
-        };
+        } as unknown as Mocked<SupabaseClient<Database>>;
 
         (createClient as Mock).mockResolvedValue(mockSupabase);
     });
 
     describe('createEnrollment', () => {
         it('should return error if not authenticated', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: null }, error: null });
             const result = await createEnrollment('student123', 'class123');
             expect(result).toEqual({ error: 'Not authenticated' });
         });
 
         it('should return error if student not found or not owned', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
             mockSupabase.from.mockReturnValueOnce({
                 select: vi.fn().mockReturnThis(),
                 eq: vi.fn().mockReturnThis(),
@@ -60,7 +62,7 @@ describe('Enrollment Server Actions implementation', () => {
         });
 
         it('should return error if class not found', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
             // Student check
             mockSupabase.from.mockReturnValueOnce({
                 select: vi.fn().mockReturnThis(),
@@ -79,7 +81,7 @@ describe('Enrollment Server Actions implementation', () => {
         });
 
         it('should return error if class is not active', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
             // Student check
             mockSupabase.from.mockReturnValueOnce({
                 select: vi.fn().mockReturnThis(),
@@ -98,7 +100,7 @@ describe('Enrollment Server Actions implementation', () => {
         });
 
         it('should return error if class is full', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
             // Student check
             mockSupabase.from.mockReturnValueOnce({
                 select: vi.fn().mockReturnThis(),
@@ -117,7 +119,7 @@ describe('Enrollment Server Actions implementation', () => {
         });
 
         it('should create enrollment and send email', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
 
             // Student check
             mockSupabase.from.mockReturnValueOnce({
@@ -173,7 +175,7 @@ describe('Enrollment Server Actions implementation', () => {
 
     describe('cancelEnrollment', () => {
         it('should return error if not authorized', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
             mockSupabase.from.mockReturnValue({
                 select: vi.fn().mockReturnThis(),
                 eq: vi.fn().mockReturnThis(),
@@ -188,7 +190,7 @@ describe('Enrollment Server Actions implementation', () => {
         });
 
         it('should update status to cancelled', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
             mockSupabase.from.mockReturnValueOnce({
                 select: vi.fn().mockReturnThis(),
                 eq: vi.fn().mockReturnThis(),
@@ -215,7 +217,7 @@ describe('Enrollment Server Actions implementation', () => {
 
     describe('confirmEnrollment', () => {
         it('should update status to confirmed', async () => {
-            mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: { id: 'parent123' } }, error: null });
             mockSupabase.from.mockReturnValueOnce({
                 select: vi.fn().mockReturnThis(),
                 eq: vi.fn().mockReturnThis(),
