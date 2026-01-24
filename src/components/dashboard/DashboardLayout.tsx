@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from '@/lib/actions/auth';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
@@ -46,9 +47,14 @@ export default function DashboardLayout({
 
     const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
     const showPortalSwitch = user.role === 'admin' || user.role === 'teacher';
-    const isRolePortal = pathname.startsWith(`/${user.role}`);
+    const [isRolePortal, setIsRolePortal] = useState(pathname.startsWith(`/${user.role}`));
+
+    useEffect(() => {
+        setIsRolePortal(pathname.startsWith(`/${user.role}`));
+    }, [pathname, user.role]);
 
     const handlePortalSwitch = (checked: boolean) => {
+        setIsRolePortal(checked);
         if (checked) {
             router.push(`/${user.role}`);
         } else {
