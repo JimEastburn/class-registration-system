@@ -10,6 +10,7 @@ DECLARE
     class_python_id  UUID := '40404040-4040-4040-4040-404040404040';
     class_writing_id UUID := '50505050-5050-5050-5050-505050505050';
     class_chess_id   UUID := '60606060-6060-6060-6060-606060606060';
+    admin_bogan_id   UUID := '90909090-9090-9090-9090-909090909090';
 BEGIN
     -- 1. Insert Users into auth.users (Trigger will handle profiles)
     -- Teacher Alice
@@ -34,6 +35,12 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'jane@example.com') THEN
         INSERT INTO auth.users (id, email, encrypted_password, raw_user_meta_data, aud, role, email_confirmed_at)
         VALUES (student_jane_id, 'jane@example.com', crypt('password123', gen_salt('bf')), '{"role": "student", "first_name": "Jane", "last_name": "Doe"}'::jsonb, 'authenticated', 'authenticated', now());
+    END IF;
+
+    -- Admin Bogan (Parent Bogan)
+    IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'parent.bogan@gmail.com') THEN
+        INSERT INTO auth.users (id, email, encrypted_password, raw_user_meta_data, aud, role, email_confirmed_at)
+        VALUES (admin_bogan_id, 'parent.bogan@gmail.com', crypt('password123', gen_salt('bf')), '{"role": "admin", "first_name": "Johnathan", "last_name": "Reynolds"}'::jsonb, 'authenticated', 'authenticated', now());
     END IF;
 
     -- 2. Insert Family Members (Jane is linked to her student account via user_id)
