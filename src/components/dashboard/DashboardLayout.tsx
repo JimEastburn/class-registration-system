@@ -4,10 +4,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { signOut } from '@/lib/actions/auth';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -48,6 +49,7 @@ export default function DashboardLayout({
     const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
     const showPortalSwitch = user.role === 'admin' || user.role === 'teacher';
     const [isRolePortal, setIsRolePortal] = useState(pathname.startsWith(`/${user.role}`));
+    const [isPending, startTransition] = useTransition();
 
     useEffect(() => {
         setIsRolePortal(pathname.startsWith(`/${user.role}`));
@@ -55,11 +57,13 @@ export default function DashboardLayout({
 
     const handlePortalSwitch = (checked: boolean) => {
         setIsRolePortal(checked);
-        if (checked) {
-            router.push(`/${user.role}`);
-        } else {
-            router.push('/parent');
-        }
+        startTransition(() => {
+            if (checked) {
+                router.push(`/${user.role}`);
+            } else {
+                router.push('/parent');
+            }
+        });
     };
 
     return (
@@ -132,20 +136,27 @@ export default function DashboardLayout({
                     {/* User Menu */}
                     <div className="flex items-center gap-4">
                         {showPortalSwitch && (
-                            <Tabs
-                                value={isRolePortal ? 'role' : 'parent'}
-                                onValueChange={(val) => handlePortalSwitch(val === 'role')}
-                                className="w-[300px]"
-                            >
-                                <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="role">
-                                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)} View
-                                    </TabsTrigger>
-                                    <TabsTrigger value="parent">
-                                        Parent View
-                                    </TabsTrigger>
-                                </TabsList>
-                            </Tabs>
+                            <div className="relative">
+                                <Tabs
+                                    value={isRolePortal ? 'role' : 'parent'}
+                                    onValueChange={(val) => handlePortalSwitch(val === 'role')}
+                                    className="w-[300px]"
+                                >
+                                    <TabsList className="grid w-full grid-cols-2">
+                                        <TabsTrigger value="role" disabled={isPending}>
+                                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)} View
+                                        </TabsTrigger>
+                                        <TabsTrigger value="parent" disabled={isPending}>
+                                            Parent View
+                                        </TabsTrigger>
+                                    </TabsList>
+                                </Tabs>
+                                {isPending && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-md z-10">
+                                        <LoadingSpinner className="h-5 w-5" />
+                                    </div>
+                                )}
+                            </div>
                         )}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
