@@ -16,6 +16,9 @@ export const registerSchema = z.object({
         message: 'Please select Parent/Guardian or Student or Teacher',
     }),
     phone: z.string().optional(),
+    codeOfConduct: z.boolean().refine((val) => val === true, {
+        message: 'You must agree to the Community Code of Conduct',
+    }),
 }).refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],

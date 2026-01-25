@@ -23,7 +23,14 @@ beforeAll(() => {
     // @ts-ignore
     global.Element.prototype.setPointerCapture = () => { };
     // @ts-ignore
+    // @ts-ignore
     global.HTMLElement.prototype.scrollIntoView = () => { };
+    // @ts-ignore
+    global.ResizeObserver = class ResizeObserver {
+        observe() { }
+        unobserve() { }
+        disconnect() { }
+    };
 });
 
 describe('RegisterForm', () => {
@@ -47,8 +54,24 @@ describe('RegisterForm', () => {
         await user.click(parentOption);
 
         // 4. Verify error disappears immediately
+        expect(screen.queryByText('Please select Parent/Guardian or Student or Teacher')).not.toBeInTheDocument();
+    });
+
+
+    it('validates code of conduct requirement', async () => {
+        const user = userEvent.setup();
+        render(<RegisterForm />);
+
+        const submitButton = screen.getByRole('button', { name: /create account/i });
+        await user.click(submitButton);
+
+        expect(await screen.findByText('You must agree to the Community Code of Conduct')).toBeInTheDocument();
+
+        const checkbox = screen.getByRole('checkbox', { name: /code of conduct/i });
+        await user.click(checkbox);
+
         await waitFor(() => {
-            expect(screen.queryByText('Please select Parent/Guardian or Student or Teacher')).not.toBeInTheDocument();
+            expect(screen.queryByText('You must agree to the Community Code of Conduct')).not.toBeInTheDocument();
         });
     });
 });

@@ -17,6 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function RegisterForm() {
     const [isPending, startTransition] = useTransition();
@@ -30,6 +31,9 @@ export default function RegisterForm() {
         formState: { errors },
     } = useForm<RegisterFormData>({
         resolver: zodResolver(registerSchema),
+        defaultValues: {
+            codeOfConduct: false,
+        },
     });
 
     const onSubmit = (data: RegisterFormData) => {
@@ -224,6 +228,37 @@ export default function RegisterForm() {
                             </p>
                         )}
                     </div>
+
+
+                    <div className="flex items-start space-x-2 pb-2">
+                        <Checkbox
+                            id="codeOfConduct"
+                            onCheckedChange={(checked) => {
+                                setValue('codeOfConduct', checked === true, { shouldValidate: true });
+                            }}
+                        />
+                        <div className="grid gap-1.5 leading-none">
+                            <Label
+                                htmlFor="codeOfConduct"
+                                className="text-sm font-medium leading-none text-slate-200 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            >
+                                I agree to the{' '}
+                                <a
+                                    href="/AAC - 2025-26 Community Code of Conduct.pdf"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-teal-400 hover:text-teal-300 hover:underline"
+                                >
+                                    Code of Conduct
+                                </a>
+                            </Label>
+                            {errors.codeOfConduct && (
+                                <p className="text-red-400 text-sm">
+                                    {errors.codeOfConduct.message}
+                                </p>
+                            )}
+                        </div>
+                    </div>
                 </CardContent>
 
                 <CardFooter className="flex flex-col space-y-4">
@@ -245,7 +280,7 @@ export default function RegisterForm() {
                         </Link>
                     </p>
                 </CardFooter>
-            </form>
+            </form >
         </Card >
     );
 }
