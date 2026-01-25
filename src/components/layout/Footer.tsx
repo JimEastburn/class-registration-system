@@ -19,7 +19,7 @@ export function Footer() {
             >
                 communitysupport@austinaac.org
             </a>
-            <span className="mx-2 text-gray-300">|</span>
+            <span className="mx-6 text-gray-300">|</span>
             <a
                 href="/AAC - 2025-26 Community Code of Conduct.pdf"
                 target="_blank"
