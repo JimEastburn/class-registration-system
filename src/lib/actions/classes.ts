@@ -17,9 +17,10 @@ export async function createClass(formData: FormData): Promise<ActionResult> {
         return { error: 'Not authenticated' };
     }
 
-    // Verify user is a teacher
-    if (user.user_metadata?.role !== 'teacher') {
-        return { error: 'Only teachers can create classes' };
+    // Verify user is a teacher or has scheduling privileges
+    const role = user.user_metadata?.role;
+    if (role !== 'teacher' && role !== 'admin' && role !== 'class_scheduler') {
+        return { error: 'Not authorized to create classes' };
     }
 
     const name = formData.get('name') as string;
@@ -75,21 +76,25 @@ export async function updateClass(
     const fee = parseFloat(formData.get('fee') as string);
     const syllabus = formData.get('syllabus') as string;
 
-    const { error } = await supabase
-        .from('classes')
-        .update({
-            name,
-            description: description || null,
-            location,
-            start_date: startDate,
-            end_date: endDate,
-            schedule,
-            max_students: maxStudents,
-            fee,
-            syllabus: syllabus || null,
-        })
-        .eq('id', id)
-        .eq('teacher_id', user.id);
+    const role = user.user_metadata?.role;
+    let query = supabase.from('classes').update({
+        name,
+        description: description || null,
+        location,
+        start_date: startDate,
+        end_date: endDate,
+        schedule,
+        max_students: maxStudents,
+        fee,
+        syllabus: syllabus || null,
+    }).eq('id', id);
+
+    // If not admin or scheduler, ensure they own the class
+    if (role !== 'admin' && role !== 'class_scheduler') {
+        query = query.eq('teacher_id', user.id);
+    }
+
+    const { error } = await query;
 
     if (error) {
         return { error: error.message };
@@ -110,11 +115,14 @@ export async function updateClassStatus(
         return { error: 'Not authenticated' };
     }
 
-    const { error } = await supabase
-        .from('classes')
-        .update({ status })
-        .eq('id', id)
-        .eq('teacher_id', user.id);
+    const role = user.user_metadata?.role;
+    let query = supabase.from('classes').update({ status }).eq('id', id);
+
+    if (role !== 'admin' && role !== 'class_scheduler') {
+        query = query.eq('teacher_id', user.id);
+    }
+
+    const { error } = await query;
 
     if (error) {
         return { error: error.message };
@@ -133,12 +141,13 @@ export async function deleteClass(id: string): Promise<ActionResult> {
     }
 
     // Only allow deleting draft classes
-    const { data: classData } = await supabase
-        .from('classes')
-        .select('status')
-        .eq('id', id)
-        .eq('teacher_id', user.id)
-        .single();
+    const role = user.user_metadata?.role;
+
+    let checkQuery = supabase.from('classes').select('status').eq('id', id);
+    if (role !== 'admin' && role !== 'class_scheduler') {
+        checkQuery = checkQuery.eq('teacher_id', user.id);
+    }
+    const { data: classData } = await checkQuery.single();
 
     if (!classData) {
         return { error: 'Class not found' };
@@ -148,11 +157,11 @@ export async function deleteClass(id: string): Promise<ActionResult> {
         return { error: 'Only draft classes can be deleted' };
     }
 
-    const { error } = await supabase
-        .from('classes')
-        .delete()
-        .eq('id', id)
-        .eq('teacher_id', user.id);
+    let deleteQuery = supabase.from('classes').delete().eq('id', id);
+    if (role !== 'admin' && role !== 'class_scheduler') {
+        deleteQuery = deleteQuery.eq('teacher_id', user.id);
+    }
+    const { error } = await deleteQuery;
 
     if (error) {
         return { error: error.message };

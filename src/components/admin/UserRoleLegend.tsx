@@ -46,6 +46,14 @@ const roles = [
         color: 'bg-red-100 text-red-700',
         description: 'System administrators with full access to all data, management tools, and reporting exports.',
         access: 'Full System Access'
+    },
+    {
+        name: 'Class Scheduler',
+        id: 'class_scheduler',
+        icon: ShieldCheck,
+        color: 'bg-purple-100 text-purple-700',
+        description: 'Authorized personnel who can create/manage classes, enrolled students, and waitlists while maintaining parent view.',
+        access: 'Class Management + Parent Portal'
     }
 ];
 

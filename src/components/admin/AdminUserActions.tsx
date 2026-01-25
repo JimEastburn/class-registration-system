@@ -30,7 +30,7 @@ export default function AdminUserActions({ userId, currentRole }: AdminUserActio
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleRoleChange = async (newRole: 'parent' | 'teacher' | 'student' | 'admin') => {
+    const handleRoleChange = async (newRole: 'parent' | 'teacher' | 'student' | 'admin' | 'class_scheduler') => {
         setIsLoading(true);
         setError(null);
         try {
@@ -95,6 +95,12 @@ export default function AdminUserActions({ userId, currentRole }: AdminUserActio
                         disabled={currentRole === 'admin'}
                     >
                         Set as Admin
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                        onClick={() => handleRoleChange('class_scheduler')}
+                        disabled={currentRole === 'class_scheduler'}
+                    >
+                        Set as Class Scheduler
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem

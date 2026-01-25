@@ -13,7 +13,7 @@ export type AdminActionResult = {
 // User management
 export async function updateUserRole(
     userId: string,
-    role: 'parent' | 'teacher' | 'student' | 'admin'
+    role: 'parent' | 'teacher' | 'student' | 'admin' | 'class_scheduler'
 ): Promise<AdminActionResult> {
     const supabase = await createClient();
     const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -91,7 +91,7 @@ export async function adminUpdateClass(
     const supabase = await createClient();
     const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-    if (!currentUser || currentUser.user_metadata?.role !== 'admin') {
+    if (!currentUser || (currentUser.user_metadata?.role !== 'admin' && currentUser.user_metadata?.role !== 'class_scheduler')) {
         return { error: 'Not authorized' };
     }
 
@@ -112,7 +112,7 @@ export async function adminDeleteClass(classId: string): Promise<AdminActionResu
     const supabase = await createClient();
     const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-    if (!currentUser || currentUser.user_metadata?.role !== 'admin') {
+    if (!currentUser || (currentUser.user_metadata?.role !== 'admin' && currentUser.user_metadata?.role !== 'class_scheduler')) {
         return { error: 'Not authorized' };
     }
 
@@ -137,7 +137,7 @@ export async function adminUpdateEnrollment(
     const supabase = await createClient();
     const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-    if (!currentUser || currentUser.user_metadata?.role !== 'admin') {
+    if (!currentUser || (currentUser.user_metadata?.role !== 'admin' && currentUser.user_metadata?.role !== 'class_scheduler')) {
         return { error: 'Not authorized' };
     }
 
@@ -158,7 +158,7 @@ export async function adminDeleteEnrollment(enrollmentId: string): Promise<Admin
     const supabase = await createClient();
     const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-    if (!currentUser || currentUser.user_metadata?.role !== 'admin') {
+    if (!currentUser || (currentUser.user_metadata?.role !== 'admin' && currentUser.user_metadata?.role !== 'class_scheduler')) {
         return { error: 'Not authorized' };
     }
 

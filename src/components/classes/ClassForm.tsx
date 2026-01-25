@@ -29,9 +29,10 @@ interface ClassFormProps {
         recurrence_time?: string;
         recurrence_duration?: number;
     };
+    redirectUrl?: string; // Optional redirect URL after success
 }
 
-export default function ClassForm({ classData }: ClassFormProps) {
+export default function ClassForm({ classData, redirectUrl }: ClassFormProps) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -83,7 +84,7 @@ export default function ClassForm({ classData }: ClassFormProps) {
             setError(result.error);
             setIsLoading(false);
         } else {
-            router.push('/teacher/classes');
+            router.push(redirectUrl || '/teacher/classes');
         }
     };
 

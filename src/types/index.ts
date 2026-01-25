@@ -33,7 +33,7 @@ export type EnrollmentUpdate = UpdateTables<'enrollments'>;
 export type PaymentUpdate = UpdateTables<'payments'>;
 
 // Enum types
-export type UserRole = 'parent' | 'teacher' | 'student' | 'admin';
+export type UserRole = 'parent' | 'teacher' | 'student' | 'admin' | 'class_scheduler';
 export type ClassStatus = 'draft' | 'active' | 'cancelled' | 'completed';
 export type EnrollmentStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';

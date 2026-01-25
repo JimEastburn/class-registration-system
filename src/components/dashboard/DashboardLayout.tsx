@@ -47,7 +47,7 @@ export default function DashboardLayout({
     const router = useRouter();
 
     const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
-    const showPortalSwitch = user.role === 'admin' || user.role === 'teacher';
+    const showPortalSwitch = user.role === 'admin' || user.role === 'teacher' || user.role === 'class_scheduler';
     const [isRolePortal, setIsRolePortal] = useState(pathname.startsWith(`/${user.role}`));
     const [isPending, startTransition] = useTransition();
 
@@ -145,7 +145,7 @@ export default function DashboardLayout({
                                 >
                                     <TabsList className="grid w-full grid-cols-2">
                                         <TabsTrigger value="role" disabled={isPending}>
-                                            {user.role.charAt(0).toUpperCase() + user.role.slice(1)} View
+                                            {user.role === 'class_scheduler' ? ' Scheduler' : user.role.charAt(0).toUpperCase() + user.role.slice(1)} View
                                         </TabsTrigger>
                                         <TabsTrigger value="parent" disabled={isPending}>
                                             Parent View
