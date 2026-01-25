@@ -9,6 +9,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import EnrollmentStatusLegend from '@/components/admin/EnrollmentStatusLegend';
 
 export const metadata = {
     title: 'All Students | Class Registration System',
@@ -59,6 +60,8 @@ export default async function TeacherAllStudentsPage() {
                     Showing students across all your {teacherClasses?.length || 0} classes
                 </p>
             </div>
+
+            <EnrollmentStatusLegend />
 
             <Card className="border-0 shadow-lg">
                 <CardHeader>
