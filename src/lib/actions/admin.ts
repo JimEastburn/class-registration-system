@@ -22,6 +22,23 @@ export async function updateUserRole(
         return { error: 'Not authorized' };
     }
 
+    // Restriction: Only parents or admins can be assigned the Class Scheduler role
+    if (role === 'class_scheduler') {
+        const { data: targetProfile, error: profileError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .single();
+
+        if (profileError || !targetProfile) {
+            return { error: 'User profile not found' };
+        }
+
+        if (targetProfile.role !== 'parent' && targetProfile.role !== 'admin') {
+            return { error: 'Only parents or admins can be assigned the Class Scheduler role.' };
+        }
+    }
+
     const { error } = await supabase
         .from('profiles')
         .update({ role })

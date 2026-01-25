@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
 import { updateUserRole, deleteUser, adminUpdateClass, adminDeleteClass, adminUpdateEnrollment, adminDeleteEnrollment, adminUpdatePayment } from '../admin';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/types/supabase';
@@ -8,6 +9,10 @@ import { Database } from '@/types/supabase';
 // Mock the dependencies
 vi.mock('@/lib/supabase/server', () => ({
     createClient: vi.fn(),
+}));
+
+vi.mock('@/lib/supabase/admin', () => ({
+    createAdminClient: vi.fn(),
 }));
 
 vi.mock('next/cache', () => ({
@@ -19,6 +24,14 @@ describe('Admin Server Actions implementation', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+
+        (createAdminClient as Mock).mockReturnValue({
+            auth: {
+                admin: {
+                    updateUserById: vi.fn().mockResolvedValue({ data: {}, error: null }),
+                },
+            },
+        });
 
         const mockInsert = vi.fn().mockResolvedValue({ error: null });
         const mockUpdate = vi.fn().mockReturnThis();
@@ -76,6 +89,57 @@ describe('Admin Server Actions implementation', () => {
             expect(mockUpdate).toHaveBeenCalledWith('id', 'user123');
             expect(revalidatePath).toHaveBeenCalledWith('/admin/users');
             expect(result).toEqual({ success: true });
+        });
+
+        it('should allow promoting a parent to class_scheduler', async () => {
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
+                data: { user: { user_metadata: { role: 'admin' } } },
+                error: null
+            });
+
+            const mockSingle = vi.fn().mockResolvedValue({ data: { role: 'parent' }, error: null });
+            const mockUpdate = vi.fn().mockResolvedValue({ error: null });
+
+            mockSupabase.from.mockImplementation((table: string) => {
+                if (table === 'profiles') {
+                    return {
+                        select: vi.fn().mockReturnThis(),
+                        eq: vi.fn().mockReturnThis(),
+                        single: mockSingle,
+                        update: vi.fn().mockReturnValue({ eq: mockUpdate })
+                    } as any;
+                }
+                return {} as any;
+            });
+
+            const result = await updateUserRole('user123', 'class_scheduler');
+
+            expect(result).toEqual({ success: true });
+            expect(mockUpdate).toHaveBeenCalled();
+        });
+
+        it('should return error when promoting a teacher to class_scheduler', async () => {
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
+                data: { user: { user_metadata: { role: 'admin' } } },
+                error: null
+            });
+
+            const mockSingle = vi.fn().mockResolvedValue({ data: { role: 'teacher' }, error: null });
+
+            mockSupabase.from.mockImplementation((table: string) => {
+                if (table === 'profiles') {
+                    return {
+                        select: vi.fn().mockReturnThis(),
+                        eq: vi.fn().mockReturnThis(),
+                        single: mockSingle,
+                    } as any;
+                }
+                return {} as any;
+            });
+
+            const result = await updateUserRole('user123', 'class_scheduler');
+
+            expect(result).toEqual({ error: 'Only parents or admins can be assigned the Class Scheduler role.' });
         });
     });
 
