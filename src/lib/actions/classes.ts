@@ -161,3 +161,82 @@ export async function deleteClass(id: string): Promise<ActionResult> {
     revalidatePath('/teacher/classes');
     return { success: true };
 }
+
+export async function blockStudent(
+    classId: string,
+    studentId: string,
+    reason: string
+): Promise<ActionResult> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { error: 'Not authenticated' };
+    }
+
+    // Verify teacher owns the class (RLS checks this too, but good for error message)
+    // Actually, RLS policy "Teachers can manage blocks for their classes" handles this safely.
+    // We can just try insert.
+
+    const { error } = await supabase.from('class_blocks').insert({
+        class_id: classId,
+        student_id: studentId,
+        reason,
+        created_by: user.id
+    });
+
+    if (error) {
+        return { error: error.message };
+    }
+
+    // Creating the block automatically triggers cancellation of existing enrollment 
+    // via database trigger 'on_block_created'.
+
+    revalidatePath(`/teacher/students`);
+    revalidatePath(`/teacher/classes/${classId}`);
+    return { success: true };
+}
+
+export async function unblockStudent(
+    classId: string,
+    studentId: string
+): Promise<ActionResult> {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+        return { error: 'Not authenticated' };
+    }
+
+    const { error } = await supabase
+        .from('class_blocks')
+        .delete()
+        .eq('class_id', classId)
+        .eq('student_id', studentId);
+
+    if (error) {
+        return { error: error.message };
+    }
+
+    revalidatePath(`/teacher/students`);
+    return { success: true };
+}
+
+export async function getStudentBlockStatus(
+    classId: string,
+    studentId: string
+): Promise<{ blocked: boolean; reason?: string }> {
+    const supabase = await createClient();
+
+    const { data } = await supabase
+        .from('class_blocks')
+        .select('reason')
+        .eq('class_id', classId)
+        .eq('student_id', studentId)
+        .single();
+
+    return {
+        blocked: !!data,
+        reason: data?.reason
+    };
+}

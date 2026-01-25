@@ -59,6 +59,18 @@ export async function createEnrollment(
         return { error: 'Class is not accepting enrollments' };
     }
 
+    // Check if student is blocked
+    const { data: blockData } = await supabase
+        .from('class_blocks')
+        .select('reason')
+        .eq('class_id', classId)
+        .eq('student_id', studentId)
+        .single();
+
+    if (blockData) {
+        return { error: 'Student is blocked from enrolling in this class' };
+    }
+
     if (classData.current_enrollment >= classData.max_students) {
         return { error: 'Class is full' };
     }

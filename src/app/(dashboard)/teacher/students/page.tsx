@@ -10,6 +10,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import EnrollmentStatusLegend from '@/components/admin/EnrollmentStatusLegend';
+import { StudentActionMenu } from '@/components/classes/StudentActionMenu';
 
 export const metadata = {
     title: 'All Students | Class Registration System',
@@ -42,10 +43,22 @@ export default async function TeacherAllStudentsPage() {
       status,
       enrolled_at,
       class_id,
+      student_id,
       student:family_members(first_name, last_name, grade_level)
     `)
         .in('class_id', classIds)
         .order('enrolled_at', { ascending: false });
+
+    // 3. Fetch blocks for these classes
+    // We fetch all blocks for this teacher's classes to map them
+    const { data: blocks } = await supabase
+        .from('class_blocks')
+        .select('class_id, student_id')
+        .in('class_id', classIds);
+
+    const blockedSet = new Set(
+        blocks?.map(b => `${b.class_id}:${b.student_id}`) || []
+    );
 
     // Map class names for easier display
     const classNameMap = Object.fromEntries(
@@ -77,6 +90,7 @@ export default async function TeacherAllStudentsPage() {
                                     <TableHead>Grade</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Enrolled On</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -86,10 +100,17 @@ export default async function TeacherAllStudentsPage() {
                                         last_name: string;
                                         grade_level: string | null;
                                     };
+                                    const isBlocked = blockedSet.has(`${enrollment.class_id}:${enrollment.student_id}`);
+
                                     return (
-                                        <TableRow key={enrollment.id}>
+                                        <TableRow key={enrollment.id} className={isBlocked ? "bg-red-50/50" : ""}>
                                             <TableCell className="font-medium">
                                                 {student.first_name} {student.last_name}
+                                                {isBlocked && (
+                                                    <Badge variant="destructive" className="ml-2 text-[10px] h-5">
+                                                        BLOCKED
+                                                    </Badge>
+                                                )}
                                             </TableCell>
                                             <TableCell>
                                                 {classNameMap[enrollment.class_id]}
@@ -112,6 +133,14 @@ export default async function TeacherAllStudentsPage() {
                                             </TableCell>
                                             <TableCell>
                                                 {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <StudentActionMenu
+                                                    classId={enrollment.class_id}
+                                                    studentId={enrollment.student_id}
+                                                    studentName={`${student.first_name} ${student.last_name}`}
+                                                    isBlocked={isBlocked}
+                                                />
                                             </TableCell>
                                         </TableRow>
                                     );
