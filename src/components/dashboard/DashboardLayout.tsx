@@ -112,17 +112,7 @@ export default function DashboardLayout({
                                             </Link>
                                         ))}
                                     </nav>
-                                    <div className="px-4 py-2 border-t border-sidebar-border mt-4">
-                                        <Link
-                                            href="/AAC - 2025-26 Community Code of Conduct.pdf"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors"
-                                        >
-                                            <BookOpenIcon className="h-5 w-5" />
-                                            Code of Conduct
-                                        </Link>
-                                    </div>
+
                                 </div>
                                 <div className="p-4 border-t border-sidebar-border mt-auto flex-shrink-0 text-center">
                                 </div>
@@ -225,18 +215,7 @@ export default function DashboardLayout({
                             </Link>
                         ))}
                     </nav>
-                    <div className="mt-auto p-4 border-t border-sidebar-border">
-                        <Link
-                            href="/AAC - 2025-26 Community Code of Conduct.pdf"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors"
-                        >
-                            <BookOpenIcon className="h-5 w-5" />
-                            Code of Conduct
-                        </Link>
-                    </div>
-                    <div className="p-4 border-t border-sidebar-border text-center">
+                    <div className="mt-auto p-4 border-t border-sidebar-border text-center">
                     </div>
                 </aside>
 
