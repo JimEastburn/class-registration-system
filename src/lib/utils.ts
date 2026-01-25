@@ -61,7 +61,7 @@ export function calculateAge(birthDate: string): number {
  * Validate grade level (6-12)
  */
 export function validateGradeLevel(grade: string): boolean {
-  const validGrades = ['6', '7', '8', '9', '10', '11', '12'];
+  const validGrades = ['elementary', 'middle school', 'high school'];
   return validGrades.includes(grade);
 }
 

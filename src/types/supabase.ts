@@ -56,7 +56,7 @@ export interface Database {
                     parent_id: string
                     first_name: string
                     last_name: string
-                    grade_level: '6' | '7' | '8' | '9' | '10' | '11' | '12' | null
+                    grade_level: 'elementary' | 'middle school' | 'high school' | null
                     relationship: 'child' | 'spouse' | 'guardian' | 'other'
                     birth_date: string | null
                     notes: string | null
@@ -68,7 +68,7 @@ export interface Database {
                     parent_id: string
                     first_name: string
                     last_name: string
-                    grade_level?: '6' | '7' | '8' | '9' | '10' | '11' | '12' | null
+                    grade_level?: 'elementary' | 'middle school' | 'high school' | null
                     relationship: 'child' | 'spouse' | 'guardian' | 'other'
                     birth_date?: string | null
                     notes?: string | null
@@ -80,7 +80,7 @@ export interface Database {
                     parent_id?: string
                     first_name?: string
                     last_name?: string
-                    grade_level?: '6' | '7' | '8' | '9' | '10' | '11' | '12' | null
+                    grade_level?: 'elementary' | 'middle school' | 'high school' | null
                     relationship?: 'child' | 'spouse' | 'guardian' | 'other'
                     birth_date?: string | null
                     notes?: string | null

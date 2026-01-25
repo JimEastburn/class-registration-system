@@ -98,9 +98,9 @@ describe('calculateAge', () => {
 
 describe('validateGradeLevel', () => {
     it('accepts valid grade levels', () => {
-        expect(validateGradeLevel('6')).toBe(true);
-        expect(validateGradeLevel('9')).toBe(true);
-        expect(validateGradeLevel('12')).toBe(true);
+        expect(validateGradeLevel('elementary')).toBe(true);
+        expect(validateGradeLevel('middle school')).toBe(true);
+        expect(validateGradeLevel('high school')).toBe(true);
     });
 
     it('rejects invalid grade levels', () => {

@@ -69,7 +69,7 @@ export const familyMemberSchema = z.object({
     firstName: z.string().min(1, 'First name is required'),
     lastName: z.string().min(1, 'Last name is required'),
     relationship: z.enum(['child', 'spouse', 'guardian', 'other']),
-    gradeLevel: z.enum(['6', '7', '8', '9', '10', '11', '12', '']).optional().nullable(),
+    gradeLevel: z.enum(['elementary', 'middle school', 'high school', '']).optional().nullable(),
     birthDate: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
 });

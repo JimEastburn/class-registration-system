@@ -251,7 +251,7 @@ describe('familyMemberSchema', () => {
             firstName: 'Jane',
             lastName: 'Doe',
             relationship: 'child' as const,
-            gradeLevel: '9' as const,
+            gradeLevel: 'middle school' as const,
         };
 
         const result = familyMemberSchema.safeParse(validData);
