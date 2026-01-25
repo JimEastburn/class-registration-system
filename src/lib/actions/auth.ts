@@ -17,6 +17,9 @@ export async function signUp(formData: FormData): Promise<AuthActionResult> {
     const lastName = formData.get('lastName') as string;
     const role = formData.get('role') as string;
     const phone = formData.get('phone') as string;
+    const codeOfConduct = formData.get('codeOfConduct') === 'true';
+
+    const codeOfConductAgreedAt = codeOfConduct ? new Date().toISOString() : null;
 
     // During E2E testing or development, we might want to bypass email confirmation to avoid rate limits.
     // We detect test users by their email pattern or via an environment variable.
@@ -40,6 +43,7 @@ export async function signUp(formData: FormData): Promise<AuthActionResult> {
                 last_name: lastName,
                 role,
                 phone,
+                code_of_conduct_agreed_at: codeOfConductAgreedAt,
             },
         });
 
@@ -60,6 +64,7 @@ export async function signUp(formData: FormData): Promise<AuthActionResult> {
                 last_name: lastName,
                 role,
                 phone,
+                code_of_conduct_agreed_at: codeOfConductAgreedAt,
             },
             emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm`,
         },
