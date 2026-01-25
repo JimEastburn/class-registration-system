@@ -43,7 +43,7 @@ const statuses = [
         name: 'Refunded',
         status: 'refunded',
         icon: RotateCcw,
-        color: 'bg-purple-100 text-purple-700',
+        color: 'bg-[#4c7c92]/10 text-[#4c7c92]',
         description: 'Payment has been returned to the user, either partially or in full.',
         impact: 'Revenue is adjusted; enrollment remains unchanged unless manually updated.'
     }
@@ -59,7 +59,7 @@ export default function PaymentStatusLegend() {
                 onClick={() => setIsExpanded(!isExpanded)}
             >
                 <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                    <Info className="w-4 h-4 text-purple-600" />
+                    <Info className="w-4 h-4 text-[#4c7c92]" />
                     <span>Understanding Payment Statuses</span>
                 </div>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">

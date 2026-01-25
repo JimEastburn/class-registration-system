@@ -35,11 +35,11 @@ export default async function ParentDashboardPage() {
     return (
         <div className="space-y-6">
             {/* Welcome Section */}
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6 text-white">
+            <div className="bg-gradient-to-r from-[#4c7c92] to-[#9BBFD3] rounded-2xl p-6 text-white">
                 <h2 className="text-2xl font-bold mb-2">
                     Hi {user?.user_metadata?.first_name}!
                 </h2>
-                <p className="text-purple-100">
+                <p className="text-blue-50">
                     Manage your family and class enrollments from your dashboard.
                 </p>
             </div>
@@ -55,7 +55,7 @@ export default async function ParentDashboardPage() {
                     <CardContent>
                         <div className="text-3xl font-bold">{familyCount || 0}</div>
                         <Link href="/parent/family">
-                            <Button variant="link" className="p-0 h-auto text-purple-600">
+                            <Button variant="link" className="p-0 h-auto text-[#4c7c92]">
                                 Manage family →
                             </Button>
                         </Link>
@@ -71,7 +71,7 @@ export default async function ParentDashboardPage() {
                     <CardContent>
                         <div className="text-3xl font-bold">{activeEnrollments}</div>
                         <Link href="/parent/enrollments">
-                            <Button variant="link" className="p-0 h-auto text-purple-600">
+                            <Button variant="link" className="p-0 h-auto text-[#4c7c92]">
                                 View enrollments →
                             </Button>
                         </Link>
@@ -89,7 +89,7 @@ export default async function ParentDashboardPage() {
                             Find and enroll in new classes
                         </p>
                         <Link href="/parent/classes">
-                            <Button className="bg-gradient-to-r from-purple-600 to-pink-600">
+                            <Button className="bg-gradient-to-r from-[#4c7c92] to-[#9BBFD3]">
                                 Browse Classes
                             </Button>
                         </Link>

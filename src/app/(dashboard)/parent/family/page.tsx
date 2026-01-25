@@ -38,7 +38,7 @@ export default async function FamilyPage() {
                     <p className="text-slate-500">Manage your children and family members</p>
                 </div>
                 <Link href="/parent/family/add">
-                    <Button className="bg-gradient-to-r from-purple-600 to-pink-600">
+                    <Button className="bg-gradient-to-r from-[#4c7c92] to-[#9BBFD3]">
                         + Add Family Member
                     </Button>
                 </Link>
@@ -46,11 +46,11 @@ export default async function FamilyPage() {
 
             {/* Student Link Code Explanation - only show when there are children */}
             {hasChildren && (
-                <Card className="border-0 shadow-md bg-gradient-to-r from-purple-50 to-pink-50 max-w-md">
+                <Card className="border-0 shadow-md bg-gradient-to-r from-[#4c7c92]/5 to-[#9BBFD3]/5 max-w-md">
                     <CardContent className="py-4">
                         <div className="flex gap-3">
-                            <div className="flex-shrink-0 w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                                <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="flex-shrink-0 w-10 h-10 bg-[#4c7c92]/10 rounded-full flex items-center justify-center">
+                                <svg className="w-5 h-5 text-[#4c7c92]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                                 </svg>
                             </div>
@@ -58,7 +58,7 @@ export default async function FamilyPage() {
                                 <h3 className="font-semibold text-slate-800 mb-1">Link Your Child&apos;s Student Account</h3>
                                 <ol className="text-sm text-slate-600 space-y-1 list-decimal list-inside">
                                     <li>If you&apos;d like for your student to be able to login and see their class schedule, create a student account for the child</li>
-                                    <li>Click <span className="font-medium text-purple-600">&quot;Generate Student Link Code&quot;</span> on your child&apos;s card below</li>
+                                    <li>Click <span className="font-medium text-[#4c7c92]">&quot;Generate Student Link Code&quot;</span> on your child&apos;s card below</li>
                                     <li>Share the 6 character code with your child</li>
                                     <li>Your child logs into their student account and enters the 6 character code</li>
                                     <li>They&apos;ll instantly see their enrolled classes!</li>
@@ -132,9 +132,9 @@ export default async function FamilyPage() {
             ) : (
                 <Card className="border-0 shadow-lg">
                     <CardContent className="text-center py-12">
-                        <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="w-16 h-16 bg-[#4c7c92]/10 rounded-full flex items-center justify-center mx-auto mb-4">
                             <svg
-                                className="w-8 h-8 text-purple-600"
+                                className="w-8 h-8 text-[#4c7c92]"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -152,7 +152,7 @@ export default async function FamilyPage() {
                             Add your children or family members to start enrolling them in classes.
                         </p>
                         <Link href="/parent/family/add">
-                            <Button className="bg-gradient-to-r from-purple-600 to-pink-600">
+                            <Button className="bg-gradient-to-r from-[#4c7c92] to-[#9BBFD3]">
                                 Add Your First Family Member
                             </Button>
                         </Link>

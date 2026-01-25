@@ -87,7 +87,7 @@ export default function AdminPaymentActions({
                     <DropdownMenuItem
                         onClick={() => setShowRefundDialog(true)}
                         disabled={currentStatus !== 'completed'}
-                        className="text-purple-600 font-medium"
+                        className="text-[#4c7c92] font-medium"
                     >
                         Process Refund via Stripe
                     </DropdownMenuItem>
@@ -126,7 +126,7 @@ export default function AdminPaymentActions({
                         <Button
                             onClick={handleRefund}
                             disabled={isLoading || refundResult?.success}
-                            className="bg-purple-600 hover:bg-purple-700"
+                            className="bg-[#4c7c92] hover:bg-[#3a6073]"
                         >
                             {isLoading ? 'Processing...' : 'Confirm Refund'}
                         </Button>

@@ -114,13 +114,13 @@ export default function WaitlistButton({
                         return (
                             <div
                                 key={entry.id}
-                                className="flex items-center justify-between p-3 bg-purple-50 rounded-lg"
+                                className="flex items-center justify-between p-3 bg-[#4c7c92]/10 rounded-lg"
                             >
                                 <div>
                                     <span className="font-medium">
                                         {student?.first_name} {student?.last_name}
                                     </span>
-                                    <span className="text-purple-600 ml-2">
+                                    <span className="text-[#4c7c92] ml-2">
                                         Position #{entry.position}
                                     </span>
                                 </div>
@@ -175,8 +175,8 @@ export default function WaitlistButton({
 
             {message && (
                 <div className={`p-3 rounded-lg text-sm ${message.type === 'success'
-                        ? 'bg-green-50 text-green-700 border border-green-200'
-                        : 'bg-red-50 text-red-700 border border-red-200'
+                    ? 'bg-green-50 text-green-700 border border-green-200'
+                    : 'bg-red-50 text-red-700 border border-red-200'
                     }`}>
                     {message.text}
                 </div>

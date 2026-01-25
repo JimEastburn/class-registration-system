@@ -58,7 +58,7 @@ export default function PayButton({
             <Button
                 onClick={handlePayment}
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
+                className="w-full bg-gradient-to-r from-[#4c7c92] to-[#9BBFD3]"
             >
                 {isLoading ? 'Processing...' : `Pay $${amount.toFixed(2)}`}
             </Button>

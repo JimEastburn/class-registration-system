@@ -50,7 +50,7 @@ export default function ClassSearchList({ initialClasses }: ClassSearchListProps
                 <Input
                     type="text"
                     placeholder="Search by class or teacher name..."
-                    className="pl-10 border-2 border-purple-300 focus-visible:border-purple-600 focus-visible:ring-purple-600"
+                    className="pl-10 border-2 border-[#9BBFD3] focus-visible:border-[#4c7c92] focus-visible:ring-[#4c7c92]"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     data-testid="class-search-input"
@@ -111,7 +111,7 @@ export default function ClassSearchList({ initialClasses }: ClassSearchListProps
                                     </div>
 
                                     <Link href={`/parent/classes/${classItem.id}`} className="block">
-                                        <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600" data-testid={`view-details-button-${classItem.id}`}>
+                                        <Button className="w-full bg-gradient-to-r from-[#4c7c92] to-[#9BBFD3]" data-testid={`view-details-button-${classItem.id}`}>
                                             View Details & Enroll
                                         </Button>
                                     </Link>
@@ -144,7 +144,7 @@ export default function ClassSearchList({ initialClasses }: ClassSearchListProps
                         </p>
                         <Button
                             variant="link"
-                            className="mt-2 text-purple-600"
+                            className="mt-2 text-[#4c7c92]"
                             onClick={() => setSearchTerm('')}
                         >
                             Clear search

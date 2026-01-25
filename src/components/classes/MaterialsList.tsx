@@ -80,7 +80,7 @@ export default function MaterialsList({ materials, classId }: MaterialsListProps
                                 href={material.file_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="font-medium text-purple-600 hover:text-purple-800 hover:underline"
+                                className="font-medium text-[#4c7c92] hover:text-[#3a6073] hover:underline"
                             >
                                 {material.name}
                             </a>

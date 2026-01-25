@@ -146,7 +146,7 @@ export default async function ClassDetailPage({
                                         href={classData.syllabus}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-purple-600 hover:underline"
+                                        className="text-[#4c7c92] hover:underline"
                                     >
                                         View Syllabus →
                                     </a>
@@ -162,7 +162,7 @@ export default async function ClassDetailPage({
                         </CardHeader>
                         <CardContent>
                             <div className="flex items-center gap-4 mb-4">
-                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xl font-bold">
+                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#4c7c92] to-[#9BBFD3] flex items-center justify-center text-white text-xl font-bold">
                                     {teacher.first_name[0]}
                                     {teacher.last_name[0]}
                                 </div>

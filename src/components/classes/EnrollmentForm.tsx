@@ -86,7 +86,7 @@ export default function EnrollmentForm({ classId, students }: EnrollmentFormProp
                     You need to add a child to your family before enrolling.
                 </p>
                 <Link href="/parent/family/add">
-                    <Button className="bg-gradient-to-r from-purple-600 to-pink-600">
+                    <Button className="bg-gradient-to-r from-[#4c7c92] to-[#9BBFD3]">
                         Add Family Member
                     </Button>
                 </Link>
@@ -122,7 +122,7 @@ export default function EnrollmentForm({ classId, students }: EnrollmentFormProp
             </div>
 
             <Button
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
+                className="w-full bg-gradient-to-r from-[#4c7c92] to-[#9BBFD3]"
                 onClick={handleEnroll}
                 disabled={isLoading || !selectedStudent}
             >

@@ -60,7 +60,7 @@ export default function ClassStatusLegend() {
                 onClick={() => setIsExpanded(!isExpanded)}
             >
                 <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                    <Info className="w-4 h-4 text-purple-600" />
+                    <Info className="w-4 h-4 text-[#4c7c92]" />
                     <span>Understanding Class Statuses & Actions</span>
                 </div>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">

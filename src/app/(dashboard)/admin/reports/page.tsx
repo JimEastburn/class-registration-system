@@ -124,11 +124,11 @@ export default async function AdminReportsPage() {
 
             {/* Key Metrics */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-[#4c7c92] to-[#3a6073] text-white">
                     <CardContent className="pt-6">
-                        <p className="text-purple-100 text-sm">Total Users</p>
+                        <p className="text-slate-100 text-sm">Total Users</p>
                         <p className="text-3xl font-bold">{users?.length || 0}</p>
-                        <p className="text-purple-200 text-xs mt-1">
+                        <p className="text-slate-200 text-xs mt-1">
                             {usersByRole.parent} parents, {usersByRole.teacher} teachers
                         </p>
                     </CardContent>
@@ -177,7 +177,7 @@ export default async function AdminReportsPage() {
                             {enrollmentsByMonth.map((month) => (
                                 <div key={month.month} className="flex flex-col items-center flex-1">
                                     <div
-                                        className="w-full bg-gradient-to-t from-purple-500 to-purple-400 rounded-t transition-all"
+                                        className="w-full bg-gradient-to-t from-[#4c7c92] to-[#6b8ca5] rounded-t transition-all"
                                         style={{ height: `${(month.count / maxEnrollment) * 100}%`, minHeight: '4px' }}
                                     />
                                     <span className="text-xs text-slate-500 mt-2">{month.month}</span>
@@ -224,7 +224,7 @@ export default async function AdminReportsPage() {
                                 <div className="flex items-center gap-2">
                                     <div className="w-24 bg-slate-100 rounded-full h-2">
                                         <div
-                                            className="bg-purple-500 h-2 rounded-full"
+                                            className="bg-[#4c7c92] h-2 rounded-full"
                                             style={{ width: `${((usersByRole.parent / (users?.length || 1)) * 100)}%` }}
                                         />
                                     </div>
@@ -368,7 +368,7 @@ export default async function AdminReportsPage() {
                                 <div className="flex items-center gap-2">
                                     <div className="w-24 bg-slate-100 rounded-full h-2">
                                         <div
-                                            className="bg-purple-500 h-2 rounded-full"
+                                            className="bg-[#4c7c92] h-2 rounded-full"
                                             style={{ width: `${((paymentStats.refunded / (paymentStats.total || 1)) * 100)}%` }}
                                         />
                                     </div>

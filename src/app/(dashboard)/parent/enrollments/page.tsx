@@ -157,7 +157,7 @@ export default async function EnrollmentsPage() {
                         <CardContent className="text-center py-8">
                             <p className="text-slate-500 mb-4">No active enrollments.</p>
                             <Link href="/parent/classes">
-                                <Button className="bg-gradient-to-r from-purple-600 to-pink-600">
+                                <Button className="bg-gradient-to-r from-[#4c7c92] to-[#9BBFD3]">
                                     Browse Classes
                                 </Button>
                             </Link>

@@ -12,7 +12,7 @@ const statusColors = {
     pending: 'bg-yellow-100 text-yellow-700',
     completed: 'bg-green-100 text-green-700',
     failed: 'bg-red-100 text-red-700',
-    refunded: 'bg-purple-100 text-purple-700',
+    refunded: 'bg-[#4c7c92]/10 text-[#4c7c92]',
 };
 
 export default async function PaymentHistoryPage() {
@@ -85,9 +85,9 @@ export default async function PaymentHistoryPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-[#4c7c92] to-[#3a6073] text-white">
                     <CardContent className="pt-6">
-                        <p className="text-purple-100 text-sm">Refunded</p>
+                        <p className="text-slate-100 text-sm">Refunded</p>
                         <p className="text-2xl font-bold">${refundedAmount.toFixed(2)}</p>
                     </CardContent>
                 </Card>
@@ -138,14 +138,14 @@ export default async function PaymentHistoryPage() {
                                             <Badge className={statusColors[payment.status as keyof typeof statusColors]}>
                                                 {payment.status}
                                             </Badge>
-                                            <span className={`text-lg font-semibold ${payment.status === 'refunded' ? 'text-purple-600 line-through' : ''
+                                            <span className={`text-lg font-semibold ${payment.status === 'refunded' ? 'text-[#4c7c92] line-through' : ''
                                                 }`}>
                                                 ${payment.amount.toFixed(2)}
                                             </span>
                                             <Link
                                                 href={`/api/invoice?id=${payment.id}`}
                                                 target="_blank"
-                                                className="text-sm text-purple-600 hover:text-purple-800 underline"
+                                                className="text-sm text-[#4c7c92] hover:text-[#3a6073] underline"
                                             >
                                                 Invoice
                                             </Link>
@@ -163,7 +163,7 @@ export default async function PaymentHistoryPage() {
                 <CardContent className="py-4">
                     <p className="text-sm text-slate-600">
                         <strong>Need help?</strong> If you have questions about a payment or need to request a refund,
-                        please contact us at <a href="mailto:communitysupport@austinaac.org" className="text-purple-600 underline">communitysupport@austinaac.org</a>
+                        please contact us at <a href="mailto:communitysupport@austinaac.org" className="text-[#4c7c92] underline">communitysupport@austinaac.org</a>
                     </p>
                 </CardContent>
             </Card>

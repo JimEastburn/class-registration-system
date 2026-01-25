@@ -61,12 +61,12 @@
   --popover: #FFFFFF;
   --popover-foreground: #334155;
 
-  /* Primary: Deep Indigo (Academic/Professional) */
-  --primary: #4C1D95;
+  /* Primary: Steel Blue (Primary Brand, Professional) */
+  --primary: #4c7c92;
   --primary-foreground: #FFFFFF;
 
-  /* Secondary: Vibrant Teal (Creative/Energetic) */
-  --secondary: #0D9488;
+  /* Secondary: Soft Sky Blue (Secondary Brand, Calm) */
+  --secondary: #9BBFD3;
   --secondary-foreground: #FFFFFF;
 
   /* Muted: Soft Gray for backgrounds */
@@ -82,11 +82,11 @@
 
   --border: #E2E8F0;
   --input: #E2E8F0;
-  --ring: #4C1D95;
+  --ring: #4c7c92;
 
-  --chart-1: #4C1D95;
+  --chart-1: #4c7c92;
   /* Deep Indigo */
-  --chart-2: #0D9488;
+  --chart-2: #9BBFD3;
   /* Vibrant Teal */
   --chart-3: #FBBF24;
   /* Sunset Gold */
@@ -97,12 +97,12 @@
 
   --sidebar: #F8FAF8;
   --sidebar-foreground: #334155;
-  --sidebar-primary: #4C1D95;
+  --sidebar-primary: #4c7c92;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #F1F5F9;
-  --sidebar-accent-foreground: #4C1D95;
+  --sidebar-accent-foreground: #4c7c92;
   --sidebar-border: #E2E8F0;
-  --sidebar-ring: #4C1D95;
+  --sidebar-ring: #4c7c92;
 }
 
 .dark {

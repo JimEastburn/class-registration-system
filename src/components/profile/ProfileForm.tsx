@@ -172,7 +172,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                     <Button
                         type="submit"
                         disabled={isLoading}
-                        className="bg-gradient-to-r from-purple-600 to-pink-600"
+                        className="bg-gradient-to-r from-[#4c7c92] to-[#9BBFD3]"
                     >
                         {isLoading ? 'Saving...' : 'Save Changes'}
                     </Button>

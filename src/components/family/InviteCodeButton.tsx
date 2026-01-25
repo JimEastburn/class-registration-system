@@ -66,7 +66,7 @@ export default function InviteCodeButton({ familyMemberId, memberName }: InviteC
                 size="sm"
                 onClick={handleGenerateCode}
                 disabled={loading}
-                className="w-full text-purple-600 border-purple-200 hover:bg-purple-50"
+                className="w-full text-[#4c7c92] border-[#4c7c92]/20 hover:bg-[#4c7c92]/10"
             >
                 {loading ? 'Generating...' : '🔗 Generate Student Link Code'}
             </Button>

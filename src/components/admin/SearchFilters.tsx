@@ -51,7 +51,7 @@ export function SearchBar({ placeholder = 'Search...', paramName = 'q' }: Search
             />
             {isPending && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-purple-600 border-t-transparent" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#4c7c92] border-t-transparent" />
                 </div>
             )}
         </div>

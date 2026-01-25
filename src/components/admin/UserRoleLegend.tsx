@@ -19,7 +19,7 @@ const roles = [
         name: 'Parent',
         id: 'parent',
         icon: User,
-        color: 'bg-purple-100 text-purple-700',
+        color: 'bg-[#4c7c92]/10 text-[#4c7c92]',
         description: 'Primary account holders who manage family profiles, enroll children in classes, and handle fee payments.',
         access: 'Access to Parent Portal'
     },
@@ -59,7 +59,7 @@ export default function UserRoleLegend() {
                 onClick={() => setIsExpanded(!isExpanded)}
             >
                 <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                    <Info className="w-4 h-4 text-purple-600" />
+                    <Info className="w-4 h-4 text-[#4c7c92]" />
                     <span>Understanding User Roles</span>
                 </div>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">

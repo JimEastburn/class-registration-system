@@ -7,8 +7,8 @@
 
 ### Primary Colors
 Used for main actions, headers, and brand identity.
-- **Deep Indigo**: ![#4C1D95](https://img.shields.io/badge/-4C1D95-4C1D95) `#4C1D95` (Academic, Professional) - *Similar to a "Riverbat" purple but distinct.*
-- **Vibrant Teal**: ![#0D9488](https://img.shields.io/badge/-0D9488-0D9488) `#0D9488` (Creative, Energetic) - *A nod to the arts and creativity.*
+- **Steel Blue**: ![#4c7c92](https://img.shields.io/badge/-4c7c92-4c7c92) `#4c7c92` (Primary Brand, Professional)
+- **Soft Sky Blue**: ![#9BBFD3](https://img.shields.io/badge/-9BBFD3-9BBFD3) `#9BBFD3` (Secondary Brand, Calm)
 
 ### Secondary & Accents
 Used for highlights, call-to-actions (secondary), and visual interest.
