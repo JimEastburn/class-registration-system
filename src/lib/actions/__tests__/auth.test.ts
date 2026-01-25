@@ -75,11 +75,35 @@ describe('Auth Server Actions implementation', () => {
                         last_name: 'Doe',
                         role: 'parent',
                         phone: '1234567890',
+                        code_of_conduct_agreed_at: null,
                     },
                     emailRedirectTo: expect.stringContaining('/auth/confirm'),
                 },
             });
             expect(result).toEqual({ success: true });
+        });
+
+        it('should include code_of_conduct_agreed_at in user_metadata when codeOfConduct is true', async () => {
+            const formData = new FormData();
+            formData.append('email', 'test@example.com');
+            formData.append('password', 'password123');
+            formData.append('firstName', 'John');
+            formData.append('lastName', 'Doe');
+            formData.append('role', 'parent');
+            formData.append('phone', '1234567890');
+            formData.append('codeOfConduct', 'true');
+
+            (mockSupabase.auth.signUp as Mock).mockResolvedValue({ data: {}, error: null });
+
+            await signUp(formData);
+
+            expect(mockSupabase.auth.signUp).toHaveBeenCalledWith(expect.objectContaining({
+                options: expect.objectContaining({
+                    data: expect.objectContaining({
+                        code_of_conduct_agreed_at: expect.any(String),
+                    }),
+                }),
+            }));
         });
 
         it('should return error if signUp fails', async () => {
