@@ -30,12 +30,15 @@ interface ClassFormProps {
         recurrence_duration?: number;
     };
     redirectUrl?: string; // Optional redirect URL after success
+    userRole?: string;
 }
 
-export default function ClassForm({ classData, redirectUrl }: ClassFormProps) {
+export default function ClassForm({ classData, redirectUrl, userRole }: ClassFormProps) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const isTeacher = userRole === 'teacher';
 
     const {
         register,
@@ -58,6 +61,7 @@ export default function ClassForm({ classData, redirectUrl }: ClassFormProps) {
             : {
                 maxStudents: 20,
                 fee: 0,
+                schedule: isTeacher ? 'To Be Announced' : '', // Pre-fill for teachers
             },
     });
 
@@ -145,31 +149,47 @@ export default function ClassForm({ classData, redirectUrl }: ClassFormProps) {
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="schedule">Schedule (Manual Entry)</Label>
-                        <Input
-                            id="schedule"
-                            placeholder="e.g., Mon/Wed 3:00 PM - 4:30 PM"
-                            {...register('schedule')}
-                        />
-                        {errors.schedule && (
-                            <p className="text-red-500 text-sm">{errors.schedule.message}</p>
-                        )}
-                        <p className="text-xs text-slate-500">
-                            Or use the recurring schedule builder below for automatic formatting
-                        </p>
-                    </div>
+                    {!isTeacher ? (
+                        <>
+                            <div className="space-y-2">
+                                <Label htmlFor="schedule">Schedule (Manual Entry)</Label>
+                                <Input
+                                    id="schedule"
+                                    placeholder="e.g., Mon/Wed 3:00 PM - 4:30 PM"
+                                    {...register('schedule')}
+                                />
+                                {errors.schedule && (
+                                    <p className="text-red-500 text-sm">{errors.schedule.message}</p>
+                                )}
+                                <p className="text-xs text-slate-500">
+                                    Or use the recurring schedule builder below for automatic formatting
+                                </p>
+                            </div>
 
-                    {/* Recurring Schedule Section */}
-                    <div className="space-y-2">
-                        <Label>Recurring Schedule Builder (Optional)</Label>
-                        <RecurringScheduleInput
-                            defaultPattern={classData?.recurrence_pattern}
-                            defaultDays={classData?.recurrence_days}
-                            defaultTime={classData?.recurrence_time}
-                            defaultDuration={classData?.recurrence_duration}
-                        />
-                    </div>
+                            {/* Recurring Schedule Section */}
+                            <div className="space-y-2">
+                                <Label>Recurring Schedule Builder (Optional)</Label>
+                                <RecurringScheduleInput
+                                    defaultPattern={classData?.recurrence_pattern}
+                                    defaultDays={classData?.recurrence_days}
+                                    defaultTime={classData?.recurrence_time}
+                                    defaultDuration={classData?.recurrence_duration}
+                                />
+                            </div>
+                        </>
+                    ) : (
+                        <div className="space-y-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                            <Label>Schedule</Label>
+                            <p className="text-sm font-medium text-slate-700">
+                                {classData?.schedule || 'To Be Announced'}
+                            </p>
+                            <p className="text-xs text-slate-500">
+                                Schedule will be assigned by an administrator.
+                            </p>
+                            {/* Hidden input to satisfy react-hook-form validation */}
+                            <input type="hidden" {...register('schedule')} />
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">

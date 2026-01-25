@@ -28,10 +28,15 @@ export async function createClass(formData: FormData): Promise<ActionResult> {
     const location = formData.get('location') as string;
     const startDate = formData.get('startDate') as string;
     const endDate = formData.get('endDate') as string;
-    const schedule = formData.get('schedule') as string;
+    let schedule = formData.get('schedule') as string;
     const maxStudents = parseInt(formData.get('maxStudents') as string, 10);
     const fee = parseFloat(formData.get('fee') as string);
     const syllabus = formData.get('syllabus') as string;
+
+    // Force "To Be Announced" for teachers
+    if (role === 'teacher') {
+        schedule = 'To Be Announced';
+    }
 
     const { error } = await supabase.from('classes').insert({
         teacher_id: user.id,
@@ -77,17 +82,25 @@ export async function updateClass(
     const syllabus = formData.get('syllabus') as string;
 
     const role = user.user_metadata?.role;
-    let query = supabase.from('classes').update({
+
+    // Build update object
+    const updateData: any = {
         name,
         description: description || null,
         location,
         start_date: startDate,
         end_date: endDate,
-        schedule,
         max_students: maxStudents,
         fee,
         syllabus: syllabus || null,
-    }).eq('id', id);
+    };
+
+    // Only allow schedule update if not a teacher
+    if (role !== 'teacher') {
+        updateData.schedule = schedule;
+    }
+
+    let query = supabase.from('classes').update(updateData).eq('id', id);
 
     // If not admin or scheduler, ensure they own the class
     if (role !== 'admin' && role !== 'class_scheduler') {
