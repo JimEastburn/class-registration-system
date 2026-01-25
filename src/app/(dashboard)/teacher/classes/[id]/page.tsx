@@ -59,7 +59,7 @@ export default async function ClassDetailPage({
                             {classData.status}
                         </Badge>
                     </div>
-                    <p className="text-slate-500">{classData.description || 'No description'}</p>
+                    <p className="text-muted-foreground">{classData.description || 'No description'}</p>
                 </div>
                 <div className="flex gap-2">
                     <Link href={`/teacher/classes/${id}/edit`}>
@@ -78,31 +78,31 @@ export default async function ClassDetailPage({
                     <CardContent className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <p className="text-sm text-slate-500">Schedule</p>
+                                <p className="text-sm text-muted-foreground">Schedule</p>
                                 <p className="font-medium">{classData.schedule}</p>
                             </div>
                             <div>
-                                <p className="text-sm text-slate-500">Location</p>
+                                <p className="text-sm text-muted-foreground">Location</p>
                                 <p className="font-medium">{classData.location}</p>
                             </div>
                             <div>
-                                <p className="text-sm text-slate-500">Start Date</p>
+                                <p className="text-sm text-muted-foreground">Start Date</p>
                                 <p className="font-medium">
                                     {new Date(classData.start_date).toLocaleDateString()}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-sm text-slate-500">End Date</p>
+                                <p className="text-sm text-muted-foreground">End Date</p>
                                 <p className="font-medium">
                                     {new Date(classData.end_date).toLocaleDateString()}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-sm text-slate-500">Fee</p>
+                                <p className="text-sm text-muted-foreground">Fee</p>
                                 <p className="font-medium">${classData.fee.toFixed(2)}</p>
                             </div>
                             <div>
-                                <p className="text-sm text-slate-500">Capacity</p>
+                                <p className="text-sm text-muted-foreground">Capacity</p>
                                 <p className="font-medium">
                                     {classData.current_enrollment} / {classData.max_students}
                                 </p>
@@ -110,12 +110,12 @@ export default async function ClassDetailPage({
                         </div>
                         {classData.syllabus && (
                             <div>
-                                <p className="text-sm text-slate-500">Syllabus</p>
+                                <p className="text-sm text-muted-foreground">Syllabus</p>
                                 <a
                                     href={classData.syllabus}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-blue-600 hover:underline"
+                                    className="text-primary hover:underline"
                                 >
                                     View Syllabus →
                                 </a>
@@ -143,14 +143,14 @@ export default async function ClassDetailPage({
                                     return (
                                         <div
                                             key={enrollment.id}
-                                            className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800"
+                                            className="flex items-center justify-between p-3 rounded-lg bg-muted dark:bg-slate-800"
                                         >
                                             <div>
                                                 <p className="font-medium">
                                                     {student.first_name} {student.last_name}
                                                 </p>
                                                 {student.grade_level && (
-                                                    <p className="text-sm text-slate-500">
+                                                    <p className="text-sm text-muted-foreground">
                                                         Grade {student.grade_level}
                                                     </p>
                                                 )}
@@ -167,7 +167,7 @@ export default async function ClassDetailPage({
                                 })}
                             </div>
                         ) : (
-                            <p className="text-center text-slate-500 py-8">
+                            <p className="text-center text-muted-foreground py-8">
                                 No students enrolled yet.
                             </p>
                         )}

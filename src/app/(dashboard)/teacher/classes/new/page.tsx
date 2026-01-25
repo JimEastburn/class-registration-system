@@ -9,7 +9,7 @@ export default function NewClassPage() {
         <div className="space-y-6">
             <div>
                 <h2 className="text-xl font-semibold">Create New Class</h2>
-                <p className="text-slate-500">Set up a new class for students to enroll in</p>
+                <p className="text-muted-foreground">Set up a new class for students to enroll in</p>
             </div>
             <ClassForm />
         </div>

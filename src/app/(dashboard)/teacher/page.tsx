@@ -25,11 +25,11 @@ export default async function TeacherDashboardPage() {
     return (
         <div className="space-y-6">
             {/* Welcome Section */}
-            <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-6 text-white">
+            <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-6 text-white">
                 <h2 className="text-2xl font-bold mb-2">
                     Hi {user?.user_metadata?.first_name}!
                 </h2>
-                <p className="text-blue-100">
+                <p className="text-primary-foreground/90">
                     Manage your classes and track student enrollments.
                 </p>
             </div>
@@ -45,7 +45,7 @@ export default async function TeacherDashboardPage() {
                     <CardContent>
                         <div className="text-3xl font-bold">{activeClasses}</div>
                         <Link href="/teacher/classes">
-                            <Button variant="link" className="p-0 h-auto text-blue-600">
+                            <Button variant="link" className="p-0 h-auto text-primary">
                                 View all classes →
                             </Button>
                         </Link>
@@ -61,7 +61,7 @@ export default async function TeacherDashboardPage() {
                     <CardContent>
                         <div className="text-3xl font-bold">{totalStudents}</div>
                         <Link href="/teacher/students">
-                            <Button variant="link" className="p-0 h-auto text-blue-600">
+                            <Button variant="link" className="p-0 h-auto text-primary">
                                 View students →
                             </Button>
                         </Link>
@@ -75,11 +75,11 @@ export default async function TeacherDashboardPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-slate-600 text-sm mb-2">
+                        <p className="text-muted-foreground text-sm mb-2">
                             Start a new class for students
                         </p>
                         <Link href="/teacher/classes/new">
-                            <Button className="bg-gradient-to-r from-blue-600 to-cyan-600">
+                            <Button className="bg-gradient-to-r from-primary to-secondary">
                                 + New Class
                             </Button>
                         </Link>
@@ -98,7 +98,7 @@ export default async function TeacherDashboardPage() {
                             {classes.slice(0, 5).map((classItem) => (
                                 <div
                                     key={classItem.id}
-                                    className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-800"
+                                    className="flex items-center justify-between p-4 rounded-lg bg-muted dark:bg-slate-800"
                                 >
                                     <div>
                                         <h4 className="font-medium">{classItem.name}</h4>
@@ -120,7 +120,7 @@ export default async function TeacherDashboardPage() {
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-8 text-slate-500">
+                        <div className="text-center py-8 text-muted-foreground">
                             <p>You haven&apos;t created any classes yet.</p>
                             <Link href="/teacher/classes/new">
                                 <Button className="mt-4">Create Your First Class</Button>

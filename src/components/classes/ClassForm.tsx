@@ -218,7 +218,7 @@ export default function ClassForm({ classData }: ClassFormProps) {
                         </Button>
                         <Button
                             type="submit"
-                            className="bg-gradient-to-r from-blue-600 to-cyan-600"
+                            className="bg-gradient-to-r from-primary to-secondary"
                             disabled={isLoading}
                         >
                             {isLoading ? 'Saving...' : classData ? 'Update Class' : 'Create Class'}

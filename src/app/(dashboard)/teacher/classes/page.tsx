@@ -35,7 +35,7 @@ export default async function TeacherClassesPage() {
                     <p className="text-slate-500">Manage your classes and view enrollments</p>
                 </div>
                 <Link href="/teacher/classes/new">
-                    <Button className="bg-gradient-to-r from-blue-600 to-cyan-600">
+                    <Button className="bg-gradient-to-r from-primary to-secondary">
                         + Create New Class
                     </Button>
                 </Link>
@@ -107,9 +107,9 @@ export default async function TeacherClassesPage() {
             ) : (
                 <Card className="border-0 shadow-lg">
                     <CardContent className="text-center py-12">
-                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
                             <svg
-                                className="w-8 h-8 text-blue-600"
+                                className="w-8 h-8 text-primary"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -127,7 +127,7 @@ export default async function TeacherClassesPage() {
                             Create your first class to start accepting students.
                         </p>
                         <Link href="/teacher/classes/new">
-                            <Button className="bg-gradient-to-r from-blue-600 to-cyan-600">
+                            <Button className="bg-gradient-to-r from-primary to-secondary">
                                 Create Your First Class
                             </Button>
                         </Link>
