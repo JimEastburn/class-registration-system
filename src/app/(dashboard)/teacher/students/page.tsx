@@ -1,26 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import EnrollmentStatusLegend from '@/components/admin/EnrollmentStatusLegend';
-import { StudentActionMenu } from '@/components/classes/StudentActionMenu';
+import StudentList from '@/components/teacher/StudentList';
 
 export const metadata = {
     title: 'All Students | Class Registration System',
-};
-
-const statusColors = {
-    pending: 'bg-yellow-100 text-yellow-700',
-    confirmed: 'bg-green-100 text-green-700',
-    cancelled: 'bg-red-100 text-red-700',
-    completed: 'bg-blue-100 text-blue-700',
 };
 
 export default async function TeacherAllStudentsPage() {
@@ -44,7 +28,22 @@ export default async function TeacherAllStudentsPage() {
       enrolled_at,
       class_id,
       student_id,
-      student:family_members(first_name, last_name, grade_level)
+      student:family_members(
+        id,
+        first_name,
+        last_name,
+        grade_level,
+        parent:profiles!public_family_members_parent_id_fkey(
+          email,
+          phone,
+          family_members(
+            id,
+            first_name,
+            last_name,
+            role
+          )
+        )
+      )
     `)
         .in('class_id', classIds)
         .order('enrolled_at', { ascending: false });
@@ -65,6 +64,9 @@ export default async function TeacherAllStudentsPage() {
         teacherClasses?.map(c => [c.id, c.name]) || []
     );
 
+    // Type casting because the deep nested query result is hard to match automatically with the strict component types
+    const typedEnrollments = (enrollments as any) || [];
+
     return (
         <div className="space-y-6">
             <div>
@@ -81,77 +83,11 @@ export default async function TeacherAllStudentsPage() {
                     <CardTitle>Combined Enrollment List</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {enrollments && enrollments.length > 0 ? (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Student Name</TableHead>
-                                    <TableHead>Class</TableHead>
-                                    <TableHead>Grade</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Enrolled On</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {enrollments.map((enrollment) => {
-                                    const student = enrollment.student as unknown as {
-                                        first_name: string;
-                                        last_name: string;
-                                        grade_level: string | null;
-                                    };
-                                    const isBlocked = blockedSet.has(`${enrollment.class_id}:${enrollment.student_id}`);
-
-                                    return (
-                                        <TableRow key={enrollment.id} className={isBlocked ? "bg-red-50/50" : ""}>
-                                            <TableCell className="font-medium">
-                                                {student.first_name} {student.last_name}
-                                                {isBlocked && (
-                                                    <Badge variant="destructive" className="ml-2 text-[10px] h-5">
-                                                        BLOCKED
-                                                    </Badge>
-                                                )}
-                                            </TableCell>
-                                            <TableCell>
-                                                {classNameMap[enrollment.class_id]}
-                                            </TableCell>
-                                            <TableCell>
-                                                {student.grade_level
-                                                    ? student.grade_level
-                                                    : '-'}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge
-                                                    className={
-                                                        statusColors[
-                                                        enrollment.status as keyof typeof statusColors
-                                                        ]
-                                                    }
-                                                >
-                                                    {enrollment.status}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                {new Date(enrollment.enrolled_at).toLocaleDateString()}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <StudentActionMenu
-                                                    classId={enrollment.class_id}
-                                                    studentId={enrollment.student_id}
-                                                    studentName={`${student.first_name} ${student.last_name}`}
-                                                    isBlocked={isBlocked}
-                                                />
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
-                            </TableBody>
-                        </Table>
-                    ) : (
-                        <p className="text-center text-slate-500 py-8">
-                            No students enrolled in any of your classes yet.
-                        </p>
-                    )}
+                    <StudentList
+                        enrollments={typedEnrollments}
+                        blockedSet={blockedSet}
+                        classNameMap={classNameMap}
+                    />
                 </CardContent>
             </Card>
         </div>
