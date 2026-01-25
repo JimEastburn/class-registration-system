@@ -96,7 +96,7 @@ export default async function TeacherAllStudentsPage() {
                                             </TableCell>
                                             <TableCell>
                                                 {student.grade_level
-                                                    ? `Grade ${student.grade_level}`
+                                                    ? student.grade_level
                                                     : '-'}
                                             </TableCell>
                                             <TableCell>

@@ -114,7 +114,7 @@ export default function EnrollmentForm({ classId, students }: EnrollmentFormProp
                         {students.map((student) => (
                             <SelectItem key={student.id} value={student.id}>
                                 {student.first_name} {student.last_name}
-                                {student.grade_level && ` (Grade ${student.grade_level})`}
+                                {student.grade_level && ` (${student.grade_level})`}
                             </SelectItem>
                         ))}
                     </SelectContent>

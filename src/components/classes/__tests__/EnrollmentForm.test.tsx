@@ -65,10 +65,10 @@ describe('EnrollmentForm Component', () => {
 
         // Wait for the dropdown to open and select Alice
         await waitFor(() => {
-            expect(screen.getByText('Alice Doe (Grade 6)')).toBeInTheDocument();
+            expect(screen.getByText('Alice Doe (6)')).toBeInTheDocument();
         });
 
-        fireEvent.click(screen.getByText('Alice Doe (Grade 6)'));
+        fireEvent.click(screen.getByText('Alice Doe (6)'));
 
         // Click enroll button
         const enrollButton = screen.getByRole('button', { name: /Enroll Now/i });
@@ -131,10 +131,10 @@ describe('EnrollmentForm Component', () => {
         fireEvent.click(selectTrigger);
 
         await waitFor(() => {
-            expect(screen.getByText('Alice Doe (Grade 6)')).toBeInTheDocument();
+            expect(screen.getByText('Alice Doe (6)')).toBeInTheDocument();
         });
 
-        fireEvent.click(screen.getByText('Alice Doe (Grade 6)'));
+        fireEvent.click(screen.getByText('Alice Doe (6)'));
 
         // Click enroll button
         const enrollButton = screen.getByRole('button', { name: /Enroll Now/i });

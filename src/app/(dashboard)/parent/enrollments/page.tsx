@@ -108,7 +108,7 @@ export default async function EnrollmentsPage() {
                                                 </div>
                                                 <p className="text-slate-500 text-sm mb-2">
                                                     Student: {student.first_name} {student.last_name}
-                                                    {student.grade_level && ` (Grade ${student.grade_level})`}
+                                                    {student.grade_level && ` (${student.grade_level})`}
                                                 </p>
                                                 <div className="grid sm:grid-cols-3 gap-2 text-sm">
                                                     <div>

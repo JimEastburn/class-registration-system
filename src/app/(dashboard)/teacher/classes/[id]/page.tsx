@@ -151,7 +151,7 @@ export default async function ClassDetailPage({
                                                 </p>
                                                 {student.grade_level && (
                                                     <p className="text-sm text-muted-foreground">
-                                                        Grade {student.grade_level}
+                                                        {student.grade_level}
                                                     </p>
                                                 )}
                                             </div>
