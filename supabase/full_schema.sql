@@ -33,7 +33,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('parent', 'teacher', 'student', 'admin')),
+    role TEXT NOT NULL CHECK (role IN ('parent', 'teacher', 'student', 'admin', 'class_scheduler')),
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
     phone TEXT,

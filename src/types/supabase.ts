@@ -13,7 +13,7 @@ export interface Database {
                 Row: {
                     id: string
                     email: string
-                    role: 'parent' | 'teacher' | 'student' | 'admin'
+                    role: 'parent' | 'teacher' | 'student' | 'admin' | 'class_scheduler'
                     first_name: string
                     last_name: string
                     phone: string | null
@@ -26,7 +26,7 @@ export interface Database {
                 Insert: {
                     id: string
                     email: string
-                    role: 'parent' | 'teacher' | 'student' | 'admin'
+                    role: 'parent' | 'teacher' | 'student' | 'admin' | 'class_scheduler'
                     first_name: string
                     last_name: string
                     phone?: string | null
