@@ -145,7 +145,7 @@ export default async function ClassSchedulePage() {
                                                 className="min-h-[120px] border-b border-r border-border p-1 hover:bg-muted/5 transition-colors relative"
                                             >
                                                 {classesInSlot.map(cls => (
-                                                    <Link key={cls.id} href={`/class_scheduler/classes/${cls.id}/edit`}>
+                                                    <Link key={cls.id} href={`/class_scheduler/classes/${cls.id}/edit`} scroll={false}>
                                                         <div className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded p-1 mb-1 text-xs cursor-pointer transition-colors block overflow-hidden">
                                                             <div className="font-semibold truncate leading-tight">{cls.name}</div>
                                                             <div className="truncate opacity-80 text-[10px]">
