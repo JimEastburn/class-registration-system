@@ -94,6 +94,7 @@ export const classSchema = z.object({
     recurrence_days: z.string().optional(), // Passed as JSON string from hidden input
     recurrence_time: z.string().optional(),
     recurrence_duration: z.string().optional(), // Passed as string from select
+    teacherId: z.string().optional(), // Optional, mostly for admins/schedulers
 }).refine((data) => new Date(data.endDate) >= new Date(data.startDate), {
     message: 'End date must be after start date',
     path: ['endDate'],

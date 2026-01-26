@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import RecurringScheduleInput from '@/components/classes/RecurringScheduleInput';
+import TeacherSelect from '@/components/classes/TeacherSelect';
 
 interface ClassFormProps {
     classData?: {
@@ -28,12 +29,14 @@ interface ClassFormProps {
         recurrence_days?: string[];
         recurrence_time?: string;
         recurrence_duration?: number;
+        teacher_id?: string;
     };
     redirectUrl?: string; // Optional redirect URL after success
     userRole?: string;
+    teachers?: { id: string; full_name: string }[];
 }
 
-export default function ClassForm({ classData, redirectUrl, userRole }: ClassFormProps) {
+export default function ClassForm({ classData, redirectUrl, userRole, teachers }: ClassFormProps) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -62,6 +65,7 @@ export default function ClassForm({ classData, redirectUrl, userRole }: ClassFor
                 recurrence_days: classData.recurrence_days ? JSON.stringify(classData.recurrence_days) : undefined,
                 recurrence_time: classData.recurrence_time,
                 recurrence_duration: classData.recurrence_duration?.toString(),
+                teacherId: classData.teacher_id,
             }
             : {
                 maxStudents: 20,
@@ -90,6 +94,7 @@ export default function ClassForm({ classData, redirectUrl, userRole }: ClassFor
         if (data.recurrence_days) formData.append('recurrence_days', data.recurrence_days);
         if (data.recurrence_time) formData.append('recurrence_time', data.recurrence_time);
         if (data.recurrence_duration) formData.append('recurrence_duration', data.recurrence_duration);
+        if (data.teacherId) formData.append('teacherId', data.teacherId);
 
         const result = classData
             ? await updateClass(classData.id, formData)
@@ -157,6 +162,18 @@ export default function ClassForm({ classData, redirectUrl, userRole }: ClassFor
                             <p className="text-red-500 text-sm">{errors.name.message}</p>
                         )}
                     </div>
+
+                    {/* Teacher Selection for Admins/Schedulers */}
+                    {(userRole === 'admin' || userRole === 'class_scheduler') && teachers && (
+                        <div className="space-y-2">
+                            <Label>Assigned Teacher</Label>
+                            <TeacherSelect
+                                teachers={teachers}
+                                value={classData?.teacher_id}
+                                onChange={(value) => setValue('teacherId', value)}
+                            />
+                        </div>
+                    )}
 
                     <div className="space-y-2">
                         <Label htmlFor="description">Description (optional)</Label>
