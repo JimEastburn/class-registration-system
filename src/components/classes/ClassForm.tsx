@@ -47,6 +47,7 @@ export default function ClassForm({ classData, redirectUrl, userRole, teachers }
         register,
         handleSubmit,
         setValue,
+        watch,
         formState: { errors },
     } = useForm<ClassFormData>({
         resolver: zodResolver(classSchema),
@@ -169,7 +170,7 @@ export default function ClassForm({ classData, redirectUrl, userRole, teachers }
                             <Label>Assigned Teacher</Label>
                             <TeacherSelect
                                 teachers={teachers}
-                                value={classData?.teacher_id}
+                                value={watch('teacherId')}
                                 onChange={(value) => setValue('teacherId', value)}
                             />
                         </div>
