@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -108,7 +108,7 @@ export default function ClassForm({ classData, redirectUrl, userRole, teachers }
         }
     };
 
-    const handleScheduleChange = (schedule: {
+    const handleScheduleChange = useCallback((schedule: {
         pattern: string;
         days: string[];
         time: string;
@@ -140,7 +140,7 @@ export default function ClassForm({ classData, redirectUrl, userRole, teachers }
          setValue('recurrence_days', JSON.stringify(schedule.days));
          setValue('recurrence_time', schedule.time);
          setValue('recurrence_duration', schedule.duration.toString());
-    };
+    }, [setValue]);
 
     return (
         <Card className="max-w-2xl border-0 shadow-lg">
