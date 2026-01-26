@@ -43,6 +43,7 @@ export default function ClassForm({ classData, redirectUrl, userRole }: ClassFor
     const {
         register,
         handleSubmit,
+        setValue,
         formState: { errors },
     } = useForm<ClassFormData>({
         resolver: zodResolver(classSchema),
@@ -57,6 +58,10 @@ export default function ClassForm({ classData, redirectUrl, userRole }: ClassFor
                 maxStudents: classData.max_students,
                 fee: classData.fee,
                 syllabus: classData.syllabus || undefined,
+                recurrence_pattern: classData.recurrence_pattern,
+                recurrence_days: classData.recurrence_days ? JSON.stringify(classData.recurrence_days) : undefined,
+                recurrence_time: classData.recurrence_time,
+                recurrence_duration: classData.recurrence_duration?.toString(),
             }
             : {
                 maxStudents: 20,
@@ -79,6 +84,12 @@ export default function ClassForm({ classData, redirectUrl, userRole }: ClassFor
         formData.append('maxStudents', data.maxStudents.toString());
         formData.append('fee', data.fee.toString());
         if (data.syllabus) formData.append('syllabus', data.syllabus);
+        
+        // Append recurrence fields
+        if (data.recurrence_pattern) formData.append('recurrence_pattern', data.recurrence_pattern);
+        if (data.recurrence_days) formData.append('recurrence_days', data.recurrence_days);
+        if (data.recurrence_time) formData.append('recurrence_time', data.recurrence_time);
+        if (data.recurrence_duration) formData.append('recurrence_duration', data.recurrence_duration);
 
         const result = classData
             ? await updateClass(classData.id, formData)
@@ -90,6 +101,40 @@ export default function ClassForm({ classData, redirectUrl, userRole }: ClassFor
         } else {
             router.push(redirectUrl || '/teacher/classes');
         }
+    };
+
+    const handleScheduleChange = (schedule: {
+        pattern: string;
+        days: string[];
+        time: string;
+        duration: number;
+    }) => {
+         // Auto-generate the text schedule string
+         let scheduleText = '';
+         if (schedule.pattern !== 'none') {
+             scheduleText = schedule.pattern.charAt(0).toUpperCase() + schedule.pattern.slice(1);
+             if (schedule.days.length > 0) {
+                 const dayLabels = schedule.days.map(d => d.charAt(0).toUpperCase() + d.slice(1));
+                 scheduleText += ` on ${dayLabels.join(', ')}`;
+             }
+             if (schedule.time) {
+                 // Convert 24h to 12h
+                 const [h, m] = schedule.time.split(':');
+                 const hour = parseInt(h);
+                 const ampm = hour >= 12 ? 'PM' : 'AM';
+                 const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                 scheduleText += ` at ${displayHour}:${m} ${ampm}`;
+             }
+         }
+         
+         if (scheduleText) {
+             setValue('schedule', scheduleText, { shouldValidate: true });
+         }
+
+         setValue('recurrence_pattern', schedule.pattern);
+         setValue('recurrence_days', JSON.stringify(schedule.days));
+         setValue('recurrence_time', schedule.time);
+         setValue('recurrence_duration', schedule.duration.toString());
     };
 
     return (
@@ -174,6 +219,7 @@ export default function ClassForm({ classData, redirectUrl, userRole }: ClassFor
                                     defaultDays={classData?.recurrence_days}
                                     defaultTime={classData?.recurrence_time}
                                     defaultDuration={classData?.recurrence_duration}
+                                    onChange={handleScheduleChange}
                                 />
                             </div>
                         </>

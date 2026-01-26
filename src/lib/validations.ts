@@ -90,6 +90,10 @@ export const classSchema = z.object({
     maxStudents: z.number().min(1, 'Maximum students must be at least 1'),
     fee: z.number().min(0, 'Fee cannot be negative'),
     syllabus: z.string().optional(),
+    recurrence_pattern: z.string().optional(),
+    recurrence_days: z.string().optional(), // Passed as JSON string from hidden input
+    recurrence_time: z.string().optional(),
+    recurrence_duration: z.string().optional(), // Passed as string from select
 }).refine((data) => new Date(data.endDate) >= new Date(data.startDate), {
     message: 'End date must be after start date',
     path: ['endDate'],

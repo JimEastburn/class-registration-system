@@ -38,6 +38,22 @@ export async function createClass(formData: FormData): Promise<ActionResult> {
         schedule = 'To Be Announced';
     }
 
+    const recurrencePattern = formData.get('recurrence_pattern') as string;
+    const recurrenceDaysStr = formData.get('recurrence_days') as string;
+    const recurrenceTime = formData.get('recurrence_time') as string;
+    const recurrenceDurationStr = formData.get('recurrence_duration') as string;
+
+    let recurrenceDays: string[] | null = null;
+    if (recurrenceDaysStr) {
+        try {
+            recurrenceDays = JSON.parse(recurrenceDaysStr);
+        } catch (e) {
+            console.error('Failed to parse recurrence_days', e);
+        }
+    }
+
+    const recurrenceDuration = recurrenceDurationStr ? parseInt(recurrenceDurationStr, 10) : null;
+
     const { error } = await supabase.from('classes').insert({
         teacher_id: user.id,
         name,
@@ -50,6 +66,10 @@ export async function createClass(formData: FormData): Promise<ActionResult> {
         fee,
         syllabus: syllabus || null,
         status: 'draft',
+        recurrence_pattern: recurrencePattern || 'none',
+        recurrence_days: recurrenceDays,
+        recurrence_time: recurrenceTime || null,
+        recurrence_duration: recurrenceDuration,
     });
 
     if (error) {
@@ -94,6 +114,28 @@ export async function updateClass(
         fee,
         syllabus: syllabus || null,
     };
+
+    const recurrencePattern = formData.get('recurrence_pattern') as string;
+    const recurrenceDaysStr = formData.get('recurrence_days') as string;
+    const recurrenceTime = formData.get('recurrence_time') as string;
+    const recurrenceDurationStr = formData.get('recurrence_duration') as string;
+
+    if (recurrencePattern) {
+        updateData.recurrence_pattern = recurrencePattern;
+        
+        if (recurrenceDaysStr) {
+            try {
+                updateData.recurrence_days = JSON.parse(recurrenceDaysStr);
+            } catch (e) {
+                console.error('Failed to parse recurrence_days', e);
+            }
+        } else {
+             updateData.recurrence_days = null;
+        }
+
+        updateData.recurrence_time = recurrenceTime || null;
+        updateData.recurrence_duration = recurrenceDurationStr ? parseInt(recurrenceDurationStr, 10) : null;
+    }
 
     // Only allow schedule update if not a teacher
     if (role !== 'teacher') {

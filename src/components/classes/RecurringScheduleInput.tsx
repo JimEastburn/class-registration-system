@@ -1,6 +1,4 @@
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -36,6 +34,12 @@ interface RecurringScheduleInputProps {
     defaultDays?: string[];
     defaultTime?: string;
     defaultDuration?: number;
+    onChange?: (schedule: {
+        pattern: string;
+        days: string[];
+        time: string;
+        duration: number;
+    }) => void;
 }
 
 export default function RecurringScheduleInput({
@@ -43,9 +47,23 @@ export default function RecurringScheduleInput({
     defaultDays = [],
     defaultTime = '',
     defaultDuration,
+    onChange,
 }: RecurringScheduleInputProps) {
     const [pattern, setPattern] = useState(defaultPattern);
     const [selectedDays, setSelectedDays] = useState<string[]>(defaultDays);
+    const [time, setTime] = useState(defaultTime);
+    const [duration, setDuration] = useState<number | undefined>(defaultDuration);
+
+    useEffect(() => {
+        if (onChange) {
+            onChange({
+                pattern,
+                days: selectedDays,
+                time,
+                duration: duration || 0,
+            });
+        }
+    }, [pattern, selectedDays, time, duration, onChange]);
 
     const handleDayToggle = (day: string, checked: boolean) => {
         if (checked) {
@@ -62,15 +80,28 @@ export default function RecurringScheduleInput({
     const generatePreview = () => {
         if (pattern === 'none') return '';
 
-        let text = '';
+        let text = pattern.charAt(0).toUpperCase() + pattern.slice(1);
 
         if (showDaysSelector && selectedDays.length > 0) {
             const dayLabels = selectedDays
                 .map(d => WEEKDAYS.find(w => w.value === d)?.label)
                 .filter(Boolean);
-            text = dayLabels.join(', ');
-        } else {
-            text = pattern.charAt(0).toUpperCase() + pattern.slice(1);
+            text = `${text} on ${dayLabels.join(', ')}`;
+        }
+        
+        if (time) {
+            // Format time (simple check)
+             const [h, m] = time.split(':');
+             if (h) {
+                 const hour = parseInt(h);
+                 const ampm = hour >= 12 ? 'PM' : 'AM';
+                 const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                 text += ` at ${displayHour}:${m} ${ampm}`;
+             }
+        }
+
+        if (duration) {
+             text += ` (${duration} mins)`;
         }
 
         return text;
@@ -81,7 +112,6 @@ export default function RecurringScheduleInput({
             <div>
                 <Label htmlFor="recurrence_pattern">Schedule Pattern</Label>
                 <Select
-                    name="recurrence_pattern"
                     value={pattern}
                     onValueChange={setPattern}
                 >
@@ -119,12 +149,6 @@ export default function RecurringScheduleInput({
                             </label>
                         ))}
                     </div>
-                    {/* Hidden input to pass selected days to form */}
-                    <input
-                        type="hidden"
-                        name="recurrence_days"
-                        value={JSON.stringify(selectedDays)}
-                    />
                 </div>
             )}
 
@@ -135,15 +159,15 @@ export default function RecurringScheduleInput({
                         <Input
                             type="time"
                             id="recurrence_time"
-                            name="recurrence_time"
-                            defaultValue={defaultTime}
+                            value={time}
+                            onChange={(e) => setTime(e.target.value)}
                         />
                     </div>
                     <div>
                         <Label htmlFor="recurrence_duration">Duration</Label>
                         <Select
-                            name="recurrence_duration"
-                            defaultValue={defaultDuration?.toString()}
+                            value={duration?.toString() || ''}
+                            onValueChange={(v) => setDuration(parseInt(v))}
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Select duration" />
