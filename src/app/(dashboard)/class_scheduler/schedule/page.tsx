@@ -112,47 +112,47 @@ export default async function ClassSchedulePage() {
                     <CardDescription>View the layout of active classes across the week.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="min-w-[800px] overflow-x-auto">
-                        {/* Grid Container */}
-                        <div className="grid grid-cols-4 border-l border-t border-border">
+                    <div className="min-w-[1000px] overflow-x-auto">
+                        {/* Grid Container: 12 Columns (1 Label + 11 Hours) */}
+                        <div className="grid grid-cols-12 border-l border-t border-border">
                             
                             {/* Header Row */}
                             {/* Empty corner cell */}
-                            <div className="p-4 border-b border-r border-border bg-muted/50 font-medium text-muted-foreground text-center">
-                                Time
+                            <div className="p-4 border-b border-r border-border bg-muted/50 font-medium text-muted-foreground text-center sticky left-0 bg-background z-10 w-32">
+                                Day
                             </div>
-                            {/* Days headers */}
-                            {DAYS.map((day) => (
-                                <div key={day} className="p-4 border-b border-r border-border bg-muted/50 font-medium text-center">
-                                    {day}
+                            {/* Time Headers */}
+                            {HOURS.map((hour) => (
+                                <div key={`time-${hour}`} className="p-4 border-b border-r border-border bg-muted/50 font-medium text-center text-sm flex items-center justify-center min-w-[100px]">
+                                    {formatHour(hour)}
                                 </div>
                             ))}
 
-                            {/* Time Slots Rows */}
-                            {HOURS.map((hour) => (
+                            {/* Data Rows */}
+                            {DAYS.map((day) => (
                                 <>
-                                    {/* Time Label */}
-                                    <div key={`time-${hour}`} className="p-4 border-b border-r border-border bg-muted/20 text-sm font-medium text-muted-foreground flex items-center justify-center">
-                                        {formatHour(hour)}
+                                    {/* Day Label (Row Header) */}
+                                    <div className="p-4 border-b border-r border-border bg-muted/20 font-medium items-center flex justify-center sticky left-0 bg-background z-10">
+                                        {day}
                                     </div>
                                     
-                                    {/* Day Slots */}
-                                    {DAYS.map((day) => {
+                                    {/* Hourly Slots for this Day */}
+                                    {HOURS.map((hour) => {
                                         const classesInSlot = getClassesForSlot(classes, day, hour);
                                         return (
                                             <div 
                                                 key={`${day}-${hour}`} 
-                                                className="min-h-[100px] border-b border-r border-border p-1 hover:bg-muted/5 transition-colors relative"
+                                                className="min-h-[120px] border-b border-r border-border p-1 hover:bg-muted/5 transition-colors relative"
                                             >
                                                 {classesInSlot.map(cls => (
                                                     <Link key={cls.id} href={`/class_scheduler/classes/${cls.id}/edit`}>
-                                                        <div className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded p-1 mb-1 text-xs cursor-pointer transition-colors block">
-                                                            <div className="font-semibold truncate">{cls.name}</div>
-                                                            <div className="truncate opacity-80">
+                                                        <div className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded p-1 mb-1 text-xs cursor-pointer transition-colors block overflow-hidden">
+                                                            <div className="font-semibold truncate leading-tight">{cls.name}</div>
+                                                            <div className="truncate opacity-80 text-[10px]">
                                                                 {cls.teacher?.last_name ? `Tchr. ${cls.teacher.last_name}` : ''}
                                                             </div>
                                                             {cls.recurrence_time && (
-                                                                <div className="text-[10px] mt-0.5 opacity-70">
+                                                                <div className="text-[9px] mt-0.5 opacity-70">
                                                                     {cls.recurrence_time.slice(0, 5)}
                                                                 </div>
                                                             )}
