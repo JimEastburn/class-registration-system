@@ -97,6 +97,32 @@ export const classSchema = z.object({
 }).refine((data) => new Date(data.endDate) >= new Date(data.startDate), {
     message: 'End date must be after start date',
     path: ['endDate'],
+}).refine((data) => {
+    // Only validate if weekly/biweekly
+    if (data.recurrence_pattern === 'weekly' || data.recurrence_pattern === 'biweekly') {
+        if (!data.recurrence_days) return false;
+        
+        try {
+            const days = JSON.parse(data.recurrence_days);
+            if (!Array.isArray(days)) return false;
+            
+            // Allow Tue/Thu
+            const isTueThu = days.length === 2 && 
+                days.includes('tuesday') && 
+                days.includes('thursday');
+                
+            // Allow Wed
+            const isWed = days.length === 1 && days.includes('wednesday');
+            
+            return isTueThu || isWed;
+        } catch {
+            return false;
+        }
+    }
+    return true;
+}, {
+    message: 'Classes can only be scheduled on Tuesdays/Thursdays OR Wednesdays.',
+    path: ['recurrence_days'], // This might show up as a form error if handled by UI
 });
 
 export type ClassFormData = z.infer<typeof classSchema>;

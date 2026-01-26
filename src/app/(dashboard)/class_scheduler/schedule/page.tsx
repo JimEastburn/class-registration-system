@@ -7,7 +7,7 @@ export const metadata = {
     description: 'View the weekly class schedule.',
 };
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAYS = ['Tuesday', 'Wednesday', 'Thursday'];
 const HOURS = Array.from({ length: 11 }, (_, i) => i + 8); // 8am to 6pm (11 hours)
 
 function formatHour(hour: number) {
@@ -114,7 +114,7 @@ export default async function ClassSchedulePage() {
                 <CardContent>
                     <div className="min-w-[800px] overflow-x-auto">
                         {/* Grid Container */}
-                        <div className="grid grid-cols-8 border-l border-t border-border">
+                        <div className="grid grid-cols-4 border-l border-t border-border">
                             
                             {/* Header Row */}
                             {/* Empty corner cell */}

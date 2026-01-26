@@ -8,7 +8,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
+// Checkbox import removed
 
 const WEEKDAYS = [
     { value: 'monday', label: 'Monday' },
@@ -65,13 +65,7 @@ export default function RecurringScheduleInput({
         }
     }, [pattern, selectedDays, time, duration, onChange]);
 
-    const handleDayToggle = (day: string, checked: boolean) => {
-        if (checked) {
-            setSelectedDays([...selectedDays, day]);
-        } else {
-            setSelectedDays(selectedDays.filter(d => d !== day));
-        }
-    };
+// function removed
 
     const showDaysSelector = pattern === 'weekly' || pattern === 'biweekly';
     const showTimeFields = pattern !== 'none';
@@ -128,27 +122,29 @@ export default function RecurringScheduleInput({
                 </Select>
             </div>
 
+
             {showDaysSelector && (
                 <div>
-                    <Label>Days of the Week</Label>
-                    <p className="text-sm text-slate-500 mb-2">Select which days the class meets</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {WEEKDAYS.map((day) => (
-                            <label
-                                key={day.value}
-                                className={`flex items-center space-x-2 p-2 rounded border cursor-pointer transition-colors ${selectedDays.includes(day.value)
-                                        ? 'bg-purple-100 border-purple-300'
-                                        : 'bg-white border-slate-200 hover:border-purple-200'
-                                    }`}
-                            >
-                                <Checkbox
-                                    checked={selectedDays.includes(day.value)}
-                                    onCheckedChange={(checked) => handleDayToggle(day.value, checked as boolean)}
-                                />
-                                <span className="text-sm">{day.label.slice(0, 3)}</span>
-                            </label>
-                        ))}
-                    </div>
+                    <Label>Class Days</Label>
+                    <Select
+                        value={selectedDays.join(',')}
+                        onValueChange={(val) => {
+                            if (val === 'tuesday,thursday') setSelectedDays(['tuesday', 'thursday']);
+                            else if (val === 'wednesday') setSelectedDays(['wednesday']);
+                            else setSelectedDays([]);
+                        }}
+                    >
+                        <SelectTrigger>
+                             <SelectValue placeholder="Select class days" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="tuesday,thursday">Tuesday & Thursday</SelectItem>
+                            <SelectItem value="wednesday">Wednesday Only</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <p className="text-xs text-slate-500 mt-1">
+                        Classes can only be scheduled on Tue/Thu or Wed.
+                    </p>
                 </div>
             )}
 
