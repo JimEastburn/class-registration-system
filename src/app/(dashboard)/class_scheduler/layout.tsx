@@ -4,11 +4,13 @@ import { redirect } from 'next/navigation';
 import DashboardLayout, {
     HomeIcon,
     BookOpenIcon,
+    CalendarIcon,
 } from '@/components/dashboard/DashboardLayout';
 
 const navItems = [
     { href: '/class_scheduler', label: 'Dashboard', icon: <HomeIcon className="h-5 w-5" /> },
     { href: '/class_scheduler/classes', label: 'Classes', icon: <BookOpenIcon className="h-5 w-5" /> },
+    { href: '/class_scheduler/schedule', label: 'Schedule', icon: <CalendarIcon className="h-5 w-5" /> },
 ];
 
 export default async function ClassSchedulerLayout({
