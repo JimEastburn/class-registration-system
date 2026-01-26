@@ -66,6 +66,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
         teacher: 'Teacher',
         student: 'Student',
         admin: 'Administrator',
+        class_scheduler: 'Class Scheduler',
     };
 
     return (
