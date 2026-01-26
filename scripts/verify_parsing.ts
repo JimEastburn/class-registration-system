@@ -1,15 +1,8 @@
 
-const samples = [
-  'Tue/Thu 3:30 PM - 5:00 PM',
-  'Mon/Wed 12:00',
-  'Mon/Wed 13:00',
-  'Tue/Thu 15:00',
-  'Tue/Thu 10:00',
-  'Mon 10am',
-  'Friday 2pm'
-];
+// Samples removed
 
-function testParsing(schedule, day, hour) {
+
+function testParsing(schedule: string, day: string, hour: number) {
      const scheduleLower = schedule.toLowerCase();
      const dayAbbr = day.toLowerCase().substring(0, 3);
      
