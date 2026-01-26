@@ -53,7 +53,7 @@ describe('Classes Server Actions implementation', () => {
                 error: null
             });
             const result = await createClass(new FormData());
-            expect(result).toEqual({ error: 'Only teachers can create classes' });
+            expect(result).toEqual({ error: 'Not authorized to create classes' });
         });
 
         it('should create class and revalidate', async () => {
@@ -87,6 +87,12 @@ describe('Classes Server Actions implementation', () => {
                 max_students: 20,
                 fee: 150.5,
                 syllabus: 'Art syllabus',
+                recurrence_pattern: 'none',
+                recurrence_days: null,
+                recurrence_time: null,
+                schedule: 'To Be Announced',
+                start_date: '2024-01-01',
+                recurrence_duration: null,
                 status: 'draft',
             });
             expect(revalidatePath).toHaveBeenCalledWith('/teacher/classes');

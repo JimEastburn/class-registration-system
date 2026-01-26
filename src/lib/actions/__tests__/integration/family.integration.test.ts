@@ -54,10 +54,13 @@ describe('Family Actions (Integration)', () => {
         formData.append('firstName', 'Integration');
         formData.append('lastName', 'Test');
         formData.append('relationship', 'child');
-        formData.append('gradeLevel', '8');
+        formData.append('gradeLevel', 'middle school');
 
         const result = await addFamilyMember(formData);
 
+        if (result.error) {
+            console.error('Add member error:', result.error);
+        }
         expect(result.success).toBe(true);
 
         // Verify in DB
@@ -71,7 +74,7 @@ describe('Family Actions (Integration)', () => {
         expect(data).not.toBeNull();
         if (data) {
             expect((data as any).first_name).toBe('Integration');
-            expect((data as any).grade_level).toBe('8');
+            expect((data as any).grade_level).toBe('middle school');
         }
     });
 
@@ -121,7 +124,7 @@ describe('Family Actions (Integration)', () => {
                 first_name: 'Regression',
                 last_name: 'Test',
                 relationship: 'child',
-                grade_level: '8',
+                grade_level: 'middle school',
             } as any) as any)
             .select()
             .single();

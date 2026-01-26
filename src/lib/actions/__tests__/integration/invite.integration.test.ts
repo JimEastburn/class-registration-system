@@ -141,19 +141,22 @@ describe('Invite Code Actions (Integration)', () => {
             password: studentUser.password,
         });
 
-        const studentClient = createSupabaseClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                global: {
-                    headers: {
-                        Authorization: `Bearer ${signInData.session!.access_token}`,
+        if (signInData.session) {
+            const studentClient = createSupabaseClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                {
+                    global: {
+                        headers: {
+                            Authorization: `Bearer ${signInData.session.access_token}`,
+                        },
                     },
-                },
-            }
-        );
-
-        (createClient as Mock).mockResolvedValue(studentClient);
+                }
+            );
+            (createClient as Mock).mockResolvedValue(studentClient);
+        } else {
+             throw new Error('Student login failed');
+        }
 
         const result = await redeemFamilyInviteCode(testCode);
 
@@ -184,19 +187,21 @@ describe('Invite Code Actions (Integration)', () => {
             password: studentUser.password,
         });
 
-        const studentClient = createSupabaseClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            {
-                global: {
-                    headers: {
-                        Authorization: `Bearer ${signInData.session!.access_token}`,
+        if (signInData.session) {
+             (createClient as Mock).mockResolvedValue(createSupabaseClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                {
+                    global: {
+                        headers: {
+                            Authorization: `Bearer ${signInData.session.access_token}`,
+                        },
                     },
-                },
-            }
-        );
-
-        (createClient as Mock).mockResolvedValue(studentClient);
+                }
+            ));
+        } else {
+            throw new Error('Student login failed');
+        }
 
         const result = await redeemFamilyInviteCode(testCode);
 

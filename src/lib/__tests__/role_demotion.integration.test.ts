@@ -68,7 +68,7 @@ describe('Role Demotion & Privilege Revocation Integration', () => {
             const formData = new FormData();
             formData.append('name', 'Unauthorized Class');
             const createResult = await createClass(formData);
-            expect(createResult.error).toBe('Only teachers can create classes');
+            expect(createResult.error).toBe('Not authorized to create classes');
 
             // 2. Attempt to update a class (even if they previously owned it)
             const updateResult = await updateClass('class_123', formData);

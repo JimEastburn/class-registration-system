@@ -37,7 +37,8 @@ describe('Student-Related Validations', () => {
             confirmPassword: 'Password123',
             firstName: 'Demo',
             lastName: 'Student',
-            role: 'student' as const
+            role: 'student' as const,
+            codeOfConduct: true
         };
 
         it('should validate a valid student registration', () => {
@@ -72,7 +73,7 @@ describe('Student-Related Validations', () => {
                 firstName: 'Child',
                 lastName: 'Test',
                 relationship: 'child' as const,
-                gradeLevel: '9' as const
+                gradeLevel: 'high school' as const
             };
             const result = familyMemberSchema.safeParse(validChild);
             expect(result.success).toBe(true);

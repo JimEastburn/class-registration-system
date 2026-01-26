@@ -113,6 +113,12 @@ describe('Enrollment Server Actions implementation', () => {
                 eq: vi.fn().mockReturnThis(),
                 single: vi.fn().mockResolvedValue({ data: { status: 'active', current_enrollment: 10, max_students: 10 }, error: null })
             });
+             // Blocked check
+            mockSupabase.from.mockReturnValueOnce({
+                select: vi.fn().mockReturnThis(),
+                eq: vi.fn().mockReturnThis(),
+                single: vi.fn().mockResolvedValue({ data: null, error: null })
+            });
 
             const result = await createEnrollment('student123', 'class123');
             expect(result).toEqual({ error: 'Class is full' });
@@ -141,6 +147,12 @@ describe('Enrollment Server Actions implementation', () => {
                     },
                     error: null
                 })
+            });
+            // Blocked check
+            mockSupabase.from.mockReturnValueOnce({
+                select: vi.fn().mockReturnThis(),
+                eq: vi.fn().mockReturnThis(),
+                single: vi.fn().mockResolvedValue({ data: null, error: null })
             });
             // Existing enrollment check
             mockSupabase.from.mockReturnValueOnce({

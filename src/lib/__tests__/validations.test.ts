@@ -18,7 +18,9 @@ describe('registerSchema', () => {
             confirmPassword: 'Password123',
             firstName: 'John',
             lastName: 'Doe',
+            lastName: 'Doe',
             role: 'parent' as const,
+            codeOfConduct: true,
         };
 
         const result = registerSchema.safeParse(validData);
@@ -250,6 +252,7 @@ describe('familyMemberSchema', () => {
         const validData = {
             firstName: 'Jane',
             lastName: 'Doe',
+            relationship: 'child' as const,
             relationship: 'child' as const,
             gradeLevel: 'middle school' as const,
         };

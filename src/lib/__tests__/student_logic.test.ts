@@ -52,16 +52,16 @@ describe('Student Logic Utilities', () => {
     });
 
     describe('validateGradeLevel', () => {
-        it('should return true for valid grades 6-12', () => {
-            expect(validateGradeLevel('6')).toBe(true);
-            expect(validateGradeLevel('12')).toBe(true);
-            expect(validateGradeLevel('9')).toBe(true);
+        it('should return true for valid grades', () => {
+            expect(validateGradeLevel('elementary')).toBe(true);
+            expect(validateGradeLevel('middle school')).toBe(true);
+            expect(validateGradeLevel('high school')).toBe(true);
         });
 
         it('should return false for invalid grades', () => {
             expect(validateGradeLevel('5')).toBe(false);
             expect(validateGradeLevel('13')).toBe(false);
-            expect(validateGradeLevel('K')).toBe(false);
+            expect(validateGradeLevel('university')).toBe(false);
         });
     });
 

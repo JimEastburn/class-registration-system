@@ -5,7 +5,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { FormControl } from '@/components/ui/form';
+
 
 interface TeacherSelectProps {
     teachers: { id: string; full_name: string }[];
@@ -17,11 +17,9 @@ interface TeacherSelectProps {
 export default function TeacherSelect({ teachers, value, onChange, disabled }: TeacherSelectProps) {
     return (
         <Select onValueChange={onChange} defaultValue={value} value={value} disabled={disabled}>
-            <FormControl>
-                <SelectTrigger>
-                    <SelectValue placeholder="Select a teacher" />
-                </SelectTrigger>
-            </FormControl>
+            <SelectTrigger>
+                <SelectValue placeholder="Select a teacher" />
+            </SelectTrigger>
             <SelectContent>
                 {teachers.map((teacher) => (
                     <SelectItem key={teacher.id} value={teacher.id}>

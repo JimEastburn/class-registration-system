@@ -126,13 +126,17 @@ describe('Student Access (Integration)', () => {
             password: studentUser.password,
         });
 
+        if (!signInData.session) {
+            throw new Error('Student login failed');
+        }
+
         const studentClient = createSupabaseClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
             {
                 global: {
                     headers: {
-                        Authorization: `Bearer ${signInData.session!.access_token}`,
+                        Authorization: `Bearer ${signInData.session.access_token}`,
                     },
                 },
             }
