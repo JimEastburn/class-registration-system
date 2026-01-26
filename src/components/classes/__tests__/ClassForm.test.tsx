@@ -125,4 +125,28 @@ describe('ClassForm Component', () => {
         expect(id).toBe('c1');
         expect(formData.get('teacherId')).toBe('t2');
     });
+
+    it('displays error message below buttons when teacher conflict occurs', async () => {
+        const errorMsg = 'Teacher already has a class scheduled at this time: Mon 10:00 AM';
+        (updateClass as ReturnType<typeof vi.fn>).mockResolvedValue({ success: false, error: errorMsg });
+
+        render(
+            <ClassForm
+                classData={mockClassData}
+                teachers={mockTeachers}
+                userRole="admin"
+            />
+        );
+
+        // Submit form
+        const submitBtn = screen.getByRole('button', { name: /Update Class/i });
+        fireEvent.click(submitBtn);
+
+        await waitFor(() => {
+            // Should verify that the error message is displayed
+            // Since it's displayed twice (top and bottom), getAllByText should return 2 elements
+            const errorMessages = screen.getAllByText(errorMsg);
+            expect(errorMessages).toHaveLength(2);
+        });
+    });
 });

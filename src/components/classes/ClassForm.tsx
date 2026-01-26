@@ -309,6 +309,11 @@ export default function ClassForm({ classData, redirectUrl, userRole, teachers }
                             {isLoading ? 'Saving...' : classData ? 'Update Class' : 'Create Class'}
                         </Button>
                     </div>
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mt-4">
+                            {error}
+                        </div>
+                    )}
                 </CardContent>
             </form>
         </Card>
