@@ -7,7 +7,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
+import { TIME_BLOCKS } from '@/lib/schedule-helpers';
 // Checkbox import removed
 
 const WEEKDAYS = [
@@ -23,7 +23,9 @@ const WEEKDAYS = [
 const DURATIONS = [
     { value: '30', label: '30 minutes' },
     { value: '45', label: '45 minutes' },
+    { value: '50', label: '50 minutes' },
     { value: '60', label: '1 hour' },
+    { value: '70', label: '1 hour 10 mins' },
     { value: '90', label: '1.5 hours' },
     { value: '120', label: '2 hours' },
     { value: '180', label: '3 hours' },
@@ -70,6 +72,22 @@ export default function RecurringScheduleInput({
     const showDaysSelector = pattern === 'weekly' || pattern === 'biweekly';
     const showTimeFields = pattern !== 'none';
 
+    // Helper to find selected block
+    const selectedBlock = TIME_BLOCKS.find(b => b.startTime === time);
+
+    const handleBlockChange = (blockId: string) => {
+        const block = TIME_BLOCKS.find(b => b.id === blockId);
+        if (block) {
+            setTime(block.startTime);
+            // Auto-set duration based on block type
+            if (block.id === 'lunch') {
+                setDuration(50);
+            } else {
+                setDuration(70);
+            }
+        }
+    };
+
     // Generate schedule preview text
     const generatePreview = () => {
         if (pattern === 'none') return '';
@@ -83,8 +101,10 @@ export default function RecurringScheduleInput({
             text = `${text} on ${dayLabels.join(', ')}`;
         }
         
-        if (time) {
-            // Format time (simple check)
+        if (selectedBlock) {
+             text += ` during ${selectedBlock.label} (${selectedBlock.timeRange})`;
+        } else if (time) {
+            // Fallback for custom time
              const [h, m] = time.split(':');
              if (h) {
                  const hour = parseInt(h);
@@ -151,19 +171,29 @@ export default function RecurringScheduleInput({
             {showTimeFields && (
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <Label htmlFor="recurrence_time">Start Time</Label>
-                        <Input
-                            type="time"
-                            id="recurrence_time"
-                            value={time}
-                            onChange={(e) => setTime(e.target.value)}
-                        />
+                        <Label htmlFor="recurrence_block">Time Block</Label>
+                        <Select
+                            value={selectedBlock?.id || ''}
+                            onValueChange={handleBlockChange}
+                        >
+                            <SelectTrigger id="recurrence_block">
+                                <SelectValue placeholder="Select time block" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {TIME_BLOCKS.map(block => (
+                                    <SelectItem key={block.id} value={block.id}>
+                                        {block.label} ({block.timeRange})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div>
                         <Label htmlFor="recurrence_duration">Duration</Label>
                         <Select
                             value={duration?.toString() || ''}
                             onValueChange={(v) => setDuration(parseInt(v))}
+                            disabled={!!selectedBlock} // Disable duration if block is selected to enforce block duration?
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Select duration" />
@@ -176,6 +206,11 @@ export default function RecurringScheduleInput({
                                 ))}
                             </SelectContent>
                         </Select>
+                        {selectedBlock && (
+                            <p className="text-[10px] text-muted-foreground mt-1">
+                                Duration determined by block.
+                            </p>
+                        )}
                     </div>
                 </div>
             )}
