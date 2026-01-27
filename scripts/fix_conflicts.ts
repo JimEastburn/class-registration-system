@@ -117,7 +117,8 @@ async function fixConflicts() {
 
                     if (dayOverlap) {
                          hasConflict = true;
-                         console.log(`Conflict detected for teacher ${cls.teacher?.last_name}:`);
+                         const teacherLastName = (Array.isArray(cls.teacher) ? cls.teacher[0] : (cls.teacher as any))?.last_name;
+                         console.log(`Conflict detected for teacher ${teacherLastName}:`);
                          console.log(`   KEEPING: ${accepted.name} (${accepted.current_enrollment} students)`);
                          console.log(`   DELETING: ${cls.name} (${cls.current_enrollment} students)`);
                          break;

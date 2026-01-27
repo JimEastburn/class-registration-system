@@ -49,7 +49,9 @@ async function checkConflicts() {
 
     for (const teacherId in classesByTeacher) {
         const teacherClasses = classesByTeacher[teacherId];
-        const teacherName = teacherClasses[0].teacher ? `${teacherClasses[0].teacher.first_name} ${teacherClasses[0].teacher.last_name}` : 'Unknown';
+        const rawTeacher = teacherClasses[0].teacher as any;
+        const teacherObj = Array.isArray(rawTeacher) ? rawTeacher[0] : rawTeacher;
+        const teacherName = teacherObj ? `${teacherObj.first_name} ${teacherObj.last_name}` : 'Unknown';
         
         // Naive O(N^2) check for this teacher
         for (let i = 0; i < teacherClasses.length; i++) {
