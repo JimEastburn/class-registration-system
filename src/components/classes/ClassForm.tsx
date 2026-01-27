@@ -243,6 +243,9 @@ export default function ClassForm({ classData, redirectUrl, userRole, teachers }
                                     defaultDuration={classData?.recurrence_duration}
                                     onChange={handleScheduleChange}
                                 />
+                                {errors.recurrence_days && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.recurrence_days.message}</p>
+                                )}
                             </div>
                         </>
                     ) : (

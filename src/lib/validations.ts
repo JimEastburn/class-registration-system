@@ -112,15 +112,20 @@ export const classSchema = z.object({
             const days = JSON.parse(data.recurrence_days);
             if (!Array.isArray(days)) return false;
             
-            // Allow Tue/Thu
-            const isTueThu = days.length === 2 && 
-                days.includes('tuesday') && 
-                days.includes('thursday');
+            // Allow Tue/Thu (both or individual)
+            
+            // Valid if it is (Tue AND Thu) OR (Tue only) OR (Thu only)
+            // Effectively, if it contains Tuesday or Thursday, it shouldn't contain anything else except the other?
+            // "Tuesday & Thursday" = 2 days.
+            // "Tuesday Only" = 1 day.
+            // "Thursday Only" = 1 day.
+            
+            const isTueOrThu = days.every(d => ['tuesday', 'thursday'].includes(d));
                 
             // Allow Wed
             const isWed = days.length === 1 && days.includes('wednesday');
             
-            return isTueThu || isWed;
+            return (isTueOrThu && days.length > 0) || isWed;
         } catch {
             return false;
         }
