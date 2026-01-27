@@ -35,9 +35,25 @@ export default async function ClassSchedulePage() {
     return (
         <div className="space-y-6">
             <Card>
-                <CardHeader>
-                    <CardTitle>Weekly Schedule</CardTitle>
-                    <CardDescription>View the layout of active classes across the week.</CardDescription>
+                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                    <div className="space-y-1">
+                        <CardTitle>Weekly Schedule</CardTitle>
+                        <CardDescription>View the layout of active classes across the week.</CardDescription>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-3 h-3 bg-green-100 border border-green-300 rounded shadow-sm"></div>
+                            <span>Single Day</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-3 h-3 bg-accent/20 border border-accent/40 rounded shadow-sm"></div>
+                            <span>Tue & Thu</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className="w-3 h-3 bg-red-100 border border-red-300 rounded shadow-sm"></div>
+                            <span>Conflict</span>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <div className="min-w-[1000px] overflow-x-auto">
@@ -85,20 +101,25 @@ export default async function ClassSchedulePage() {
                                                 {classesInBlock.map(cls => {
                                                     const isConflict = cls.teacher_id && (teacherCounts.get(cls.teacher_id) || 0) > 1;
                                                     
-                                                    // Parse recurrence_days if needed (though strong typing says it matches)
+                                                    // Parse recurrence_days
                                                     let isTueThu = false;
+                                                    let isSingleDayTueOrThu = false;
+                                                    let daysLower: string[] = [];
+
                                                     if (Array.isArray(cls.recurrence_days)) {
-                                                        const daysLower = cls.recurrence_days.map(d => d.toLowerCase());
-                                                        isTueThu = daysLower.includes('tuesday') && daysLower.includes('thursday');
+                                                        daysLower = cls.recurrence_days.map(d => d.toLowerCase());
                                                     } else if (typeof cls.recurrence_days === 'string') {
-                                                        // Handle potential JSON string case just in case
-                                                       try {
-                                                           const parsed = JSON.parse(cls.recurrence_days);
-                                                           if (Array.isArray(parsed)) {
-                                                               const daysLower = parsed.map((d: string) => d.toLowerCase());
-                                                               isTueThu = daysLower.includes('tuesday') && daysLower.includes('thursday');
-                                                           }
-                                                       } catch {}
+                                                        try {
+                                                            const parsed = JSON.parse(cls.recurrence_days);
+                                                            if (Array.isArray(parsed)) {
+                                                                daysLower = parsed.map((d: string) => d.toLowerCase());
+                                                            }
+                                                        } catch {}
+                                                    }
+
+                                                    if (daysLower.length > 0) {
+                                                        isTueThu = daysLower.includes('tuesday') && daysLower.includes('thursday');
+                                                        isSingleDayTueOrThu = daysLower.length === 1 && (daysLower.includes('tuesday') || daysLower.includes('thursday'));
                                                     }
 
                                                     
@@ -110,7 +131,9 @@ export default async function ClassSchedulePage() {
                                                                     ? 'bg-red-100 border-red-300 hover:bg-red-200 text-red-900' 
                                                                     : isTueThu 
                                                                         ? 'bg-accent/20 hover:bg-accent/30 border-accent/40 text-accent-foreground font-medium'
-                                                                        : 'bg-primary/10 hover:bg-primary/20 border-primary/20'}
+                                                                        : isSingleDayTueOrThu
+                                                                            ? 'bg-green-100 hover:bg-green-200 border-green-300 text-green-900'
+                                                                            : 'bg-primary/10 hover:bg-primary/20 border-primary/20'}
                                                             `}>
                                                                 <div className="font-semibold truncate leading-tight flex items-center gap-1">
                                                                     {isConflict && <span className="text-red-600 font-bold">!</span>}
