@@ -413,7 +413,7 @@ export async function getStudentBlockStatus(
 }
 
 // Helper to check for schedule overlaps
-async function checkScheduleOverlap(
+export async function checkScheduleOverlap(
     supabase: SupabaseClient<Database>,
     teacherId: string,
     newClass: {
@@ -446,7 +446,7 @@ async function checkScheduleOverlap(
 
     if (error || !data) {
         console.error('Error fetching classes for overlap check:', error);
-        return null;
+        return null; // Fail open if error? Or fail closed? Currently logically returning null means "no error detected"
     }
 
     // Cast data to expected type since select string makes inference hard sometimes
