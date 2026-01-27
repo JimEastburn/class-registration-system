@@ -9,7 +9,7 @@ export const metadata = {
     description: 'View the weekly class schedule.',
 };
 
-const DAYS = ['Tuesday/Thursday', 'Wednesday'];
+const DAYS = ['Tuesday', 'Thursday', 'Wednesday'];
 
 export default async function ClassSchedulePage() {
     const supabase = await createClient();
