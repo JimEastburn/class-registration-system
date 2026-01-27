@@ -180,7 +180,7 @@ export default function RecurringScheduleInput({
                                 <SelectValue placeholder="Select time block" />
                             </SelectTrigger>
                             <SelectContent>
-                                {TIME_BLOCKS.map(block => (
+                                {TIME_BLOCKS.filter(b => b.id !== 'lunch').map(block => (
                                     <SelectItem key={block.id} value={block.id}>
                                         {block.label} ({block.timeRange})
                                     </SelectItem>
