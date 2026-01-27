@@ -37,7 +37,7 @@ export default async function ClassSchedulePage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Weekly Schedule</CardTitle>
-                    <CardDescription>View the layout of active classes across the week. <span className="text-red-500 font-semibold">Red items indicate overlapping teacher schedules.</span></CardDescription>
+                    <CardDescription>View the layout of active classes across the week.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="min-w-[1000px] overflow-x-auto">
