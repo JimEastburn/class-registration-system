@@ -117,6 +117,8 @@ export async function createClass(formData: FormData): Promise<ActionResult> {
     }
 
     revalidatePath('/teacher/classes');
+    revalidatePath('/class_scheduler/classes');
+    revalidatePath('/class_scheduler/schedule');
     return { success: true };
 }
 
@@ -185,10 +187,8 @@ export async function updateClass(
         }
     }
 
-    // Only allow schedule update if not a teacher
-    if (role !== 'teacher') {
-        updateData.schedule = schedule;
-    }
+    // Allow updating schedule text to keep it in sync with recurrence fields
+    updateData.schedule = schedule;
 
     // Check for overlaps if schedule fields are present OR teacher is changing
     // updateData.recurrence_days can be null (explicitly set to null) or undefined (not updated)
@@ -263,6 +263,10 @@ export async function updateClass(
     }
 
     revalidatePath('/teacher/classes');
+    revalidatePath('/class_scheduler/classes');
+    revalidatePath('/class_scheduler/schedule');
+    revalidatePath(`/class_scheduler/classes/${id}`);
+    revalidatePath(`/teacher/classes/${id}`);
     return { success: true };
 }
 
@@ -330,6 +334,8 @@ export async function deleteClass(id: string): Promise<ActionResult> {
     }
 
     revalidatePath('/teacher/classes');
+    revalidatePath('/class_scheduler/classes');
+    revalidatePath('/class_scheduler/schedule');
     return { success: true };
 }
 
