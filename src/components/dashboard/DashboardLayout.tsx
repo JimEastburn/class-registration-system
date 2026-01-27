@@ -39,6 +39,8 @@ interface DashboardLayoutProps {
 
 
 
+import { PanelLeft } from 'lucide-react';
+
 export default function DashboardLayout({
     children,
     user,
@@ -51,6 +53,7 @@ export default function DashboardLayout({
     const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
     const showPortalSwitch = user.role === 'admin' || user.role === 'teacher' || user.role === 'class_scheduler';
     const [isRolePortal, setIsRolePortal] = useState(pathname.startsWith(`/${user.role}`));
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isPending, startTransition] = useTransition();
 
     useEffect(() => {
@@ -74,6 +77,17 @@ export default function DashboardLayout({
             <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-lg flex-none">
                 <div className="container flex h-16 items-center justify-between px-4">
                     <div className="flex items-center gap-4">
+                        {/* Sidebar Toggle (Desktop) */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hidden lg:flex"
+                            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        >
+                            <PanelLeft className="h-5 w-5" />
+                            <span className="sr-only">Toggle sidebar</span>
+                        </Button>
+
                         {/* Mobile Navigation */}
                         <Sheet>
                             <SheetTrigger asChild className="lg:hidden">
@@ -123,6 +137,7 @@ export default function DashboardLayout({
 
                         {/* Logo */}
                         <Link href="/" className="flex items-center gap-2">
+
                             <Image
                                 src="/AAC FINAL.avif"
                                 alt="Logo"
@@ -198,28 +213,30 @@ export default function DashboardLayout({
 
             <div className="flex-1 flex overflow-hidden">
                 <div className="flex h-full items-stretch">
-                    <aside className="hidden lg:flex flex-col w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border shrink-0">
-                        <nav className="flex flex-col gap-1 p-4">
-                            {navItems.map((item) => (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    data-testid={`nav-link-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
-                                    className={cn(
-                                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                                        pathname === item.href
-                                            ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                                            : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
-                                    )}
-                                >
-                                    {item.icon}
-                                    {item.label}
-                                </Link>
-                            ))}
-                        </nav>
-                        <div className="mt-auto p-4 border-t border-sidebar-border text-center">
-                        </div>
-                    </aside>
+                    {isSidebarOpen && (
+                        <aside className="hidden lg:flex flex-col w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border shrink-0">
+                            <nav className="flex flex-col gap-1 p-4">
+                                {navItems.map((item) => (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        data-testid={`nav-link-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                                        className={cn(
+                                            'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                                            pathname === item.href
+                                                ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                                                : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+                                        )}
+                                    >
+                                        {item.icon}
+                                        {item.label}
+                                    </Link>
+                                ))}
+                            </nav>
+                            <div className="mt-auto p-4 border-t border-sidebar-border text-center">
+                            </div>
+                        </aside>
+                    )}
 
                     <main className="flex-1 h-full overflow-y-auto p-6 bg-background text-foreground">
                         <div className="mb-6">
