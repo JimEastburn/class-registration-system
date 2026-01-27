@@ -80,10 +80,10 @@ describe('Classes Server Actions implementation', () => {
                 teacher_id: 'teacher123',
                 name: 'Art 101',
                 description: 'Intro to art',
-                location: 'Studio A',
-                start_date: '2024-01-01',
-                end_date: '2024-03-01',
-                schedule: 'Mon 10am',
+                location: 'To Be Announced', // Teacher default
+                start_date: expect.any(String), // Dynamic date
+                end_date: expect.any(String),   // Dynamic date
+                schedule: 'To Be Announced',
                 max_students: 20,
                 fee: 150.5,
                 syllabus: 'Art syllabus',
@@ -91,7 +91,6 @@ describe('Classes Server Actions implementation', () => {
                 recurrence_days: null,
                 recurrence_time: null,
                 schedule: 'To Be Announced',
-                start_date: '2024-01-01',
                 recurrence_duration: null,
                 status: 'draft',
             });

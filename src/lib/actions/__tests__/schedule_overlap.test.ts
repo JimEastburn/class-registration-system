@@ -110,7 +110,9 @@ describe('Teacher Schedule Overlap Check', () => {
         // YES. Currently admins create classes for THEMSELVES as teacher.
         // So we test as teacher.
         
-        mockGetUser.mockResolvedValue({ data: { user: mockTeacher } });
+        // Run as admin to valid dates are used (teachers have forced placeholder dates)
+        mockGetUser.mockResolvedValue({ data: { user: mockAdmin } });
+        formData.append('teacherId', 'teacher-1');
 
         const result = await createClass(formData);
         expect(result.error).toContain('Teacher already has a class scheduled at this time');
@@ -118,7 +120,7 @@ describe('Teacher Schedule Overlap Check', () => {
     });
 
     it('should prevent overlapping time slot (partial overlap)', async () => {
-        mockGetUser.mockResolvedValue({ data: { user: mockTeacher } });
+        mockGetUser.mockResolvedValue({ data: { user: mockAdmin } });
         
         // Existing: Mon 10:00 - 11:00
         setupExistingClasses([{
@@ -133,6 +135,7 @@ describe('Teacher Schedule Overlap Check', () => {
 
         // New: Mon 10:30 - 11:30
         const formData = new FormData();
+        formData.append('teacherId', 'teacher-1');
         formData.append('name', 'New Class');
         formData.append('location', 'Room A');
         formData.append('startDate', '2024-02-01');
