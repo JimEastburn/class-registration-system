@@ -35,23 +35,23 @@ export default async function ClassSchedulePage() {
     return (
         <div className="space-y-6">
             <Card>
-                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                    <div className="space-y-1">
-                        <CardTitle>Weekly Schedule</CardTitle>
+                <CardHeader>
+                    <CardTitle>Weekly Schedule</CardTitle>
+                    <div className="flex flex-row items-center justify-between space-x-4">
                         <CardDescription>View the layout of active classes across the week.</CardDescription>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 bg-green-100 border border-green-300 rounded shadow-sm"></div>
-                            <span>Single Day</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 bg-accent/20 border border-accent/40 rounded shadow-sm"></div>
-                            <span>Tue & Thu</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <div className="w-3 h-3 bg-red-100 border border-red-300 rounded shadow-sm"></div>
-                            <span>Conflict</span>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 bg-green-100 border border-green-300 rounded shadow-sm"></div>
+                                <span>Single Day</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 bg-accent/20 border border-accent/40 rounded shadow-sm"></div>
+                                <span>Tue & Thu</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 bg-red-100 border border-red-300 rounded shadow-sm"></div>
+                                <span>Conflict</span>
+                            </div>
                         </div>
                     </div>
                 </CardHeader>
