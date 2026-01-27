@@ -64,10 +64,42 @@ export async function updateClassTime(
         return { error: overlapError };
     }
 
-    // 4. Update
+    // 4. Calculate new schedule text
+    // We need to import the helper first (will do via separate edit or just inline if this is single file)
+    // Actually I can import it.
+    
+    // logic to format
+    const formatSchedule = (pattern: string, days: string[], time: string) => {
+        let text = pattern.charAt(0).toUpperCase() + pattern.slice(1);
+        if (days.length > 0) {
+            const dayLabels = days.map(d => d.charAt(0).toUpperCase() + d.slice(1));
+            text += ` on ${dayLabels.join(', ')}`;
+        }
+        if (time) {
+             const [h, m] = time.split(':');
+             const hour = parseInt(h);
+             if (!isNaN(hour)) {
+                 const ampm = hour >= 12 ? 'PM' : 'AM';
+                 const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                 text += ` at ${displayHour}:${m} ${ampm}`;
+             }
+        }
+        return text;
+    };
+
+    const newScheduleText = formatSchedule(
+        classData.recurrence_pattern || 'weekly', 
+        recurrenceDays,
+        newTime
+    );
+
+    // 5. Update
     const { error: updateError } = await supabase
         .from('classes')
-        .update({ recurrence_time: newTime })
+        .update({ 
+            recurrence_time: newTime,
+            schedule: newScheduleText 
+        })
         .eq('id', classId);
 
     if (updateError) {

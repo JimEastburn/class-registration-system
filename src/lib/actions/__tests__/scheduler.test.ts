@@ -124,6 +124,7 @@ describe('Scheduler Server Actions', () => {
                 data: {
                     id: 'class-1',
                     teacher_id: 'teacher-1',
+                    recurrence_pattern: 'weekly',
                     recurrence_days: ['Tuesday', 'Thursday'], // Logic check: multi-day
                     recurrence_duration: 60,
                     start_date: '2024-01-01',
@@ -154,7 +155,10 @@ describe('Scheduler Server Actions', () => {
             );
 
             expect(mockFrom).toHaveBeenCalledWith('classes');
-            expect(mockUpdate).toHaveBeenCalledWith({ recurrence_time: '14:00' });
+            expect(mockUpdate).toHaveBeenCalledWith({ 
+                recurrence_time: '14:00',
+                schedule: 'Weekly on Tuesday, Thursday at 2:00 PM'
+            });
             expect(revalidatePath).toHaveBeenCalledWith('/class_scheduler/schedule');
         });
     });

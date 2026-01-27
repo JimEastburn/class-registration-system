@@ -39,3 +39,37 @@ export function getClassesForBlock(classes: ScheduleClassData[], day: string, bl
         });
     });
 }
+
+export function formatScheduleText(pattern: string, days: string[] | null, time: string | null): string {
+    if (pattern === 'none' || !pattern) return '';
+    
+    let text = pattern.charAt(0).toUpperCase() + pattern.slice(1);
+    
+    // Parse days if string
+    let dayArray: string[] = [];
+    if (Array.isArray(days)) {
+        dayArray = days;
+    } else if (typeof days === 'string') {
+        try {
+            dayArray = JSON.parse(days);
+        } catch {}
+    }
+
+    if (dayArray.length > 0) {
+        const dayLabels = dayArray.map(d => d.charAt(0).toUpperCase() + d.slice(1));
+        text += ` on ${dayLabels.join(', ')}`;
+    }
+
+    if (time) {
+        // Convert 24h to 12h
+        const [h, m] = time.split(':');
+        const hour = parseInt(h);
+        if (!isNaN(hour)) {
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+            text += ` at ${displayHour}:${m} ${ampm}`;
+        }
+    }
+    
+    return text;
+}
