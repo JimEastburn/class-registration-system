@@ -66,7 +66,7 @@ export default async function ClassSchedulePage() {
                             {DAYS.map((day) => (
                                 <>
                                     {/* Day Label (Row Header) */}
-                                    <div className="p-4 border-b border-r border-border bg-muted/20 font-medium items-center flex justify-center sticky left-0 bg-background z-10">
+                                    <div className="p-4 border-b border-r border-border bg-muted/20 font-medium items-center flex justify-center sticky left-0 bg-background z-10 whitespace-normal break-words text-center leading-tight">
                                         {day}
                                     </div>
                                     
