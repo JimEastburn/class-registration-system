@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { adminUpdateClass, adminDeleteClass } from '@/lib/actions/admin';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -60,6 +61,12 @@ export default function AdminClassActions({ classId, currentStatus }: AdminClass
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                        <Link href={`/class_scheduler/classes/${classId}/edit`}>
+                            Edit Class
+                        </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem
                         onClick={() => handleStatusChange('draft')}
                         disabled={currentStatus === 'draft'}
