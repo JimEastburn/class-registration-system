@@ -212,7 +212,7 @@ export default function DashboardLayout({
             </header>
 
             <div className="flex-1 flex overflow-hidden">
-                <div className="flex h-full items-stretch">
+                <div className="flex h-full items-stretch w-full">
                     {isSidebarOpen && (
                         <aside className="hidden lg:flex flex-col w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border shrink-0">
                             <nav className="flex flex-col gap-1 p-4">
