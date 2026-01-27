@@ -48,16 +48,16 @@ export default async function ClassSchedulePage() {
                 <CardContent>
                     <div className="min-w-[1000px] overflow-x-auto">
                         {/* Grid Container: 12 Columns (1 Label + 11 Hours) */}
-                        <div className="grid grid-cols-12 border-l border-t border-border">
+                        <div className="grid grid-cols-[8rem_repeat(11,minmax(6rem,1fr))] border-l border-t border-border">
                             
                             {/* Header Row */}
                             {/* Empty corner cell */}
-                            <div className="p-4 border-b border-r border-border bg-muted/50 font-medium text-muted-foreground text-center sticky left-0 bg-background z-10 w-32">
+                            <div className="p-4 border-b border-r border-border bg-muted/50 font-medium text-muted-foreground text-center sticky left-0 bg-background z-10">
                                 Day
                             </div>
                             {/* Time Headers */}
                             {HOURS.map((hour) => (
-                                <div key={`time-${hour}`} className="p-4 border-b border-r border-border bg-muted/50 font-medium text-center text-sm flex items-center justify-center min-w-[100px]">
+                                <div key={`time-${hour}`} className="p-4 border-b border-r border-border bg-muted/50 font-medium text-center text-sm flex items-center justify-center">
                                     {formatHour(hour)}
                                 </div>
                             ))}
