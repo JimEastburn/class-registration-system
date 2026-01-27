@@ -55,22 +55,4 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
 
 import React from 'react';
 
-// Mock react-resizable-panels
-// Mock react-resizable-panels
-vi.mock('react-resizable-panels', () => ({
-    Group: ({ children, className, ...props }: any) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { direction, ...validProps } = props;
-        return React.createElement('div', { className, ...validProps, 'data-testid': 'resizable-panel-group' }, children);
-    },
-    Panel: ({ children, className, ...props }: any) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { defaultSize, minSize, maxSize, collapsible, ...validProps } = props;
-        return React.createElement('div', { className, ...validProps, 'data-testid': 'resizable-panel' }, children);
-    },
-    Separator: ({ className, ...props }: any) => {
-         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { withHandle, ...validProps } = props;
-        return React.createElement('div', { className, ...validProps, 'data-testid': 'resizable-handle' });
-    } 
-}));
+
