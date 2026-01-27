@@ -208,7 +208,7 @@ export default function DashboardLayout({
                     <ResizablePanel
                         defaultSize={16}
                         minSize={12}
-                        maxSize={40}
+                        maxSize={45}
                         collapsible={false}
                         className="hidden lg:flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border"
                     >
@@ -238,7 +238,7 @@ export default function DashboardLayout({
 
                     <ResizableHandle withHandle className="hidden lg:flex" />
 
-                    <ResizablePanel defaultSize={84}>
+                    <ResizablePanel defaultSize={84} minSize={30}>
                         <main className="h-full overflow-y-auto p-6 bg-background text-foreground">
                             <div className="mb-6">
                                 <h1 className="text-2xl font-bold text-foreground">
