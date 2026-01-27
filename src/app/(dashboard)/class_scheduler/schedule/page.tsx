@@ -109,7 +109,7 @@ export default async function ClassSchedulePage() {
                                                                 ${isConflict 
                                                                     ? 'bg-red-100 border-red-300 hover:bg-red-200 text-red-900' 
                                                                     : isTueThu 
-                                                                        ? 'bg-purple-100 hover:bg-purple-200 border-purple-200 text-purple-900 font-medium'
+                                                                        ? 'bg-accent/20 hover:bg-accent/30 border-accent/40 text-accent-foreground font-medium'
                                                                         : 'bg-primary/10 hover:bg-primary/20 border-primary/20'}
                                                             `}>
                                                                 <div className="font-semibold truncate leading-tight flex items-center gap-1">
