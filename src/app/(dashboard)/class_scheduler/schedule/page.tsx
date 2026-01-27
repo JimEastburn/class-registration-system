@@ -85,13 +85,32 @@ export default async function ClassSchedulePage() {
                                                 {classesInBlock.map(cls => {
                                                     const isConflict = cls.teacher_id && (teacherCounts.get(cls.teacher_id) || 0) > 1;
                                                     
+                                                    // Parse recurrence_days if needed (though strong typing says it matches)
+                                                    let isTueThu = false;
+                                                    if (Array.isArray(cls.recurrence_days)) {
+                                                        const daysLower = cls.recurrence_days.map(d => d.toLowerCase());
+                                                        isTueThu = daysLower.includes('tuesday') && daysLower.includes('thursday');
+                                                    } else if (typeof cls.recurrence_days === 'string') {
+                                                        // Handle potential JSON string case just in case
+                                                       try {
+                                                           const parsed = JSON.parse(cls.recurrence_days);
+                                                           if (Array.isArray(parsed)) {
+                                                               const daysLower = parsed.map((d: string) => d.toLowerCase());
+                                                               isTueThu = daysLower.includes('tuesday') && daysLower.includes('thursday');
+                                                           }
+                                                       } catch {}
+                                                    }
+
+                                                    
                                                     return (
                                                         <Link key={cls.id} href={`/class_scheduler/classes/${cls.id}/edit`} scroll={false}>
                                                             <div className={`
                                                                 text-primary border rounded p-1 mb-1 text-xs cursor-pointer transition-colors block overflow-hidden
                                                                 ${isConflict 
                                                                     ? 'bg-red-100 border-red-300 hover:bg-red-200 text-red-900' 
-                                                                    : 'bg-primary/10 hover:bg-primary/20 border-primary/20'}
+                                                                    : isTueThu 
+                                                                        ? 'bg-purple-100 hover:bg-purple-200 border-purple-200 text-purple-900 font-medium'
+                                                                        : 'bg-primary/10 hover:bg-primary/20 border-primary/20'}
                                                             `}>
                                                                 <div className="font-semibold truncate leading-tight flex items-center gap-1">
                                                                     {isConflict && <span className="text-red-600 font-bold">!</span>}
