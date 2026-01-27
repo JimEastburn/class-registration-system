@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
-import { updateClassTime } from '../scheduler';
+import { updateClassSchedule } from '../scheduler';
 import { createClient } from '@/lib/supabase/server';
 import { checkScheduleOverlap } from '../classes';
 import { revalidatePath } from 'next/cache';
@@ -52,14 +52,14 @@ describe('Scheduler Server Actions', () => {
         (createClient as Mock).mockResolvedValue(mockSupabase);
     });
 
-    describe('updateClassTime', () => {
+    describe('updateClassSchedule', () => {
         it('should return error if not authenticated', async () => {
             (mockSupabase.auth.getUser as Mock).mockResolvedValue({
                 data: { user: null },
                 error: null
             });
 
-            const result = await updateClassTime('class-1', '10:00');
+            const result = await updateClassSchedule('class-1', '10:00', 'Tuesday', 'Tuesday');
             expect(result).toEqual({ error: 'Not authenticated' });
         });
 
@@ -69,7 +69,7 @@ describe('Scheduler Server Actions', () => {
                 error: null
             });
 
-            const result = await updateClassTime('class-1', '10:00');
+            const result = await updateClassSchedule('class-1', '10:00', 'Tuesday', 'Tuesday');
             expect(result).toEqual({ error: 'Not authorized to reschedule classes' });
         });
 
@@ -81,7 +81,7 @@ describe('Scheduler Server Actions', () => {
 
             mockSingle.mockResolvedValue({ data: null, error: 'Not found' });
 
-            const result = await updateClassTime('class-1', '10:00');
+            const result = await updateClassSchedule('class-1', '10:00', 'Tuesday', 'Tuesday');
             expect(result).toEqual({ error: 'Class not found' });
         });
 
@@ -107,7 +107,7 @@ describe('Scheduler Server Actions', () => {
             // Mock overlap check failure
             (checkScheduleOverlap as Mock).mockResolvedValue('Overlap detected');
 
-            const result = await updateClassTime('class-1', '10:00');
+            const result = await updateClassSchedule('class-1', '10:00', 'Tuesday', 'Tuesday');
             expect(result).toEqual({ error: 'Overlap detected' });
             expect(checkScheduleOverlap).toHaveBeenCalled();
             expect(mockUpdate).not.toHaveBeenCalled();
@@ -139,7 +139,7 @@ describe('Scheduler Server Actions', () => {
             // Mock update success
             mockUpdate.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
 
-            const result = await updateClassTime('class-1', '14:00');
+            const result = await updateClassSchedule('class-1', '14:00', 'Tuesday', 'Tuesday');
 
             expect(result).toEqual({ success: true });
             
@@ -149,7 +149,7 @@ describe('Scheduler Server Actions', () => {
                 'teacher-1',
                 expect.objectContaining({
                     recurrenceTime: '14:00',
-                    recurrenceDays: ['Tuesday', 'Thursday']
+                    recurrenceDays: ['tuesday', 'thursday']
                 }),
                 'class-1'
             );
@@ -157,9 +157,58 @@ describe('Scheduler Server Actions', () => {
             expect(mockFrom).toHaveBeenCalledWith('classes');
             expect(mockUpdate).toHaveBeenCalledWith({ 
                 recurrence_time: '14:00',
+                recurrence_days: ['tuesday', 'thursday'],
                 schedule: 'Weekly on Tuesday, Thursday at 2:00 PM'
             });
             expect(revalidatePath).toHaveBeenCalledWith('/class_scheduler/schedule');
+        });
+
+        it('should update day if changed', async () => {
+            (mockSupabase.auth.getUser as Mock).mockResolvedValue({
+                data: { user: { user_metadata: { role: 'admin' } } },
+                error: null
+            });
+
+            // Mock class found (Tue/Thu)
+            mockSingle.mockResolvedValue({
+                data: {
+                    id: 'class-1',
+                    teacher_id: 'teacher-1',
+                    recurrence_pattern: 'weekly',
+                    recurrence_days: ['Tuesday', 'Thursday'], 
+                    recurrence_duration: 60,
+                    start_date: '2024-01-01',
+                    end_date: '2024-02-01'
+                },
+                error: null
+            });
+
+            (checkScheduleOverlap as Mock).mockResolvedValue(null);
+            mockUpdate.mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) });
+
+            // Move Tue -> Wed
+            const result = await updateClassSchedule('class-1', '14:00', 'Tuesday', 'Wednesday');
+            
+            expect(result).toEqual({ success: true });
+
+            // Expect Tue swapped to Wed
+            const expectedDays = ['wednesday', 'thursday']; // original logic downcases
+
+            expect(checkScheduleOverlap).toHaveBeenCalledWith(
+                mockSupabase,
+                'teacher-1',
+                expect.objectContaining({
+                    recurrenceTime: '14:00',
+                    recurrenceDays: expectedDays
+                }),
+                'class-1'
+            );
+            
+            expect(mockUpdate).toHaveBeenCalledWith({ 
+                recurrence_time: '14:00',
+                recurrence_days: expectedDays,
+                schedule: 'Weekly on Wednesday, Thursday at 2:00 PM'
+            });
         });
     });
 });

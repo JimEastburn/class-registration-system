@@ -14,31 +14,32 @@ import {
 } from '@dnd-kit/core';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { updateClassTime } from '@/lib/actions/scheduler';
+import { updateClassSchedule } from '@/lib/actions/scheduler';
 import { toast } from 'sonner';
 import { ScheduleClassData, TIME_BLOCKS, getClassesForBlock } from '@/lib/schedule-helpers';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-const DAYS = ['Tuesday', 'Thursday', 'Wednesday'];
+const DAYS = ['Tuesday', 'Wednesday', 'Thursday'];
 
 interface InteractiveScheduleProps {
     classes: ScheduleClassData[];
 }
 
 // --- Draggable Class Component ---
-function DraggableClass({ classData }: { classData: ScheduleClassData }) {
+function DraggableClass({ classData, day }: { classData: ScheduleClassData, day: string }) {
+    // Unique ID for each instance: id::day
+    const uniqueId = `${classData.id}::${day}`;
+
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-        id: classData.id,
-        data: classData,
+        id: uniqueId,
+        data: { ...classData, originalDay: day },
     });
 
     // Detect conflicts/styles (logic copied from original page)
     // We can't easily detect conflicts *inside* this component without context of other classes,
     // but we can pass styles or calculate it in parent. 
     // For simplicity, let's just make it look good.
-    // The parent renders this, so parent logic decides if it is red/green.
-    // Actually, let's move the style logic out or simplistic here.
     
     // Quick parse for styling
     let isTueThu = false;
@@ -152,8 +153,13 @@ export default function InteractiveSchedule({ classes }: InteractiveScheduleProp
 
         if (!over) return;
 
-        // Extract data
-        const classId = active.id as string;
+        // Extract class info and source/target info
+        // active.id is "classID::originalDay"
+        // over.id is "day::time" (but we rely on over.data)
+        
+        const activeUniqueId = active.id as string;
+        const [classId, originalDay] = activeUniqueId.split('::');
+
         const targetData = over.data.current as { day: string, time: string, isLunch: boolean } | undefined;
 
         if (!targetData) return;
@@ -164,16 +170,19 @@ export default function InteractiveSchedule({ classes }: InteractiveScheduleProp
         }
 
         const newTime = targetData.time;
-        // Optimization: Check if time actually changed?
+        const newDay = targetData.day;
+        
         const activeClass = classes.find(c => c.id === classId);
-        if (activeClass && activeClass.recurrence_time === newTime) {
-            return; // No change
+        
+        // Check for no-op
+        if (activeClass && activeClass.recurrence_time === newTime && originalDay === newDay) {
+            return; 
         }
 
         // Call server action
         const toastId = toast.loading("Updating schedule...");
         
-        const result = await updateClassTime(classId, newTime);
+        const result = await updateClassSchedule(classId, newTime, originalDay, newDay);
 
         if (result.error) {
             toast.error(result.error, { id: toastId });
@@ -183,7 +192,15 @@ export default function InteractiveSchedule({ classes }: InteractiveScheduleProp
         }
     };
 
-    const activeClassData = activeId ? classes.find(c => c.id === activeId) : null;
+    // Find active class data for drag overlay
+    let activeClassData: ScheduleClassData | null = null;
+    let activeDay: string | null = null;
+    
+    if (activeId) {
+        const [clsId, day] = (activeId as string).split('::');
+        activeClassData = classes.find(c => c.id === clsId) || null;
+        activeDay = day;
+    }
 
     return (
         <DndContext 
@@ -254,37 +271,17 @@ export default function InteractiveSchedule({ classes }: InteractiveScheduleProp
                                             >
                                                 {classesInBlock.map(cls => {
                                                     const isConflict = cls.teacher_id && (teacherCounts.get(cls.teacher_id) || 0) > 1;
-                                                    // Wrap conflict detection for visual warning?
-                                                    // DraggableClass doesn't currently accept conflict prop, but we can pass styles or warning badge logic
+                                                    
                                                     return (
-                                                        <div key={cls.id}>
-                                                             {/* We wrap DraggableClass in a div just in case, but DraggableClass itself has the ref */}
-                                                             {/* Actually, if we want conflict styling on the card, we should pass it */}
+                                                        <div key={`${cls.id}-${day}`}> 
+                                                            {/* Explicitly keyed by id AND day for react list stability */}
                                                             <div className="relative group">
-                                                                <DraggableClass classData={cls} />
+                                                                <DraggableClass classData={cls} day={day} />
                                                                 {isConflict && (
                                                                     <div className="absolute top-0 right-0 p-0.5 bg-red-500 rounded-full text-[8px] text-white font-bold leading-none -mt-1 -mr-1 z-[1000] shadow-sm pointer-events-none">
                                                                         !
                                                                     </div>
                                                                 )}
-                                                                {/* Edit Link Overlay (only visible on hover if not dragging?) 
-                                                                    Note: If we make the whole card draggable, clicking it might not trigger link?
-                                                                    Or valid click without drag = click?
-                                                                    DndKit distinguishes click vs drag.
-                                                                    However, we need a way to edit. Maybe a small icon?
-                                                                    Or double click?
-                                                                    Let's add a small edit button in top right that is clickable.
-                                                                    Or just allow clicking the card. DndKit allow interaction?
-                                                                    Yes, if not dragging.
-                                                                    Let's wrap the card in a Link? No, drag listeners need to be on the element.
-                                                                    Best pattern: Separate drag handle or ensure Link receives click if not dragged.
-                                                                    For now, let's assume click on the card works if we don't start dragging?
-                                                                    MouseSensor distance: 10 prevents accidental drags.
-                                                                    So clear clicks should pass through.
-                                                                    We'll add an edit icon or make the card a Link that is also Draggable?
-                                                                    Draggable element is a div. If we make it a Link, it navigates.
-                                                                    Let's put an absolute positioned edit button.
-                                                                */}
                                                                 <Link 
                                                                     href={`/class_scheduler/classes/${cls.id}/edit`} 
                                                                     className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background rounded p-0.5 border shadow-sm z-[1001]"
@@ -307,9 +304,9 @@ export default function InteractiveSchedule({ classes }: InteractiveScheduleProp
             </Card>
             
             <DragOverlay>
-                {activeClassData ? (
+                {activeClassData && activeDay ? (
                     <div className="opacity-80 rotate-2 scale-105">
-                         {/* Re-use styling of DraggableClass but purely visual */}
+                         {/* Re-use styling of DraggableClass for visual */}
                          <div className="text-primary border rounded p-1 mb-1 text-xs bg-primary/20 border-primary/40 w-[120px] shadow-xl cursor-grabbing">
                             <div className="font-semibold truncate leading-tight">{activeClassData.name}</div>
                             <div className="truncate opacity-80 text-[10px]">
