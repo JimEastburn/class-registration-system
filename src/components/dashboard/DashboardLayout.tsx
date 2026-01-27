@@ -37,6 +37,12 @@ interface DashboardLayoutProps {
     title: string;
 }
 
+import {
+    ResizableHandle,
+    ResizablePanel,
+    ResizablePanelGroup,
+} from '@/components/ui/resizable';
+
 export default function DashboardLayout({
     children,
     user,
@@ -67,9 +73,9 @@ export default function DashboardLayout({
     };
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background flex flex-col">
             {/* Top Navigation */}
-            <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-lg">
+            <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-lg flex-none">
                 <div className="container flex h-16 items-center justify-between px-4">
                     <div className="flex items-center gap-4">
                         {/* Mobile Navigation */}
@@ -194,40 +200,55 @@ export default function DashboardLayout({
                 </div>
             </header>
 
-            <div className="flex">
-                {/* Desktop Sidebar */}
-                <aside className="hidden lg:flex w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground min-h-[calc(100vh-4rem)]">
-                    <nav className="flex flex-col gap-1 p-4">
-                        {navItems.map((item) => (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                data-testid={`nav-link-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
-                                className={cn(
-                                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-                                    pathname === item.href
-                                        ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                                        : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
-                                )}
-                            >
-                                {item.icon}
-                                {item.label}
-                            </Link>
-                        ))}
-                    </nav>
-                    <div className="mt-auto p-4 border-t border-sidebar-border text-center">
-                    </div>
-                </aside>
+            <div className="flex-1 flex overflow-hidden">
+                <ResizablePanelGroup
+                    direction="horizontal"
+                    className="h-full items-stretch"
+                >
+                    <ResizablePanel
+                        defaultSize={16}
+                        minSize={12}
+                        maxSize={25}
+                        collapsible={false}
+                        className="hidden lg:flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border"
+                    >
+                        <aside className="h-full flex flex-col w-full">
+                            <nav className="flex flex-col gap-1 p-4">
+                                {navItems.map((item) => (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        data-testid={`nav-link-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                                        className={cn(
+                                            'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                                            pathname === item.href
+                                                ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                                                : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+                                        )}
+                                    >
+                                        {item.icon}
+                                        {item.label}
+                                    </Link>
+                                ))}
+                            </nav>
+                            <div className="mt-auto p-4 border-t border-sidebar-border text-center">
+                            </div>
+                        </aside>
+                    </ResizablePanel>
 
-                {/* Main Content */}
-                <main className="flex-1 p-6 bg-background text-foreground">
-                    <div className="mb-6">
-                        <h1 className="text-2xl font-bold text-foreground">
-                            {title}
-                        </h1>
-                    </div>
-                    {children}
-                </main>
+                    <ResizableHandle withHandle className="hidden lg:flex" />
+
+                    <ResizablePanel defaultSize={84}>
+                        <main className="h-full overflow-y-auto p-6 bg-background text-foreground">
+                            <div className="mb-6">
+                                <h1 className="text-2xl font-bold text-foreground">
+                                    {title}
+                                </h1>
+                            </div>
+                            {children}
+                        </main>
+                    </ResizablePanel>
+                </ResizablePanelGroup>
             </div>
         </div>
     );

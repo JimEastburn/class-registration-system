@@ -45,3 +45,19 @@ vi.mock('@/lib/supabase/client', () => ({
         })),
     })),
 }));
+
+// Mock ResizeObserver
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    disconnect: vi.fn(),
+}));
+
+import React from 'react';
+
+// Mock react-resizable-panels
+vi.mock('react-resizable-panels', () => ({
+    PanelGroup: ({ children, className, ...props }: any) => React.createElement('div', { className, ...props, 'data-testid': 'resizable-panel-group' }, children),
+    Panel: ({ children, className, ...props }: any) => React.createElement('div', { className, ...props, 'data-testid': 'resizable-panel' }, children),
+    PanelResizeHandle: ({ className, ...props }: any) => React.createElement('div', { className, ...props, 'data-testid': 'resizable-handle' }),
+}));
