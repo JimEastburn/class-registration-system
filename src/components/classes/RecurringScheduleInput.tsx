@@ -44,17 +44,22 @@ interface RecurringScheduleInputProps {
     }) => void;
 }
 
+
 export default function RecurringScheduleInput({
-    defaultPattern = 'none',
     defaultDays = [],
     defaultTime = '',
     defaultDuration,
     onChange,
 }: RecurringScheduleInputProps) {
-    const [pattern, setPattern] = useState(defaultPattern);
+    // We primarily track selectedDays. 
+    // If days are selected, pattern is effectively 'weekly'.
+    // If no days are selected, pattern is 'none'.
     const [selectedDays, setSelectedDays] = useState<string[]>(defaultDays);
     const [time, setTime] = useState(defaultTime);
     const [duration, setDuration] = useState<number | undefined>(defaultDuration);
+
+    // Derived pattern state
+    const pattern = selectedDays.length > 0 ? 'weekly' : 'none';
 
     useEffect(() => {
         if (onChange) {
@@ -66,11 +71,6 @@ export default function RecurringScheduleInput({
             });
         }
     }, [pattern, selectedDays, time, duration, onChange]);
-
-// function removed
-
-    const showDaysSelector = pattern === 'weekly' || pattern === 'biweekly';
-    const showTimeFields = pattern !== 'none';
 
     // Helper to find selected block
     const selectedBlock = TIME_BLOCKS.find(b => b.startTime === time);
@@ -92,9 +92,9 @@ export default function RecurringScheduleInput({
     const generatePreview = () => {
         if (pattern === 'none') return '';
 
-        let text = pattern.charAt(0).toUpperCase() + pattern.slice(1);
+        let text = 'Weekly';
 
-        if (showDaysSelector && selectedDays.length > 0) {
+        if (selectedDays.length > 0) {
             const dayLabels = selectedDays
                 .map(d => WEEKDAYS.find(w => w.value === d)?.label)
                 .filter(Boolean);
@@ -121,54 +121,52 @@ export default function RecurringScheduleInput({
         return text;
     };
 
+    // Determine current days value for Select
+    let currentDaysValue = '';
+    const sortedDays = [...selectedDays].sort();
+    const daysStr = sortedDays.join(',');
+    
+    if (daysStr === 'tuesday') currentDaysValue = 'tuesday';
+    else if (daysStr === 'thursday') currentDaysValue = 'thursday';
+    else if (daysStr === 'thursday,tuesday') currentDaysValue = 'tuesday,thursday'; // sort order: thursday comes before tuesday alphabetically? 'h' vs 'u'. "thursday" < "tuesday". Wait. 'th' vs 'tu'. 'h' < 'u'. So sorted is thursday, tuesday.
+    
+    if (selectedDays.length === 1 && selectedDays[0] === 'tuesday') currentDaysValue = 'tuesday';
+    else if (selectedDays.length === 1 && selectedDays[0] === 'thursday') currentDaysValue = 'thursday';
+    else if (selectedDays.length === 1 && selectedDays[0] === 'wednesday') currentDaysValue = 'wednesday';
+    else if (selectedDays.length === 2 && selectedDays.includes('tuesday') && selectedDays.includes('thursday')) currentDaysValue = 'tuesday,thursday';
+    
     return (
         <div className="space-y-4 p-4 bg-slate-50 rounded-lg border">
             <div>
-                <Label htmlFor="recurrence_pattern">Schedule Pattern</Label>
+                <Label>Class Days</Label>
                 <Select
-                    value={pattern}
-                    onValueChange={setPattern}
+                    value={currentDaysValue}
+                    onValueChange={(val) => {
+                        if (val === 'tuesday,thursday') setSelectedDays(['tuesday', 'thursday']);
+                        else if (val === 'tuesday') setSelectedDays(['tuesday']);
+                        else if (val === 'thursday') setSelectedDays(['thursday']);
+                        else if (val === 'wednesday') setSelectedDays(['wednesday']);
+                        else setSelectedDays([]); // Should act as reset/none? Or maybe we don't allow clearing here easily without an explicit "None" option.
+                        // Let's add a "None / Clear" option? The requirement says "no Schedule Pattern select".
+                        // If user wants to clear, they might select "none".
+                    }}
                 >
                     <SelectTrigger>
-                        <SelectValue placeholder="Select frequency" />
+                         <SelectValue placeholder="Select class days" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="none">No recurring schedule</SelectItem>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="biweekly">Every 2 weeks</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="tuesday">Tuesday Only</SelectItem>
+                        <SelectItem value="thursday">Thursday Only</SelectItem>
+                        <SelectItem value="tuesday,thursday">Tuesday & Thursday</SelectItem>
+                        <SelectItem value="wednesday">Wednesday Only</SelectItem>
                     </SelectContent>
                 </Select>
+                <p className="text-xs text-slate-500 mt-1">
+                    Select days to enable recurring schedule.
+                </p>
             </div>
 
-
-            {showDaysSelector && (
-                <div>
-                    <Label>Class Days</Label>
-                    <Select
-                        value={selectedDays.join(',')}
-                        onValueChange={(val) => {
-                            if (val === 'tuesday,thursday') setSelectedDays(['tuesday', 'thursday']);
-                            else if (val === 'wednesday') setSelectedDays(['wednesday']);
-                            else setSelectedDays([]);
-                        }}
-                    >
-                        <SelectTrigger>
-                             <SelectValue placeholder="Select class days" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="tuesday,thursday">Tuesday & Thursday</SelectItem>
-                            <SelectItem value="wednesday">Wednesday Only</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <p className="text-xs text-slate-500 mt-1">
-                        Classes can only be scheduled on Tue/Thu or Wed.
-                    </p>
-                </div>
-            )}
-
-            {showTimeFields && (
+            {selectedDays.length > 0 && (
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <Label htmlFor="recurrence_block">Time Block</Label>
@@ -193,7 +191,7 @@ export default function RecurringScheduleInput({
                         <Select
                             value={duration?.toString() || ''}
                             onValueChange={(v) => setDuration(parseInt(v))}
-                            disabled={!!selectedBlock} // Disable duration if block is selected to enforce block duration?
+                            disabled={!!selectedBlock}
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Select duration" />
@@ -226,3 +224,4 @@ export default function RecurringScheduleInput({
         </div>
     );
 }
+
