@@ -83,9 +83,9 @@ export type FamilyMemberFormData = z.infer<typeof familyMemberSchema>;
 export const classSchema = z.object({
     name: z.string().min(1, 'Class name is required'),
     description: z.string().optional(),
-    location: z.string().min(1, 'Location is required'),
-    startDate: z.string().min(1, 'Start date is required'),
-    endDate: z.string().min(1, 'End date is required'),
+    location: z.string().optional(),
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
     schedule: z.string().min(1, 'Schedule is required'),
     maxStudents: z.number().min(1, 'Maximum students must be at least 1'),
     fee: z.number().min(0, 'Fee cannot be negative'),
@@ -95,7 +95,12 @@ export const classSchema = z.object({
     recurrence_time: z.string().optional(),
     recurrence_duration: z.string().optional(), // Passed as string from select
     teacherId: z.string().optional(), // Optional, mostly for admins/schedulers
-}).refine((data) => new Date(data.endDate) >= new Date(data.startDate), {
+}).refine((data) => {
+    if (data.startDate && data.endDate) {
+        return new Date(data.endDate) >= new Date(data.startDate);
+    }
+    return true;
+}, {
     message: 'End date must be after start date',
     path: ['endDate'],
 }).refine((data) => {

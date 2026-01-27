@@ -149,4 +149,32 @@ describe('ClassForm Component', () => {
             expect(errorMessages).toHaveLength(2);
         });
     });
+
+    describe('Teacher View', () => {
+        it('hides location, start date, and end date fields', () => {
+            render(
+                <ClassForm
+                    teachers={mockTeachers}
+                    userRole="teacher"
+                />
+            );
+
+            expect(screen.queryByLabelText(/Location/i)).not.toBeInTheDocument();
+            expect(screen.queryByLabelText(/Start Date/i)).not.toBeInTheDocument();
+            expect(screen.queryByLabelText(/End Date/i)).not.toBeInTheDocument();
+        });
+
+        it('shows read-only schedule for teachers', () => {
+             render(
+                <ClassForm
+                    classData={mockClassData}
+                    teachers={mockTeachers}
+                    userRole="teacher"
+                />
+            );
+            
+            expect(screen.getByText('Schedule will be assigned by an administrator.')).toBeInTheDocument();
+            expect(screen.queryByLabelText(/Schedule \(Manual Entry\)/i)).not.toBeInTheDocument();
+        });
+    });
 });

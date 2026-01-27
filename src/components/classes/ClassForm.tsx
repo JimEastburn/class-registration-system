@@ -82,9 +82,9 @@ export default function ClassForm({ classData, redirectUrl, userRole, teachers }
         const formData = new FormData();
         formData.append('name', data.name);
         if (data.description) formData.append('description', data.description);
-        formData.append('location', data.location);
-        formData.append('startDate', data.startDate);
-        formData.append('endDate', data.endDate);
+        if (data.location) formData.append('location', data.location);
+        if (data.startDate) formData.append('startDate', data.startDate);
+        if (data.endDate) formData.append('endDate', data.endDate);
         formData.append('schedule', data.schedule);
         formData.append('maxStudents', data.maxStudents.toString());
         formData.append('fee', data.fee.toString());
@@ -186,31 +186,35 @@ export default function ClassForm({ classData, redirectUrl, userRole, teachers }
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="location">Location</Label>
-                        <Input id="location" placeholder="e.g., Room 101, Building A" {...register('location')} />
-                        {errors.location && (
-                            <p className="text-red-500 text-sm">{errors.location.message}</p>
-                        )}
-                    </div>
+                    {!isTeacher && (
+                        <>
+                            <div className="space-y-2">
+                                <Label htmlFor="location">Location</Label>
+                                <Input id="location" placeholder="e.g., Room 101, Building A" {...register('location')} />
+                                {errors.location && (
+                                    <p className="text-red-500 text-sm">{errors.location.message}</p>
+                                )}
+                            </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="startDate">Start Date</Label>
-                            <Input type="date" id="startDate" {...register('startDate')} />
-                            {errors.startDate && (
-                                <p className="text-red-500 text-sm">{errors.startDate.message}</p>
-                            )}
-                        </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="startDate">Start Date</Label>
+                                    <Input type="date" id="startDate" {...register('startDate')} />
+                                    {errors.startDate && (
+                                        <p className="text-red-500 text-sm">{errors.startDate.message}</p>
+                                    )}
+                                </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="endDate">End Date</Label>
-                            <Input type="date" id="endDate" {...register('endDate')} />
-                            {errors.endDate && (
-                                <p className="text-red-500 text-sm">{errors.endDate.message}</p>
-                            )}
-                        </div>
-                    </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="endDate">End Date</Label>
+                                    <Input type="date" id="endDate" {...register('endDate')} />
+                                    {errors.endDate && (
+                                        <p className="text-red-500 text-sm">{errors.endDate.message}</p>
+                                    )}
+                                </div>
+                            </div>
+                        </>
+                    )}
 
                     {!isTeacher ? (
                         <>

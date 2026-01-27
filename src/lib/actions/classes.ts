@@ -28,9 +28,9 @@ export async function createClass(formData: FormData): Promise<ActionResult> {
 
     const name = formData.get('name') as string;
     const description = formData.get('description') as string;
-    const location = formData.get('location') as string;
-    const startDate = formData.get('startDate') as string;
-    const endDate = formData.get('endDate') as string;
+    let location = formData.get('location') as string;
+    let startDate = formData.get('startDate') as string;
+    let endDate = formData.get('endDate') as string;
     let schedule = formData.get('schedule') as string;
     const maxStudents = parseInt(formData.get('maxStudents') as string, 10);
     const fee = parseFloat(formData.get('fee') as string);
@@ -52,6 +52,11 @@ export async function createClass(formData: FormData): Promise<ActionResult> {
     // If admin creates, they can set schedule.
     if (role === 'teacher') {
         schedule = 'To Be Announced';
+        // Teachers cannot set these fields, so provide defaults
+        location = 'To Be Announced';
+        // Use placeholder dates that can be updated by admin later
+        startDate = new Date().toISOString().split('T')[0]; // Today
+        endDate = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]; // One year from now
     }
 
     const recurrencePattern = formData.get('recurrence_pattern') as string;
