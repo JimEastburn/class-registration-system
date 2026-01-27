@@ -208,7 +208,7 @@ export default function DashboardLayout({
                     <ResizablePanel
                         defaultSize={16}
                         minSize={12}
-                        maxSize={25}
+                        maxSize={40}
                         collapsible={false}
                         className="hidden lg:flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border"
                     >
