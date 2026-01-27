@@ -25,6 +25,7 @@ export default async function ClassSchedulePage() {
             recurrence_time, 
             recurrence_duration, 
             schedule,
+            teacher_id,
             teacher:profiles!classes_teacher_id_fkey(last_name)
         `)
         .neq('status', 'cancelled');
@@ -36,7 +37,7 @@ export default async function ClassSchedulePage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Weekly Schedule</CardTitle>
-                    <CardDescription>View the layout of active classes across the week.</CardDescription>
+                    <CardDescription>View the layout of active classes across the week. <span className="text-red-500 font-semibold">Red items indicate overlapping teacher schedules.</span></CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="min-w-[1000px] overflow-x-auto">
@@ -67,26 +68,47 @@ export default async function ClassSchedulePage() {
                                     {/* Slots for this Day */}
                                     {TIME_BLOCKS.map((block) => {
                                         const classesInBlock = getClassesForBlock(classes, day, block.startTime);
+                                        
+                                        // Detect conflicts: Group by teacherId
+                                        const teacherCounts = new Map<string, number>();
+                                        classesInBlock.forEach(c => {
+                                            if (c.teacher_id) {
+                                                teacherCounts.set(c.teacher_id, (teacherCounts.get(c.teacher_id) || 0) + 1);
+                                            }
+                                        });
+
                                         return (
                                             <div 
                                                 key={`${day}-${block.id}`} 
                                                 className="min-h-[120px] border-b border-r border-border p-1 hover:bg-muted/5 transition-colors relative"
                                             >
-                                                {classesInBlock.map(cls => (
-                                                    <Link key={cls.id} href={`/class_scheduler/classes/${cls.id}/edit`} scroll={false}>
-                                                        <div className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded p-1 mb-1 text-xs cursor-pointer transition-colors block overflow-hidden">
-                                                            <div className="font-semibold truncate leading-tight">{cls.name}</div>
-                                                            <div className="truncate opacity-80 text-[10px]">
-                                                                {cls.teacher?.last_name ? `Tchr. ${cls.teacher.last_name}` : ''}
-                                                            </div>
-                                                            {cls.recurrence_time && (
-                                                                <div className="text-[9px] mt-0.5 opacity-70">
-                                                                    {cls.recurrence_time.slice(0, 5)}
+                                                {classesInBlock.map(cls => {
+                                                    const isConflict = cls.teacher_id && (teacherCounts.get(cls.teacher_id) || 0) > 1;
+                                                    
+                                                    return (
+                                                        <Link key={cls.id} href={`/class_scheduler/classes/${cls.id}/edit`} scroll={false}>
+                                                            <div className={`
+                                                                text-primary border rounded p-1 mb-1 text-xs cursor-pointer transition-colors block overflow-hidden
+                                                                ${isConflict 
+                                                                    ? 'bg-red-100 border-red-300 hover:bg-red-200 text-red-900' 
+                                                                    : 'bg-primary/10 hover:bg-primary/20 border-primary/20'}
+                                                            `}>
+                                                                <div className="font-semibold truncate leading-tight flex items-center gap-1">
+                                                                    {isConflict && <span className="text-red-600 font-bold">!</span>}
+                                                                    {cls.name}
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                    </Link>
-                                                ))}
+                                                                <div className="truncate opacity-80 text-[10px]">
+                                                                    {cls.teacher?.last_name ? `Tchr. ${cls.teacher.last_name}` : ''}
+                                                                </div>
+                                                                {cls.recurrence_time && (
+                                                                    <div className="text-[9px] mt-0.5 opacity-70">
+                                                                        {cls.recurrence_time.slice(0, 5)}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </Link>
+                                                    );
+                                                })}
                                             </div>
                                         );
                                     })}

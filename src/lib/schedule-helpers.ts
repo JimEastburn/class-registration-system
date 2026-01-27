@@ -6,6 +6,7 @@ export type ScheduleClassData = {
     recurrence_time: string | null;
     recurrence_duration: number | null;
     schedule: string | null;
+    teacher_id: string;
     teacher: {
         last_name: string;
     } | null;
