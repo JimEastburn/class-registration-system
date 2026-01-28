@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import RecurringScheduleInput from '@/components/classes/RecurringScheduleInput';
 import TeacherSelect from '@/components/classes/TeacherSelect';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { TIME_BLOCKS } from '@/lib/schedule-helpers';
 
 interface ClassFormProps {
     classData?: {
@@ -25,21 +26,37 @@ interface ClassFormProps {
         max_students: number;
         fee: number;
         syllabus: string | null;
-        recurrence_pattern?: string;
-        recurrence_days?: string[];
-        recurrence_time?: string;
-        recurrence_duration?: number;
+        schedule_days?: string[];
+        schedule_time?: string;
         teacher_id?: string;
     };
-    redirectUrl?: string; // Optional redirect URL after success
+    redirectUrl?: string;
     userRole?: string;
     teachers?: { id: string; full_name: string }[];
 }
+
+const DAY_OPTIONS = [
+    { value: 'tuesday,thursday', label: 'Tuesday & Thursday' },
+    { value: 'tuesday', label: 'Tuesday only' },
+    { value: 'thursday', label: 'Thursday only' },
+    { value: 'wednesday', label: 'Wednesday only' },
+];
+
+// Filter out lunch block for scheduling
+const SCHEDULABLE_BLOCKS = TIME_BLOCKS.filter(b => b.id !== 'lunch');
 
 export default function ClassForm({ classData, redirectUrl, userRole, teachers }: ClassFormProps) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    
+    // Local state for schedule selectors
+    const [selectedDays, setSelectedDays] = useState<string>(
+        classData?.schedule_days?.join(',') || ''
+    );
+    const [selectedTime, setSelectedTime] = useState<string>(
+        classData?.schedule_time || ''
+    );
 
     const isTeacher = userRole === 'teacher';
 
@@ -62,16 +79,12 @@ export default function ClassForm({ classData, redirectUrl, userRole, teachers }
                 maxStudents: classData.max_students,
                 fee: classData.fee,
                 syllabus: classData.syllabus || undefined,
-                recurrence_pattern: classData.recurrence_pattern,
-                recurrence_days: classData.recurrence_days ? JSON.stringify(classData.recurrence_days) : undefined,
-                recurrence_time: classData.recurrence_time,
-                recurrence_duration: classData.recurrence_duration?.toString(),
                 teacherId: classData.teacher_id,
             }
             : {
                 maxStudents: 20,
                 fee: 0,
-                schedule: isTeacher ? 'To Be Announced' : '', // Pre-fill for teachers
+                schedule: isTeacher ? 'To Be Announced' : '',
             },
     });
 
@@ -90,11 +103,14 @@ export default function ClassForm({ classData, redirectUrl, userRole, teachers }
         formData.append('fee', data.fee.toString());
         if (data.syllabus) formData.append('syllabus', data.syllabus);
         
-        // Append recurrence fields
-        if (data.recurrence_pattern) formData.append('recurrence_pattern', data.recurrence_pattern);
-        if (data.recurrence_days) formData.append('recurrence_days', data.recurrence_days);
-        if (data.recurrence_time) formData.append('recurrence_time', data.recurrence_time);
-        if (data.recurrence_duration) formData.append('recurrence_duration', data.recurrence_duration);
+        // Append schedule fields
+        if (selectedDays) {
+            const daysArray = selectedDays.split(',');
+            formData.append('schedule_days', JSON.stringify(daysArray));
+        }
+        if (selectedTime) {
+            formData.append('schedule_time', selectedTime);
+        }
         if (data.teacherId) formData.append('teacherId', data.teacherId);
 
         const result = classData
@@ -109,39 +125,31 @@ export default function ClassForm({ classData, redirectUrl, userRole, teachers }
         }
     };
 
-    const handleScheduleChange = useCallback((schedule: {
-        pattern: string;
-        days: string[];
-        time: string;
-        duration: number;
-    }) => {
-         // Auto-generate the text schedule string
-         let scheduleText = '';
-         if (schedule.pattern !== 'none') {
-             scheduleText = schedule.pattern.charAt(0).toUpperCase() + schedule.pattern.slice(1);
-             if (schedule.days.length > 0) {
-                 const dayLabels = schedule.days.map(d => d.charAt(0).toUpperCase() + d.slice(1));
-                 scheduleText += ` on ${dayLabels.join(', ')}`;
-             }
-             if (schedule.time) {
-                 // Convert 24h to 12h
-                 const [h, m] = schedule.time.split(':');
-                 const hour = parseInt(h);
-                 const ampm = hour >= 12 ? 'PM' : 'AM';
-                 const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                 scheduleText += ` at ${displayHour}:${m} ${ampm}`;
-             }
-         }
-         
-         if (scheduleText) {
-             setValue('schedule', scheduleText, { shouldValidate: true });
-         }
+    // Generate schedule text when days/time change
+    const updateScheduleText = (days: string, time: string) => {
+        if (!days || !time) return;
+        
+        const daysArray = days.split(',');
+        const dayLabels = daysArray.map(d => d.charAt(0).toUpperCase() + d.slice(1));
+        
+        const [h, m] = time.split(':');
+        const hour = parseInt(h);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+        
+        const scheduleText = `${dayLabels.join(', ')} at ${displayHour}:${m} ${ampm}`;
+        setValue('schedule', scheduleText, { shouldValidate: true });
+    };
 
-         setValue('recurrence_pattern', schedule.pattern);
-         setValue('recurrence_days', JSON.stringify(schedule.days));
-         setValue('recurrence_time', schedule.time);
-         setValue('recurrence_duration', schedule.duration.toString());
-    }, [setValue]);
+    const handleDaysChange = (value: string) => {
+        setSelectedDays(value);
+        updateScheduleText(value, selectedTime);
+    };
+
+    const handleTimeChange = (value: string) => {
+        setSelectedTime(value);
+        updateScheduleText(selectedDays, value);
+    };
 
     return (
         <Card className="max-w-2xl border-0 shadow-lg">
@@ -218,34 +226,51 @@ export default function ClassForm({ classData, redirectUrl, userRole, teachers }
 
                     {!isTeacher ? (
                         <>
-                            <div className="space-y-2">
-                                <Label htmlFor="schedule">Schedule (Manual Entry)</Label>
-                                <Input
-                                    id="schedule"
-                                    placeholder="e.g., Mon/Wed 3:00 PM - 4:30 PM"
-                                    {...register('schedule')}
-                                />
-                                {errors.schedule && (
-                                    <p className="text-red-500 text-sm">{errors.schedule.message}</p>
-                                )}
-                                <p className="text-xs text-slate-500">
-                                    Or use the recurring schedule builder below for automatic formatting
-                                </p>
-                            </div>
+                            {/* Schedule Selection */}
+                            <div className="space-y-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                <Label className="text-base font-semibold">Class Schedule</Label>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-sm">Days</Label>
+                                        <Select value={selectedDays} onValueChange={handleDaysChange}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select days" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {DAY_OPTIONS.map(opt => (
+                                                    <SelectItem key={opt.value} value={opt.value}>
+                                                        {opt.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
 
-                            {/* Recurring Schedule Section */}
-                            <div className="space-y-2">
-                                <Label>Recurring Schedule Builder (Optional)</Label>
-                                <RecurringScheduleInput
-                                    defaultPattern={classData?.recurrence_pattern}
-                                    defaultDays={classData?.recurrence_days}
-                                    defaultTime={classData?.recurrence_time}
-                                    defaultDuration={classData?.recurrence_duration}
-                                    onChange={handleScheduleChange}
-                                />
-                                {errors.recurrence_days && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.recurrence_days.message}</p>
-                                )}
+                                    <div className="space-y-2">
+                                        <Label className="text-sm">Time Block</Label>
+                                        <Select value={selectedTime} onValueChange={handleTimeChange}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select time" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {SCHEDULABLE_BLOCKS.map(block => (
+                                                    <SelectItem key={block.id} value={block.startTime}>
+                                                        {block.label} ({block.timeRange})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                {/* Preview */}
+                                <div className="text-sm text-slate-600">
+                                    <strong>Preview:</strong> {watch('schedule') || 'Select days and time'}
+                                </div>
+                                
+                                {/* Hidden input for form validation */}
+                                <input type="hidden" {...register('schedule')} />
                             </div>
                         </>
                     ) : (
@@ -257,7 +282,6 @@ export default function ClassForm({ classData, redirectUrl, userRole, teachers }
                             <p className="text-xs text-slate-500">
                                 Schedule will be assigned by an administrator.
                             </p>
-                            {/* Hidden input to satisfy react-hook-form validation */}
                             <input type="hidden" {...register('schedule')} />
                         </div>
                     )}

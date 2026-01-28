@@ -90,11 +90,7 @@ export const classSchema = z.object({
     maxStudents: z.number().min(1, 'Maximum students must be at least 1'),
     fee: z.number().min(0, 'Fee cannot be negative'),
     syllabus: z.string().optional(),
-    recurrence_pattern: z.string().optional(),
-    recurrence_days: z.string().optional(), // Passed as JSON string from hidden input
-    recurrence_time: z.string().optional(),
-    recurrence_duration: z.string().optional(), // Passed as string from select
-    teacherId: z.string().optional(), // Optional, mostly for admins/schedulers
+    teacherId: z.string().optional(),
 }).refine((data) => {
     if (data.startDate && data.endDate) {
         return new Date(data.endDate) >= new Date(data.startDate);
@@ -103,37 +99,6 @@ export const classSchema = z.object({
 }, {
     message: 'End date must be after start date',
     path: ['endDate'],
-}).refine((data) => {
-    // Only validate if weekly/biweekly
-    if (data.recurrence_pattern === 'weekly' || data.recurrence_pattern === 'biweekly') {
-        if (!data.recurrence_days) return false;
-        
-        try {
-            const days = JSON.parse(data.recurrence_days);
-            if (!Array.isArray(days)) return false;
-            
-            // Allow Tue/Thu (both or individual)
-            
-            // Valid if it is (Tue AND Thu) OR (Tue only) OR (Thu only)
-            // Effectively, if it contains Tuesday or Thursday, it shouldn't contain anything else except the other?
-            // "Tuesday & Thursday" = 2 days.
-            // "Tuesday Only" = 1 day.
-            // "Thursday Only" = 1 day.
-            
-            const isTueOrThu = days.every(d => ['tuesday', 'thursday'].includes(d));
-                
-            // Allow Wed
-            const isWed = days.length === 1 && days.includes('wednesday');
-            
-            return (isTueOrThu && days.length > 0) || isWed;
-        } catch {
-            return false;
-        }
-    }
-    return true;
-}, {
-    message: 'Classes can only be scheduled on Tuesdays/Thursdays OR Wednesdays.',
-    path: ['recurrence_days'], // This might show up as a form error if handled by UI
 });
 
 export type ClassFormData = z.infer<typeof classSchema>;

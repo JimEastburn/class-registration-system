@@ -45,11 +45,11 @@ function DraggableClass({ classData, day }: { classData: ScheduleClassData, day:
     let isTueThu = false;
     let isSingleDayTueOrThu = false;
     let daysLower: string[] = [];
-        if (Array.isArray(classData.recurrence_days)) {
-        daysLower = classData.recurrence_days.map(d => d.toLowerCase());
-    } else if (typeof classData.recurrence_days === 'string') {
+        if (Array.isArray(classData.schedule_days)) {
+        daysLower = classData.schedule_days.map(d => d.toLowerCase());
+    } else if (typeof classData.schedule_days === 'string') {
         try {
-            const parsed = JSON.parse(classData.recurrence_days);
+            const parsed = JSON.parse(classData.schedule_days);
             if (Array.isArray(parsed)) {
                 daysLower = parsed.map((d: string) => d.toLowerCase());
             }
@@ -88,9 +88,9 @@ function DraggableClass({ classData, day }: { classData: ScheduleClassData, day:
             <div className="truncate opacity-80 text-[10px] pointer-events-none">
                 {classData.teacher?.last_name ? `Tchr. ${classData.teacher.last_name}` : ''}
             </div>
-            {classData.recurrence_time && (
+            {classData.schedule_time && (
                 <div className="text-[9px] mt-0.5 opacity-70 pointer-events-none">
-                    {classData.recurrence_time.slice(0, 5)}
+                    {classData.schedule_time.slice(0, 5)}
                 </div>
             )}
         </div>
@@ -175,7 +175,7 @@ export default function InteractiveSchedule({ classes }: InteractiveScheduleProp
         const activeClass = classes.find(c => c.id === classId);
         
         // Check for no-op
-        if (activeClass && activeClass.recurrence_time === newTime && originalDay === newDay) {
+        if (activeClass && activeClass.schedule_time === newTime && originalDay === newDay) {
             return; 
         }
 

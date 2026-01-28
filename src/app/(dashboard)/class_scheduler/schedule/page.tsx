@@ -16,10 +16,8 @@ export default async function ClassSchedulePage() {
         .select(`
             id, 
             name, 
-            recurrence_pattern, 
-            recurrence_days, 
-            recurrence_time, 
-            recurrence_duration, 
+            schedule_days, 
+            schedule_time, 
             schedule,
             teacher_id,
             teacher:profiles!classes_teacher_id_fkey(last_name)

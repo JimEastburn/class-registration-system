@@ -38,38 +38,22 @@ export async function updateClassSchedule(
         return { error: 'Class not found' };
     }
 
-    // 2. Prepare recurrence days
-    // Logic: 
-    // If originalDay === newDay, we are just changing time for ALL days (as per legacy logic)
-    // BUT, the new UI implies moving a specific BLOCK.
-    // If I move the "Tuesday" block to "2:00 PM", should "Thursday" block also move to "2:00 PM"?
-    // Yes, for now, recurrence_time is global for the class.
-    // However, if I move "Tuesday" block to "Wednesday", what happens?
-    // "Tuesday" should become "Wednesday". "Thursday" should remain "Thursday".
-    
-    let recurrenceDays = Array.isArray(classData.recurrence_days) 
-        ? classData.recurrence_days 
-        : JSON.parse((classData.recurrence_days as unknown as string) || '[]');
+    // 2. Prepare schedule days
+    let scheduleDays = Array.isArray(classData.schedule_days) 
+        ? classData.schedule_days 
+        : JSON.parse((classData.schedule_days as unknown as string) || '[]');
         
-    recurrenceDays = recurrenceDays.map((d: string) => d.toLowerCase());
+    scheduleDays = scheduleDays.map((d: string) => d.toLowerCase());
 
     const lowerOriginalDay = originalDay.toLowerCase();
     const lowerNewDay = newDay.toLowerCase();
 
     if (lowerOriginalDay !== lowerNewDay) {
         // Swap days
-        if (recurrenceDays.includes(lowerOriginalDay)) {
-            recurrenceDays = recurrenceDays.map((d: string) => d === lowerOriginalDay ? lowerNewDay : d);
-            
-            // Deduplicate (e.g. if moving Tue to Thu and Thu already exists?)
-            // If Thu already exists, we merge?
-            // "Tue/Thu" -> move Tue to Thu -> "Thu/Thu" -> "Thu".
-            // Logic: strictly unique days.
-            recurrenceDays = Array.from(new Set(recurrenceDays));
+        if (scheduleDays.includes(lowerOriginalDay)) {
+            scheduleDays = scheduleDays.map((d: string) => d === lowerOriginalDay ? lowerNewDay : d);
+            scheduleDays = Array.from(new Set(scheduleDays));
         } else {
-             // Fallback: If original day not found (shouldn't happen given UI), just add new day?
-             // Or maybe invalid request.
-             // Let's safe-fail or just proceed.
              console.warn(`Original day ${lowerOriginalDay} not found in class ${classId}`);
         }
     }
@@ -77,9 +61,8 @@ export async function updateClassSchedule(
     const checkData = {
         startDate: classData.start_date,
         endDate: classData.end_date,
-        recurrenceDays: recurrenceDays,
-        recurrenceTime: newTime,
-        recurrenceDuration: classData.recurrence_duration
+        scheduleDays: scheduleDays,
+        scheduleTime: newTime
     };
 
     // 3. Check for overlaps
@@ -95,12 +78,11 @@ export async function updateClassSchedule(
     }
 
     // 4. Calculate new schedule text
-    // logic to format
-    const formatSchedule = (pattern: string, days: string[], time: string) => {
-        let text = pattern.charAt(0).toUpperCase() + pattern.slice(1);
+    const formatSchedule = (days: string[], time: string) => {
+        let text = '';
         if (days.length > 0) {
             const dayLabels = days.map(d => d.charAt(0).toUpperCase() + d.slice(1));
-            text += ` on ${dayLabels.join(', ')}`;
+            text = dayLabels.join(', ');
         }
         if (time) {
              const [h, m] = time.split(':');
@@ -114,18 +96,14 @@ export async function updateClassSchedule(
         return text;
     };
 
-    const newScheduleText = formatSchedule(
-        classData.recurrence_pattern || 'weekly', 
-        recurrenceDays,
-        newTime
-    );
+    const newScheduleText = formatSchedule(scheduleDays, newTime);
 
     // 5. Update
     const { error: updateError } = await supabase
         .from('classes')
         .update({ 
-            recurrence_time: newTime,
-            recurrence_days: recurrenceDays,
+            schedule_time: newTime,
+            schedule_days: scheduleDays,
             schedule: newScheduleText 
         })
         .eq('id', classId);
@@ -135,5 +113,6 @@ export async function updateClassSchedule(
     }
 
     revalidatePath('/class_scheduler/schedule');
+    revalidatePath('/class_scheduler/classes');
     return { success: true };
 }

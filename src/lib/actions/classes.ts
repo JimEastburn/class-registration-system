@@ -59,33 +59,28 @@ export async function createClass(formData: FormData): Promise<ActionResult> {
         endDate = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0]; // One year from now
     }
 
-    const recurrencePattern = formData.get('recurrence_pattern') as string;
-    const recurrenceDaysStr = formData.get('recurrence_days') as string;
-    const recurrenceTime = formData.get('recurrence_time') as string;
-    const recurrenceDurationStr = formData.get('recurrence_duration') as string;
+    const scheduleDaysStr = formData.get('schedule_days') as string;
+    const scheduleTime = formData.get('schedule_time') as string;
 
-    let recurrenceDays: string[] | null = null;
-    if (recurrenceDaysStr) {
+    let scheduleDays: string[] | null = null;
+    if (scheduleDaysStr) {
         try {
-            recurrenceDays = JSON.parse(recurrenceDaysStr);
+            scheduleDays = JSON.parse(scheduleDaysStr);
         } catch (e) {
-            console.error('Failed to parse recurrence_days', e);
+            console.error('Failed to parse schedule_days', e);
         }
     }
 
-    const recurrenceDuration = recurrenceDurationStr ? parseInt(recurrenceDurationStr, 10) : null;
-
     // Check for schedule overlaps
-    if (recurrenceDays && recurrenceTime && recurrenceDuration) {
+    if (scheduleDays && scheduleTime) {
         const overlapError = await checkScheduleOverlap(
             supabase,
-            teacherId, // Use the determined teacher ID
+            teacherId,
             {
                 startDate,
                 endDate,
-                recurrenceDays,
-                recurrenceTime,
-                recurrenceDuration
+                scheduleDays,
+                scheduleTime
             },
         );
 
@@ -95,7 +90,7 @@ export async function createClass(formData: FormData): Promise<ActionResult> {
     }
 
     const { error } = await supabase.from('classes').insert({
-        teacher_id: teacherId, // Use the determined teacher ID
+        teacher_id: teacherId,
         name,
         description: description || null,
         location,
@@ -106,10 +101,8 @@ export async function createClass(formData: FormData): Promise<ActionResult> {
         fee,
         syllabus: syllabus || null,
         status: 'draft',
-        recurrence_pattern: recurrencePattern || 'none',
-        recurrence_days: recurrenceDays,
-        recurrence_time: recurrenceTime || null,
-        recurrence_duration: recurrenceDuration,
+        schedule_days: scheduleDays,
+        schedule_time: scheduleTime || null,
     });
 
     if (error) {
@@ -157,27 +150,20 @@ export async function updateClass(
         syllabus: syllabus || null,
     };
 
-    const recurrencePattern = formData.get('recurrence_pattern') as string;
-    const recurrenceDaysStr = formData.get('recurrence_days') as string;
-    const recurrenceTime = formData.get('recurrence_time') as string;
-    const recurrenceDurationStr = formData.get('recurrence_duration') as string;
+    const scheduleDaysStr = formData.get('schedule_days') as string;
+    const scheduleTime = formData.get('schedule_time') as string;
 
-    if (recurrencePattern) {
-        updateData.recurrence_pattern = recurrencePattern;
-        
-        if (recurrenceDaysStr) {
-            try {
-                updateData.recurrence_days = JSON.parse(recurrenceDaysStr);
-            } catch (e) {
-                console.error('Failed to parse recurrence_days', e);
-            }
-        } else {
-             updateData.recurrence_days = null;
+    if (scheduleDaysStr) {
+        try {
+            updateData.schedule_days = JSON.parse(scheduleDaysStr);
+        } catch (e) {
+            console.error('Failed to parse schedule_days', e);
         }
-
-        updateData.recurrence_time = recurrenceTime || null;
-        updateData.recurrence_duration = recurrenceDurationStr ? parseInt(recurrenceDurationStr, 10) : null;
+    } else {
+        updateData.schedule_days = null;
     }
+
+    updateData.schedule_time = scheduleTime || null;
 
     // Handle teacher update for admins/schedulers
     if (role === 'admin' || role === 'class_scheduler') {
@@ -187,25 +173,17 @@ export async function updateClass(
         }
     }
 
-    // Allow updating schedule text to keep it in sync with recurrence fields
+    // Allow updating schedule text to keep it in sync with schedule fields
     updateData.schedule = schedule;
 
     // Check for overlaps if schedule fields are present OR teacher is changing
-    // updateData.recurrence_days can be null (explicitly set to null) or undefined (not updated)
-    // If it is undefined, we need to know the existing days to check?
-    // But as discussed, the form sends all fields.
-    // If recurrence_pattern is set in updateData:
-    if ((updateData.recurrence_pattern && updateData.recurrence_pattern !== 'none') || updateData.teacher_id) {
-        // We have new schedule info OR teacher change
-        
+    if ((updateData.schedule_days && updateData.schedule_time) || updateData.teacher_id) {
         let teacherIdToCheck = updateData.teacher_id;
 
         if (!teacherIdToCheck) {
-             // Teacher not changing, need to fetch existing teacher
             if (role === 'teacher') {
                 teacherIdToCheck = user.id;
             } else {
-                 // Admin/Scheduler updating schedule but not teacher
                 const { data: cls } = await supabase.from('classes').select('teacher_id').eq('id', id).single();
                 if (cls) {
                     teacherIdToCheck = cls.teacher_id;
@@ -214,33 +192,16 @@ export async function updateClass(
         }
         
         if (teacherIdToCheck) {
-             // We need full schedule data for check. If partial update, we need to merge with existing?
-             // Form seems to send ALL recurrence data if pattern is set.
-             // But if specific fields are missing in formData, they might be undefined in updateData?
-             // Based on form logic, it sets all values.
-             
-             // If we are JUST updating teacher but keeping schedule?
-             // Form sends existing schedule data hidden or visible.
-             
             const overlapError = await checkScheduleOverlap(
                 supabase,
                 teacherIdToCheck,
                 {
-                    startDate: updateData.start_date || startDate, // use updateData or formData
+                    startDate: updateData.start_date || startDate,
                     endDate: updateData.end_date || endDate,
-                    recurrenceDays: updateData.recurrence_days,
-                    // If updateData.recurrence_days is undefined, it means it wasn't in form?
-                    // But if pattern is set, days should be set.
-                    // If pattern is NOT set, but teacher IS changing?
-                    // We need to fetch existing schedule to check against new teacher's schedule.
-                    // This is getting complex.
-                    // Simplifying assumption: Admin changes teacher, they should re-verify schedule.
-                    // Effectively, if teacher changes, we SHOULD check overlap against new teacher using CURRENT class schedule specific.
-                    // Lets assume for now that if teacher changes, the Form sends the schedule data too.
-                    recurrenceTime: updateData.recurrence_time,
-                    recurrenceDuration: updateData.recurrence_duration
+                    scheduleDays: updateData.schedule_days,
+                    scheduleTime: updateData.schedule_time
                 },
-                id // exclude current class
+                id
             );
 
             if (overlapError) {
@@ -425,22 +386,20 @@ export async function checkScheduleOverlap(
     newClass: {
         startDate: string;
         endDate: string;
-        recurrenceDays: string[] | null;
-        recurrenceTime: string | null;
-        recurrenceDuration: number | null;
+        scheduleDays: string[] | null;
+        scheduleTime: string | null;
     },
     excludeClassId?: string
 ): Promise<string | null> {
-    // If no specific schedule is set (e.g. manual text only), skip strict validation
-    // But for teachers, we rely on recurrence fields now.
-    if (!newClass.recurrenceDays || !newClass.recurrenceTime || !newClass.recurrenceDuration) {
+    // If no specific schedule is set, skip validation
+    if (!newClass.scheduleDays || !newClass.scheduleTime) {
         return null; 
     }
 
     // 1. Fetch all active/draft classes for this teacher
     let query = supabase
         .from('classes')
-        .select('id, name, start_date, end_date, recurrence_days, recurrence_time, recurrence_duration')
+        .select('id, name, start_date, end_date, schedule_days, schedule_time')
         .eq('teacher_id', teacherId)
         .neq('status', 'cancelled');
 
@@ -452,65 +411,48 @@ export async function checkScheduleOverlap(
 
     if (error || !data) {
         console.error('Error fetching classes for overlap check:', error);
-        return null; // Fail open if error? Or fail closed? Currently logically returning null means "no error detected"
+        return null;
     }
 
-    // Cast data to expected type since select string makes inference hard sometimes
     type ClassSchedule = {
         id: string;
         name: string;
         start_date: string;
         end_date: string;
-        recurrence_days: string[] | string | null;
-        recurrence_time: string | null;
-        recurrence_duration: number | null;
+        schedule_days: string[] | string | null;
+        schedule_time: string | null;
     };
     
     const existingClasses = data as unknown as ClassSchedule[];
 
     const newStart = new Date(newClass.startDate);
     const newEnd = new Date(newClass.endDate);
-    
-    // Parse new time
-    const [newRefHour, newRefMin] = newClass.recurrenceTime.split(':').map(Number);
-    const newStartTimeMins = newRefHour * 60 + newRefMin;
-    const newEndTimeMins = newStartTimeMins + newClass.recurrenceDuration;
 
     for (const existing of existingClasses) {
-        // checks
-        if (!existing.recurrence_days || !existing.recurrence_time || !existing.recurrence_duration) {
-            continue; // specific schedule not set, cannot overlap strictly
+        if (!existing.schedule_days || !existing.schedule_time) {
+            continue;
         }
 
         // 1. Check date range overlap
         const exStart = new Date(existing.start_date);
         const exEnd = new Date(existing.end_date);
 
-        // Overlap if (StartA <= EndB) and (EndA >= StartB)
         const dateOverlap = (newStart <= exEnd) && (newEnd >= exStart);
         if (!dateOverlap) continue;
 
         // 2. Check day overlap
-        const exDays = Array.isArray(existing.recurrence_days) 
-            ? existing.recurrence_days as string[]
-            : JSON.parse((existing.recurrence_days as unknown as string) || '[]');
+        const exDays = Array.isArray(existing.schedule_days) 
+            ? existing.schedule_days as string[]
+            : JSON.parse((existing.schedule_days as unknown as string) || '[]');
             
-        const dayOverlap = newClass.recurrenceDays.some(day => exDays.includes(day));
+        const dayOverlap = newClass.scheduleDays.some(day => exDays.includes(day));
         if (!dayOverlap) continue;
 
-        // 3. Check time overlap
-        const [exRefHour, exRefMin] = existing.recurrence_time.split(':').map(Number);
-        const exStartTimeMins = exRefHour * 60 + exRefMin;
-        const exEndTimeMins = exStartTimeMins + existing.recurrence_duration;
-
-        // Overlap if (StartA < EndB) and (EndA > StartB)
-        const timeOverlap = (newStartTimeMins < exEndTimeMins) && (newEndTimeMins > exStartTimeMins);
-
-        if (timeOverlap) {
+        // 3. Check time overlap - exact match (since we use block times)
+        if (newClass.scheduleTime === existing.schedule_time) {
             return `Teacher already has a class scheduled at this time: ${existing.name}`;
         }
     }
 
     return null;
 }
-

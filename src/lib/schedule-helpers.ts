@@ -1,10 +1,8 @@
 export type ScheduleClassData = {
     id: string;
     name: string;
-    recurrence_pattern: string | null;
-    recurrence_days: string[] | null;
-    recurrence_time: string | null;
-    recurrence_duration: number | null;
+    schedule_days: string[] | null;
+    schedule_time: string | null;
     schedule: string | null;
     teacher_id: string;
     teacher: {
@@ -28,22 +26,17 @@ export function getClassesForBlock(classes: ScheduleClassData[], day: string, bl
 
         // Check against each target day
         return targetDays.some(targetDay => {
-            // Check structured data
-            if (cls.recurrence_pattern === 'weekly' || cls.recurrence_pattern === 'biweekly') {
-                if (!cls.recurrence_days || !cls.recurrence_days.includes(targetDay.toLowerCase())) return false;
-                
-                // Strict match on start time since we migrated the data
-                return cls.recurrence_time === blockStartTime;
-            }
-            return false;
+            // Check if class is scheduled on this day
+            if (!cls.schedule_days || !cls.schedule_days.includes(targetDay.toLowerCase())) return false;
+            
+            // Strict match on start time
+            return cls.schedule_time === blockStartTime;
         });
     });
 }
 
-export function formatScheduleText(pattern: string, days: string[] | null, time: string | null): string {
-    if (pattern === 'none' || !pattern) return '';
-    
-    let text = pattern.charAt(0).toUpperCase() + pattern.slice(1);
+export function formatScheduleText(days: string[] | null, time: string | null): string {
+    if (!days || days.length === 0) return '';
     
     // Parse days if string
     let dayArray: string[] = [];
@@ -55,9 +48,10 @@ export function formatScheduleText(pattern: string, days: string[] | null, time:
         } catch {}
     }
 
+    let text = '';
     if (dayArray.length > 0) {
         const dayLabels = dayArray.map(d => d.charAt(0).toUpperCase() + d.slice(1));
-        text += ` on ${dayLabels.join(', ')}`;
+        text = dayLabels.join(', ');
     }
 
     if (time) {
