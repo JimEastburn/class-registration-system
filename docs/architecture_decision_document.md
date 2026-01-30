@@ -1,4 +1,5 @@
 # Architecture Decision Document
+
 ## Class Registration System
 
 ---
@@ -9,7 +10,7 @@ This document outlines the architectural decisions for building a class registra
 
 - **User authentication** for parents, teachers, and students
 - **Family management** (parents, children, contact information)
-- **Class creation and management** by teachers
+- **Class creation and management** by teachers and class schedulers
 - **Class enrollment** by parents for their children
 - **Schedule viewing** for students
 - **Payment processing** for class registration fees
@@ -19,24 +20,27 @@ This document outlines the architectural decisions for building a class registra
 ## User Review Required
 
 > [!IMPORTANT]
-> **Technology Stack Selection**: The recommendations below favor **Next.js** with **Vercel** hosting and **Stripe** for payments. Please review the alternatives and confirm or redirect based on budget constraints, team expertise, or other factors.
+> **Technology Stack Selection**:
+> **Next.js** with **Vercel** hosting and **Stripe** for payments.
 
 > [!IMPORTANT]
-> **Database Choice**: This document recommends **Supabase** (PostgreSQL) for its built-in auth and real-time capabilities. If you have existing database infrastructure or prefer a different approach, please provide guidance.
+> **Database Choice**:
+> **Supabase** (PostgreSQL) for its built-in auth and real-time capabilities.
 
 ---
 
 ## System Requirements Summary
 
-Based on [REGISTRATION_SYSTEM_DESCRIPTION.md](file:///Users/jam/Documents/repos-personal/class-registration-system/REGISTRATION_SYSTEM_DESCRIPTION.md):
+Based on [REGISTRATION_SYSTEM_DESCRIPTION.md](docs/REGISTRATION_SYSTEM_DESCRIPTION.md):
 
-| Entity | Description |
-|--------|-------------|
-| **Student** | Middle/high school students who can view schedules, class materials, and locations |
-| **Parent** | Can login, manage family info, enroll children in classes, make payments |
-| **Teacher** | Can login, create classes, view their classes, schedules, and enrolled students |
-| **Class** | Has schedule, materials/syllabus, location, teacher, and enrolled students |
-| **Family** | Parents can have multiple family members; students can have multiple family members |
+| Entity              | Description                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------------- |
+| **Student**         | Can login, view schedules, class materials, and locations                                 |
+| **Parent**          | Can login, manage family info, enroll children in classes, make payments                  |
+| **Teacher**         | Can login, create classes, view their classes, schedules, and enrolled students           |
+| **Class Scheduler** | Can login, create classes, view every teacher's classes, schedules, and enrolled students |
+| **Class**           | Has schedule, materials/syllabus, location, teacher, and enrolled students                |
+| **Family**          | Parents can have multiple family members; students can have multiple family members       |
 
 ---
 
@@ -44,28 +48,33 @@ Based on [REGISTRATION_SYSTEM_DESCRIPTION.md](file:///Users/jam/Documents/repos-
 
 ### Options Evaluated
 
-| Platform | Best For | CRUD Suitability | Pricing Model |
-|----------|----------|------------------|---------------|
-| **Netlify** | Jamstack, static sites | Good with serverless functions + Netlify DB | Credit-based, generous free tier |
-| **Vercel** | Next.js, React apps | Excellent with Vercel Postgres | Credit-based, free tier available |
-| **Render** | Full-stack, Docker apps | Excellent with native PostgreSQL | Transparent pricing, free tier |
+| Platform    | Best For                | CRUD Suitability                            | Pricing Model                     |
+| ----------- | ----------------------- | ------------------------------------------- | --------------------------------- |
+| **Netlify** | Jamstack, static sites  | Good with serverless functions + Netlify DB | Credit-based, generous free tier  |
+| **Vercel**  | Next.js, React apps     | Excellent with Vercel Postgres              | Credit-based, free tier available |
+| **Render**  | Full-stack, Docker apps | Excellent with native PostgreSQL            | Transparent pricing, free tier    |
 
 ### Analysis
 
 #### Netlify
+
 **Pros:**
+
 - Excellent for static/Jamstack sites
 - Netlify DB (Neon-powered) for serverless PostgreSQL
 - Strong CDN and global edge network
 - Good third-party integrations (Supabase, DigitalOcean)
 
 **Cons:**
+
 - Server functions are secondary to static hosting
 - Less optimal for highly dynamic CRUD applications
 - Can become complex for full-stack apps
 
 #### Vercel
+
 **Pros:**
+
 - Superior developer experience for Next.js
 - Integrated serverless functions and Edge Functions
 - Vercel Postgres, Redis, and Blob storage
@@ -73,12 +82,15 @@ Based on [REGISTRATION_SYSTEM_DESCRIPTION.md](file:///Users/jam/Documents/repos-
 - Excellent preview deployments and CI/CD
 
 **Cons:**
+
 - Higher costs for heavy dynamic usage
 - Primarily optimized for frontend-heavy apps
 - Vendor lock-in with Vercel-specific features
 
 #### Render
+
 **Pros:**
+
 - True full-stack platform with persistent services
 - Native PostgreSQL with autoscaling
 - Docker support for customization
@@ -87,6 +99,7 @@ Based on [REGISTRATION_SYSTEM_DESCRIPTION.md](file:///Users/jam/Documents/repos-
 - Cron jobs for scheduled tasks
 
 **Cons:**
+
 - Less focus on edge/serverless patterns
 - Smaller community than Vercel/Netlify
 - Manual scaling configuration needed
@@ -103,16 +116,18 @@ Based on [REGISTRATION_SYSTEM_DESCRIPTION.md](file:///Users/jam/Documents/repos-
 
 ### Options Evaluated
 
-| Framework | Base Library | Learning Curve | Ecosystem | CRUD Fit |
-|-----------|--------------|----------------|-----------|----------|
-| **Next.js 14+** | React | Moderate | Extensive | Excellent |
-| **Remix** | React | Moderate | Growing | Excellent |
-| **SvelteKit** | Svelte | Low | Smaller | Excellent |
+| Framework       | Base Library | Learning Curve | Ecosystem | CRUD Fit  |
+| --------------- | ------------ | -------------- | --------- | --------- |
+| **Next.js 14+** | React        | Moderate       | Extensive | Excellent |
+| **Remix**       | React        | Moderate       | Growing   | Excellent |
+| **SvelteKit**   | Svelte       | Low            | Smaller   | Excellent |
 
 ### Analysis
 
 #### Next.js 14+ (App Router)
+
 **Pros:**
+
 - Largest ecosystem and community
 - Server Actions for form handling (perfect for CRUD)
 - Server Components reduce client-side JS
@@ -121,12 +136,15 @@ Based on [REGISTRATION_SYSTEM_DESCRIPTION.md](file:///Users/jam/Documents/repos-
 - Strong TypeScript support
 
 **Cons:**
+
 - App Router can be complex to master
 - Opinionated about routing structure
 - Some features are Vercel-optimized
 
 #### Remix
+
 **Pros:**
+
 - Progressive enhancement by default
 - `loader`/`action` pattern excellent for CRUD
 - Nested routing simplifies complex layouts
@@ -134,18 +152,22 @@ Based on [REGISTRATION_SYSTEM_DESCRIPTION.md](file:///Users/jam/Documents/repos-
 - Better for slow/unstable connections
 
 **Cons:**
+
 - Smaller ecosystem
 - Documentation still maturing
 - Less community resources for troubleshooting
 
 #### SvelteKit
+
 **Pros:**
+
 - Smallest bundle sizes
 - Most intuitive syntax
 - Excellent performance out of the box
 - Good for rapid prototyping
 
 **Cons:**
+
 - Smallest ecosystem
 - Fewer developers in the market
 - Less AI/tooling support
@@ -163,12 +185,12 @@ Based on [REGISTRATION_SYSTEM_DESCRIPTION.md](file:///Users/jam/Documents/repos-
 
 ### Options Evaluated
 
-| Database | Type | Auth Built-in | Real-time | Hosting |
-|----------|------|---------------|-----------|---------|
-| **Supabase** | PostgreSQL | Yes | Yes | Managed |
-| **Vercel Postgres** | PostgreSQL | No | No | Managed |
-| **PlanetScale** | MySQL | No | No | Managed |
-| **Render PostgreSQL** | PostgreSQL | No | No | Managed |
+| Database              | Type       | Auth Built-in | Real-time | Hosting |
+| --------------------- | ---------- | ------------- | --------- | ------- |
+| **Supabase**          | PostgreSQL | Yes           | Yes       | Managed |
+| **Vercel Postgres**   | PostgreSQL | No            | No        | Managed |
+| **PlanetScale**       | MySQL      | No            | No        | Managed |
+| **Render PostgreSQL** | PostgreSQL | No            | No        | Managed |
 
 ### Recommendation
 
@@ -178,81 +200,24 @@ Based on [REGISTRATION_SYSTEM_DESCRIPTION.md](file:///Users/jam/Documents/repos-
 
 ### Data Model Overview
 
-```mermaid
-erDiagram
-    USER ||--o{ FAMILY_MEMBER : "has"
-    USER ||--o{ CLASS : "teaches"
-    FAMILY_MEMBER ||--o{ ENROLLMENT : "has"
-    CLASS ||--o{ ENROLLMENT : "has"
-    CLASS ||--|| TEACHER : "taught by"
-    ENROLLMENT ||--o| PAYMENT : "requires"
-    
-    USER {
-        uuid id PK
-        string email UK
-        string role "parent|teacher|student"
-        string phone
-        timestamp created_at
-    }
-    
-    FAMILY_MEMBER {
-        uuid id PK
-        uuid parent_id FK
-        string first_name
-        string last_name
-        string grade_level
-        string relationship "child|spouse|other"
-    }
-    
-    CLASS {
-        uuid id PK
-        uuid teacher_id FK
-        string name
-        text description
-        text syllabus
-        string location
-        timestamp start_time
-        timestamp end_time
-        string recurrence
-        int max_students
-        decimal fee
-    }
-    
-    ENROLLMENT {
-        uuid id PK
-        uuid student_id FK
-        uuid class_id FK
-        string status "pending|confirmed|cancelled"
-        timestamp enrolled_at
-    }
-    
-    PAYMENT {
-        uuid id PK
-        uuid enrollment_id FK
-        decimal amount
-        string status "pending|completed|refunded"
-        string payment_provider
-        string transaction_id
-        timestamp paid_at
-    }
-```
-
 ---
 
 ## Decision 4: Payment Integration
 
 ### Options Evaluated
 
-| Provider | Online | In-Person | API Quality | Fees | School Use |
-|----------|--------|-----------|-------------|------|------------|
-| **Stripe** | Excellent | Good | Best | 2.9% + $0.30 | Excellent |
-| **Square** | Good | Excellent | Good | 2.6% + $0.10 | Good |
-| **PayPal** | Good | Limited | Good | 2.9% + $0.49 | Good |
+| Provider   | Online    | In-Person | API Quality | Fees         | School Use |
+| ---------- | --------- | --------- | ----------- | ------------ | ---------- |
+| **Stripe** | Excellent | Good      | Best        | 2.9% + $0.30 | Excellent  |
+| **Square** | Good      | Excellent | Good        | 2.6% + $0.10 | Good       |
+| **PayPal** | Good      | Limited   | Good        | 2.9% + $0.49 | Good       |
 
 ### Analysis
 
 #### Stripe
+
 **Pros:**
+
 - Best-in-class API and documentation
 - Excellent developer experience
 - Stripe Connect for marketplace payments (teacher payments)
@@ -262,30 +227,37 @@ erDiagram
 - 135+ currency support
 
 **Cons:**
+
 - Slightly higher transaction fees
 - No point-of-sale hardware focus
 - Requires development resources for advanced customization
 
 #### Square
+
 **Pros:**
+
 - Excellent for in-person payments (school events)
 - Strong inventory management
 - Lower per-transaction fees
 - Good invoicing features
 
 **Cons:**
+
 - API less flexible than Stripe
 - Primarily designed for small businesses with physical presence
 - Fewer currency options
 
 #### PayPal
+
 **Pros:**
+
 - Highest brand recognition
 - Parents likely already have accounts
 - Good for international payments
 - Buyer protection increases trust
 
 **Cons:**
+
 - Higher chargeback fees ($20 vs $15)
 - Less modern API experience
 - Account holds can be problematic
@@ -306,7 +278,7 @@ sequenceDiagram
     participant API
     participant Stripe
     participant Database
-    
+
     Parent->>Frontend: Select class, click Enroll
     Frontend->>API: Create enrollment (pending)
     API->>Database: Save enrollment (status: pending)
@@ -350,7 +322,8 @@ flowchart TD
     H -->|Teacher| J[Teacher Dashboard]
     H -->|Student| K[Student Dashboard]
     H -->|Admin| L[Admin Dashboard]
-    
+    H -->|Class Scheduler| M[Class Scheduler Dashboard]
+
     subgraph "Source of Truth"
         L --> M[(Profiles Table)]
         I --> M
@@ -364,10 +337,13 @@ flowchart TD
 ## Decision 7: Role Source of Truth
 
 ### Decision
+
 The `public.profiles` table is the **single source of truth** for user roles and permissions.
 
 ### Rationale
+
 Previously, the system partially relied on `user_metadata` within the Supabase Auth session. However, metadata can become stale when a role is changed in the database. By refactoring the `signIn` action and all `layout.tsx` files to fetch the role directly from the `profiles` table:
+
 - Role changes take effect immediately without requiring a logout.
 - Direct database updates (e.g., via Admin Portal) are instantly recognized by the application.
 - Security is hardened as authorization is verified against the database on every page load.
@@ -377,10 +353,13 @@ Previously, the system partially relied on `user_metadata` within the Supabase A
 ## Decision 8: Multi-Role Portal Access
 
 ### Decision
+
 Administrators and Teachers are granted access to the **Parent Portal** to manage personal family data.
 
 ### Rationale
+
 In a school system, both administrators and teachers often have children enrolled as students. Strictly separating roles would prevent them from enrolling their own children.
+
 - **Access**: The `/parent` layout allows `parent`, `teacher`, and `admin` roles.
 - **Switching**: A "Portal Switcher" is provided in the `DashboardLayout` for users with `admin` or `teacher` roles, allowing them to toggle between their professional portal and the personal Parent view.
 - **Consistency**: All family and enrollment data remains linked to the user's UUID.
@@ -390,10 +369,13 @@ In a school system, both administrators and teachers often have children enrolle
 ## Decision 9: Profile Self-Healing
 
 ### Decision
+
 The system implements a "Belt and Suspenders" approach to profile management.
 
 ### Rationale
+
 To prevent foreign key violations, every authenticated user must have a profile record.
+
 1. **Hardened Trigger**: The `handle_new_user` Postgres trigger uses `ON CONFLICT DO NOTHING` to prevent registration failures if a profile already exists.
 2. **SignIn Fallback**: The `signIn` server action includes a check to verify a profile exists and creates one if it's missing. This handles cases where users are created manually in the Supabase dashboard or if the database trigger fails.
 
@@ -402,6 +384,7 @@ To prevent foreign key violations, every authenticated user must have a profile 
 **shadcn/ui** – A collection of accessible, customizable components built on Radix UI primitives.
 
 **Why shadcn/ui:**
+
 - Copy-paste components (no dependency)
 - Full control over styling
 - Built for accessibility
@@ -413,15 +396,15 @@ To prevent foreign key violations, every authenticated user must have a profile 
 
 ## Technology Stack Summary
 
-| Layer | Technology | Rationale |
-|-------|-----------|-----------|
-| **Frontend** | Next.js 14+ (App Router) | Server Components, Server Actions, best ecosystem |
-| **Styling** | Tailwind CSS + shadcn/ui | Rapid development, accessible components |
-| **Database** | Supabase (PostgreSQL) | Built-in auth, RLS, real-time, generous free tier |
-| **Authentication** | Supabase Auth | Integrated with database, multiple providers |
-| **Payments** | Stripe (primary) + PayPal (optional) | Best API, Connect for marketplace |
-| **Hosting** | Vercel | Optimal for Next.js, easy deployment |
-| **ORM** | Prisma or Drizzle | Type-safe database queries |
+| Layer              | Technology                           | Rationale                                         |
+| ------------------ | ------------------------------------ | ------------------------------------------------- |
+| **Frontend**       | Next.js 14+ (App Router)             | Server Components, Server Actions, best ecosystem |
+| **Styling**        | Tailwind CSS + shadcn/ui             | Rapid development, accessible components          |
+| **Database**       | Supabase (PostgreSQL)                | Built-in auth, RLS, real-time, generous free tier |
+| **Authentication** | Supabase Auth                        | Integrated with database, multiple providers      |
+| **Payments**       | Stripe (primary) + PayPal (optional) | Best API, Connect for marketplace                 |
+| **Hosting**        | Vercel                               | Optimal for Next.js, easy deployment              |
+| **ORM**            | Prisma or Drizzle                    | Type-safe database queries                        |
 
 ---
 
@@ -432,25 +415,25 @@ flowchart TB
     subgraph "Client Layer"
         A[Browser]
     end
-    
+
     subgraph "Edge/CDN Layer"
         B[Vercel Edge Network]
     end
-    
+
     subgraph "Application Layer"
         C[Next.js App Router]
         D[Server Components]
         E[Server Actions]
         F[API Routes]
     end
-    
+
     subgraph "Service Layer"
         G[Supabase Auth]
         H[Supabase Database]
         I[Stripe API]
         J[PayPal API]
     end
-    
+
     A --> B
     B --> C
     C --> D
@@ -469,12 +452,12 @@ flowchart TB
 
 ### Environments
 
-| Environment | Purpose | URL Pattern |
-|-------------|---------|-------------|
-| Development | Local development | `localhost:3000` |
-| Preview | PR previews, testing | `pr-{number}.vercel.app` |
-| Staging | Pre-production testing | `staging.{domain}.com` |
-| Production | Live application | `{domain}.com` |
+| Environment | Purpose                | URL Pattern              |
+| ----------- | ---------------------- | ------------------------ |
+| Development | Local development      | `localhost:3000`         |
+| Preview     | PR previews, testing   | `pr-{number}.vercel.app` |
+| Staging     | Pre-production testing | `staging.{domain}.com`   |
+| Production  | Live application       | `{domain}.com`           |
 
 ### CI/CD Pipeline
 
@@ -494,11 +477,11 @@ flowchart LR
 
 ## Cost Estimates (Monthly)
 
-| Service | Free Tier | Paid Estimate |
-|---------|-----------|---------------|
-| Vercel | Generous free tier | ~$20/mo (Pro) |
-| Supabase | 500MB DB, 1GB bandwidth | ~$25/mo (Pro) |
-| Stripe | No monthly fee | 2.9% + $0.30 per transaction |
+| Service  | Free Tier               | Paid Estimate                |
+| -------- | ----------------------- | ---------------------------- |
+| Vercel   | Generous free tier      | ~$20/mo (Pro)                |
+| Supabase | 500MB DB, 1GB bandwidth | ~$25/mo (Pro)                |
+| Stripe   | No monthly fee          | 2.9% + $0.30 per transaction |
 
 **Estimated Monthly Cost (Initial):** $0 - $50 depending on usage
 
@@ -522,6 +505,7 @@ flowchart LR
 ### If Budget is Extremely Limited
 
 Consider **Render** with a traditional Express.js or Fastify backend, which offers:
+
 - Free PostgreSQL (with limitations)
 - Simple Docker deployments
 - No cold starts

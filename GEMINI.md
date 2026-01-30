@@ -1,13 +1,13 @@
 # Project Guidelines
 
-Use Context7 MCP server if that helps you.
+Use Context7 MCP server.
 Reminder that database schema changes may need to have a migration script created in the `db/migrations` directory.
 Write tests for all new code first, run the tests to make sure they fail, then write the code to make the tests pass. Run the tests again to make sure they pass.
 
 ## Tech Stack
 
 - **Framework**: Next.js 16 (App Router, Turbopack)
-- **Language**: TypeScript
+- **Language**: TypeScript, React 19.2.0
 - **Styling**: Tailwind CSS v4 + shadcn/ui
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
@@ -24,7 +24,8 @@ src/
 │   │   ├── parent/        # Parent portal
 │   │   ├── teacher/       # Teacher portal
 │   │   ├── student/       # Student portal
-│   │   └── admin/         # Admin portal
+│   │   ├── admin/         # Admin portal
+│   │   └── class-scheduler/ # Class Scheduler portal
 │   └── api/               # API routes (checkout, webhooks)
 ├── components/
 │   ├── ui/                # shadcn/ui components
@@ -33,7 +34,8 @@ src/
 │   ├── classes/           # Class & enrollment components
 │   ├── dashboard/         # Shared dashboard layout
 │   ├── family/            # Family member components
-│   └── payments/          # Payment components
+│   ├── payments/          # Payment components
+│   └── class-scheduler/   # Class Scheduler components
 ├── lib/
 │   ├── supabase/          # Supabase client config
 │   ├── actions/           # Server actions
@@ -59,6 +61,7 @@ npm run dev    # Start dev server (Turbopack)
 npm run build  # Production build
 npm run lint   # Run ESLint
 npm run test   # Run all tests
+
 ```
 
 ## Environment Variables
@@ -82,12 +85,12 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ## User Roles
 
-| Role | Access |
-|------|--------|
-| `parent` | Manage family, enroll children, pay fees |
+| Role      | Access                                                      |
+| --------- | ----------------------------------------------------------- |
+| `parent`  | Manage family, enroll children, pay fees                    |
 | `teacher` | Create/manage classes, view students, AND manage own family |
-| `student` | View schedule and class details |
-| `admin` | Full system access, data exports, AND manage own family |
+| `student` | View schedule and class details                             |
+| `admin`   | Full system access, data exports, AND manage own family     |
 
 ## Safety & Integrity Constraints
 
@@ -97,4 +100,4 @@ The following business logic safeguards are strictly enforced:
 - **Fault Tolerance**: Zoho sync failures do not block enrollment confirmation. Data is preserved for later manual or automated retry.
 - **Capacity Hand-off**: Class capacity is atomically checked. Vacated spots (cancellations/deletions) correctly release capacity for the waitlist.
 - **CSV Hardening**: All administrative data exports are escaped using `'` to prevent spreadsheet formula injection.
-- **Privilege Revocation**: Role demotions (Admin/Teacher -> Parent) immediately revoke all elevated action access.
+- **Privilege Revocation**: Role demotions (Admin/Teacher/Class Scheduler -> Parent) immediately revoke all elevated action access.

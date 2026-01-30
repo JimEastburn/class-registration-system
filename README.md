@@ -19,6 +19,7 @@ A web-based class registration system for middle and high school students, built
 - 👨‍🏫 **Teacher Portal**: Manage own classes AND their own family members (Dual-Role support).
 - 👨‍🎓 **Student Portal**: View class schedule, materials, and locations.
 - 🛠️ **Admin Portal**: Full system access, users management, and data exports.
+- **Class Schedule Portal**: Schedule classes
 - 💳 **Reliable Payments**: Secure Stripe integration with idempotency safeguards.
 - 📊 **Accounting Sync**: Automatic synchronization of payments to Zoho Books.
 
@@ -44,24 +45,28 @@ The system implements mission-critical safeguards to ensure data integrity:
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone <repository-url>
    cd class-registration-system
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
 
 3. Set up environment variables:
+
    ```bash
    cp .env.example .env.local
    ```
-   
+
    Then edit `.env.local` with your Supabase and Stripe credentials.
 
 4. Run the development server:
+
    ```bash
    npm run dev
    ```
@@ -96,8 +101,6 @@ src/
 
 ## Testing
 
-The system is backed by a comprehensive test suite of **217+ tests** covering unit, integration, and security boundaries.
-
 ```bash
 # Run all tests (Vitest + Playwright)
 npm test
@@ -115,10 +118,10 @@ For more detailed information, refer to the [Testing Guide](./docs/TESTING.md).
 
 The application is deployed to Vercel with the following environments:
 
-| Environment | URL |
-|-------------|-----|
+| Environment    | URL                                              |
+| -------------- | ------------------------------------------------ |
 | **Production** | https://class-registration-system-two.vercel.app |
-| **Preview** | Created per-branch on push or via CLI |
+| **Preview**    | Created per-branch on push or via CLI            |
 
 ### Quick Commands
 
