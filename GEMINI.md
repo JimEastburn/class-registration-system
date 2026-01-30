@@ -52,7 +52,12 @@ src/
 - [Zoho Integration Flow](./docs/zoho_integration_flow.md)
 - [Deployment Guide](./docs/DEPLOYMENT.md)
 - [Testing Guide](./docs/TESTING.md)
+- [Manual Testing Guide](./docs/MANUAL_TESTING.md)
+- [Design System](./docs/DESIGN_SYSTEM.md)
 - [Task List](./docs/TASKS.md)
+
+> [!NOTE]
+> Skills are available in the `.agent/skills` directory.
 
 ## Development Commands
 
