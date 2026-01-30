@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "brand_name": "Austin AAC",
+    "description": "Core design tokens for UI implementation."
+  },
+  "colors": {
+    "primary": {
+      "DEFAULT": "#4c7c92",
+      "hover": "#3a6174",
+      "foreground": "#FFFFFF"
+    },
+    "secondary": {
+      "DEFAULT": "#9BBFD3",
+      "foreground": "#FFFFFF"
+    },
+    "background": "#F8FAF8",
+    "foreground": "#334155",
+    "muted": "#F1F5F9",
+    "accent": "#FBBF24",
+    "destructive": "#EF4444",
+    "success": "#10B981",
+    "warning": "#F59E0B",
+    "info": "#3B82F6"
+  },
+  "typography": {
+    "font_family_headings": ["Inter", "sans-serif"],
+    "font_family_body": ["Inter", "sans-serif"],
+    "font_weight_bold": "700",
+    "font_weight_normal": "400"
+  },
+  "ui": {
+    "border_radius_default": "0.5rem",
+    "border_radius_small": "0.25rem",
+    "spacing_base_unit": "4px"
+  }
+}
