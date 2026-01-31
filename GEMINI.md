@@ -14,6 +14,22 @@ Write tests for all new code first, run the tests to make sure they fail, then w
 - **Payments**: Stripe
 - **Validation**: Zod
 
+## Context7 Library IDs
+
+Use these pre-resolved Library IDs when querying Context7 to ensure version compatibility. Run `resolve-library-id` if these are missing or outdated.
+
+| Library          | Version         | Context7 ID                   |
+| ---------------- | --------------- | ----------------------------- |
+| **Next.js**      | 16 (App Router) | `/vercel/next.js`             |
+| **React**        | 19              | `/facebook/react`             |
+| **Tailwind CSS** | v4              | `/websites/tailwindcss`       |
+| **Supabase**     | Latest          | `/supabase/supabase-js`       |
+| **Stripe**       | Latest          | `/stripe/stripe-node`         |
+| **Zod**          | v4              | `/colinhacks/zod`             |
+| **Shadcn/UI**    | Latest          | `/shadcn-ui/ui`               |
+| **Resend**       | Latest          | `/resend/resend-node`         |
+| **Zoho Books**   | v3 API          | `/websites/zoho_books_api_v3` |
+
 ## Project Structure
 
 ```
