@@ -82,15 +82,17 @@ type ActionResult = {
 | **Scheduler**   | `scheduler.ts`   | Advanced scheduling logic, detecting overlaps (referenced in `classes.ts`).                                  |
 | **Admin**       | `admin.ts`       | User role management, potentially high-level overrides.                                                      |
 | **Waitlist**    | `waitlist.ts`    | Managing class waitlists when capacity is full.                                                              |
-| **Invites**     | `invites.ts`     | Handling teacher/student invitations (if applicable).                                                        |
-| **Refunds**     | `refunds.ts`     | Processing logic for refunds (likely interfacing with Stripe/DB).                                            |
+| **Invites**     | `invites.ts`     | Handling student linking via email invites (Refactoring from codes to email).                                |
+| **Refunds**     | `refunds.ts`     | Processing logic for refunds (Stripe integration).                                                           |
+| **Materials**   | `materials.ts`   | Managing class resources (PDFs, URLs) and access control.                                                    |
+| **Settings**    | `settings.ts`    | **[Planned]** Global system configuration (e.g., Semester Dates, Registration Windows).                      |
 
 ### Key Workflows
 
 #### Class Creation (`classes.ts`)
 
 - **Function**: `createClass(formData)`
-- **Permissions**: Teacher, Admin, Class Scheduler.
+- **Permissions**: Teacher, Admin, Class Scheduler, Super Admin (Universal).
 - **Validation**: Checks for schedule overlaps (`checkScheduleOverlap`).
 - **Defaults**: If created by a Teacher, schedule is "To Be Announced" by default until finalized by a scheduler.
 

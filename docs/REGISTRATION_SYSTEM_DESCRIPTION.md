@@ -15,6 +15,7 @@ This system enables parents to manage their families and enroll children in clas
 | **Student**         | View class schedule, materials, and locations.                                                                                                                                                                        |
 | **Admin**           | Full system access - manage all users, classes, enrollments, payments. **Note**: Admins can also access the Parent Portal to manage their own family data. Admins can also be Teachers, Parents, or Class Schedulers. |
 | **Class Scheduler** | View and create every teacher's classes, schedules, and enrolled students. **Note**: Class Schedulers can also be Parents, but cannot be Teachers or Admins.                                                          |
+| **Super Admin**     | **God Mode** access. Can access ALL portals (Admin, Teacher, Scheduler, Parent) via a global view switcher. Bypass all RLS database policies.                                                                         |
 
 ## Core Features
 
@@ -24,12 +25,14 @@ This system enables parents to manage their families and enroll children in clas
 - Role-based access control (parent, teacher, student, admin, class scheduler)
 - Protected routes with automatic redirects
 - Session management via Supabase Auth
+- **Profile View Switching**: Multi-role users (e.g., Teachers who are also Parents) can toggle between their views without logging out.
+- **Super Admin Bypass**: Super Admins can switch to ANY view for debugging and management.
 
 ### Parent Portal (`/parent`)
 
 - **Dashboard** - Overview of family, enrollments, and quick actions
 - **Family Management** - Add, edit, delete family members (children)
-- **Student Linking** - Add their children's email addresses to link their accounts to the family.
+- **Student Linking** - Link child accounts via email (prevents double-linking).
 - **Class Browsing** - View available classes with teacher info and availability
 - **Enrollment** - Enroll children in classes
 - **Payments** - Pay enrollment fees via Stripe
@@ -39,7 +42,9 @@ This system enables parents to manage their families and enroll children in clas
 - **Dashboard** - Overview of classes and student counts
 - **Class Management** - Create, edit, delete classes
 - **Class Status** - Publish (draft → active), complete, or cancel classes
+- **Class Materials** - Upload and manage resources (PDFs, links) for students.
 - **Student Roster** - View enrolled students per class
+- **Student Management** - Block/Unblock students from enrolling.
 
 ### Student Portal (`/student`)
 
@@ -52,8 +57,10 @@ This system enables parents to manage their families and enroll children in clas
 - **Dashboard** - System-wide stats and recent activity
 - **User Management** - View all users, change roles, delete accounts
 - **Class Management** - View/edit/delete any class
-- **Enrollment Management** - View/edit/delete any enrollment
+- **Enrollment Management** - Force add/remove/cancel enrollments. Refund processing reverts enrollment status.
 - **Payment Management** - View all payments, update status, revenue tracking
+- **System Configuration** - Manage global settings (e.g., Registration Open Date).
+- **Role Management** - Promote/Demote users (enforcing constraints like "Teachers cannot be Class Schedulers").
 
 ### Class Scheduler Portal (`/class-scheduler`)
 

@@ -4,9 +4,9 @@ This guide covers deploying the Class Registration System to Vercel.
 
 ## Live Environments
 
-| Environment | URL |
-|-------------|-----|
-| **Production** | https://class-registration-system-two.vercel.app |
+| Environment          | URL                                                                |
+| -------------------- | ------------------------------------------------------------------ |
+| **Production**       | https://class-registration-system-two.vercel.app                   |
 | **Vercel Dashboard** | https://vercel.com/jimeastburns-projects/class-registration-system |
 
 ## Quick CLI Commands
@@ -41,24 +41,43 @@ npx vercel env pull
 In the Vercel project settings, add these environment variables:
 
 ### Supabase
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (for webhooks) |
+
+| Variable                        | Description                              |
+| ------------------------------- | ---------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Your Supabase project URL                |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key                 |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Supabase service role key (for webhooks) |
 
 ### Stripe
-| Variable | Description |
-|----------|-------------|
-| `STRIPE_SECRET_KEY` | Stripe secret key (use `sk_live_` for production) |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key |
-| `STRIPE_WEBHOOK_SECRET` | Webhook signing secret (see Step 4) |
+
+| Variable                             | Description                                       |
+| ------------------------------------ | ------------------------------------------------- |
+| `STRIPE_SECRET_KEY`                  | Stripe secret key (use `sk_live_` for production) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key                            |
+| `STRIPE_WEBHOOK_SECRET`              | Webhook signing secret (see Step 4)               |
 
 ### Application
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_APP_URL` | Your Vercel deployment URL (e.g., `https://your-app.vercel.app`) |
-| `BYPASS_EMAIL_CONFIRMATION` | Set to `true` to skip email verification (use for testing) |
+
+| Variable                    | Description                                                      |
+| --------------------------- | ---------------------------------------------------------------- |
+| `NEXT_PUBLIC_APP_URL`       | Your Vercel deployment URL (e.g., `https://your-app.vercel.app`) |
+| `BYPASS_EMAIL_CONFIRMATION` | Set to `true` to skip email verification (use for testing)       |
+
+### Resend (Emails)
+
+| Variable             | Description                                             |
+| -------------------- | ------------------------------------------------------- |
+| `RESEND_API_KEY`     | API Key from Resend Dashboard                           |
+| `EMAIL_FROM_ADDRESS` | Verified sender address (e.g., `onboarding@resend.dev`) |
+
+### Zoho Books (Accounting)
+
+| Variable               | Description                             |
+| ---------------------- | --------------------------------------- |
+| `ZOHO_CLIENT_ID`       | OAuth Client ID                         |
+| `ZOHO_CLIENT_SECRET`   | OAuth Client Secret                     |
+| `ZOHO_ORGANIZATION_ID` | Your Zoho Books Org ID                  |
+| `ZOHO_REFRESH_TOKEN`   | Long-lived refresh token for API access |
 
 ## Step 3: Deploy
 
@@ -94,13 +113,14 @@ npm run test:coverage
 1. Go to your Supabase project
 2. Navigate to **SQL Editor**
 3. Run the following migration files in order:
-    - `supabase/migrations/001_initial_schema.sql` (Initial Setup)
-    - `supabase/migrations/004_waitlist.sql` (Waitlist feature)
-    - `supabase/migrations/005_recurring_schedules.sql` (Recurring Schedules)
-    - `supabase/migrations/006_class_materials.sql` (Class Materials)
-    - `supabase/migrations/20260122112000_robust_profile_trigger.sql` (Robust Profile Trigger)
+   - `supabase/migrations/001_initial_schema.sql` (Initial Setup)
+   - `supabase/migrations/004_waitlist.sql` (Waitlist feature)
+   - `supabase/migrations/005_recurring_schedules.sql` (Recurring Schedules)
+   - `supabase/migrations/006_class_materials.sql` (Class Materials)
+   - `supabase/migrations/20260122112000_robust_profile_trigger.sql` (Robust Profile Trigger)
 
 Or, if you have the Supabase CLI installed, you can simply run:
+
 ```bash
 supabase db push
 ```
@@ -110,31 +130,53 @@ supabase db push
 1. Register a new account at `/register`
 2. In Supabase SQL Editor, run:
    ```sql
-   UPDATE profiles SET role = 'admin' WHERE email = 'your-email@example.com';
+   -- Create a profile if it doesn't exist
+   INSERT INTO profiles (id, email, role, first_name, last_name)
+   VALUES ('user_uuid_here', 'your-email@example.com', 'super_admin', 'Admin', 'User')
+   ON CONFLICT (id) DO UPDATE SET role = 'super_admin';
    ```
+
+## Step 7: CI/CD Pipeline Setup
+
+To match the project tasks (`docs/TASKS.md`), configure the following pipeline in Vercel:
+
+1.  **Preview Environment**:
+    - **Trigger**: Any Pull Request.
+    - **Action**: Automatically deploys a unique preview URL.
+2.  **Staging Environment**:
+    - **Trigger**: Push to `main` (or `develop` if using GitFlow).
+    - **Action**: Automatically deploys to your Staging domain.
+3.  **Production Environment**:
+    - **Trigger**: **Manual Promotion** from Staging.
+    - **Action**: Go to Vercel Dashboard -> Deployments -> [Select Staging Deployment] -> **Promote to Production**. This ensures exactly the same build artifact is used.
 
 ## Vercel Settings
 
 ### Build Settings
+
 - **Framework Preset**: Next.js
 - **Build Command**: `npm run build`
 - **Output Directory**: `.next`
 
 ### Environment Variables Scope
+
 - Set all variables for **Production**, **Preview**, and **Development**
 
 ## Troubleshooting
 
 ### Build Fails
+
 - Check environment variables are set correctly
 - Ensure `NEXT_PUBLIC_*` variables are prefixed correctly
 
 ### Webhook Not Working
+
 - Verify the webhook URL matches your deployment
 - Check Stripe Dashboard for webhook delivery logs
 - Verify `STRIPE_WEBHOOK_SECRET` is correct
 
 ### Auth Issues
+
 - Ensure `NEXT_PUBLIC_SUPABASE_URL` is correct
 - **Email Rate Limits**: Supabase's default email service has strict limits (3 per hour).
   - **Option A (Fixed)**: [Configure Custom SMTP](#setup-custom-smtp-recommended).

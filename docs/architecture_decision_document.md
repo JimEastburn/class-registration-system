@@ -33,14 +33,15 @@ This document outlines the architectural decisions for building a class registra
 
 Based on [REGISTRATION_SYSTEM_DESCRIPTION.md](docs/REGISTRATION_SYSTEM_DESCRIPTION.md):
 
-| Entity              | Description                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| **Student**         | Can login, view schedules, class materials, and locations                                 |
-| **Parent**          | Can login, manage family info, enroll children in classes, make payments                  |
-| **Teacher**         | Can login, create classes, view their classes, schedules, and enrolled students           |
-| **Class Scheduler** | Can login, create classes, view every teacher's classes, schedules, and enrolled students |
-| **Class**           | Has schedule, materials/syllabus, location, teacher, and enrolled students                |
-| **Family**          | Parents can have multiple family members; students can have multiple family members       |
+| Entity              | Description                                                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Student**         | Can login, view schedules, class materials, and locations                                                                            |
+| **Parent**          | Can login, manage family info, enroll children in classes, make payments                                                             |
+| **Teacher**         | Can login, create classes, view their classes, schedules, and enrolled students                                                      |
+| **Class Scheduler** | Can login, create classes, view every teacher's classes, schedules, and enrolled students                                            |
+| **Super Admin**     | **God Mode** access. Can access ALL portals (Admin, Teacher, Scheduler, Parent) via a global view switcher. Bypass all RLS policies. |
+| **Class**           | Has schedule, materials/syllabus, location, teacher, and enrolled students                                                           |
+| **Family**          | Parents can have multiple family members; students can have multiple family members                                                  |
 
 ---
 
@@ -106,9 +107,8 @@ Based on [REGISTRATION_SYSTEM_DESCRIPTION.md](docs/REGISTRATION_SYSTEM_DESCRIPTI
 
 ### Recommendation
 
-**Primary: Vercel** – Best developer experience for a Next.js CRUD application with integrated database services.
-
-**Alternative: Render** – Better choice if you need more control over infrastructure, persistent background workers, or want to avoid serverless patterns.
+**Selected: Vercel**
+We have selected Vercel for its superior Next.js integration, serverless function performance, and preview deployment capabilities which are critical for our CI/CD pipeline.
 
 ---
 
@@ -175,9 +175,8 @@ Based on [REGISTRATION_SYSTEM_DESCRIPTION.md](docs/REGISTRATION_SYSTEM_DESCRIPTI
 
 ### Recommendation
 
-**Primary: Next.js 14+ with App Router** – Best ecosystem, hiring pool, and integration options for a production CRUD application.
-
-**Alternative: Remix** – Consider if progressive enhancement and form resilience are priorities.
+**Selected: Next.js 16+ with App Router**
+We are using Next.js 16 with Turbopack. The App Router's use of Server Components and Server Actions drastically simplifies our data mutation logic (CRUD), removing the need for a separate API layer for most internal operations.
 
 ---
 
@@ -194,9 +193,12 @@ Based on [REGISTRATION_SYSTEM_DESCRIPTION.md](docs/REGISTRATION_SYSTEM_DESCRIPTI
 
 ### Recommendation
 
-**Primary: Supabase** – Provides PostgreSQL with built-in authentication, Row Level Security, real-time subscriptions, and a generous free tier. Excellent fit for this application.
+**Selected: Supabase**
+Supabase is our choice due to its "backend-in-a-box" features:
 
-**Alternative: Vercel Postgres** – Better if you want tight Vercel integration without additional services.
+- **Auth**: Seamlessly integrated with the database.
+- **RLS (Row Level Security)**: Enforces data access policies at the database level, which is critical for our multi-role system (e.g., ensuring Teachers only see their own classes).
+- **Service Role Access**: Allows secure admin overrides (used for Student Linking and Super Admin actions).
 
 ### Data Model Overview
 
@@ -265,9 +267,8 @@ Based on [REGISTRATION_SYSTEM_DESCRIPTION.md](docs/REGISTRATION_SYSTEM_DESCRIPTI
 
 ### Recommendation
 
-**Primary: Stripe** – Best API, developer experience, and features for a registration system.
-
-**Secondary: PayPal** – Add as an alternative payment option for parents who prefer it.
+**Selected: Stripe**
+Stripe is the exclusive payment provider. We utilize **Stripe Checkout** for PCI compliance and security. The integration relies heavily on **Webhooks** (`checkout.session.completed`) to handle enrollment confirmation and accounting syncs asynchronously. We enforce idempotency on webhooks to prevent duplicate processing.
 
 ### Payment Flow Architecture
 
@@ -296,11 +297,12 @@ sequenceDiagram
 
 ## Decision 5: Authentication
 
-### Recommendation
+**Selected: Supabase Auth**
+Integrated directly with our `profiles` table.
 
-**Supabase Auth** – Integrated with Supabase database, provides:
-
-- Email/password authentication
+- **Roles**: Stored in `profiles` (public table) as the single source of truth.
+- **Triggers**: A generic trigger automatically creates a `profiles` row upon new user registration (`handle_new_user`).
+- **Middleware**: Next.js Middleware protects routes based on the role fetched from Supabase.
 - Magic link authentication
 - OAuth providers (Google, Facebook)
 - Role-based access (parent, teacher, student)
@@ -354,15 +356,18 @@ Previously, the system partially relied on `user_metadata` within the Supabase A
 
 ### Decision
 
-Administrators and Teachers are granted access to the **Parent Portal** to manage personal family data.
+We have implemented a **Profile View Switching** mechanism for multi-role users.
 
 ### Rationale
 
-In a school system, both administrators and teachers often have children enrolled as students. Strictly separating roles would prevent them from enrolling their own children.
-
-- **Access**: The `/parent` layout allows `parent`, `teacher`, and `admin` roles.
-- **Switching**: A "Portal Switcher" is provided in the `DashboardLayout` for users with `admin` or `teacher` roles, allowing them to toggle between their professional portal and the personal Parent view.
-- **Consistency**: All family and enrollment data remains linked to the user's UUID.
+- **Hybrid Roles**: Teachers and Admins are often also Parents.
+- **Mechanism**:
+  - A persistent cookie `user_view_preference` tracks the current active view.
+  - Server Actions (`switchProfileView`) update this preference and redirect the user.
+  - **Super Admins** have a special "God Mode" switcher allowing them to access ANY view (Admin, Teacher, Scheduler, Parent) regardless of their base constraints.
+- **Constraints**:
+  - Regular **Admins** cannot access the **Class Scheduler** view (separation of concerns).
+  - **Class Schedulers** cannot be **Teachers** (conflict of interest prevention).
 
 ---
 
@@ -379,32 +384,72 @@ To prevent foreign key violations, every authenticated user must have a profile 
 1. **Hardened Trigger**: The `handle_new_user` Postgres trigger uses `ON CONFLICT DO NOTHING` to prevent registration failures if a profile already exists.
 2. **SignIn Fallback**: The `signIn` server action includes a check to verify a profile exists and creates one if it's missing. This handles cases where users are created manually in the Supabase dashboard or if the database trigger fails.
 
-### Recommendation
+---
 
-**shadcn/ui** – A collection of accessible, customizable components built on Radix UI primitives.
+## Decision 10: Server Actions vs. API Routes
 
-**Why shadcn/ui:**
+### Decision
 
-- Copy-paste components (no dependency)
-- Full control over styling
-- Built for accessibility
-- Tailwind CSS integration
-- Active community
-- Perfect for CRUD forms and tables
+- **Server Actions**: Used for all internal data mutations (Forms, Buttons).
+- **API Routes**: Used ONLY for external webhooks (Stripe) and specific data exports (CSV).
+
+### Rationale
+
+Server Actions provide end-to-end type safety and colocate data logic with UI components, reducing the need for a separate API client layer and state management complexity.
+
+---
+
+## Decision 11: Student Linking Strategy
+
+### Decision
+
+**Email-based Linking** (replacing Invite Codes).
+
+### Rationale
+
+- **UX**: Parents simply enter the student's email. If the student exists, they are linked. If not, a pending link is created.
+- **Simplicity**: Eliminates the friction of generating, sharing, and redeeming 6-digit codes.
+- **Security**: Links are verified against verified email addresses.
+
+---
+
+## Decision 12: Accounting Integration
+
+### Decision
+
+**Zoho Books** via Asynchronous Sync.
+
+### Rationale
+
+- **Performance**: Accounting syncs (creating Invoices/Customers) can be slow. We decouple this from the user's checkout flow.
+- **Reliability**: A background process (triggered by Stripe Webhook) handles the sync. Failures are logged for retry, ensuring the user's enrollment is never blocked by accounting API downtime.
+
+---
+
+## Decision 13: UI Library
+
+### Decision
+
+**Tailwind CSS v4 + shadcn/ui**.
+
+### Rationale
+
+- **Tailwind v4**: Faster compilation (Rust-based), zero-config.
+- **shadcn/ui**: Copy-paste components give us full ownership of the code while providing accessible, robust primitives (Dialogs, Selects, Forms).
 
 ---
 
 ## Technology Stack Summary
 
-| Layer              | Technology                           | Rationale                                         |
-| ------------------ | ------------------------------------ | ------------------------------------------------- |
-| **Frontend**       | Next.js 14+ (App Router)             | Server Components, Server Actions, best ecosystem |
-| **Styling**        | Tailwind CSS + shadcn/ui             | Rapid development, accessible components          |
-| **Database**       | Supabase (PostgreSQL)                | Built-in auth, RLS, real-time, generous free tier |
-| **Authentication** | Supabase Auth                        | Integrated with database, multiple providers      |
-| **Payments**       | Stripe (primary) + PayPal (optional) | Best API, Connect for marketplace                 |
-| **Hosting**        | Vercel                               | Optimal for Next.js, easy deployment              |
-| **ORM**            | Prisma or Drizzle                    | Type-safe database queries                        |
+| Layer          | Technology                  | Rationale                                     |
+| -------------- | --------------------------- | --------------------------------------------- |
+| **Frontend**   | Next.js 16 (App Router)     | Server Components, Server Actions, Turbopack  |
+| **Styling**    | Tailwind CSS v4 + shadcn/ui | Zero-runtime styles, accessible, maintainable |
+| **Database**   | Supabase (PostgreSQL)       | Built-in Auth, RLS, Realtime, Triggers        |
+| **Payments**   | Stripe                      | Checkout Sessions, Webhooks, Idempotency      |
+| **Accounting** | Zoho Books                  | Asynchronous sync via Webhooks                |
+| **Email**      | Resend                      | Transactional emails (Receipts, Invites)      |
+| **Validation** | Zod                         | Runtime schema validation for Forms & API     |
 
 ---
 

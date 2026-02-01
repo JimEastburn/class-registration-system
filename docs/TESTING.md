@@ -17,8 +17,8 @@ We employ a multi-layered testing strategy to ensure the reliability and maintai
 - **[Vitest](https://vitest.dev/)**: Our primary testing framework for unit, integration, and server action tests.
 - **[React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)**: Used for component testing.
 - **[Playwright](https://playwright.dev/)**: Used for end-to-end testing across different browsers.
-- **[Supabase Mocks](./vitest.setup.ts)**: We use custom mocks for the Supabase client to isolate tests from the database.
-- **[Stripe Mocks]**: Mocked for payment processing tests.
+- **[Supabase Fakes](./vitest.setup.ts)**: We use in-memory Fakes for Supabase to simulate database state reliably.
+- **[Stripe Fakes]**: We use an in-memory Fake Stripe provider to test payment flows without external API calls.
 
 ## Running Tests
 
@@ -48,24 +48,30 @@ npm run test:e2e
 npx playwright test --ui
 ```
 
-## Mocking Strategy
+## Test Isolation Strategy: Fakes over Mocks
 
-### Supabase
-We mock the Supabase client globally in `vitest.setup.ts`. This allows us to simulate database responses without requiring a live Supabase project.
+We prioritize **Fakes** (stateful in-memory implementations) over generic Mocks. Mocks make tests brittle by checking _interactions_ (e.g., "was this function called?"), whereas Fakes allow us to check _behavior/state_ (e.g., "did the balance change?").
 
-Example of mocking a Supabase call:
-```typescript
-mockSupabase.from('classes').select.mockResolvedValue({ 
-    data: [{ id: '1', name: 'Art Class' }], 
-    error: null 
-});
-```
+### Supabase (Database)
+
+Instead of mocking individual `supabase.from().select()` calls, we use a **Fake Supabase Client** backed by an in-memory database.
+
+- **Why**: Allows complex queries and multiple operations (insert then select) to work naturally in tests.
+- **Implementation**: See `src/__integration__/fakes/supabase.ts`.
+
+### Stripe (Payments)
+
+We use a **Fake Stripe Provider** that maintains an in-memory ledger of customers and charges.
+
+- **Why**: Allows testing full payment flows (charge -> refund -> balance check) without hitting the real Stripe API.
 
 ### Next.js Navigation
+
 We mock `next/navigation` to test redirects and routing without actually changing the page.
 
 ### Stripe
-Stripe is mocked in relevant tests (e.g., `refunds.test.ts`) using a class-based mock that satisfies the `new Stripe()` constructor.
+
+Stripe is faked in relevant tests (e.g., `refunds.test.ts`) using a class-based fake that satisfies the `new Stripe()` constructor.
 
 ## Writing New Tests
 
