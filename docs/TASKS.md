@@ -74,7 +74,13 @@ This document tracks the development progress of the Class Registration System. 
 
 - [ ] **Access Control**: Verify Class Scheduler role permissions
 - [ ] **Global Management**: View and Create classes for _any_ teacher
-- [ ] **Master Schedule**: View system-wide class calendar
+- [/] **Master Schedule**: View system-wide class calendar
+  - [x] **[DB]** Update `classes` table with `schedule_pattern` and `block_id`
+  - [x] **[UI]** Build Calendar Grid Layout (Rows by Pattern)
+  - [x] **[UI]** Build Staging Area for unassigned classes
+  - [x] **[Logic]** Implement `dnd-kit` drag and drop context
+  - [x] **[Logic]** Implement Conflict Detection (Teacher availability Check)
+  - [x] **[Feature]** Click-to-create class in empty slot
 
 ### Admin Portal Features
 

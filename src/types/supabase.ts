@@ -103,6 +103,8 @@ export interface Database {
                     current_enrollment: number
                     fee: number
                     syllabus: string | null
+                    schedule_pattern: 'Tu/Th' | 'Tu' | 'Th' | 'Wed' | null
+                    time_block: string | null
                     created_at: string
                     updated_at: string
                 }
@@ -137,6 +139,8 @@ export interface Database {
                     current_enrollment?: number
                     fee?: number
                     syllabus?: string | null
+                    schedule_pattern?: 'Tu/Th' | 'Tu' | 'Th' | 'Wed' | null
+                    time_block?: string | null
                     created_at?: string
                     updated_at?: string
                 }
