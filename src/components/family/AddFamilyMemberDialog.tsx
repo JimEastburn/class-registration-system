@@ -30,6 +30,7 @@ import { Loader2 } from 'lucide-react';
 const formSchema = z.object({
     firstName: z.string().min(1, 'First name is required'),
     lastName: z.string().min(1, 'Last name is required'),
+    email: z.string().email('Please enter a valid email address'),
     dob: z.string().optional(),
     grade: z.string().optional(),
 });
@@ -49,6 +50,7 @@ export function AddFamilyMemberDialog({ children }: AddFamilyMemberDialogProps) 
         defaultValues: {
             firstName: '',
             lastName: '',
+            email: '',
             dob: '',
             grade: '',
         },
@@ -61,6 +63,7 @@ export function AddFamilyMemberDialog({ children }: AddFamilyMemberDialogProps) 
             const { data, error } = await createFamilyMember({
                 firstName: values.firstName,
                 lastName: values.lastName,
+                email: values.email,
                 dob: values.dob || undefined,
                 grade: values.grade || undefined,
             });
@@ -122,6 +125,20 @@ export function AddFamilyMemberDialog({ children }: AddFamilyMemberDialogProps) 
                                 )}
                             />
                         </div>
+                        
+                        <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Email</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="email@example.com" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
                         <FormField
                             control={form.control}

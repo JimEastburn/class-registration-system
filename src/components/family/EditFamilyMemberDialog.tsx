@@ -31,6 +31,7 @@ import type { FamilyMember } from '@/types';
 const formSchema = z.object({
     firstName: z.string().min(1, 'First name is required'),
     lastName: z.string().min(1, 'Last name is required'),
+    email: z.string().email('Please enter a valid email address'),
     dob: z.string().optional(),
     grade: z.string().optional(),
 });
@@ -54,6 +55,7 @@ export function EditFamilyMemberDialog({
         defaultValues: {
             firstName: member.first_name,
             lastName: member.last_name,
+            email: member.email || '',
             dob: member.dob || '',
             grade: member.grade || '',
         },
@@ -67,6 +69,7 @@ export function EditFamilyMemberDialog({
                 id: member.id,
                 firstName: values.firstName,
                 lastName: values.lastName,
+                email: values.email,
                 dob: values.dob || null,
                 grade: values.grade || null,
             });
@@ -127,6 +130,20 @@ export function EditFamilyMemberDialog({
                                 )}
                             />
                         </div>
+
+                        <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Email</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="email@example.com" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
                         <FormField
                             control={form.control}

@@ -73,6 +73,7 @@ export interface FamilyMember {
   student_user_id: string | null; // Optional link to a registered student user account
   first_name: string;
   last_name: string;
+  email: string; // Required for all family members
   grade: string | null;
   dob: string | null; // ISO date string
   created_at: string;

@@ -109,7 +109,7 @@ export const familyMemberSchema = z.object({
   lastName: z.string().min(1, 'Last name is required'),
   grade: z.string().optional(),
   dob: z.string().optional(), // ISO date string
-  email: z.string().email('Please enter a valid email address').optional(),
+  email: z.string().email('Please enter a valid email address'),
 });
 
 export type FamilyMemberFormData = z.infer<typeof familyMemberSchema>;

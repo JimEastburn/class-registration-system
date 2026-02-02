@@ -96,6 +96,7 @@ export async function getFamilyMemberCount(): Promise<{
 interface CreateFamilyMemberInput {
     firstName: string;
     lastName: string;
+    email: string;
     dob?: string;
     grade?: string;
 }
@@ -120,6 +121,7 @@ export async function createFamilyMember(
                 parent_id: user.id,
                 first_name: input.firstName,
                 last_name: input.lastName,
+                email: input.email,
                 dob: input.dob || null,
                 grade: input.grade || null,
             })
@@ -135,6 +137,7 @@ export async function createFamilyMember(
         await logAuditEntry(user.id, 'family_member.created', data.id, {
           first_name: input.firstName,
           last_name: input.lastName,
+          email: input.email,
         });
 
         revalidatePath('/parent/family');
@@ -151,6 +154,7 @@ interface UpdateFamilyMemberInput {
     id: string;
     firstName?: string;
     lastName?: string;
+    email?: string;
     dob?: string | null;
     grade?: string | null;
 }
@@ -187,6 +191,7 @@ export async function updateFamilyMember(
         const updateData: Record<string, unknown> = {};
         if (input.firstName !== undefined) updateData.first_name = input.firstName;
         if (input.lastName !== undefined) updateData.last_name = input.lastName;
+        if (input.email !== undefined) updateData.email = input.email;
         if (input.dob !== undefined) updateData.dob = input.dob;
         if (input.grade !== undefined) updateData.grade = input.grade;
 
