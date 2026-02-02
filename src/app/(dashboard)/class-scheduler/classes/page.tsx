@@ -9,7 +9,7 @@ export default async function SchedulerClassesPage() {
     const res = await getClassesForScheduler(1, 100); 
 
     const classes = res.success && res.data ? res.data.classes : [];
-    const count = res.success && res.data ? res.data.count : 0;
+    const count = res.success && res.data ? res.data.total : 0;
 
     return (
         <div className="space-y-6 container mx-auto py-6">

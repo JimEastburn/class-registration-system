@@ -4,7 +4,64 @@ import { createClient } from '@/lib/supabase/server';
 import { Class, ActionResult, ScheduleConfig } from '@/types';
 import { checkScheduleConflict, checkRoomConflict } from '@/lib/logic/scheduling';
 
+export interface SchedulerStats {
+    totalClasses: number;
+    unscheduledCount: number;
+    conflictCount: number;
+}
+
 // ... (stats function remains same)
+
+export async function getSchedulerStats(): Promise<ActionResult<SchedulerStats>> {
+    try {
+        const supabase = await createClient();
+        
+        // Verify role
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        if (!profile || !['admin', 'class_scheduler', 'super_admin'].includes(profile.role)) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        // 1. Total Classes (active)
+        const { count: totalClasses, error: totalError } = await supabase
+            .from('classes')
+            .select('*', { count: 'exact', head: true })
+            .neq('status', 'archived');
+        
+        if (totalError) throw totalError;
+
+        // 2. Unscheduled (draft)
+        const { count: unscheduledCount, error: unscheduledError } = await supabase
+            .from('classes')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'draft');
+
+        if (unscheduledError) throw unscheduledError;
+
+        // 3. Conflicts (Re-using getConflictAlerts logic briefly or calling it if possible, 
+        // but for stats usually we just want a number. 
+        // For efficiency, let's call getConflictAlerts internal logic or just 0 for now if heavy.
+        // The prompt implies implementing it. I'll call getConflictAlerts since it exists in this file.)
+        const conflictResult = await getConflictAlerts();
+        const conflictCount = conflictResult.success && conflictResult.data ? conflictResult.data.length : 0;
+
+        return {
+            success: true,
+            data: {
+                totalClasses: totalClasses || 0,
+                unscheduledCount: unscheduledCount || 0,
+                conflictCount
+            }
+        };
+
+    } catch (err) {
+        console.error('Error getting scheduler stats:', err);
+        return { success: false, error: 'Internal server error' };
+    }
+}
 
 export async function schedulerUpdateClass(id: string, updates: Partial<Class>): Promise<ActionResult> {
     try {
@@ -300,3 +357,36 @@ export async function getClassesForScheduler(
         return { success: false, error: 'Internal server error' };
     }
 }
+
+export async function getUnscheduledClasses(limit = 5): Promise<ActionResult<Class[]>> {
+    try {
+        const supabase = await createClient();
+        
+        // Verify role
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        if (!profile || !['admin', 'class_scheduler', 'super_admin'].includes(profile.role)) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const { data, error } = await supabase
+            .from('classes')
+            .select('*')
+            .eq('status', 'draft')
+            .order('created_at', { ascending: false })
+            .limit(limit);
+
+        if (error) {
+            console.error('Error fetching unscheduled classes:', error);
+            return { success: false, error: error.message };
+        }
+
+        return { success: true, data: data as Class[] };
+    } catch (err) {
+        console.error('Error in getUnscheduledClasses:', err);
+        return { success: false, error: 'Internal server error' };
+    }
+}
+

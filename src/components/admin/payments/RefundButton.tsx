@@ -9,10 +9,9 @@ interface RefundButtonProps {
     paymentId: string;
     amount: number;
     currency: string;
-    enrollmentId?: string;
 }
 
-export function RefundButton({ paymentId, amount, currency, enrollmentId }: RefundButtonProps) {
+export function RefundButton({ paymentId, amount, currency }: RefundButtonProps) {
     const [open, setOpen] = useState(false);
 
     return (
@@ -33,7 +32,6 @@ export function RefundButton({ paymentId, amount, currency, enrollmentId }: Refu
                 paymentId={paymentId}
                 amount={amount}
                 currency={currency}
-                enrollmentId={enrollmentId}
             />
         </>
     );
