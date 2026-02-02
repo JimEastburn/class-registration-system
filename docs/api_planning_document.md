@@ -112,7 +112,7 @@ type ActionResult = {
 The API interacts with the following core tables (Public Schema):
 
 - `profiles` (Users + Roles)
-- `family_members` (Students linked to Parents)
+- `family_members` (Family linked to Parents, includes relationship type)
 - `classes` (Course details, fee, schedule)
 - `enrollments` (Link between Student and Class, includes Status)
 - `payments` (Transaction records linked to Enrollments)

@@ -24,18 +24,18 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { createFamilyMember } from '@/lib/actions/family';
+import { familyMemberSchema } from '@/lib/validations';
 import { Loader2 } from 'lucide-react';
 
-const formSchema = z.object({
-    firstName: z.string().min(1, 'First name is required'),
-    lastName: z.string().min(1, 'Last name is required'),
-    email: z.string().email('Please enter a valid email address'),
-    dob: z.string().optional(),
-    grade: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<typeof familyMemberSchema>;
 
 interface AddFamilyMemberDialogProps {
     children: React.ReactNode;
@@ -46,15 +46,18 @@ export function AddFamilyMemberDialog({ children }: AddFamilyMemberDialogProps) 
     const [isLoading, setIsLoading] = useState(false);
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(familyMemberSchema),
         defaultValues: {
             firstName: '',
             lastName: '',
             email: '',
+            relationship: 'Student', 
             dob: '',
-            grade: '',
+            grade: undefined,
         },
     });
+
+    const relationship = form.watch('relationship');
 
     async function onSubmit(values: FormValues) {
         setIsLoading(true);
@@ -64,6 +67,7 @@ export function AddFamilyMemberDialog({ children }: AddFamilyMemberDialogProps) 
                 firstName: values.firstName,
                 lastName: values.lastName,
                 email: values.email,
+                relationship: values.relationship,
                 dob: values.dob || undefined,
                 grade: values.grade || undefined,
             });
@@ -127,46 +131,51 @@ export function AddFamilyMemberDialog({ children }: AddFamilyMemberDialogProps) 
                         </div>
                         
                         <FormField
-                                control={form.control}
-                                name="email"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Email</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="email@example.com" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                        <FormField
                             control={form.control}
-                            name="dob"
+                            name="relationship"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Date of Birth (Optional)</FormLabel>
-                                    <FormControl>
-                                        <Input type="date" {...field} />
-                                    </FormControl>
+                                    <FormLabel>Relationship</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select relationship" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="Student">Student</SelectItem>
+                                            <SelectItem value="Parent/Guardian">Parent/Guardian</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
 
+                        {relationship === 'Student' && (
                         <FormField
                             control={form.control}
                             name="grade"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Grade (Optional)</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="e.g. 5th grade" {...field} />
-                                    </FormControl>
+                                    <FormLabel>Grade</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select grade" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="elementary">Elementary</SelectItem>
+                                            <SelectItem value="middle school">Middle School</SelectItem>
+                                            <SelectItem value="high school">High School</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
+                        )}
 
                         <DialogFooter>
                             <Button

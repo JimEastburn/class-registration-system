@@ -107,9 +107,24 @@ export type ProfileFormData = z.infer<typeof profileSchema>;
 export const familyMemberSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
-  grade: z.string().optional(),
-  dob: z.string().optional(), // ISO date string
   email: z.string().email('Please enter a valid email address'),
+  relationship: z.enum(['Student', 'Parent/Guardian'], {
+    message: 'Please select a relationship',
+  }),
+  grade: z.enum([
+    'elementary',
+    'middle school',
+    'high school'
+  ]).optional(),
+  dob: z.string().optional(), // ISO date string
+}).refine((data) => {
+  if (data.relationship === 'Student') {
+    return !!data.grade;
+  }
+  return true;
+}, {
+  message: 'Grade is required for students',
+  path: ['grade'],
 });
 
 export type FamilyMemberFormData = z.infer<typeof familyMemberSchema>;

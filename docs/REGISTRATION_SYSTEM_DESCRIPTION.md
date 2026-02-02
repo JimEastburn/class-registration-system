@@ -31,7 +31,7 @@ This system enables parents to manage their families and enroll children in clas
 ### Parent Portal (`/parent`)
 
 - **Dashboard** - Overview of family, enrollments, and quick actions
-- **Family Management** - Add, edit, delete family members (children)
+- **Family Management** - Add, edit, delete family members (children, spouses, guardians)
 - **Student Linking** - Link child accounts via email (prevents double-linking).
 - **Class Browsing** - View available classes with teacher info and availability
 - **Enrollment** - Enroll children in classes
@@ -75,7 +75,7 @@ This system enables parents to manage their families and enroll children in clas
 | Entity              | Description                                                                                           |
 | ------------------- | ----------------------------------------------------------------------------------------------------- |
 | **Profiles**        | User accounts with role, name, email, phone                                                           |
-| **Family Members**  | Children/students linked to parent accounts (optionally linked to student user account via `user_id`) |
+| **Family Members**  | Additional family members (children/spouses) linked to the primary account |
 | **Classes**         | Courses with schedule, location, fee, capacity                                                        |
 | **Enrollments**     | Student-to-class registrations with status                                                            |
 | **Payments**        | Payment records for enrollments via Stripe                                                            |

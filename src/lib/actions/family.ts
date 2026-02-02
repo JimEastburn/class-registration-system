@@ -97,6 +97,7 @@ interface CreateFamilyMemberInput {
     firstName: string;
     lastName: string;
     email: string;
+    relationship: 'Student' | 'Parent/Guardian';
     dob?: string;
     grade?: string;
 }
@@ -122,6 +123,7 @@ export async function createFamilyMember(
                 first_name: input.firstName,
                 last_name: input.lastName,
                 email: input.email,
+                relationship: input.relationship,
                 dob: input.dob || null,
                 grade: input.grade || null,
             })
@@ -138,6 +140,7 @@ export async function createFamilyMember(
           first_name: input.firstName,
           last_name: input.lastName,
           email: input.email,
+          relationship: input.relationship,
         });
 
         revalidatePath('/parent/family');
@@ -155,6 +158,7 @@ interface UpdateFamilyMemberInput {
     firstName?: string;
     lastName?: string;
     email?: string;
+    relationship?: 'Student' | 'Parent/Guardian';
     dob?: string | null;
     grade?: string | null;
 }
@@ -192,6 +196,12 @@ export async function updateFamilyMember(
         if (input.firstName !== undefined) updateData.first_name = input.firstName;
         if (input.lastName !== undefined) updateData.last_name = input.lastName;
         if (input.email !== undefined) updateData.email = input.email;
+        if (input.relationship !== undefined) {
+             updateData.relationship = input.relationship;
+             // If relationship changes to Parent/Guardian, grade can optionally be cleared, 
+             // but schema validates grade is required for Student.
+             // Clearing grade for Parent/Guardian happens if passed explicitly as null.
+        }
         if (input.dob !== undefined) updateData.dob = input.dob;
         if (input.grade !== undefined) updateData.grade = input.grade;
 

@@ -14,7 +14,7 @@ vi.mock('next/cache', () => ({
 
 describe('Family Actions', () => {
     const mockUser = { id: 'parent-123' };
-    const mockMember = { id: 'child-1', parent_id: 'parent-123', first_name: 'Kid', email: 'kid@example.com' };
+    const mockMember = { id: 'child-1', parent_id: 'parent-123', first_name: 'Kid', email: 'kid@example.com', relationship: 'Student' };
     
     // Setup generic mock for Supabase
     const mockSupabase = {
@@ -52,7 +52,7 @@ describe('Family Actions', () => {
                 return {};
             });
 
-            const result = await createFamilyMember({ firstName: 'Kid', lastName: 'Doe', email: 'kid@example.com' });
+            const result = await createFamilyMember({ firstName: 'Kid', lastName: 'Doe', email: 'kid@example.com', relationship: 'Student' });
 
             expect(result.data).toBeDefined();
             expect(result.data?.first_name).toBe('Kid');
@@ -62,7 +62,8 @@ describe('Family Actions', () => {
             expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
                 parent_id: mockUser.id,
                 first_name: 'Kid',
-                email: 'kid@example.com'
+                email: 'kid@example.com',
+                relationship: 'Student'
             }));
         });
 
@@ -89,7 +90,7 @@ describe('Family Actions', () => {
             // the implementation should ignore anything but the auth user's id)
             // Note: The input type CreateFamilyMemberInput doesn't strictly include parent_id, 
             // but this test confirms that the ACTION takes the ID from the session, not from any potential input leakage
-             await createFamilyMember({ firstName: 'Kid', lastName: 'Doe', email: 'kid@example.com' });
+             await createFamilyMember({ firstName: 'Kid', lastName: 'Doe', email: 'kid@example.com', relationship: 'Student' });
 
             expect(mockInsert).toHaveBeenCalledWith(expect.objectContaining({
                 parent_id: mockUser.id,
@@ -98,7 +99,7 @@ describe('Family Actions', () => {
 
         it('handles unauthenticated user', async () => {
             mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
-            const result = await createFamilyMember({ firstName: 'Kid', lastName: 'Doe', email: 'kid@example.com' });
+            const result = await createFamilyMember({ firstName: 'Kid', lastName: 'Doe', email: 'kid@example.com', relationship: 'Student' });
             expect(result.error).toBe('Not authenticated');
         });
     });

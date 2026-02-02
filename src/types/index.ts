@@ -74,6 +74,7 @@ export interface FamilyMember {
   first_name: string;
   last_name: string;
   email: string; // Required for all family members
+  relationship: 'Student' | 'Parent/Guardian';
   grade: string | null;
   dob: string | null; // ISO date string
   created_at: string;

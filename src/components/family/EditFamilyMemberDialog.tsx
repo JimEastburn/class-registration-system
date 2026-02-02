@@ -24,19 +24,19 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { updateFamilyMember } from '@/lib/actions/family';
+import { familyMemberSchema } from '@/lib/validations';
 import { Loader2 } from 'lucide-react';
 import type { FamilyMember } from '@/types';
 
-const formSchema = z.object({
-    firstName: z.string().min(1, 'First name is required'),
-    lastName: z.string().min(1, 'Last name is required'),
-    email: z.string().email('Please enter a valid email address'),
-    dob: z.string().optional(),
-    grade: z.string().optional(),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<typeof familyMemberSchema>;
 
 interface EditFamilyMemberDialogProps {
     member: FamilyMember;
@@ -51,15 +51,18 @@ export function EditFamilyMemberDialog({
     const [isLoading, setIsLoading] = useState(false);
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(familyMemberSchema),
         defaultValues: {
             firstName: member.first_name,
             lastName: member.last_name,
             email: member.email || '',
+            relationship: (member.relationship as 'Student' | 'Parent/Guardian') || 'Student',
             dob: member.dob || '',
-            grade: member.grade || '',
+            grade: (member.grade as 'elementary' | 'middle school' | 'high school') || undefined,
         },
     });
+
+    const relationship = form.watch('relationship');
 
     async function onSubmit(values: FormValues) {
         setIsLoading(true);
@@ -70,6 +73,7 @@ export function EditFamilyMemberDialog({
                 firstName: values.firstName,
                 lastName: values.lastName,
                 email: values.email,
+                relationship: values.relationship,
                 dob: values.dob || null,
                 grade: values.grade || null,
             });
@@ -147,31 +151,50 @@ export function EditFamilyMemberDialog({
 
                         <FormField
                             control={form.control}
-                            name="dob"
+                            name="relationship"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Date of Birth</FormLabel>
-                                    <FormControl>
-                                        <Input type="date" {...field} />
-                                    </FormControl>
+                                    <FormLabel>Relationship</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select relationship" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="Student">Student</SelectItem>
+                                            <SelectItem value="Parent/Guardian">Parent/Guardian</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
 
+                        {relationship === 'Student' && (
                         <FormField
                             control={form.control}
                             name="grade"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Grade</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="e.g. 5th grade" {...field} />
-                                    </FormControl>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select grade" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="elementary">Elementary</SelectItem>
+                                            <SelectItem value="middle school">Middle School</SelectItem>
+                                            <SelectItem value="high school">High School</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
+                        )}
 
                         <DialogFooter>
                             <Button

@@ -54,8 +54,8 @@ _Goal: Manage family and enroll children._
 
 ### Family Management
 
-- [ ] **Add Member**: Create a family member (child). Verify all fields (Name, Grade, Birth Date, Relationship) save correctly.
-- [ ] **Edit Member**: Change a child's grade level and verify the update.
+- [ ] **Add Member**: Create a family member. Verify **Email** is required. Select **Relationship** (Student vs Parent). Verify **Grade** is required ONLY for Students.
+- [ ] **Edit Member**: Change a member's relationship or grade. Verify validation logic persists (e.g., changing to Parent clears/hides Grade requirement).
 - [ ] **Delete Member**: Remove a child and verify they no longer appear in the family list.
 
 ### Student Linking (Email-Based)
