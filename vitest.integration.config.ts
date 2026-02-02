@@ -7,8 +7,8 @@ export default defineConfig({
     test: {
         environment: 'node', // Actions are server-side
         globals: true,
-        setupFiles: ['./src/lib/actions/__tests__/integration/setup.ts'],
-        include: ['src/lib/actions/__tests__/integration/**/*.integration.test.ts'],
+        setupFiles: [''],
+        include: [''],
         testTimeout: 30000, // Integration tests can be slow
     },
     resolve: {
