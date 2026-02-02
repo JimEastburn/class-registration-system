@@ -179,3 +179,61 @@ export async function clearActiveView(): Promise<ActionResult<void>> {
 
   return { success: true, data: undefined };
 }
+
+/**
+ * Update the user's profile information
+ */
+export async function updateProfile(
+  formData: FormData
+): Promise<ActionResult<void>> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const firstName = formData.get('firstName') as string;
+  const lastName = formData.get('lastName') as string;
+  const phone = formData.get('phone') as string;
+  const bio = formData.get('bio') as string;
+  const specializations = formData.getAll('specializations') as string[];
+
+  // Update public.profiles
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({
+      first_name: firstName,
+      last_name: lastName,
+      phone,
+      bio,
+      specializations,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', user.id);
+
+  if (profileError) {
+    console.error('Profile update error:', profileError);
+    return { success: false, error: 'Failed to update profile' };
+  }
+
+  // Update auth.users metadata to keep it in sync
+  const { error: authError } = await supabase.auth.updateUser({
+    data: {
+      first_name: firstName,
+      last_name: lastName,
+      phone,
+    },
+  });
+
+  if (authError) {
+    console.warn('Auth metadata update failed:', authError);
+    // We don't fail the request here as the profile update succeeded
+  }
+
+  revalidatePath('/', 'layout');
+  return { success: true, data: undefined };
+}

@@ -1,6 +1,7 @@
 
 import { test, expect } from '@playwright/test';
-import { createTestUser, deleteTestUser } from './utils/helpers';
+import { createTestUser } from './utils/helpers';
+import { supabaseAdmin } from './utils/supabase';
 
 test.describe('Parent Enrollment Flow', () => {
     let teacherUser: { email: string; userId: string; password: string };
@@ -81,9 +82,15 @@ test.describe('Parent Enrollment Flow', () => {
              throw new Error('Class creation timed out and no error message found');
         });
 
-        // Verify creation by checking URL regex
         await expect(page).toHaveURL(/\/teacher\/classes\/.+/, { timeout: 30000 });
         
+        // DEBUG: Verify class exists in DB
+        const { data: dbClasses } = await supabaseAdmin
+            .from('classes')
+            .select('*')
+            .eq('teacher_id', teacherUser.userId);
+        console.log(`[DEBUG] DB Classes for teacher ${teacherUser.userId}:`, dbClasses?.length, dbClasses);
+
         // Go back to Class List to Publish
         await page.goto('/teacher/classes', { waitUntil: 'domcontentloaded' });
         
@@ -159,7 +166,10 @@ test.describe('Parent Enrollment Flow', () => {
         await page.fill('input[name="lastName"]', childLastName);
         await page.fill('input[name="email"]', childEmail);
         await page.fill('input[name="dob"]', '2016-01-01');
-        await page.fill('input[name="grade"]', '3rd Grade');
+        
+        // Select Grade
+        await page.locator('button').filter({ hasText: 'Select grade' }).click();
+        await page.getByRole('option', { name: 'Elementary' }).click();
         await page.getByRole('button', { name: 'Add Member' }).click();
         
         await expect(page.getByText(`${childFirstName} ${childLastName}`)).toBeVisible();

@@ -5,11 +5,11 @@ import { ProfileForm } from '@/components/profile/ProfileForm';
 import { getCurrentUserProfile } from '@/lib/actions/auth';
 
 export const metadata = {
-    title: 'Profile | Parent Portal',
+    title: 'Profile | Teacher Portal',
     description: 'Manage your profile settings',
 };
 
-export default async function ParentProfilePage() {
+export default async function TeacherProfilePage() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -55,7 +55,7 @@ export default async function ParentProfilePage() {
                             <h3 className="font-medium text-lg">{fullName}</h3>
                             <p className="text-sm text-muted-foreground">{user.email}</p>
                             <p className="text-xs text-muted-foreground capitalize mt-1">
-                                Role: {profile?.role || 'Parent'}
+                                Role: {profile?.role || 'Teacher'}
                             </p>
                         </div>
                     </div>

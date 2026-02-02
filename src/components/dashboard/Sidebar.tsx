@@ -14,6 +14,7 @@ import {
     FileText,
     Shield,
     CalendarClock,
+    User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { UserRole } from '@/types';
@@ -62,6 +63,12 @@ const navItems: NavItem[] = [
         icon: UserCheck,
         roles: ['parent', 'teacher', 'admin', 'super_admin'],
     },
+    {
+        href: '/parent/profile',
+        label: 'Profile',
+        icon: User,
+        roles: ['parent', 'teacher', 'admin', 'super_admin'],
+    },
 
     // Teacher Portal Items
     {
@@ -77,6 +84,12 @@ const navItems: NavItem[] = [
         icon: BookOpen,
         roles: ['teacher', 'admin', 'super_admin'],
     },
+    {
+        href: '/teacher/profile',
+        label: 'Profile',
+        icon: User,
+        roles: ['teacher', 'admin', 'super_admin'],
+    },
 
     // Student Portal Items
     {
@@ -90,6 +103,12 @@ const navItems: NavItem[] = [
         href: '/student/schedule',
         label: 'My Schedule',
         icon: Calendar,
+        roles: ['student'],
+    },
+    {
+        href: '/student/profile',
+        label: 'Profile',
+        icon: User,
         roles: ['student'],
     },
 
@@ -135,6 +154,12 @@ const navItems: NavItem[] = [
         href: '/admin/settings',
         label: 'Settings',
         icon: Settings,
+        roles: ['admin', 'super_admin'],
+    },
+    {
+        href: '/admin/profile',
+        label: 'Profile',
+        icon: User,
         roles: ['admin', 'super_admin'],
     },
 
