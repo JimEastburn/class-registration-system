@@ -12,29 +12,29 @@ This document tracks the detailed development tasks for the Class Registration S
 
 ### 1.1 Project & Environment Setup
 
-- [ ] **[Setup]** Initialize Next.js 16 (App Router) project with TypeScript via `create-next-app` <!-- id: 1.1.1 -->
-- [ ] **[Setup]** Configure Tailwind CSS v4 (ensure `postcss` and `autoprefixer` removed if using v4 native) <!-- id: 1.1.2 -->
-- [ ] **[Setup]** Initialize `shadcn/ui` CLI and install base components: `button`, `input`, `label`, `card` <!-- id: 1.1.3 -->
-- [ ] **[Setup]** Install additional shadcn components: `toast`, `dialog`, `select`, `dropdown-menu` <!-- id: 1.1.4 -->
-- [ ] **[Setup]** Install additional shadcn components: `avatar`, `badge`, `table`, `tabs` <!-- id: 1.1.5 -->
-- [ ] **[Setup]** Configure ESLint with Next.js recommended rules <!-- id: 1.1.6 -->
+- [x] **[Setup]** Initialize Next.js 16 (App Router) project with TypeScript via `create-next-app` <!-- id: 1.1.1 -->
+- [x] **[Setup]** Configure Tailwind CSS v4 (ensure `postcss` and `autoprefixer` removed if using v4 native) <!-- id: 1.1.2 -->
+- [x] **[Setup]** Initialize `shadcn/ui` CLI and install base components: `button`, `input`, `label`, `card` <!-- id: 1.1.3 -->
+- [x] **[Setup]** Install additional shadcn components: `toast`, `dialog`, `select`, `dropdown-menu` <!-- id: 1.1.4 -->
+- [x] **[Setup]** Install additional shadcn components: `avatar`, `badge`, `table`, `tabs` <!-- id: 1.1.5 -->
+- [x] **[Setup]** Configure ESLint with Next.js recommended rules <!-- id: 1.1.6 -->
 - [ ] **[Setup]** Configure Prettier with `prettier-plugin-tailwindcss` <!-- id: 1.1.7 -->
-- [ ] **[Setup]** Create `.env.example` template with all required environment variables <!-- id: 1.1.8 -->
-- [ ] **[Setup]** Create `vercel.json` configuration for deployment settings <!-- id: 1.1.9 -->
-- [ ] **[Setup]** Configure `vitest` testing environment with React Testing Library <!-- id: 1.1.10 -->
-- [ ] **[Setup]** Configure `playwright` E2E testing environment <!-- id: 1.1.11 -->
+- [x] **[Setup]** Create `.env.example` template with all required environment variables <!-- id: 1.1.8 -->
+- [x] **[Setup]** Create `vercel.json` configuration for deployment settings <!-- id: 1.1.9 -->
+- [x] **[Setup]** Configure `vitest` testing environment with React Testing Library <!-- id: 1.1.10 -->
+- [x] **[Setup]** Configure `playwright` E2E testing environment <!-- id: 1.1.11 -->
 
 ---
 
 ### 1.2 Core Libraries & Utilities
 
-- [ ] **[Lib]** Create `src/lib/utils.ts` with `cn` helper (clsx + tailwind-merge) <!-- id: 1.2.1 -->
-- [ ] **[Lib]** Create `src/lib/supabase/client.ts` (Client Component Supabase client) <!-- id: 1.2.2 -->
-- [ ] **[Lib]** Create `src/lib/supabase/server.ts` (Server Component client using `createServerClient`) <!-- id: 1.2.3 -->
+- [x] **[Lib]** Create `src/lib/utils.ts` with `cn` helper (clsx + tailwind-merge) <!-- id: 1.2.1 -->
+- [x] **[Lib]** Create `src/lib/supabase/client.ts` (Client Component Supabase client) <!-- id: 1.2.2 -->
+- [x] **[Lib]** Create `src/lib/supabase/server.ts` (Server Component client using `createServerClient`) <!-- id: 1.2.3 -->
 - [ ] **[Lib]** Create `src/lib/supabase/middleware.ts` (Middleware client for auth guarding) <!-- id: 1.2.4 -->
-- [ ] **[Lib]** Create `src/lib/stripe.ts` (Stripe SDK client configuration) <!-- id: 1.2.5 -->
-- [ ] **[Lib]** Create `src/lib/resend.ts` (Resend email SDK configuration) <!-- id: 1.2.6 -->
-- [ ] **[Lib]** Create `src/lib/zoho.ts` (Zoho Books auth & token refresh logic) <!-- id: 1.2.7 -->
+- [x] **[Lib]** Create `src/lib/stripe.ts` (Stripe SDK client configuration) <!-- id: 1.2.5 -->
+- [x] **[Lib]** Create `src/lib/resend.ts` (Resend email SDK configuration) <!-- id: 1.2.6 -->
+- [x] **[Lib]** Create `src/lib/zoho.ts` (Zoho Books auth & token refresh logic) <!-- id: 1.2.7 -->
 
 ---
 
@@ -71,71 +71,71 @@ This document tracks the detailed development tasks for the Class Registration S
 
 ### 2.1 Core Tables
 
-- [ ] **[DB]** Create migration for `profiles` table (id UUID PK, email, role, first_name, last_name, phone, created_at) <!-- id: 2.1.1 -->
-- [ ] **[DB]** Create migration for `family_members` table (id, parent_id FK->profiles, student_user_id FK->profiles nullable, first_name, last_name, grade, dob) <!-- id: 2.1.2 -->
-- [ ] **[DB]** Create migration for `classes` table (id, teacher_id FK, title, description, capacity, price, location, schedule_config JSONB, status, created_at) <!-- id: 2.1.3 -->
-- [ ] **[DB]** Create migration for `enrollments` table (id, student_id FK, class_id FK, status, waitlist_position nullable, created_at) <!-- id: 2.1.4 -->
-- [ ] **[DB]** Create migration for `payments` table (id, enrollment_id FK, stripe_payment_intent, amount, status, sync_status, created_at) <!-- id: 2.1.5 -->
+- [x] **[DB]** Create migration for `profiles` table (id UUID PK, email, role, first_name, last_name, phone, created_at) <!-- id: 2.1.1 -->
+- [x] **[DB]** Create migration for `family_members` table (id, parent_id FK->profiles, student_user_id FK->profiles nullable, first_name, last_name, grade, dob) <!-- id: 2.1.2 -->
+- [x] **[DB]** Create migration for `classes` table (id, teacher_id FK, title, description, capacity, price, location, schedule_config JSONB, status, created_at) <!-- id: 2.1.3 -->
+- [x] **[DB]** Create migration for `enrollments` table (id, student_id FK, class_id FK, status, waitlist_position nullable, created_at) <!-- id: 2.1.4 -->
+- [x] **[DB]** Create migration for `payments` table (id, enrollment_id FK, stripe_payment_intent, amount, status, sync_status, created_at) <!-- id: 2.1.5 -->
 
 ---
 
 ### 2.2 Supporting Tables
 
-- [ ] **[DB]** Create migration for `class_blocks` table (id, teacher_id FK, student_id FK, reason, created_at) <!-- id: 2.2.1 -->
-- [ ] **[DB]** Create migration for `calendar_events` table (id, class_id FK, start_time, end_time, location, description) <!-- id: 2.2.2 -->
-- [ ] **[DB]** Create migration for `class_materials` table (id, class_id FK, title, file_url, type, created_at) <!-- id: 2.2.3 -->
-- [ ] **[DB]** Create migration for `audit_logs` table (id, user_id FK, action, target_type, target_id, details JSONB, created_at) <!-- id: 2.2.4 -->
-- [ ] **[DB]** Create migration for `system_settings` table (key PRIMARY KEY, value JSONB, updated_at) <!-- id: 2.2.5 -->
+- [x] **[DB]** Create migration for `class_blocks` table (id, teacher_id FK, student_id FK, reason, created_at) <!-- id: 2.2.1 -->
+- [x] **[DB]** Create migration for `calendar_events` table (id, class_id FK, start_time, end_time, location, description) <!-- id: 2.2.2 -->
+- [x] **[DB]** Create migration for `class_materials` table (id, class_id FK, title, file_url, type, created_at) <!-- id: 2.2.3 -->
+- [x] **[DB]** Create migration for `audit_logs` table (id, user_id FK, action, target_type, target_id, details JSONB, created_at) <!-- id: 2.2.4 -->
+- [x] **[DB]** Create migration for `system_settings` table (key PRIMARY KEY, value JSONB, updated_at) <!-- id: 2.2.5 -->
 
 ---
 
 ### 2.3 Indexes & Performance
 
-- [ ] **[DB]** Create index on `profiles(email)` <!-- id: 2.3.1 -->
-- [ ] **[DB]** Create index on `profiles(role)` <!-- id: 2.3.2 -->
-- [ ] **[DB]** Create index on `family_members(parent_id)` <!-- id: 2.3.3 -->
-- [ ] **[DB]** Create index on `classes(teacher_id)` <!-- id: 2.3.4 -->
-- [ ] **[DB]** Create index on `classes(status)` <!-- id: 2.3.5 -->
-- [ ] **[DB]** Create index on `enrollments(class_id, status)` <!-- id: 2.3.6 -->
-- [ ] **[DB]** Create index on `enrollments(student_id)` <!-- id: 2.3.7 -->
-- [ ] **[DB]** Create index on `payments(enrollment_id)` <!-- id: 2.3.8 -->
-- [ ] **[DB]** Create index on `calendar_events(class_id)` <!-- id: 2.3.9 -->
-- [ ] **[DB]** Create index on `calendar_events(start_time)` <!-- id: 2.3.10 -->
+- [x] **[DB]** Create index on `profiles(email)` <!-- id: 2.3.1 -->
+- [x] **[DB]** Create index on `profiles(role)` <!-- id: 2.3.2 -->
+- [x] **[DB]** Create index on `family_members(parent_id)` <!-- id: 2.3.3 -->
+- [x] **[DB]** Create index on `classes(teacher_id)` <!-- id: 2.3.4 -->
+- [x] **[DB]** Create index on `classes(status)` <!-- id: 2.3.5 -->
+- [x] **[DB]** Create index on `enrollments(class_id, status)` <!-- id: 2.3.6 -->
+- [x] **[DB]** Create index on `enrollments(student_id)` <!-- id: 2.3.7 -->
+- [x] **[DB]** Create index on `payments(enrollment_id)` <!-- id: 2.3.8 -->
+- [x] **[DB]** Create index on `calendar_events(class_id)` <!-- id: 2.3.9 -->
+- [x] **[DB]** Create index on `calendar_events(start_time)` <!-- id: 2.3.10 -->
 
 ---
 
 ### 2.4 Row Level Security (RLS) Policies
 
-- [ ] **[RLS]** Enable RLS on `profiles` table with "Deny All" default <!-- id: 2.4.1 -->
-- [ ] **[RLS]** Create `profiles` policy: Users can view their own profile <!-- id: 2.4.2 -->
-- [ ] **[RLS]** Create `profiles` policy: Users can update their own profile <!-- id: 2.4.3 -->
-- [ ] **[RLS]** Create `profiles` policy: Admins/Super Admins can view all profiles <!-- id: 2.4.4 -->
-- [ ] **[RLS]** Create `profiles` policy: Teachers can view enrolled students' profiles <!-- id: 2.4.5 -->
-- [ ] **[RLS]** Enable RLS on `family_members` table with "Deny All" default <!-- id: 2.4.6 -->
-- [ ] **[RLS]** Create `family_members` policy: Parents can CRUD their own family members <!-- id: 2.4.7 -->
-- [ ] **[RLS]** Create `family_members` policy: Admins can view all family members <!-- id: 2.4.8 -->
-- [ ] **[RLS]** Enable RLS on `classes` table with "Deny All" default <!-- id: 2.4.9 -->
-- [ ] **[RLS]** Create `classes` policy: Public read access for active classes <!-- id: 2.4.10 -->
-- [ ] **[RLS]** Create `classes` policy: Teachers can CRUD their own classes <!-- id: 2.4.11 -->
-- [ ] **[RLS]** Create `classes` policy: Admins/Class Schedulers can CRUD all classes <!-- id: 2.4.12 -->
-- [ ] **[RLS]** Enable RLS on `enrollments` table with "Deny All" default <!-- id: 2.4.13 -->
-- [ ] **[RLS]** Create `enrollments` policy: Parents can view their family's enrollments <!-- id: 2.4.14 -->
-- [ ] **[RLS]** Create `enrollments` policy: Teachers can view enrollments for their classes <!-- id: 2.4.15 -->
-- [ ] **[RLS]** Create `enrollments` policy: Admins can view/manage all enrollments <!-- id: 2.4.16 -->
-- [ ] **[RLS]** Enable RLS on `payments` table with "Deny All" default <!-- id: 2.4.17 -->
-- [ ] **[RLS]** Create `payments` policy: Parents can view their payment records <!-- id: 2.4.18 -->
-- [ ] **[RLS]** Create `payments` policy: Admins can view all payment records <!-- id: 2.4.19 -->
-- [ ] **[RLS]** Enable RLS on `audit_logs` table - Admins only <!-- id: 2.4.20 -->
-- [ ] **[RLS]** Create Super Admin bypass policy using service role key pattern <!-- id: 2.4.21 -->
+- [x] **[RLS]** Enable RLS on `profiles` table with "Deny All" default <!-- id: 2.4.1 -->
+- [x] **[RLS]** Create `profiles` policy: Users can view their own profile <!-- id: 2.4.2 -->
+- [x] **[RLS]** Create `profiles` policy: Users can update their own profile <!-- id: 2.4.3 -->
+- [x] **[RLS]** Create `profiles` policy: Admins/Super Admins can view all profiles <!-- id: 2.4.4 -->
+- [x] **[RLS]** Create `profiles` policy: Teachers can view enrolled students' profiles <!-- id: 2.4.5 -->
+- [x] **[RLS]** Enable RLS on `family_members` table with "Deny All" default <!-- id: 2.4.6 -->
+- [x] **[RLS]** Create `family_members` policy: Parents can CRUD their own family members <!-- id: 2.4.7 -->
+- [x] **[RLS]** Create `family_members` policy: Admins can view all family members <!-- id: 2.4.8 -->
+- [x] **[RLS]** Enable RLS on `classes` table with "Deny All" default <!-- id: 2.4.9 -->
+- [x] **[RLS]** Create `classes` policy: Public read access for active classes <!-- id: 2.4.10 -->
+- [x] **[RLS]** Create `classes` policy: Teachers can CRUD their own classes <!-- id: 2.4.11 -->
+- [x] **[RLS]** Create `classes` policy: Admins/Class Schedulers can CRUD all classes <!-- id: 2.4.12 -->
+- [x] **[RLS]** Enable RLS on `enrollments` table with "Deny All" default <!-- id: 2.4.13 -->
+- [x] **[RLS]** Create `enrollments` policy: Parents can view their family's enrollments <!-- id: 2.4.14 -->
+- [x] **[RLS]** Create `enrollments` policy: Teachers can view enrollments for their classes <!-- id: 2.4.15 -->
+- [x] **[RLS]** Create `enrollments` policy: Admins can view/manage all enrollments <!-- id: 2.4.16 -->
+- [x] **[RLS]** Enable RLS on `payments` table with "Deny All" default <!-- id: 2.4.17 -->
+- [x] **[RLS]** Create `payments` policy: Parents can view their payment records <!-- id: 2.4.18 -->
+- [x] **[RLS]** Create `payments` policy: Admins can view all payment records <!-- id: 2.4.19 -->
+- [x] **[RLS]** Enable RLS on `audit_logs` table - Admins only <!-- id: 2.4.20 -->
+- [x] **[RLS]** Create Super Admin bypass policy using service role key pattern <!-- id: 2.4.21 -->
 
 ---
 
 ### 2.5 Database Triggers
 
-- [ ] **[Trigger]** Create `handle_new_user` trigger on `auth.users` to auto-create profile (with `ON CONFLICT DO NOTHING`) <!-- id: 2.5.1 -->
-- [ ] **[Trigger]** Create `on_profile_role_change` trigger for audit logging <!-- id: 2.5.2 -->
-- [ ] **[Trigger]** Create `on_enrollment_status_change` trigger for audit logging <!-- id: 2.5.3 -->
-- [ ] **[Trigger]** Create `update_updated_at` trigger for `system_settings` table <!-- id: 2.5.4 -->
+- [x] **[Trigger]** Create `handle_new_user` trigger on `auth.users` to auto-create profile (with `ON CONFLICT DO NOTHING`) <!-- id: 2.5.1 -->
+- [x] **[Trigger]** Create `on_profile_role_change` trigger for audit logging <!-- id: 2.5.2 -->
+- [x] **[Trigger]** Create `on_enrollment_status_change` trigger for audit logging <!-- id: 2.5.3 -->
+- [x] **[Trigger]** Create `update_updated_at` trigger for `system_settings` table <!-- id: 2.5.4 -->
 
 ---
 
@@ -143,7 +143,7 @@ This document tracks the detailed development tasks for the Class Registration S
 
 ### 3.1 Middleware & Route Protection
 
-- [ ] **[Auth]** Create `src/middleware.ts` with Supabase session refresh logic <!-- id: 3.1.1 -->
+- [x] **[Auth]** Create `src/middleware.ts` with Supabase session refresh logic <!-- id: 3.1.1 -->
 - [ ] **[Auth]** Add route protection for `/parent/*` - require authenticated user with parent/teacher/admin/super_admin role <!-- id: 3.1.2 -->
 - [ ] **[Auth]** Add route protection for `/teacher/*` - require teacher/admin/super_admin role <!-- id: 3.1.3 -->
 - [ ] **[Auth]** Add route protection for `/student/*` - require student/parent (viewing child)/admin role <!-- id: 3.1.4 -->
@@ -169,12 +169,12 @@ This document tracks the detailed development tasks for the Class Registration S
 ### 3.3 Auth Pages
 
 - [ ] **[Page]** Create `src/app/(auth)/layout.tsx` (auth pages layout wrapper) <!-- id: 3.3.1 -->
-- [ ] **[Page]** Create `src/app/(auth)/login/page.tsx` with form and validation <!-- id: 3.3.2 -->
-- [ ] **[Component]** Create `src/components/auth/LoginForm.tsx` with Zod validation <!-- id: 3.3.3 -->
-- [ ] **[Page]** Create `src/app/(auth)/register/page.tsx` with form and validation <!-- id: 3.3.4 -->
-- [ ] **[Component]** Create `src/components/auth/RegisterForm.tsx` with Zod validation <!-- id: 3.3.5 -->
-- [ ] **[Page]** Create `src/app/(auth)/forgot-password/page.tsx` <!-- id: 3.3.6 -->
-- [ ] **[Page]** Create `src/app/(auth)/reset-password/page.tsx` (for reset token handling) <!-- id: 3.3.7 -->
+- [x] **[Page]** Create `src/app/(auth)/login/page.tsx` with form and validation <!-- id: 3.3.2 -->
+- [x] **[Component]** Create `src/components/auth/LoginForm.tsx` with Zod validation <!-- id: 3.3.3 -->
+- [x] **[Page]** Create `src/app/(auth)/register/page.tsx` with form and validation <!-- id: 3.3.4 -->
+- [x] **[Component]** Create `src/components/auth/RegisterForm.tsx` with Zod validation <!-- id: 3.3.5 -->
+- [x] **[Page]** Create `src/app/(auth)/forgot-password/page.tsx` <!-- id: 3.3.6 -->
+- [x] **[Page]** Create `src/app/(auth)/reset-password/page.tsx` (for reset token handling) <!-- id: 3.3.7 -->
 - [ ] **[Page]** Create `src/app/(auth)/callback/route.ts` for OAuth/magic link callback <!-- id: 3.3.8 -->
 
 ---
@@ -475,11 +475,11 @@ This document tracks the detailed development tasks for the Class Registration S
 
 ### 8.8 CSV Export
 
-- [ ] **[Endpoint]** Create `src/app/api/export/route.ts` (API route for CSV download) <!-- id: 8.8.1 -->
-- [ ] **[Logic]** Add export type parameter: `users`, `classes`, `enrollments`, `payments` <!-- id: 8.8.2 -->
-- [ ] **[Logic]** Implement CSV generation with proper escaping <!-- id: 8.8.3 -->
-- [ ] **[Logic]** Add formula injection protection (prefix cells with `'`) <!-- id: 8.8.4 -->
-- [ ] **[Logic]** Add admin role verification <!-- id: 8.8.5 -->
+- [x] **[Endpoint]** Create `src/app/api/export/route.ts` (API route for CSV download) <!-- id: 8.8.1 -->
+- [x] **[Logic]** Add export type parameter: `users`, `classes`, `enrollments`, `payments` <!-- id: 8.8.2 -->
+- [x] **[Logic]** Implement CSV generation with proper escaping <!-- id: 8.8.3 -->
+- [x] **[Logic]** Add formula injection protection (prefix cells with `'`) <!-- id: 8.8.4 -->
+- [x] **[Logic]** Add admin role verification <!-- id: 8.8.5 -->
 - [ ] **[Component]** Create `ExportButton.tsx` with type selection dropdown <!-- id: 8.8.6 -->
 
 ---
@@ -569,12 +569,12 @@ This document tracks the detailed development tasks for the Class Registration S
 
 ### 11.1 Checkout Flow
 
-- [ ] **[Endpoint]** Create `src/app/api/checkout/route.ts` <!-- id: 11.1.1 -->
-- [ ] **[Logic]** Verify user owns the enrollment being paid for <!-- id: 11.1.2 -->
-- [ ] **[Logic]** Ensure enrollment is in `pending` status <!-- id: 11.1.3 -->
-- [ ] **[Logic]** Create Stripe Checkout Session with class fee as line item <!-- id: 11.1.4 -->
-- [ ] **[Logic]** Create pending payment record in database <!-- id: 11.1.5 -->
-- [ ] **[Logic]** Return Stripe session URL for redirect <!-- id: 11.1.6 -->
+- [x] **[Endpoint]** Create `src/app/api/checkout/route.ts` <!-- id: 11.1.1 -->
+- [x] **[Logic]** Verify user owns the enrollment being paid for <!-- id: 11.1.2 -->
+- [x] **[Logic]** Ensure enrollment is in `pending` status <!-- id: 11.1.3 -->
+- [x] **[Logic]** Create Stripe Checkout Session with class fee as line item <!-- id: 11.1.4 -->
+- [x] **[Logic]** Create pending payment record in database <!-- id: 11.1.5 -->
+- [x] **[Logic]** Return Stripe session URL for redirect <!-- id: 11.1.6 -->
 - [ ] **[Page]** Create `src/app/checkout/success/page.tsx` <!-- id: 11.1.7 -->
 - [ ] **[Page]** Create `src/app/checkout/cancel/page.tsx` <!-- id: 11.1.8 -->
 - [ ] **[Component]** Create `PaymentButton.tsx` component for pending enrollments <!-- id: 11.1.9 -->
@@ -583,14 +583,14 @@ This document tracks the detailed development tasks for the Class Registration S
 
 ### 11.2 Webhook Handler
 
-- [ ] **[Endpoint]** Create `src/app/api/webhooks/stripe/route.ts` <!-- id: 11.2.1 -->
-- [ ] **[Logic]** Verify Stripe webhook signature <!-- id: 11.2.2 -->
-- [ ] **[Logic]** Handle `checkout.session.completed` event <!-- id: 11.2.3 -->
-- [ ] **[Logic]** Update payment status to `completed` <!-- id: 11.2.4 -->
-- [ ] **[Logic]** Update enrollment status to `confirmed` <!-- id: 11.2.5 -->
-- [ ] **[Logic]** Implement idempotency check (check if already processed) <!-- id: 11.2.6 -->
-- [ ] **[Logic]** Handle `checkout.session.expired` event (mark payment failed) <!-- id: 11.2.7 -->
-- [ ] **[Logic]** Handle `charge.refunded` event (update payment status) <!-- id: 11.2.8 -->
+- [x] **[Endpoint]** Create `src/app/api/webhooks/stripe/route.ts` <!-- id: 11.2.1 -->
+- [x] **[Logic]** Verify Stripe webhook signature <!-- id: 11.2.2 -->
+- [x] **[Logic]** Handle `checkout.session.completed` event <!-- id: 11.2.3 -->
+- [x] **[Logic]** Update payment status to `completed` <!-- id: 11.2.4 -->
+- [x] **[Logic]** Update enrollment status to `confirmed` <!-- id: 11.2.5 -->
+- [x] **[Logic]** Implement idempotency check (check if already processed) <!-- id: 11.2.6 -->
+- [x] **[Logic]** Handle `checkout.session.expired` event (mark payment failed) <!-- id: 11.2.7 -->
+- [x] **[Logic]** Handle `charge.refunded` event (update payment status) <!-- id: 11.2.8 -->
 
 ---
 
@@ -608,7 +608,7 @@ This document tracks the detailed development tasks for the Class Registration S
 
 ### 11.4 Invoice Generation
 
-- [ ] **[Endpoint]** Create `src/app/api/invoice/route.ts` (HTML invoice) <!-- id: 11.4.1 -->
+- [x] **[Endpoint]** Create `src/app/api/invoice/route.ts` (HTML invoice) <!-- id: 11.4.1 -->
 - [ ] **[Logic]** Verify user can access the invoice (parent or admin) <!-- id: 11.4.2 -->
 - [ ] **[Component]** Create `InvoiceTemplate.tsx` server component for HTML rendering <!-- id: 11.4.3 -->
 - [ ] **[Component]** Include class details, student info, payment info, receipt number <!-- id: 11.4.4 -->
@@ -636,8 +636,8 @@ This document tracks the detailed development tasks for the Class Registration S
 
 ### 12.3 Webhook Integration
 
-- [ ] **[Logic]** Add Zoho sync trigger to Stripe webhook (after DB write success) <!-- id: 12.3.1 -->
-- [ ] **[Logic]** Make Zoho sync asynchronous (don't block checkout confirmation) <!-- id: 12.3.2 -->
+- [x] **[Logic]** Add Zoho sync trigger to Stripe webhook (after DB write success) <!-- id: 12.3.1 -->
+- [x] **[Logic]** Make Zoho sync asynchronous (don't block checkout confirmation) <!-- id: 12.3.2 -->
 - [ ] **[Logic]** Add `sync_status` column to payments table for retry tracking <!-- id: 12.3.3 -->
 - [ ] **[Logic]** Log Zoho API failures for manual retry (fault tolerance) <!-- id: 12.3.4 -->
 
@@ -647,9 +647,9 @@ This document tracks the detailed development tasks for the Class Registration S
 
 ### 13.1 Email Templates
 
-- [ ] **[Email]** Create `src/lib/email.ts` with Resend client configuration <!-- id: 13.1.1 -->
+- [x] **[Email]** Create `src/lib/email.ts` with Resend client configuration <!-- id: 13.1.1 -->
 - [ ] **[Email]** Create `EnrollmentConfirmation` email template <!-- id: 13.1.2 -->
-- [ ] **[Email]** Create `PaymentReceipt` email template <!-- id: 13.1.3 -->
+- [x] **[Email]** Create `PaymentReceipt` email template <!-- id: 13.1.3 -->
 - [ ] **[Email]** Create `WaitlistNotification` email template <!-- id: 13.1.4 -->
 - [ ] **[Email]** Create `ClassCancellation` email template <!-- id: 13.1.5 -->
 - [ ] **[Email]** Create `PasswordReset` email template <!-- id: 13.1.6 -->
@@ -659,7 +659,7 @@ This document tracks the detailed development tasks for the Class Registration S
 ### 13.2 Email Triggers
 
 - [ ] **[Logic]** Send enrollment confirmation on `checkout.session.completed` <!-- id: 13.2.1 -->
-- [ ] **[Logic]** Send payment receipt after payment record created <!-- id: 13.2.2 -->
+- [x] **[Logic]** Send payment receipt after payment record created <!-- id: 13.2.2 -->
 - [ ] **[Logic]** Send waitlist notification when promoted from waitlist <!-- id: 13.2.3 -->
 - [ ] **[Logic]** Send class cancellation email when admin cancels class <!-- id: 13.2.4 -->
 
@@ -669,7 +669,7 @@ This document tracks the detailed development tasks for the Class Registration S
 
 ### 14.1 Unit Tests (Vitest)
 
-- [ ] **[Test]** Create test setup file `vitest.setup.ts` with test utilities <!-- id: 14.1.1 -->
+- [x] **[Test]** Create test setup file `vitest.setup.ts` with test utilities <!-- id: 14.1.1 -->
 - [ ] **[Test]** Create Supabase Fake client in `src/__integration__/fakes/supabase.ts` <!-- id: 14.1.2 -->
 - [ ] **[Test]** Create Stripe Fake provider in `src/__integration__/fakes/stripe.ts` <!-- id: 14.1.3 -->
 - [ ] **[Test]** Unit test all Zod schemas in `validations.ts` <!-- id: 14.1.4 -->
