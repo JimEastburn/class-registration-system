@@ -23,7 +23,7 @@ export default async function HomePage() {
           src="/Together_FADE.avif"
           alt="Class Registration Background"
           fill
-          className="object-cover object-center"
+          className="object-contain object-center"
           priority
         />
       </div>
