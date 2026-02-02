@@ -11,7 +11,7 @@ export default function AuthLayout({
                 {/* Left Decorative Image */}
                 <div className="hidden lg:block flex-shrink-0 w-[165px]">
                     <Image
-                        src="/AAC FINAL.avif"
+                        src="/AAC_FINAL.avif"
                         alt="Austin AAC"
                         width={165}
                         height={152}
@@ -28,7 +28,7 @@ export default function AuthLayout({
                 {/* Right Decorative Image */}
                 <div className="hidden lg:block flex-shrink-0 w-[165px]">
                     <Image
-                        src="/AAC FINAL.avif"
+                        src="/AAC_FINAL.avif"
                         alt="Austin AAC"
                         width={165}
                         height={152}
