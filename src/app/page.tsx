@@ -20,7 +20,7 @@ export default async function HomePage() {
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-slate-900/80 z-10" /> {/* Dark overlay for readability */}
         <Image
-          src="/Together FADE.avif"
+          src="/Together_FADE.avif"
           alt="Class Registration Background"
           fill
           className="object-contain object-center"
@@ -34,7 +34,7 @@ export default async function HomePage() {
         {/* Navigation */}
         <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
           <Image
-            src="/AAC FINAL.avif"
+            src="/AAC_FINAL.avif"
             alt="Logo"
             width={165}
             height={152}
