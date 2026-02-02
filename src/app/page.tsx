@@ -23,13 +23,13 @@ export default async function HomePage() {
           src="/Together_FADE.avif"
           alt="Class Registration Background"
           fill
-          className="object-contain object-center"
+          className="object-cover object-center"
           priority
         />
       </div>
 
       {/* Content Wrapper */}
-      <div className="relative z-20 min-h-screen flex flex-col">
+      <div className="relative z-20 min-h-screen flex flex-col pb-24 md:pb-0">
 
         {/* Navigation */}
         <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
@@ -38,9 +38,9 @@ export default async function HomePage() {
             alt="Logo"
             width={165}
             height={152}
-            className="object-contain"
+            className="object-contain w-20 md:w-[165px] h-auto"
           />
-          <div className="flex gap-4">
+          <div className="flex gap-2 md:gap-4">
             <Link href="/login">
               <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-white">
                 Sign In
@@ -57,7 +57,7 @@ export default async function HomePage() {
         {/* Hero Section */}
         <main className="container mx-auto px-4 py-20 flex-grow flex flex-col justify-center">
           <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-8 leading-tight tracking-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-white mb-8 leading-tight tracking-tight">
               Class Registration
               <span className="block text-teal-400">
                 Austin Arts + Academic Collaborative
