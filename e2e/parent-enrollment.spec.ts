@@ -153,9 +153,11 @@ test.describe('Parent Enrollment Flow', () => {
         
         const childFirstName = 'Kiddo';
         const childLastName = 'Test';
+        const childEmail = `kiddo.${Date.now()}@test.com`;
         
         await page.fill('input[name="firstName"]', childFirstName);
         await page.fill('input[name="lastName"]', childLastName);
+        await page.fill('input[name="email"]', childEmail);
         await page.fill('input[name="dob"]', '2016-01-01');
         await page.fill('input[name="grade"]', '3rd Grade');
         await page.getByRole('button', { name: 'Add Member' }).click();

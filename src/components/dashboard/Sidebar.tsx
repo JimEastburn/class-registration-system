@@ -28,6 +28,7 @@ interface NavItem {
     label: string;
     icon: React.ElementType;
     roles: UserRole[];
+    exact?: boolean;
 }
 
 /**
@@ -41,6 +42,7 @@ const navItems: NavItem[] = [
         label: 'Dashboard',
         icon: LayoutDashboard,
         roles: ['parent', 'teacher', 'admin', 'super_admin'],
+        exact: true,
     },
     {
         href: '/parent/family',
@@ -67,6 +69,7 @@ const navItems: NavItem[] = [
         label: 'Teacher Dashboard',
         icon: GraduationCap,
         roles: ['teacher', 'admin', 'super_admin'],
+        exact: true,
     },
     {
         href: '/teacher/classes',
@@ -81,6 +84,7 @@ const navItems: NavItem[] = [
         label: 'Student Dashboard',
         icon: LayoutDashboard,
         roles: ['student'],
+        exact: true,
     },
     {
         href: '/student/schedule',
@@ -95,6 +99,7 @@ const navItems: NavItem[] = [
         label: 'Admin Dashboard',
         icon: Shield,
         roles: ['admin', 'super_admin'],
+        exact: true,
     },
     {
         href: '/admin/users',
@@ -139,6 +144,7 @@ const navItems: NavItem[] = [
         label: 'Scheduler Dashboard',
         icon: CalendarClock,
         roles: ['class_scheduler', 'super_admin'],
+        exact: true,
     },
     {
         href: '/class-scheduler/calendar',
@@ -272,7 +278,8 @@ function NavSection({ title, items, pathname }: NavSectionProps) {
                 {items.map((item) => {
                     const isActive =
                         pathname === item.href ||
-                        (item.href !== '/' &&
+                        (!item.exact &&
+                            item.href !== '/' &&
                             pathname.startsWith(item.href + '/'));
 
                     return (
