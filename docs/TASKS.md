@@ -1,156 +1,156 @@
 # Class Registration System - Master Task List
 
-This document tracks the development progress of the Class Registration System. It consolidates tasks from the initial setup, functional requirements, and architectural decisions.
+This document tracks the detailed development tasks for the Class Registration System. It is designed to be consumed by autonomous agents, with atomic, testable tasks.
 
 ## Phase 1: Foundation & Infrastructure
 
-### Environment & Project Setup
+### 1.1 Project & Environment Setup
 
-- [ ] Determine if Next.js 16 project with TypeScript and App Router has been initialized, and if not, initialize it
-- [ ] Determine if Tailwind CSS v4 has been configured, and if not, configure it
-- [ ] Determine if shadcn/ui components have been installed and configured, and if not, install and configure them
-- [ ] Determine if ESLint and Prettier configuration has been set up, and if not, set up ESLint and Prettier configuration
-- [ ] Determine if `vercel.json` for Vercel deployment has been configured, and if not, configure it
-- [ ] Determine if `docs/DEPLOYMENT.md` guide has been created, and if not, create it
-- [ ] Determine if environment variables locally (`.env.local`) have been set up, and if not, set them up
+- [ ] **[Setup]** Initialize Next.js 16 (App Router) project with TypeScript `create-next-app` <!-- id: 1.1.1 -->
+- [ ] **[Setup]** Configure Tailwind CSS v4 (ensure `postcss` and `autoprefixer` removed if using v4 native) <!-- id: 1.1.2 -->
+- [ ] **[Setup]** Initialize `shadcn/ui` and install core components `button`, `input`, `label`, `card`, `toast`, `dialog`, `select`, `dropdown-menu`, `avatar`, `badge`, `table` <!-- id: 1.1.3 -->
+- [ ] **[Setup]** Configure ESLint and Prettier with `prettier-plugin-tailwindcss` <!-- id: 1.1.4 -->
+- [ ] **[Setup]** Create `vercel.json` configuration for deployment settings <!-- id: 1.1.5 -->
+- [ ] **[Setup]** Create `.env.local` template (populate from `.env.example`) <!-- id: 1.1.6 -->
+- [ ] **[Setup]** Configure `vitest` and `playwright` testing environments <!-- id: 1.1.7 -->
 
-### Database & Authentication (Supabase)
+### 1.2 core Libraries & Utilities
 
-- [ ] Initialize Supabase project
-- [ ] Create Database Schema (Profiles, Families, Classes, Enrollments, Payments)
-- [ ] **[Security]** Enable Row Level Security (RLS) policies for all tables
-- [ ] **[Security]** Create PostgreSQL trigger for "Belt and Suspenders" Profile creation (handle new user signup)
-- [ ] Configure Supabase Auth (Email/Password, Login links)
-- [ ] Implement Auth Middleware for protected routes
-- [ ] Determine if `signIn` server action with profile verification check has been created, and if not, create it
+- [ ] **[Lib]** Create `src/lib/utils.ts` with `cn` helper (clsx + tailwind-merge) <!-- id: 1.2.1 -->
+- [ ] **[Lib]** Create `src/lib/supabase/client.ts` (Client Component client) <!-- id: 1.2.2 -->
+- [ ] **[Lib]** Create `src/lib/supabase/server.ts` (Server Component client using `createServerClient`) <!-- id: 1.2.3 -->
+- [ ] **[Lib]** Create `src/lib/supabase/middleware.ts` (Middleware client for auth guarding) <!-- id: 1.2.4 -->
+- [ ] **[Lib]** Create `src/lib/validations.ts` with Zod schemas for `profile`, `family`, `class`, `enrollment` <!-- id: 1.2.5 -->
+- [ ] **[Type]** Create `src/types/index.ts` with shared TypeScript interfaces matching DB schema <!-- id: 1.2.6 -->
 
-### Database & Authentication (Multi-Role Support)
+### 1.3 Database Schema (Supabase)
 
-- [ ] Create `profiles` table to support multiple roles (e.g., `roles: text[]` or `user_roles` table)
-- [ ] Implement "Role Promotion" logic (Add Role vs Set Role)
-- [ ] **[Feature]** Profile View Switching
-  - [ ] Implement strict "View Toggle" logic (e.g., Teacher <-> Parent)
-  - [ ] Implement "God Mode" Switcher for Super Admin (Access ALL views)
-- [ ] **[Validation]** Enforce Role Combinations & Constraints:
-  - [ ] `Parent` + `Teacher`/`Admin`/`Scheduler` (Allowed - Default View: Role, Toggle: Parent)
-  - [ ] `Class Scheduler` + `Teacher` (Forbidden)
-  - [ ] `Class Scheduler` + `Student` (Forbidden)
-  - [ ] `Admin` + `Class Scheduler` View (Forbidden for Regular Admin)
-  - [ ] `Super Admin` (Universal Access, Bypasses all constraints)
+- [ ] **[DB]** Create `profiles` table (id, email, role, first_name, last_name, phone) <!-- id: 1.3.1 -->
+- [ ] **[DB]** Create `family_members` table (id, parent_id, student_user_id, first_name, last_name, grade, dob) <!-- id: 1.3.2 -->
+- [ ] **[DB]** Create `classes` table (id, teacher_id, title, description, capacity, price, location, schedule_config) <!-- id: 1.3.3 -->
+- [ ] **[DB]** Create `enrollments` table (id, student_id, class_id, status, created_at) <!-- id: 1.3.4 -->
+- [ ] **[DB]** Create `payments` table (id, enrollment_id, stripe_payment_intent, amount, status, created_at) <!-- id: 1.3.5 -->
+- [ ] **[DB]** Create `class_blocks` table (teacher_id, student_id, reason) <!-- id: 1.3.6 -->
+- [ ] **[DB]** Enable RLS on all tables and create "Deny All" default policies <!-- id: 1.3.7 -->
+
+### 1.4 Database Security & Triggers
+
+- [ ] **[RLS]** Create RLS policies for `profiles` (Users view own, Admins view all, Teachers view enrolled students) <!-- id: 1.4.1 -->
+- [ ] **[RLS]** Create RLS policies for `classes` (Public read active, Teachers edit own, Admin/Scheduler edit all) <!-- id: 1.4.2 -->
+- [ ] **[RLS]** Create RLS policies for `enrollments` (Parents view own family's, Teachers view their classes', Admin view all) <!-- id: 1.4.3 -->
+- [ ] **[Trigger]** Create `handle_new_user` Postgres trigger to auto-create profile on Auth signup <!-- id: 1.4.4 -->
+- [ ] **[Trigger]** Create `on_enrollment_created` trigger (if needed for counters) or rely on count queries <!-- id: 1.4.5 -->
+
+### 1.5 Authentication & Middleware
+
+- [ ] **[Auth]** Create `src/middleware.ts` to handle session refresh and protected route redirection <!-- id: 1.5.1 -->
+- [ ] **[Auth]** Implement `src/app/(auth)/login/page.tsx` with Zod form validation <!-- id: 1.5.2 -->
+- [ ] **[Auth]** Implement `src/app/(auth)/register/page.tsx` with Zod form validation <!-- id: 1.5.3 -->
+- [ ] **[Auth]** Implement `src/app/(auth)/forgot-password/page.tsx` <!-- id: 1.5.4 -->
+- [ ] **[Action]** Create `src/lib/actions/auth.ts`: `signIn`, `signUp`, `signOut` <!-- id: 1.5.5 -->
+- [ ] **[Action]** Update `signIn` to verify/create profile existence ("Belt & Suspenders") <!-- id: 1.5.6 -->
 
 ## Phase 2: Core Feature Implementation
 
-### Shared Components & Layouts
+### 2.1 Multi-Role & Layout Architecture
 
-- [ ] Determine if responsive Dashboard Layout (Sidebar, Topbar, Footer) has been created, and if not, create it
-- [ ] **[UI]** Determine if "Role Badge" component (Pills) has been implemented, and if not, implement it
-  - [ ] Support displaying multiple pills for multi-role users (e.g. "Parent" AND "Teacher")
-  - [ ] Color-code roles for visual distinction
-- [ ] Determine if "Portal Switcher" for multi-role users (e.g., Teachers accessing Parent view) has been implemented, and if not, implement it
-- [ ] Determine if Authentication Pages (Login, Register, Forgot Password) have been built, and if not, build them
-- [ ] Determine if `src/lib/utils.ts` and core validation schemas (`validations.ts`) have been implemented, and if not, implement them. The core validation schemas (`validations.ts`) may just need to be updated to follow the new profile schema and the multi-role support.
+- [ ] **[Feature]** Implement `switchProfileView` Server Action (sets cookie) <!-- id: 2.1.1 -->
+- [ ] **[Component]** Create `RoleBadge` component (displays current role context) <!-- id: 2.1.2 -->
+- [ ] **[Component]** Create `PortalSwitcher` component (dropdown to toggle Parent/Teacher/Admin views) <!-- id: 2.1.3 -->
+- [ ] **[Layout]** Create `src/app/(dashboard)/layout.tsx` (Shared App Shell: Sidebar, Topbar) <!-- id: 2.1.4 -->
+- [ ] **[Layout]** Create `src/components/dashboard/Sidebar.tsx` with role-based navigation links <!-- id: 2.1.5 -->
 
-### Parent Portal Features
+### 2.2 Parent Portal Features
 
-- [ ] **Dashboard**: View family enrollment summary
-- [ ] **Family Management**: Add/Edit/Delete children profiles
-- [ ] **Student Linking**: Link child accounts via email
-- [ ] **Class Browsing**: View available classes with filtering
-- [ ] **Enrollment Flow**: Select class -> Check Capacity -> Pending Enrollment
-- [ ] **Payment**: Stripe Checkout implementation
+- [ ] **[Page]** `src/app/(dashboard)/parent/page.tsx` (Dashboard: Family Summary) <!-- id: 2.2.1 -->
+- [ ] **[Page]** `src/app/(dashboard)/parent/family/page.tsx` (List Family Members) <!-- id: 2.2.2 -->
+- [ ] **[Action]** `src/lib/actions/family.ts`: `addFamilyMember`, `updateFamilyMember`, `deleteFamilyMember` <!-- id: 2.2.3 -->
+- [ ] **[Feature]** Implement Student Linking via Email (UI + Action) <!-- id: 2.2.4 -->
+- [ ] **[Page]** `src/app/(dashboard)/parent/browse/page.tsx` (Class Catalog) <!-- id: 2.2.5 -->
+- [ ] **[Component]** `ClassCard` component with "Enroll" button <!-- id: 2.2.6 -->
+- [ ] **[Action]** `src/lib/actions/enrollment.ts`: `enrollStudent` (Capacity Check -> Pending Status) <!-- id: 2.2.7 -->
 
-### Teacher Portal Features
+### 2.3 Teacher Portal Features
 
-- [ ] **Dashboard**: View assigned classes and student counts
-- [ ] **Class Management**: Create/Edit details, Publish/Cancel classes
-- [ ] **Roster View**: View enrolled students per class
+- [ ] **[Page]** `src/app/(dashboard)/teacher/page.tsx` (Dashboard: My Classes) <!-- id: 2.3.1 -->
+- [ ] **[Page]** `src/app/(dashboard)/teacher/classes/new/page.tsx` (Create Class Form) <!-- id: 2.3.2 -->
+- [ ] **[Action]** `src/lib/actions/classes.ts`: `createClass`, `updateClass`, `publishClass`, `cancelClass` <!-- id: 2.3.3 -->
+- [ ] **[Page]** `src/app/(dashboard)/teacher/classes/[id]/page.tsx` (Class Detail & Roster) <!-- id: 2.3.4 -->
+- [ ] **[Component]** `StudentRosterTable` component <!-- id: 2.3.5 -->
+- [ ] **[Feature]** Implement Class Materials Upload (UI only, file storage later) <!-- id: 2.3.6 -->
 
-### Student Portal Features
+### 2.4 Student Portal Features
 
-- [ ] **Dashboard**: View personal class schedule
-- [ ] **Class Details**: View location, teacher, syllabus
+- [ ] **[Page]** `src/app/(dashboard)/student/page.tsx` (Dashboard: My Schedule) <!-- id: 2.4.1 -->
+- [ ] **[Page]** `src/app/(dashboard)/student/classes/[id]/page.tsx` (Class Detail View) <!-- id: 2.4.2 -->
+- [ ] **[Component]** `WeeklyScheduleView` component <!-- id: 2.4.3 -->
 
-### Class Scheduler Portal
+### 2.5 Admin Portal Features
 
-- [ ] **Access Control**: Verify Class Scheduler role permissions
-- [ ] **Global Management**: View and Create classes for _any_ teacher
-- [ ] **Master Schedule**: View system-wide class calendar
-- [ ] **[UI]** Build Calendar Grid Layout (Rows by Pattern)
-- [ ] **[UI]** Build Staging Area for unassigned classes
-- [ ] **[Logic]** Implement `dnd-kit` drag and drop context
-- [ ] **[Logic]** Implement Conflict Detection (Teacher availability Check)
-- [ ] **[Feature]** Click-to-create class in empty slot
+- [ ] **[Page]** `src/app/(dashboard)/admin/users/page.tsx` (User Management Table) <!-- id: 2.5.1 -->
+- [ ] **[Action]** `src/lib/actions/admin.ts`: `updateUserRole` (Promote/Demote logic) <!-- id: 2.5.2 -->
+- [ ] **[Page]** `src/app/(dashboard)/admin/classes/page.tsx` (All Classes Management) <!-- id: 2.5.3 -->
+- [ ] **[Page]** `src/app/(dashboard)/admin/payments/page.tsx` (Transaction History) <!-- id: 2.5.4 -->
+- [ ] **[Endpoint]** `src/app/api/export/route.ts` (CSV Export with formula injection protection) <!-- id: 2.5.5 -->
 
-### Admin Portal Features
+### 2.6 Class Scheduler Portal Features
 
-- [ ] **User Management**:
-  - [ ] View all users with all active roles indicated
-  - [ ] **Promote User**: Add additional role (e.g., make a Parent also a Teacher)
-  - [ ] **Demote User**: Remove specific role (e.g., remove Teacher access, keep Parent)
-- [ ] **[Safety]** Implement strict role demotion logic (revoke privileges immediately)
-- [ ] **Class Management**: Override/Edit any class
-- [ ] **Enrollment Management**: Force add/remove students
-- [ ] **Payment Management**: View transaction history and statuses
-- [ ] **Data Export**: Export tables to CSV **[Safety: Escape sensitive chars]**
+- [ ] **[Page]** `src/app/(dashboard)/class-scheduler/page.tsx` (Master Schedule Dashboard) <!-- id: 2.6.1 -->
+- [ ] **[Component]** `MasterCalendarGrid` (Drag & Drop Interface placeholder) <!-- id: 2.6.2 -->
+- [ ] **[Logic]** Implement Conflict Detection algorithm in `src/lib/scheduler.ts` <!-- id: 2.6.3 -->
 
-### Super Admin Portal Features
+### 2.7 Super Admin Features
 
-- [ ] **God Mode Access**:
-  - [ ] Implement "Universal Bypass" for all RLS policies (Super Admin reads/writes ALL)
-  - [ ] **[UI]** "Global View Switcher": Dropdown to access Admin, Scheduler, Teacher, or Parent views
-- [ ] **Audit Logging**:
-  - [ ] **[Security]** Log all "God Mode" view switches and actions (Action: `super_admin_switch`, Target: `view_name`)
-  - [ ] **[Security]** Log all "Admin" view switches and actions (Action: `admin_switch`, Target: `view_name`)
-  - [ ] **[Security]** Log all "Scheduler" view switches and actions (Action: `scheduler_switch`, Target: `view_name`)
-  - [ ] **[Security]** Log all "Teacher" view switches and actions (Action: `teacher_switch`, Target: `view_name`)
-  - [ ] **[Security]** Log all "Parent" view switches and actions (Action: `parent_switch`, Target: `view_name`)
-  - [ ] View Audit Log Dashboard (Super Admin only)
+- [ ] **[Feature]** Implement "God Mode" view switcher (Bypass constraints) <!-- id: 2.7.1 -->
+- [ ] **[Policy]** Update RLS policies to allow Super Admin universal access <!-- id: 2.7.2 -->
+- [ ] **[Log]** Create `audit_logs` table and logging helper <!-- id: 2.7.3 -->
 
-## Phase 3: Integrations & Advanced Logic
+## Phase 3: Integrations & Payments
 
-### Payments (Stripe)
+### 3.1 Stripe Integration
 
-- [ ] detailed Stripe Setup (Products, Prices in Stripe Dashboard)
-- [ ] Implement Checkout Session creation
-- [ ] Create Webhook Handler (`api/webhooks/stripe`)
-- [ ] **[Safety]** Implement Webhook Idempotency checked against DB
-- [ ] Handle payment success/failure states
+- [ ] **[Setup]** Configure Stripe SDK client in `src/lib/stripe.ts` <!-- id: 3.1.1 -->
+- [ ] **[Endpoint]** `src/app/api/checkout/route.ts` (Create Checkout Session) <!-- id: 3.1.2 -->
+- [ ] **[Page]** `src/app/checkout/success/page.tsx` <!-- id: 3.1.3 -->
+- [ ] **[Page]** `src/app/checkout/cancel/page.tsx` <!-- id: 3.1.4 -->
+- [ ] **[Webhook]** `src/app/api/webhooks/stripe/route.ts` (Handle `checkout.session.completed`) <!-- id: 3.1.5 -->
+- [ ] **[Logic]** Implement Idempotency check in Webhook (prevent double-fulfillment) <!-- id: 3.1.6 -->
 
-### Accounting Sync (Zoho Books)
+### 3.2 Zoho Books Integration
 
-- [ ] Implement Zoho Authentication/Token refresh
-- [ ] Create "Sync to Zoho" background job (triggered by Stripe Webhook)
-- [ ] Map Data: Profile -> Contact, Enrollment -> Invoice, Payment -> Customer Payment
-- [ ] **[Reliability]** Implement retry logic for failed syncs
-- [ ] Add `sync_status` tracking column to database
+- [ ] **[Lib]** Create `src/lib/zoho.ts` (Auth & Token Refresh logic) <!-- id: 3.2.1 -->
+- [ ] **[Logic]** Implement `syncProfileToContact` function <!-- id: 3.2.2 -->
+- [ ] **[Logic]** Implement `syncEnrollmentToInvoice` function <!-- id: 3.2.3 -->
+- [ ] **[Logic]** Implement `syncPaymentToCustomerPayment` function <!-- id: 3.2.4 -->
+- [ ] **[Webhook]** Update Stripe Webhook to trigger Zoho Sync asynchronously <!-- id: 3.2.5 -->
 
-### Emails (Resend)
+### 3.3 Email Integration
 
-- [ ] Configure Resend API
-- [ ] Implement Enrollment Confirmation Email
-- [ ] Implement Payment Receipt Email
+- [ ] **[Setup]** Configure Resend SDK in `src/lib/resend.ts` <!-- id: 3.3.1 -->
+- [ ] **[Template]** Create Email Template for `EnrollmentConfirmation` <!-- id: 3.3.2 -->
+- [ ] **[Template]** Create Email Template for `PaymentReceipt` <!-- id: 3.3.3 -->
+- [ ] **[Webhook]** Update Stripe Webhook to send emails on success <!-- id: 3.3.4 -->
 
-## Phase 4: Verification & Quality Assurance
+## Phase 4: Verification & QA
 
-### Testing Strategy
+### 4.1 Automated Testing
 
-- [ ] **Unit Tests**: Test utility functions and validation logic
-- [ ] **Integration Tests**:
-  - [ ] Test Server Actions and Database Triggers
-  - [ ] **[Multi-Role]** Verify role promotion/demotion logic (adding/removing roles)
-  - [ ] **[Multi-Role]** Verify conflicting role constraints (e.g. Teacher cannot be Class Scheduler)
-- [ ] **E2E Tests (Playwright)**:
-  - [ ] Parent Enrollment Flow
-  - [ ] Teacher Class Creation
-  - [ ] Admin User Management
-- [ ] **Manual Verification**: Validate "Student Linking" and multi-role switching
+- [ ] **[Test]** Unit verify `validations.ts` schemas (Vitest) <!-- id: 4.1.1 -->
+- [ ] **[Test]** Unit verify `scheduler.ts` conflict logic (Vitest) <!-- id: 4.1.2 -->
+- [ ] **[Test]** Integration verify `createClass` and RLS permissions (Vitest + Supabase Fakes) <!-- id: 4.1.3 -->
+- [ ] **[Test]** E2E Parent Enrollment Flow (Playwright) <!-- id: 4.1.4 -->
+- [ ] **[Test]** E2E Teacher Class Management (Playwright) <!-- id: 4.1.5 -->
 
-### Optimization & Launch
+### 4.2 Manual Verification
 
-- [ ] Audit Accessibility (WCAG 2.2)
-- [ ] Verify Mobile Responsiveness on all portals
-- [ ] Perform detailed capacity hand-off test (Waitlist logic)
-- [ ] Deploy to Vercel Production
-- [ ] Deploy to Vercel Staging environment
-- [ ] Deploy to Vercel Preview environment
-- [ ] Create a ci/cd pipeline to Vercel Staging and Production environments. There should be a button to click to deploy from Staging to Production. Deployment to staging should be automatic when a PR is merged to master branch.
+- [ ] **[Manual]** Verify Student Linking (Email invite flow) <!-- id: 4.2.1 -->
+- [ ] **[Manual]** Verify Multi-Role Switching (Teacher perspective) <!-- id: 4.2.2 -->
+- [ ] **[Manual]** Verify Admin CSV Export (Security check) <!-- id: 4.2.3 -->
+
+## Phase 5: Deployment
+
+### 5.1 Vercel Configuration
+
+- [ ] **[Deploy]** Configure Vercel Project Settings (Env Vars) <!-- id: 5.1.1 -->
+- [ ] **[Deploy]** Deploy to Staging <!-- id: 5.1.2 -->
+- [ ] **[Deploy]** Promote Staging to Production <!-- id: 5.1.3 -->
