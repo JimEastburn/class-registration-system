@@ -1,0 +1,74 @@
+[1A[2K[2m[WebServer] [22m[33m[1m⚠[22m[39m The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+[dotenv@17.2.3] injecting env (8) from .env.local -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+
+Running 2 tests using 1 worker
+
+[1A[2K[1/2] [setup] › e2e/auth.setup.ts:3:6 › authenticate
+[1A[2K[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  suppress all logs with { quiet: true }
+
+[1A[2K[2/2] [chromium] › e2e/parent-enrollment.spec.ts:23:9 › Parent Enrollment Flow › Parent can browse and enroll child in a class
+[1A[2K[chromium] › e2e/parent-enrollment.spec.ts:23:9 › Parent Enrollment Flow › Parent can browse and enroll child in a class
+Creating test user: teacher-1770066480400-91907@example.com as teacher
+
+[1A[2KCreating test user: parent-1770066480755-12929@example.com as parent
+
+[1A[2KSubmitting form with Class Name: "Enrollment Test Class 1770066481077"
+
+[1A[2KAttempt 1: Table body not found. Reloading...
+
+[1A[2KAttempt 2: Table body not found. Reloading...
+
+[1A[2KAttempt 3: Table body not found. Reloading...
+
+[1A[2KFinal Page Body Content: Austin AAC
+PARENT PORTAL
+Dashboard
+My Family
+Browse Classes
+Enrollments
+TEACHER PORTAL
+Teacher Dashboard
+My Classes
+
+© 2026 Austin AAC
+
+Teacher Portal
+Teacher
+TU
+My Classes
+
+Create, edit, and manage your classes.
+
+Create Class
+
+You haven't created any classes yet.
+
+Create Your First Class
+For help, please email communitysupport@austinaac.org|Code of Conduct
+
+[1A[2K  1) [chromium] › e2e/parent-enrollment.spec.ts:23:9 › Parent Enrollment Flow › Parent can browse and enroll child in a class 
+
+    Error: Class table not found after retries.
+
+      105 |              const bodyText = await page.locator('body').innerText();
+      106 |              console.log('Final Page Body Content:', bodyText);
+    > 107 |              throw new Error('Class table not found after retries.');
+          |                    ^
+      108 |         }
+      109 |         
+      110 |         // Debug: Log the table content
+        at /Users/jam/Documents/repos-personal/class-registration-system/e2e/parent-enrollment.spec.ts:107:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/parent-enrollment-Parent-E-6eb0f-and-enroll-child-in-a-class-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/parent-enrollment-Parent-E-6eb0f-and-enroll-child-in-a-class-chromium/error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] › e2e/parent-enrollment.spec.ts:23:9 › Parent Enrollment Flow › Parent can browse and enroll child in a class 
+  1 passed (31.3s)
+
+[36m  Serving HTML report at http://localhost:63345. Press Ctrl+C to quit.[39m

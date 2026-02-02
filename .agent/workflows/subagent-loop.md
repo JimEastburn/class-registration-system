@@ -11,6 +11,13 @@ MAX_CONSECUTIVE_REWORKS = 3
 
 This workflow dictates a strict loop for clearing tasks from a task list using specialized subagent personae.
 
+> [!CRITICAL]
+> **STRICT MODE ENABLED**:
+> 1. You MUST NOT use `notify_user` to report success or ask for feedback. The only valid exit is via the **Context Refresh Protocol**.
+> 2. You MUST trust the outcome of Phase 3 (Spec Review) and Phase 4 (Code Review) as the final verification.
+> 3. If a task passes verification, you **MUST** immediately loop to the next task.
+> 4. Any attempt to "check with the user" is a violation of this workflow.
+
 ---
 
 ## Phase 1: Task Identification
@@ -18,7 +25,7 @@ This workflow dictates a strict loop for clearing tasks from a task list using s
 1.  **Read Task List**:
     - Check the active `task.md` artifact (e.g., `.gemini/antigravity/brain/.../task.md`) OR `docs/TASKS.md`.
     - Identify the **first** incomplete task (unchecked `[ ]`).
-    - **STOP if no tasks remain** → Notify user "All tasks complete."
+    - **STOP if no tasks remain in the `docs/TASKS.md` ** → Notify user "All tasks complete."
 
 2.  **Context Extraction**:
     - Read the specific task description.

@@ -26,6 +26,7 @@ vi.mock('@/lib/zoho', () => ({
 
 vi.mock('@/lib/email', () => ({
     sendPaymentReceipt: vi.fn().mockResolvedValue({ success: true }),
+    sendEnrollmentConfirmation: vi.fn().mockResolvedValue({ success: true }),
 }));
 
 vi.mock('next/headers', () => ({

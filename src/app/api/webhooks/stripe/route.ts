@@ -3,7 +3,8 @@ import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import type Stripe from 'stripe';
-import { sendPaymentReceipt } from '@/lib/email';
+import { sendPaymentReceipt, sendEnrollmentConfirmation, sendWaitlistNotification } from '@/lib/email';
+import { format } from 'date-fns';
 
 // Create admin client lazily to avoid build-time errors
 function getSupabaseAdmin() {
@@ -57,11 +58,16 @@ export async function POST(request: Request) {
                 }
 
                 // Get the payment ID to trigger Zoho sync
+                // AND update transaction_id to the PaymentIntent ID (for refunds)
+                const paymentIntentId = session.payment_intent as string;
+                
                 const { data: updatedPayment } = await supabaseAdmin
                     .from('payments')
                     .update({
                         status: 'completed',
                         paid_at: new Date().toISOString(),
+                        transaction_id: paymentIntentId || session.id, // Store PI if available
+                        stripe_payment_id: session.id // Keep session ID ref
                     })
                     .eq('transaction_id', session.id)
                     .select('id')
@@ -76,17 +82,25 @@ export async function POST(request: Request) {
                 // Trigger Zoho Sync asynchronously (don't block the webhook response)
                 if (updatedPayment?.id) {
                     const { syncPaymentToZoho } = await import('@/lib/zoho');
-                    syncPaymentToZoho(updatedPayment.id).catch(err => {
+                    syncPaymentToZoho(updatedPayment.id).catch((err: Error) => {
                         console.error('Initial Zoho sync trigger failed:', err);
                     });
                 }
 
-                // Fetch enrollment details for email
+                // Fetch enrollment details for emails
                 const { data: enrollment } = await supabaseAdmin
                     .from('enrollments')
                     .select(`
             student:family_members(first_name, last_name, parent_id),
-            class:classes(name, fee)
+            class:classes(
+                name, 
+                fee:price, 
+                location, 
+                start_date, 
+                day, 
+                block,
+                teacher:profiles(first_name, last_name)
+            )
           `)
                     .eq('id', enrollmentId)
                     .single();
@@ -100,6 +114,11 @@ export async function POST(request: Request) {
                     const classData = enrollment.class as unknown as {
                         name: string;
                         fee: number;
+                        location: string;
+                        start_date: string;
+                        day: number;
+                        block: number;
+                        teacher: { first_name: string; last_name: string };
                     };
 
                     // Get parent email
@@ -110,15 +129,47 @@ export async function POST(request: Request) {
                         .single();
 
                     if (parent) {
-                        await sendPaymentReceipt({
-                            parentEmail: parent.email,
-                            parentName: parent.first_name,
-                            studentName: `${student.first_name} ${student.last_name}`,
-                            className: classData.name,
-                            amount: classData.fee,
-                            paymentDate: new Date().toLocaleDateString(),
-                            transactionId: session.id,
-                        });
+                        const studentName = `${student.first_name} ${student.last_name}`;
+                        
+                        try {
+                            // 1. Send Payment Receipt
+                            await sendPaymentReceipt({
+                                parentEmail: parent.email,
+                                parentName: parent.first_name,
+                                studentName: studentName,
+                                className: classData.name,
+                                amount: classData.fee / 100, // Convert cents to dollars
+                                paymentDate: new Date().toLocaleDateString(),
+                                transactionId: paymentIntentId || session.id,
+                            });
+                        } catch (emailError) {
+                            console.error('Failed to send receipt:', emailError);
+                        }
+
+                        try {
+                            // 2. Send Enrollment Confirmation
+                            const teacherName = classData.teacher 
+                                ? `${classData.teacher.first_name} ${classData.teacher.last_name}` 
+                                : 'TBA';
+                            
+                            const startDate = classData.start_date 
+                                ? format(new Date(classData.start_date), 'MMMM do, yyyy') 
+                                : 'TBA';
+
+                            await sendEnrollmentConfirmation({
+                                parentEmail: parent.email,
+                                parentName: parent.first_name,
+                                studentName: studentName,
+                                className: classData.name,
+                                teacherName: teacherName,
+                                schedule: `Day ${classData.day}, Block ${classData.block}`,
+                                location: classData.location || 'TBA',
+                                startDate: startDate,
+                                fee: classData.fee / 100
+                            });
+                        } catch (emailError) {
+                            console.error('Failed to send enrollment confirmation:', emailError);
+                        }
                     }
                 }
 
@@ -135,6 +186,14 @@ export async function POST(request: Request) {
                 .from('payments')
                 .update({ status: 'failed' })
                 .eq('transaction_id', session.id);
+            
+            // Also cancel the pending enrollment
+            if (session.metadata?.enrollmentId) {
+                 await supabaseAdmin
+                    .from('enrollments')
+                    .update({ status: 'cancelled' })
+                    .eq('id', session.metadata.enrollmentId);
+            }
 
             console.log(`Payment expired for session: ${session.id}`);
             break;
@@ -143,10 +202,109 @@ export async function POST(request: Request) {
         case 'charge.refunded': {
             const charge = event.data.object as Stripe.Charge;
             const paymentIntentId = charge.payment_intent as string;
+            
+            // Find payment by payment_intent (which we stored in transaction_id)
+            const { data: payment } = await supabaseAdmin
+                .from('payments')
+                .select('id, status, enrollment_id')
+                .eq('transaction_id', paymentIntentId)
+                .single();
+            
+            if (payment && payment.status !== 'refunded') {
+                 // Update Payment
+                 await supabaseAdmin
+                    .from('payments')
+                    .update({ 
+                        status: 'refunded',
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', payment.id);
 
-            // Find payment by looking up the session
-            // Note: In production, you'd want to store the payment intent ID
-            console.log(`Refund processed for payment intent: ${paymentIntentId}`);
+                 // Cancel Enrollment and Handle Waitlist
+                 if (payment.enrollment_id) {
+                     // Get class_id first
+                    const { data: enrollmentData } = await supabaseAdmin
+                        .from('enrollments')
+                        .select('class_id')
+                        .eq('id', payment.enrollment_id)
+                        .single();
+
+                    await supabaseAdmin
+                        .from('enrollments')
+                        .update({ status: 'cancelled' })
+                        .eq('id', payment.enrollment_id);
+                     
+                    // Promote from Waitlist (Duplicate logic from refunds.ts, but handled by system/webhook)
+                    if (enrollmentData?.class_id) {
+                        const { data: nextWaitlisted } = await supabaseAdmin
+                            .from('enrollments')
+                            .select('id, student_id')
+                            .eq('class_id', enrollmentData.class_id)
+                            .eq('status', 'waitlisted')
+                            .order('waitlist_position', { ascending: true })
+                            .limit(1)
+                            .single();
+                        
+                        if (nextWaitlisted) {
+                            await supabaseAdmin
+                                .from('enrollments')
+                                .update({ 
+                                    status: 'pending', 
+                                    waitlist_position: null,
+                                    updated_at: new Date().toISOString()
+                                })
+                                .eq('id', nextWaitlisted.id);
+
+                             // Send Waitlist Notification
+                             // Fetch details
+                             const { data: waitlistDetails } = await supabaseAdmin
+                                .from('enrollments')
+                                .select(`
+                                    student:family_members(first_name, last_name, parent_id),
+                                    class:classes(name, start_date, day, block)
+                                `)
+                                .eq('id', nextWaitlisted.id)
+                                .single();
+
+                             if (waitlistDetails) {
+                                 const student = waitlistDetails.student as unknown as {
+                                     first_name: string;
+                                     last_name: string;
+                                     parent_id: string;
+                                 };
+                                 const classData = waitlistDetails.class as unknown as {
+                                     name: string;
+                                     start_date: string;
+                                     day: number;
+                                     block: number;
+                                 };
+
+                                 const { data: parent } = await supabaseAdmin
+                                     .from('profiles')
+                                     .select('first_name, email')
+                                     .eq('id', student.parent_id)
+                                     .single();
+
+                                 if (parent) {
+                                     const startDate = classData.start_date 
+                                         ? format(new Date(classData.start_date), 'MMMM do, yyyy') 
+                                         : 'TBA';
+                                     
+                                     await sendWaitlistNotification({
+                                         parentEmail: parent.email,
+                                         parentName: parent.first_name,
+                                         studentName: `${student.first_name} ${student.last_name}`,
+                                         className: classData.name,
+                                         schedule: `Day ${classData.day}, Block ${classData.block}`,
+                                         startDate: startDate
+                                     });
+                                 }
+                             }
+                        }
+                    }
+                 }
+                 console.log(`Refund processed for payment: ${payment.id}`);
+            }
             break;
         }
 

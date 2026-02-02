@@ -1,0 +1,98 @@
+[1A[2K[2m[WebServer] [22m[33m[1m⚠[22m[39m The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+[dotenv@17.2.3] injecting env (8) from .env.local -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+
+Running 2 tests using 1 worker
+
+[1A[2K[1/2] [setup] › e2e/auth.setup.ts:3:6 › authenticate
+[1A[2K[dotenv@17.2.3] injecting env (0) from .env.local -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+
+[1A[2K[2/2] [chromium] › e2e/parent-enrollment.spec.ts:23:9 › Parent Enrollment Flow › Parent can browse and enroll child in a class
+[1A[2K[chromium] › e2e/parent-enrollment.spec.ts:23:9 › Parent Enrollment Flow › Parent can browse and enroll child in a class
+Creating test user: teacher-1770066958224-88343@example.com as teacher
+
+[1A[2KCreating test user: parent-1770066958607-91127@example.com as parent
+
+[1A[2KSubmitting form with Class Name: "Enrollment Test Class 1770066958942"
+
+[1A[2K[2m[WebServer] [22m[31m[1m⨯[22m[39m Error: I AM RUNNING AND I SHOULD CRASH
+[2m[WebServer] [22m    at TeacherClassesPage (src/app/(dashboard)/teacher/classes/page.tsx:16:9)
+[2m[WebServer] [22m[0m [90m 14 |[39m [36mexport[39m [36mdefault[39m [36masync[39m [36mfunction[39m [33mTeacherClassesPage[39m() {
+[2m[WebServer] [22m [90m 15 |[39m   console[33m.[39mlog([32m'Rendering TeacherClassesPage...'[39m)[33m;[39m
+[2m[WebServer] [22m[31m[1m>[22m[39m[90m 16 |[39m   [36mthrow[39m [36mnew[39m [33mError[39m([32m'I AM RUNNING AND I SHOULD CRASH'[39m)[33m;[39m
+[2m[WebServer] [22m [90m    |[39m         [31m[1m^[22m[39m
+[2m[WebServer] [22m [90m 17 |[39m   [36mconst[39m result [33m=[39m [36mawait[39m getTeacherClasses()[33m;[39m
+[2m[WebServer] [22m [90m 18 |[39m   console[33m.[39mlog([32m'TeacherClassesPage result success:'[39m[33m,[39m result[33m.[39msuccess[33m,[39m [32m'count:'[39m[33m,[39m result[33m.[39msuccess [33m?[39m result[33m.[39mdata[33m?[39m[33m.[39mlength [33m:[39m [32m'N/A'[39m)[33m;[39m
+[2m[WebServer] [22m [90m 19 |[39m[0m {
+[2m[WebServer] [22m  digest: [32m'2573736960'[39m
+[2m[WebServer] [22m}
+
+[1A[2KAttempt 1: Table body not found. Reloading...
+
+[1A[2K[2m[WebServer] [22m[31m[1m⨯[22m[39m Error: I AM RUNNING AND I SHOULD CRASH
+[2m[WebServer] [22m    at TeacherClassesPage (src/app/(dashboard)/teacher/classes/page.tsx:16:9)
+[2m[WebServer] [22m[0m [90m 14 |[39m [36mexport[39m [36mdefault[39m [36masync[39m [36mfunction[39m [33mTeacherClassesPage[39m() {
+[2m[WebServer] [22m [90m 15 |[39m   console[33m.[39mlog([32m'Rendering TeacherClassesPage...'[39m)[33m;[39m
+[2m[WebServer] [22m[31m[1m>[22m[39m[90m 16 |[39m   [36mthrow[39m [36mnew[39m [33mError[39m([32m'I AM RUNNING AND I SHOULD CRASH'[39m)[33m;[39m
+[2m[WebServer] [22m [90m    |[39m         [31m[1m^[22m[39m
+[2m[WebServer] [22m [90m 17 |[39m   [36mconst[39m result [33m=[39m [36mawait[39m getTeacherClasses()[33m;[39m
+[2m[WebServer] [22m [90m 18 |[39m   console[33m.[39mlog([32m'TeacherClassesPage result success:'[39m[33m,[39m result[33m.[39msuccess[33m,[39m [32m'count:'[39m[33m,[39m result[33m.[39msuccess [33m?[39m result[33m.[39mdata[33m?[39m[33m.[39mlength [33m:[39m [32m'N/A'[39m)[33m;[39m
+[2m[WebServer] [22m [90m 19 |[39m[0m {
+[2m[WebServer] [22m  digest: [32m'2573736960'[39m
+[2m[WebServer] [22m}
+
+[1A[2KAttempt 2: Table body not found. Reloading...
+
+[1A[2K[2m[WebServer] [22m[31m[1m⨯[22m[39m Error: I AM RUNNING AND I SHOULD CRASH
+[2m[WebServer] [22m    at TeacherClassesPage (src/app/(dashboard)/teacher/classes/page.tsx:16:9)
+[2m[WebServer] [22m[0m [90m 14 |[39m [36mexport[39m [36mdefault[39m [36masync[39m [36mfunction[39m [33mTeacherClassesPage[39m() {
+[2m[WebServer] [22m [90m 15 |[39m   console[33m.[39mlog([32m'Rendering TeacherClassesPage...'[39m)[33m;[39m
+[2m[WebServer] [22m[31m[1m>[22m[39m[90m 16 |[39m   [36mthrow[39m [36mnew[39m [33mError[39m([32m'I AM RUNNING AND I SHOULD CRASH'[39m)[33m;[39m
+[2m[WebServer] [22m [90m    |[39m         [31m[1m^[22m[39m
+[2m[WebServer] [22m [90m 17 |[39m   [36mconst[39m result [33m=[39m [36mawait[39m getTeacherClasses()[33m;[39m
+[2m[WebServer] [22m [90m 18 |[39m   console[33m.[39mlog([32m'TeacherClassesPage result success:'[39m[33m,[39m result[33m.[39msuccess[33m,[39m [32m'count:'[39m[33m,[39m result[33m.[39msuccess [33m?[39m result[33m.[39mdata[33m?[39m[33m.[39mlength [33m:[39m [32m'N/A'[39m)[33m;[39m
+[2m[WebServer] [22m [90m 19 |[39m[0m {
+[2m[WebServer] [22m  digest: [32m'2573736960'[39m
+[2m[WebServer] [22m}
+
+[1A[2KAttempt 3: Table body not found. Reloading...
+
+[1A[2K[2m[WebServer] [22m[31m[1m⨯[22m[39m Error: I AM RUNNING AND I SHOULD CRASH
+[2m[WebServer] [22m    at TeacherClassesPage (src/app/(dashboard)/teacher/classes/page.tsx:16:9)
+[2m[WebServer] [22m[0m [90m 14 |[39m [36mexport[39m [36mdefault[39m [36masync[39m [36mfunction[39m [33mTeacherClassesPage[39m() {
+[2m[WebServer] [22m [90m 15 |[39m   console[33m.[39mlog([32m'Rendering TeacherClassesPage...'[39m)[33m;[39m
+[2m[WebServer] [22m[31m[1m>[22m[39m[90m 16 |[39m   [36mthrow[39m [36mnew[39m [33mError[39m([32m'I AM RUNNING AND I SHOULD CRASH'[39m)[33m;[39m
+[2m[WebServer] [22m [90m    |[39m         [31m[1m^[22m[39m
+[2m[WebServer] [22m [90m 17 |[39m   [36mconst[39m result [33m=[39m [36mawait[39m getTeacherClasses()[33m;[39m
+[2m[WebServer] [22m [90m 18 |[39m   console[33m.[39mlog([32m'TeacherClassesPage result success:'[39m[33m,[39m result[33m.[39msuccess[33m,[39m [32m'count:'[39m[33m,[39m result[33m.[39msuccess [33m?[39m result[33m.[39mdata[33m?[39m[33m.[39mlength [33m:[39m [32m'N/A'[39m)[33m;[39m
+[2m[WebServer] [22m [90m 19 |[39m[0m {
+[2m[WebServer] [22m  digest: [32m'2573736960'[39m
+[2m[WebServer] [22m}
+
+[1A[2KFinal Page Body Content: 
+
+[1A[2K  1) [chromium] › e2e/parent-enrollment.spec.ts:23:9 › Parent Enrollment Flow › Parent can browse and enroll child in a class 
+
+    Error: Class table not found after retries.
+
+      105 |              const bodyText = await page.locator('body').innerText();
+      106 |              console.log('Final Page Body Content:', bodyText);
+    > 107 |              throw new Error('Class table not found after retries.');
+          |                    ^
+      108 |         }
+      109 |         
+      110 |         // Debug: Log the table content
+        at /Users/jam/Documents/repos-personal/class-registration-system/e2e/parent-enrollment.spec.ts:107:20
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/parent-enrollment-Parent-E-6eb0f-and-enroll-child-in-a-class-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/parent-enrollment-Parent-E-6eb0f-and-enroll-child-in-a-class-chromium/error-context.md
+
+
+[1A[2K  1 failed
+    [chromium] › e2e/parent-enrollment.spec.ts:23:9 › Parent Enrollment Flow › Parent can browse and enroll child in a class 
+  1 passed (35.0s)
+
+[36m  Serving HTML report at http://localhost:64064. Press Ctrl+C to quit.[39m

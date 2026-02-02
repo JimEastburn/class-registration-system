@@ -18,8 +18,9 @@ export default async function ForgotPasswordPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
-            <div className="w-full max-w-md">
+        <>
+            {/* Form Container */}
+            <div className="w-full bg-slate-800/50 p-8 rounded-2xl border border-slate-700 shadow-xl backdrop-blur-sm">
                 <div className="text-center mb-8">
                     <h1 className="text-3xl font-bold text-white mb-2">
                         Forgot Password?
@@ -30,6 +31,6 @@ export default async function ForgotPasswordPage() {
                 </div>
                 <ForgotPasswordForm />
             </div>
-        </div>
+        </>
     );
 }

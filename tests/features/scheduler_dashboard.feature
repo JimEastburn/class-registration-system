@@ -24,15 +24,15 @@ Feature: Class Scheduler Dashboard
 
   # Scheduling Logic
   Scenario: Update Class Schedule
-    Given a class "Chemistry" is scheduled for "Mon Block 1"
+    Given a class "Chemistry" is scheduled for "Tue Block 1"
     When I move the class to "Wed Block 2"
     Then the schedule text should update to "Wed Block 2"
     And the database columns for day and time should be updated
 
   Scenario: Prevent Schedule Overlap (Same Teacher)
-    Given "Mr. Teacher" has a class "Physics" on "Mon Block 1"
+    Given "Mr. Teacher" has a class "Physics" on "Tue Block 1"
     When I search for "Mr. Teacher"
-    And I try to schedule another class "Chemistry" for "Mon Block 1"
+    And I try to schedule another class "Chemistry" for "Tue Block 1"
     Then the system should prevent the action
     And return an error "Teacher already has a class scheduled at this time"
     # Why: To prevent scheduling conflicts for teachers

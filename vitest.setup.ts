@@ -2,6 +2,9 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
+// Set required env vars
+process.env.STRIPE_SECRET_KEY = 'test_stripe_key';
+
 // Cleanup after each test
 afterEach(() => {
     cleanup();

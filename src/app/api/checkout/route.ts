@@ -71,8 +71,8 @@ export async function POST(request: Request) {
                 },
             ],
             mode: 'payment',
-            success_url: `${process.env.NEXT_PUBLIC_APP_URL}/parent/enrollments?success=true&enrollment=${enrollmentId}`,
-            cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/parent/enrollments?canceled=true`,
+            success_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}&enrollment_id=${enrollmentId}`,
+            cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/cancel`,
             metadata: {
                 enrollmentId: enrollmentId,
                 userId: user.id,

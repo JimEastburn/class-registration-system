@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -31,10 +31,12 @@ export default function RegisterForm() {
         formState: { errors },
     } = useForm<RegisterFormData>({
         resolver: zodResolver(registerSchema),
-        defaultValues: {
-            codeOfConduct: false,
-        },
     });
+
+    useEffect(() => {
+        register('role');
+        register('codeOfConduct');
+    }, [register]);
 
     const onSubmit = (data: RegisterFormData) => {
         setError(null);
@@ -53,7 +55,7 @@ export default function RegisterForm() {
 
                 const result = await signUp(formData);
 
-                if (result.error) {
+                if (!result.success) {
                     setError(result.error);
                 } else {
                     setSuccess(true);
@@ -90,11 +92,11 @@ export default function RegisterForm() {
                         <p className="text-slate-300">
                             Please click the Back to Login button below
                         </p>
-                        <Link href="/login">
-                            <Button className="bg-primary hover:bg-primary/90">
+                        <Button className="bg-primary hover:bg-primary/90" asChild>
+                            <Link href="/login">
                                 Back to Login
-                            </Button>
-                        </Link>
+                            </Link>
+                        </Button>
                     </div>
                 </CardContent>
             </Card>
@@ -108,7 +110,7 @@ export default function RegisterForm() {
                     Create Account
                 </h2>
             </CardHeader>
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form onSubmit={handleSubmit(onSubmit)} noValidate>
                 <CardContent className="space-y-4">
                     {error && (
                         <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm">
@@ -234,7 +236,9 @@ export default function RegisterForm() {
                         <Checkbox
                             id="codeOfConduct"
                             onCheckedChange={(checked) => {
-                                setValue('codeOfConduct', checked === true, { shouldValidate: true });
+                                if (checked === true) {
+                                    setValue('codeOfConduct', true, { shouldValidate: true });
+                                }
                             }}
                         />
                         <div className="grid gap-1.5 leading-none">

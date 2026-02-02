@@ -7,8 +7,8 @@ export default defineConfig({
     test: {
         environment: 'node', // Actions are server-side
         globals: true,
-        setupFiles: [''],
-        include: [''],
+        setupFiles: ['./vitest.setup.ts'],
+        include: ['src/__tests__/integration/**/*.test.ts'],
         testTimeout: 30000, // Integration tests can be slow
     },
     resolve: {

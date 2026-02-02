@@ -1,0 +1,251 @@
+
+> class-registration-system@0.1.0 test
+> vitest src/components/auth/__tests__/RegisterForm.test.tsx --run
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/Users/jam/Documents/repos-personal/class-registration-system[39m
+
+ [31m❯[39m src/components/auth/__tests__/RegisterForm.test.tsx [2m([22m[2m2 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 1218[2mms[22m[39m
+[31m     [31m×[31m removes role validation error immediately after selection[39m[33m 1140[2mms[22m[39m
+     [32m✓[39m validates code of conduct requirement[32m 77[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/components/auth/__tests__/RegisterForm.test.tsx[2m > [22mRegisterForm[2m > [22mremoves role validation error immediately after selection
+[31m[1mTestingLibraryElementError[22m[39m: Unable to find an element with the text: Please select Parent/Guardian or Student or Teacher. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm bg-white/10 backdrop-blur-lg border-white/20"[39m
+      [33mdata-slot[39m=[32m"card"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 space-y-1 pb-4"[39m
+        [33mdata-slot[39m=[32m"card-header"[39m
+      [36m>[39m
+        [36m<h2[39m
+          [33mclass[39m=[32m"text-xl font-semibold text-white text-center"[39m
+        [36m>[39m
+          [0mCreate Account[0m
+        [36m</h2>[39m
+      [36m</div>[39m
+      [36m<form[39m
+        [33mnovalidate[39m=[32m""[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"px-6 space-y-4"[39m
+          [33mdata-slot[39m=[32m"card-content"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-2 gap-4"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"space-y-2"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 text-slate-200"[39m
+                [33mdata-slot[39m=[32m"label"[39m
+                [33mfor[39m=[32m"firstName"[39m
+              [36m>[39m
+                [0mFirst Name[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"file:text-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-white/10 border-white/20 text-white placeholder:text-slate-400"[39m
+                [33mdata-slot[39m=[32m"input"[39m
+                [33mid[39m=[32m"firstName"[39m
+                [33mname[39m=[32m"firstName"[39m
+                [33mplaceholder[39m=[32m"John"[39m
+              [36m/>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-red-400 text-sm"[39m
+              [36m>[39m
+                [0mFirst name is required[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"space-y-2"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 text-slate-200"[39m
+                [33mdata-slot[39m=[32m"label"[39m
+                [33mfor[39m=[32m"lastName"[39m
+              [36m>[39m
+                [0mLast Name[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"file:text-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-white/10 border-white/20 text-white placeholder:text-slate-400"[39m
+                [33mdata-slot[39m=[32m"input"[39m
+                [33mid[39m=[32m"lastName"[39m
+                [33mname[39m=[32m"lastName"[39m
+                [33mplaceholder[39m=[32m"Doe"[39m
+              [36m/>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-red-400 text-sm"[39m
+              [36m>[39m
+                [0mLast name is required[0m
+              [36m</p>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"space-y-2"[39m
+          [36m>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 text-slate-200"[39m
+              [33mdata-slot[39m=[32m"label"[39m
+              [33mfor[39m=[32m"email"[39m
+            [36m>[39m
+              [0mEmail[0m
+            [36m</label>[39m
+            [36m<input[39m
+              [33mclass[39m=[32m"file:text-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-white/10 border-white/20 text-white placeholder:text-slate-400"[39m
+              [33mdata-slot[39m=[32m"input"[39m
+              [33mid[39m=[32m"email"[39m
+              [33mname[39m=[32m"email"[39m
+              [33mplaceholder[39m=[32m"you@example.com"[39m
+              [33mtype[39m=[32m"email"[39m
+            [36m/>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-red-400 text-sm"[39m
+            [36m>[39m
+              [0mPlease enter a valid email address[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"space-y-2"[39m
+          [36m>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 text-slate-200"[39m
+              [33mdata-slot[39m=[32m"label"[39m
+              [33mfor[39m=[32m"role"[39m
+            [36m>[39m
+              [0mI am a...[0m
+  ...
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm bg-white/10 backdrop-blur-lg border-white/20"[39m
+      [33mdata-slot[39m=[32m"card"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6 space-y-1 pb-4"[39m
+        [33mdata-slot[39m=[32m"card-header"[39m
+      [36m>[39m
+        [36m<h2[39m
+          [33mclass[39m=[32m"text-xl font-semibold text-white text-center"[39m
+        [36m>[39m
+          [0mCreate Account[0m
+        [36m</h2>[39m
+      [36m</div>[39m
+      [36m<form[39m
+        [33mnovalidate[39m=[32m""[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"px-6 space-y-4"[39m
+          [33mdata-slot[39m=[32m"card-content"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-2 gap-4"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"space-y-2"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 text-slate-200"[39m
+                [33mdata-slot[39m=[32m"label"[39m
+                [33mfor[39m=[32m"firstName"[39m
+              [36m>[39m
+                [0mFirst Name[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"file:text-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-white/10 border-white/20 text-white placeholder:text-slate-400"[39m
+                [33mdata-slot[39m=[32m"input"[39m
+                [33mid[39m=[32m"firstName"[39m
+                [33mname[39m=[32m"firstName"[39m
+                [33mplaceholder[39m=[32m"John"[39m
+              [36m/>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-red-400 text-sm"[39m
+              [36m>[39m
+                [0mFirst name is required[0m
+              [36m</p>[39m
+            [36m</div>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"space-y-2"[39m
+            [36m>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 text-slate-200"[39m
+                [33mdata-slot[39m=[32m"label"[39m
+                [33mfor[39m=[32m"lastName"[39m
+              [36m>[39m
+                [0mLast Name[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"file:text-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-white/10 border-white/20 text-white placeholder:text-slate-400"[39m
+                [33mdata-slot[39m=[32m"input"[39m
+                [33mid[39m=[32m"lastName"[39m
+                [33mname[39m=[32m"lastName"[39m
+                [33mplaceholder[39m=[32m"Doe"[39m
+              [36m/>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"text-red-400 text-sm"[39m
+              [36m>[39m
+                [0mLast name is required[0m
+              [36m</p>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"space-y-2"[39m
+          [36m>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 text-slate-200"[39m
+              [33mdata-slot[39m=[32m"label"[39m
+              [33mfor[39m=[32m"email"[39m
+            [36m>[39m
+              [0mEmail[0m
+            [36m</label>[39m
+            [36m<input[39m
+              [33mclass[39m=[32m"file:text-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-white/10 border-white/20 text-white placeholder:text-slate-400"[39m
+              [33mdata-slot[39m=[32m"input"[39m
+              [33mid[39m=[32m"email"[39m
+              [33mname[39m=[32m"email"[39m
+              [33mplaceholder[39m=[32m"you@example.com"[39m
+              [33mtype[39m=[32m"email"[39m
+            [36m/>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"text-red-400 text-sm"[39m
+            [36m>[39m
+              [0mPlease enter a valid email address[0m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"space-y-2"[39m
+          [36m>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 text-slate-200"[39m
+              [33mdata-slot[39m=[32m"label"[39m
+              [33mfor[39m=[32m"role"[39m
+            [36m>[39m
+              [0mI am a...[0m
+  ...
+[90m [2m❯[22m waitForWrapper node_modules/@testing-library/dom/dist/wait-for.js:[2m163:27[22m[39m
+[90m [2m❯[22m node_modules/@testing-library/dom/dist/query-helpers.js:[2m86:33[22m[39m
+[36m [2m❯[22m src/components/auth/__tests__/RegisterForm.test.tsx:[2m46:29[22m[39m
+    [90m 44| [39m
+    [90m 45| [39m        [90m// 2. Verify error appears[39m
+    [90m 46| [39m        expect(await screen.findByText('Please select Parent/Guardian …
+    [90m   | [39m                            [31m^[39m
+    [90m 47| [39m
+    [90m 48| [39m        [90m// 3. Select a role[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (2)[39m
+[2m   Start at [22m 13:30:45
+[2m   Duration [22m 2.05s[2m (transform 93ms, setup 123ms, import 243ms, tests 1.22s, environment 385ms)[22m
+
