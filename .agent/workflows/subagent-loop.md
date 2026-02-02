@@ -46,8 +46,9 @@ This workflow dictates a strict loop for clearing tasks from a task list using s
     - **Goal**: Verify _what was requested_ matches _what was built_.
     - **Process**:
       - Read the original task description.
+      - **Check `tests/features/*.feature` for relevant Gherkin acceptance criteria.**
       - Read the actual code changes (not just the summary).
-      - Check for: Missing requirements, extra unrequested features, misunderstandings.
+      - Check for: Missing requirements, misunderstandings.
     - **Decision**:
       - ✅ **Pass**: Proceed to Phase 4.
       - ❌ **Fail**: Return to Phase 2 (Implementer) to fix specific gaps.
