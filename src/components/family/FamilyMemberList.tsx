@@ -47,16 +47,20 @@ function FamilyMemberCard({ member }: FamilyMemberCardProps) {
                                         {age} {age === 1 ? 'year' : 'years'} old
                                     </Badge>
                                 )}
-                                {member.student_user_id ? (
-                                    <Badge variant="outline" className="gap-1 bg-green-50 text-green-700 border-green-200">
-                                        <UserCheck className="h-3 w-3" />
-                                        Linked
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="outline" className="gap-1 bg-amber-50 text-amber-700 border-amber-200">
-                                        <Link2Off className="h-3 w-3" />
-                                        Not Linked
-                                    </Badge>
+                                {member.relationship === 'Student' && (
+                                    <>
+                                        {member.student_user_id ? (
+                                            <Badge variant="outline" className="gap-1 bg-green-50 text-green-700 border-green-200">
+                                                <UserCheck className="h-3 w-3" />
+                                                Linked
+                                            </Badge>
+                                        ) : (
+                                            <Badge variant="outline" className="gap-1 bg-amber-50 text-amber-700 border-amber-200">
+                                                <Link2Off className="h-3 w-3" />
+                                                Not Linked
+                                            </Badge>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -82,7 +86,7 @@ function FamilyMemberCard({ member }: FamilyMemberCardProps) {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                    {!member.student_user_id && (
+                    {member.relationship === 'Student' && !member.student_user_id && (
                         <LinkStudentDialog
                             familyMemberId={member.id}
                             familyMemberName={fullName}
