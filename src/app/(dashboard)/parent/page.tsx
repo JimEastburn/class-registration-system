@@ -54,9 +54,7 @@ export default async function ParentDashboardPage() {
                         <div className="text-2xl font-bold">
                             {stats?.familyMemberCount ?? 0}
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            registered students
-                        </p>
+                       
                     </CardContent>
                 </Card>
 
