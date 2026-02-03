@@ -1,20 +1,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getSchedulerStats, getUnscheduledClasses } from '../scheduler';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 // Mock dependencies
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
+  createAdminClient: vi.fn(),
 }));
-
-// Mock logic functions if needed, or rely on them if logic is simple enough?
-// logic/scheduling is pure logic, so we can let it run or mock it. 
-// getSchedulerStats calls getConflictAlerts which is also an export. 
-// In creating unit tests for `getSchedulerStats`, we might want to mock `getConflictAlerts` 
-// if we can't easily mock the DB state it relies on. 
-// However, since they are in the same file, mocking the internal export is tricky in ESM/Next.js actions.
-// We will mock the DB calls for `getConflictAlerts` too.
 
 describe('Scheduler Actions', () => {
   let mockBuilder: any;
@@ -51,6 +44,7 @@ describe('Scheduler Actions', () => {
     };
 
     (createClient as any).mockResolvedValue(mockSupabase);
+    (createAdminClient as any).mockResolvedValue(mockSupabase);
   });
 
   describe('getSchedulerStats', () => {

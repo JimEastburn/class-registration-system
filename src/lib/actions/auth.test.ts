@@ -1,12 +1,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { signUp, signIn } from '@/lib/actions/auth';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
 // Mock dependencies
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
+  createAdminClient: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -30,6 +31,7 @@ describe('Auth Actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (createClient as any).mockResolvedValue(mockSupabase);
+    (createAdminClient as any).mockResolvedValue(mockSupabase);
     (mockSupabase.from as any).mockReturnValue({
       upsert: vi.fn().mockResolvedValue({ error: null }),
       select: vi.fn().mockReturnThis(),

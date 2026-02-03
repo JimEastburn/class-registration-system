@@ -54,7 +54,7 @@ describe('Enrollment Actions', () => {
                      }),
                  insert: vi.fn().mockReturnValue({
                      select: vi.fn().mockReturnValue({
-                         single: vi.fn().mockResolvedValue({ data: { id: 'enrollment-1', status: 'confirmed' }, error: null })
+                         single: vi.fn().mockResolvedValue({ data: { id: 'enrollment-1', status: 'pending' }, error: null })
                      })
                  })
              };
@@ -91,7 +91,7 @@ describe('Enrollment Actions', () => {
 
             const result = await enrollStudent({ classId: 'class-1', familyMemberId: 'child-1' });
 
-            expect(result.status).toBe('confirmed');
+            expect(result.status).toBe('pending');
             expect(result.data).toBeDefined(); 
         });
 

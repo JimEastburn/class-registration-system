@@ -181,7 +181,7 @@ describe('Integration Flow: Family Creation -> Enrollment', () => {
         });
         
         expect(enrollResult.error).toBeNull();
-        expect(enrollResult.status).toBe('confirmed');
+        expect(enrollResult.status).toBe('pending');
         expect(enrollResult.data).toBeDefined();
         
         // Verify Enrollment in "Database"
