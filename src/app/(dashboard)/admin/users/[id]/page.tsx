@@ -14,7 +14,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   if (!user) redirect('/login');
 
   const { data: adminProfile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  if (adminProfile?.role !== 'admin') redirect('/dashboard');
+  if (!adminProfile || (adminProfile.role !== 'admin' && adminProfile.role !== 'super_admin')) redirect('/');
 
   const { data: profile, error } = await supabase
     .from('profiles')

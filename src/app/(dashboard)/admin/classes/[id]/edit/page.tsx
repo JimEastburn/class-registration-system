@@ -15,7 +15,7 @@ export default async function EditClassPage({ params }: { params: Promise<{ id: 
     
     // Verify Admin
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (profile?.role !== 'admin') redirect('/dashboard');
+    if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) redirect('/');
 
     // Fetch Class and Teachers parallel
     const [classRes, teachersRes] = await Promise.all([

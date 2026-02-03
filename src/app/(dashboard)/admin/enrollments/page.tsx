@@ -29,7 +29,7 @@ export default async function AdminEnrollmentsPage({
   const allowedRoles = ['admin', 'super_admin', 'class_scheduler'];
   
   if (!profile || !allowedRoles.includes(profile.role)) {
-      redirect('/dashboard');
+      redirect('/');
   }
 
   const { data: enrollments, count, error } = await getAllEnrollments(page, limit, { 

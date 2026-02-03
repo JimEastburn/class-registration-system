@@ -12,7 +12,7 @@ export default async function NewClassPage() {
     
     // Verify Admin
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (profile?.role !== 'admin') redirect('/dashboard');
+    if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) redirect('/');
 
     // Fetch Teachers
     const { data: teachers } = await supabase

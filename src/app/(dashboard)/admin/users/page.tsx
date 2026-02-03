@@ -24,7 +24,7 @@ export default async function AdminUsersPage({
 
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
   if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
-      redirect('/dashboard');
+      redirect('/');
   }
 
   const { data: users, count, error } = await getAllUsers(page, limit, search);
