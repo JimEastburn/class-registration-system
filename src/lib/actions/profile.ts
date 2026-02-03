@@ -146,7 +146,7 @@ export async function getProfileWithViews(): Promise<
 
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, is_parent')
     .eq('id', user.id)
     .single();
 
@@ -155,7 +155,8 @@ export async function getProfileWithViews(): Promise<
   }
 
   const role = profile.role as UserRole;
-  const allowedViews = getAllowedViews(role);
+  const isParent = profile.is_parent;
+  const allowedViews = getAllowedViews(role, isParent);
   const activeView = await getActiveView();
 
   return {
