@@ -42,32 +42,32 @@ const navItems: NavItem[] = [
         href: '/parent',
         label: 'Dashboard',
         icon: LayoutDashboard,
-        roles: ['parent', 'teacher', 'admin', 'super_admin'],
+        roles: ['parent', 'super_admin'],
         exact: true,
     },
     {
         href: '/parent/family',
         label: 'My Family',
         icon: Users,
-        roles: ['parent', 'teacher', 'admin', 'super_admin'],
+        roles: ['parent', 'super_admin'],
     },
     {
         href: '/parent/browse',
         label: 'Browse Classes',
         icon: BookOpen,
-        roles: ['parent', 'teacher', 'admin', 'super_admin'],
+        roles: ['parent', 'super_admin'],
     },
     {
         href: '/parent/enrollments',
         label: 'Enrollments',
         icon: UserCheck,
-        roles: ['parent', 'teacher', 'admin', 'super_admin'],
+        roles: ['parent', 'super_admin'],
     },
     {
         href: '/parent/profile',
         label: 'Profile',
         icon: User,
-        roles: ['parent', 'teacher', 'admin', 'super_admin'],
+        roles: ['parent', 'super_admin'],
     },
 
     // Teacher Portal Items
@@ -188,13 +188,21 @@ const navItems: NavItem[] = [
 /**
  * Filter nav items based on user role
  */
-function getNavItemsForRole(role: UserRole): NavItem[] {
-    return navItems.filter((item) => item.roles.includes(role));
+function getNavItemsForRole(role: UserRole, isParent: boolean): NavItem[] {
+    return navItems.filter((item) => {
+        // Check if role is explicitly allowed
+        if (item.roles.includes(role)) return true;
+        
+        // Check if user is also a parent and this is a parent item
+        if (isParent && item.href.startsWith('/parent')) return true;
+
+        return false;
+    });
 }
 
-export function Sidebar({ userRole, className }: SidebarProps) {
+export function Sidebar({ userRole, isParent, className }: SidebarProps & { isParent: boolean }) {
     const pathname = usePathname();
-    const filteredNavItems = getNavItemsForRole(userRole);
+    const filteredNavItems = getNavItemsForRole(userRole, isParent);
 
     // Group items by portal
     const parentItems = filteredNavItems.filter((item) =>

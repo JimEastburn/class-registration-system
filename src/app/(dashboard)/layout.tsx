@@ -22,7 +22,7 @@ export default async function DashboardLayout({
     // Get user profile with role
     const { data: profile } = await supabase
         .from('profiles')
-        .select('id, email, first_name, last_name, role, avatar_url')
+        .select('id, email, first_name, last_name, role, avatar_url, is_parent')
         .eq('id', user.id)
         .single();
 
@@ -32,11 +32,12 @@ export default async function DashboardLayout({
     }
 
     const userRole = profile.role as UserRole;
+    const isParent = profile.is_parent === true;
 
     return (
         <div className="min-h-screen bg-background">
             {/* Desktop Sidebar - hidden on mobile */}
-            <Sidebar userRole={userRole} className="hidden lg:flex" />
+            <Sidebar userRole={userRole} isParent={isParent} className="hidden lg:flex" />
 
             {/* Main content area with left margin for sidebar on desktop */}
             <div className="lg:ml-64 flex flex-col min-h-screen">
@@ -51,11 +52,11 @@ export default async function DashboardLayout({
                         avatarUrl: profile.avatar_url,
                     }}
                     activeView={await getActiveView()}
-                    allowedViews={getAllowedViews(userRole)}
+                    allowedViews={getAllowedViews(userRole, isParent)}
                 />
 
                 {/* Mobile navigation - visible only on mobile */}
-                <MobileNav userRole={userRole} />
+                <MobileNav userRole={userRole} isParent={isParent} />
 
                 {/* Main content */}
                 <main className="flex-1 p-4 lg:p-6">

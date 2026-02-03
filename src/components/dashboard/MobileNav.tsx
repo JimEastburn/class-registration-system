@@ -7,8 +7,6 @@ import { Menu, X } from 'lucide-react';
 import {
     Sheet,
     SheetContent,
-    SheetDescription,
-    SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -16,6 +14,7 @@ import type { UserRole } from '@/types';
 
 interface MobileNavProps {
     userRole: UserRole;
+    isParent: boolean;
 }
 
 interface NavItem {
@@ -24,7 +23,7 @@ interface NavItem {
 }
 
 /**
- * Simplified nav items for mobile
+ * Base nav items by role (simplified for mobile)
  */
 const navItemsByRole: Record<UserRole, NavItem[]> = {
     parent: [
@@ -36,8 +35,7 @@ const navItemsByRole: Record<UserRole, NavItem[]> = {
     teacher: [
         { href: '/teacher', label: 'Dashboard' },
         { href: '/teacher/classes', label: 'My Classes' },
-        { href: '/parent', label: 'Parent View' },
-        { href: '/parent/family', label: 'My Family' },
+        // Parent View removed - added dynamically if isParent
     ],
     student: [
         { href: '/student', label: 'Dashboard' },
@@ -45,16 +43,13 @@ const navItemsByRole: Record<UserRole, NavItem[]> = {
     ],
     admin: [
         { href: '/admin', label: 'Dashboard' },
-        { href: '/admin/users', label: 'Users' },
         { href: '/admin/classes', label: 'Classes' },
         { href: '/admin/enrollments', label: 'Enrollments' },
-        { href: '/admin/payments', label: 'Payments' },
-        { href: '/parent', label: 'Parent View' },
+        // Parent View removed - added dynamically if isParent
     ],
     class_scheduler: [
         { href: '/class-scheduler', label: 'Dashboard' },
         { href: '/class-scheduler/calendar', label: 'Calendar' },
-        { href: '/class-scheduler/classes', label: 'Manage Classes' },
     ],
     super_admin: [
         { href: '/admin', label: 'Admin' },
@@ -64,10 +59,21 @@ const navItemsByRole: Record<UserRole, NavItem[]> = {
     ],
 };
 
-export function MobileNav({ userRole }: MobileNavProps) {
+export function MobileNav({ userRole, isParent }: MobileNavProps) {
     const [isOpen, setIsOpen] = useState(false);
     const pathname = usePathname();
-    const navItems = navItemsByRole[userRole] || navItemsByRole.parent;
+
+    // Determine nav items dynamically
+    const navItems = [...(navItemsByRole[userRole] || navItemsByRole.parent)];
+
+    // Add Parent Link if user is also a parent (and not already seeing parent view as primary)
+    if (isParent && userRole !== 'parent' && userRole !== 'super_admin') {
+         // Avoid duplicates if logic changes
+         if (!navItems.find(item => item.href === '/parent')) {
+             navItems.push({ href: '/parent', label: 'Parent View' });
+             navItems.push({ href: '/parent/family', label: 'My Family' });
+         }
+    }
 
     return (
         <div className="lg:hidden border-b bg-background">

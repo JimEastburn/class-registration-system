@@ -38,18 +38,48 @@ export function isViewAllowed(role: UserRole, view: PortalView): boolean {
 /**
  * Get the allowed portal views for a user role
  */
-export function getAllowedViews(role: UserRole): PortalView[] {
-  return ALLOWED_VIEWS[role] ?? [];
+export function getAllowedViews(role: UserRole, isParent: boolean): PortalView[] {
+  const views: PortalView[] = [];
+
+  // Super Admin gets everything
+  if (role === 'super_admin') {
+    return ['admin', 'class_scheduler', 'teacher', 'parent', 'student'];
+  }
+
+  // Add primary role view
+  if (ALLOWED_VIEWS[role]) {
+    // For roles like 'teacher' or 'admin', we usually have their primary view first in the static list
+    // But since the static list is now being superseded by this dynamic logic, we should be careful.
+    // Let's rely on the base mapping for the PRIMARY view only.
+    const baseViews = ALLOWED_VIEWS[role];
+    if (baseViews && baseViews.length > 0) {
+       // Always add the role's native view
+       // e.g. teacher -> teacher, admin -> admin
+       // The static definition currently has mixed views. Let's extract just the native one or filter.
+       // actually, let's simpler logic:
+       
+       if (role === 'class_scheduler') views.push('class_scheduler');
+       else if (role !== 'parent') views.push(role as PortalView); // admin, teacher, student
+    }
+  }
+
+  // Parent view is allowed if role is 'parent' OR is_parent is true
+  if (role === 'parent' || isParent) {
+     if (!views.includes('parent')) {
+         views.push('parent');
+     }
+  }
+
+  return views;
 }
 
 /**
  * Get the default portal view for a user role
  */
 export function getDefaultView(role: UserRole): PortalView {
-  // Return the first (primary) allowed view for the role
-  const views = ALLOWED_VIEWS[role];
-  if (!views || views.length === 0) {
-    return 'parent'; // Fallback
-  }
-  return views[0];
+  // Simplistic default logic
+  if (role === 'parent') return 'parent';
+  if (role === 'class_scheduler') return 'class_scheduler';
+  if (role === 'super_admin') return 'admin';
+  return role as PortalView;
 }

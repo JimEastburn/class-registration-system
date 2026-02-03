@@ -62,6 +62,7 @@ export interface Profile {
   created_at: string;
   updated_at: string;
   code_of_conduct_agreed_at: string | null;
+  is_parent: boolean;
 }
 
 /**
