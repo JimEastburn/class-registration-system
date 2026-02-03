@@ -15,7 +15,7 @@ describe('validateScheduleConfig', () => {
   });
 
   it('should accept all valid days', () => {
-    const days = ['Tuesday', 'Wednesday', 'Thursday'];
+    const days = ['Tuesday/Thursday', 'Tuesday', 'Wednesday', 'Thursday'];
     days.forEach((day) => {
       const result = validateScheduleConfig({
         day: day,

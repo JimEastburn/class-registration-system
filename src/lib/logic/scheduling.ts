@@ -1,6 +1,6 @@
 import { Class, ScheduleConfig } from '@/types';
 
-export const VALID_DAYS = ['Tuesday', 'Wednesday', 'Thursday'] as const;
+export const VALID_DAYS = ['Tuesday/Thursday', 'Tuesday', 'Wednesday', 'Thursday'] as const;
 export const VALID_BLOCKS = ['Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5'] as const;
 
 export type ValidDay = typeof VALID_DAYS[number];

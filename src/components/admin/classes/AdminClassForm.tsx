@@ -194,7 +194,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                                {['Tuesday/Thursday', 'Tuesday', 'Wednesday', 'Thursday'].map(day => (
                                     <SelectItem key={day} value={day}>{day}</SelectItem>
                                 ))}
                             </SelectContent>

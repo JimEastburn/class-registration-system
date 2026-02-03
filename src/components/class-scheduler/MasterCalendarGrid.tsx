@@ -15,10 +15,10 @@ import { DroppableBlock } from './DroppableBlock';
 // Define the Matrix Structure
 const COLUMNS = ['Block 1', 'Block 2', 'Lunch', 'Block 3', 'Block 4', 'Block 5'];
 const ROWS = [
-  'Tuesday / Thursday',
-  'Tuesday Only',
-  'Thursday Only',
-  'Wednesday Only'
+  'Tuesday/Thursday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday'
 ];
 
 export function MasterCalendarGrid() {
