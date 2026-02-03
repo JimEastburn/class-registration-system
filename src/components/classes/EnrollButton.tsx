@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Loader2, UserPlus } from 'lucide-react';
 import { getFamilyMembers } from '@/lib/actions/family';
+import { enrollStudent } from '@/lib/actions/enrollments';
 import type { FamilyMember } from '@/types';
 
 interface EnrollButtonProps {
@@ -65,10 +66,65 @@ export function EnrollButton({
         }
 
         setIsLoading(true);
-        
-        // For now, redirect to checkout - enrollment action will be implemented later
-        const checkoutUrl = `/api/checkout?classId=${classId}&familyMemberId=${selectedMember}`;
-        window.location.href = checkoutUrl;
+
+        try {
+            // 1. Create Enrollment
+            const { data: enrollment, status, error } = await enrollStudent({
+                classId,
+                familyMemberId: selectedMember,
+            });
+
+            if (error) {
+                toast.error(error);
+                setIsLoading(false);
+                return;
+            }
+
+            if (status === 'waitlisted') {
+                toast.success('Successfully joined waitlist');
+                setOpen(false);
+                setIsLoading(false);
+                return;
+            }
+
+            if (status === 'blocked') {
+                toast.error('Enrollment pending approval');
+                setOpen(false);
+                setIsLoading(false);
+                return;
+            }
+
+            // 2. Proceed to Payment (if confirmed/pending)
+            if (enrollment && (status === 'confirmed' || status === 'pending')) {
+                const response = await fetch('/api/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enrollmentId: enrollment.id }),
+                });
+
+                const checkoutData = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(checkoutData.error || 'Failed to create checkout session');
+                }
+
+                if (checkoutData.url) {
+                    window.location.href = checkoutData.url;
+                } else {
+                    throw new Error('No checkout URL returned');
+                }
+            } else {
+                 // Should not happen for standard flow, but handle gracefully
+                 toast.success('Enrollment processed');
+                 setOpen(false);
+                 setIsLoading(false);
+            }
+
+        } catch (err) {
+            console.error('Enrollment error:', err);
+            toast.error('Something went wrong. Please try again.');
+            setIsLoading(false);
+        }
     }
 
     if (available <= 0) {
