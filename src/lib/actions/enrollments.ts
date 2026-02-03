@@ -863,7 +863,7 @@ export async function getAllEnrollments(
                 ),
                 student:family_members!inner (
                     *,
-                    parent:profiles (
+                    parent:profiles!family_members_parent_id_fkey (
                         first_name,
                         last_name,
                         email,
