@@ -69,4 +69,26 @@ describe('AdminClassForm', () => {
          expect(mondayOption).toBeNull();
          expect(fridayOption).toBeNull();
     });
+
+    it('renders the correct block options (1-5 only)', async () => {
+        const user = userEvent.setup();
+        render(<AdminClassForm teachers={mockTeachers} />);
+
+        // Open the Block Select
+        const blockTrigger = screen.getByRole('combobox', { name: /block/i });
+        await user.click(blockTrigger);
+
+        // Check for options
+        const options = await screen.findAllByRole('option');
+        const optionValues = options.map(opt => opt.textContent);
+
+        expect(optionValues).toContain('Block 1');
+        expect(optionValues).toContain('Block 2');
+        expect(optionValues).toContain('Block 3');
+        expect(optionValues).toContain('Block 4');
+        expect(optionValues).toContain('Block 5');
+        
+        // Ensure invalid options are NOT present
+        expect(optionValues).not.toContain('Block 6');
+    });
 });

@@ -216,7 +216,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                {['Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5', 'Block 6'].map(block => (
+                                {['Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5'].map(block => (
                                     <SelectItem key={block} value={block}>{block}</SelectItem>
                                 ))}
                             </SelectContent>
