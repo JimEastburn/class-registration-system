@@ -198,7 +198,17 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
                   <FormItem>
                     <FormLabel>Price ($) *</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.01" min="0" {...field} />
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        {...field}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '' || /^[0-9.]+$/.test(value)) {
+                            field.onChange(value);
+                          }
+                        }}
+                      />
                     </FormControl>
                     <FormDescription>Class fee in dollars</FormDescription>
                     <FormMessage />
