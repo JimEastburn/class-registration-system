@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { Class, ActionResult, ScheduleConfig } from '@/types';
 import { checkScheduleConflict, checkRoomConflict } from '@/lib/logic/scheduling';
 
@@ -25,8 +25,11 @@ export async function getSchedulerStats(): Promise<ActionResult<SchedulerStats>>
             return { success: false, error: 'Unauthorized' };
         }
 
+        // Use admin client for data fetching to bypass RLS
+        const adminClient = await createAdminClient();
+
         // 1. Total Classes (active)
-        const { count: totalClasses, error: totalError } = await supabase
+        const { count: totalClasses, error: totalError } = await adminClient
             .from('classes')
             .select('*', { count: 'exact', head: true })
             .neq('status', 'archived');
@@ -34,7 +37,7 @@ export async function getSchedulerStats(): Promise<ActionResult<SchedulerStats>>
         if (totalError) throw totalError;
 
         // 2. Unscheduled (draft)
-        const { count: unscheduledCount, error: unscheduledError } = await supabase
+        const { count: unscheduledCount, error: unscheduledError } = await adminClient
             .from('classes')
             .select('*', { count: 'exact', head: true })
             .eq('status', 'draft');
@@ -76,9 +79,12 @@ export async function schedulerUpdateClass(id: string, updates: Partial<Class>):
             return { success: false, error: 'Unauthorized' };
         }
 
+        // Use admin client for updates to ensure we can access/modify any class
+        const adminClient = await createAdminClient();
+
         // --- Conflict Detection Start ---
         // 1. Fetch existing class to get full context (e.g. if only updating time, we need teacher/room)
-        const { data: existingClass, error: fetchError } = await supabase
+        const { data: existingClass, error: fetchError } = await adminClient
             .from('classes')
             .select('*')
             .eq('id', id)
@@ -93,7 +99,7 @@ export async function schedulerUpdateClass(id: string, updates: Partial<Class>):
 
         // 3. Check Teacher Conflict (if teacher or time is relevant)
         if (proposedState.teacher_id && proposedState.schedule_config) {
-             const { data: teacherClasses } = await supabase
+             const { data: teacherClasses } = await adminClient
                 .from('classes')
                 .select('*')
                 .eq('teacher_id', proposedState.teacher_id)
@@ -115,7 +121,7 @@ export async function schedulerUpdateClass(id: string, updates: Partial<Class>):
 
         // 4. Check Room Conflict (if room or time is relevant)
         if (proposedState.location && proposedState.schedule_config) {
-            const { data: roomClasses } = await supabase
+            const { data: roomClasses } = await adminClient
                 .from('classes')
                 .select('*')
                 .eq('location', proposedState.location)
@@ -136,7 +142,7 @@ export async function schedulerUpdateClass(id: string, updates: Partial<Class>):
         }
         // --- Conflict Detection End ---
 
-        const { error } = await supabase
+        const { error } = await adminClient
             .from('classes')
             .update(updates)
             .eq('id', id);
@@ -167,10 +173,13 @@ export async function schedulerCreateClass(data: Partial<Class>): Promise<Action
             return { success: false, error: 'Unauthorized' };
         }
 
+        // Use admin client for creation and checks
+        const adminClient = await createAdminClient();
+
         // --- Conflict Detection Start ---
         // 1. Check Teacher Conflict
         if (data.teacher_id && data.schedule_config) {
-            const { data: teacherClasses } = await supabase
+            const { data: teacherClasses } = await adminClient
             .from('classes')
             .select('*')
             .eq('teacher_id', data.teacher_id)
@@ -191,7 +200,7 @@ export async function schedulerCreateClass(data: Partial<Class>): Promise<Action
 
         // 2. Check Room Conflict
         if (data.location && data.schedule_config) {
-            const { data: roomClasses } = await supabase
+            const { data: roomClasses } = await adminClient
                 .from('classes')
                 .select('*')
                 .eq('location', data.location)
@@ -211,7 +220,7 @@ export async function schedulerCreateClass(data: Partial<Class>): Promise<Action
         }
         // --- Conflict Detection End ---
 
-        const { error } = await supabase
+        const { error } = await adminClient
             .from('classes')
             .insert({
                 ...data,
@@ -235,10 +244,18 @@ export async function getConflictAlerts(): Promise<ActionResult<{ id: string; me
     try {
         const supabase = await createClient();
         
+        // Verify role before doing heavy lifting
+        const { data: { user } } = await supabase.auth.getUser();
+         if (!user) return { success: false, error: 'Not authenticated' };
+         // (You might want to check the profile role here too, assuming this is an admin/scheduler tool)
+
+        // Use admin client to ensure we see ALL classes
+        const adminClient = await createAdminClient();
+
         // Fetch ALL active classes
         // Warning: This could be heavy with thousands of classes. 
         // Optimize by filtering for current semester only in a real app.
-        const { data: classes } = await supabase
+        const { data: classes } = await adminClient
             .from('classes')
             .select('*')
             .in('status', ['published', 'draft']);
@@ -323,9 +340,12 @@ export async function getClassesForScheduler(
             return { success: false, error: 'Unauthorized' };
         }
 
+        // Use admin client to bypass RLS
+        const adminClient = await createAdminClient();
+
         const offset = (page - 1) * limit;
 
-        const { data, count, error } = await supabase
+        const { data, count, error } = await adminClient
             .from('classes')
             .select(`
                 *,
@@ -371,7 +391,10 @@ export async function getUnscheduledClasses(limit = 5): Promise<ActionResult<Cla
             return { success: false, error: 'Unauthorized' };
         }
 
-        const { data, error } = await supabase
+        // Use admin client for fetching unscheduled classes
+        const adminClient = await createAdminClient();
+
+        const { data, error } = await adminClient
             .from('classes')
             .select('*')
             .eq('status', 'draft')

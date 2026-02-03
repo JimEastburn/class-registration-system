@@ -65,7 +65,7 @@ export async function getAllPayments(
                     student:family_members (
                         first_name,
                         last_name,
-                        parent:profiles (
+                        parent:profiles!family_members_parent_id_fkey (
                             email,
                             first_name,
                             last_name
