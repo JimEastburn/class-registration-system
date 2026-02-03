@@ -175,7 +175,7 @@ export function MasterCalendarGrid() {
         classId: cls.id,
         title: cls.name, 
         block: config.block,
-        date: new Date(), // Dummy date
+
         teacherName,
         location: cls.location || undefined,
         isConflict: conflictingClassIds.has(cls.id),

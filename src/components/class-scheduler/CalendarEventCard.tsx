@@ -7,7 +7,7 @@ export interface CalendarUIEvent {
   classId?: string; // Original class ID
   title: string;
   block?: string;
-  date: Date;
+  date?: Date;
   start?: Date;
   end?: Date;
   teacherName: string;
