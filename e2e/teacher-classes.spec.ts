@@ -30,7 +30,7 @@ test.describe('Teacher Class Management', () => {
         }
 
         // Increase timeout for redirect
-        await expect(page).toHaveURL(/.*teacher/, { timeout: 10000 });
+        await expect(page).toHaveURL(/.*teacher/, { timeout: 15000 });
         
         // Navigate to Classes
         await page.getByRole('link', { name: 'Classes', exact: true }).click();
@@ -45,11 +45,17 @@ test.describe('Teacher Class Management', () => {
         await page.getByLabel('Capacity').fill('15');
         await page.getByLabel('Price').fill('100'); // $100.00
         
-        // Schedule - Assuming there is a schedule config or plain text input depending on implementation
-        // Check "CreateClassForm" logic implies we might have day/time inputs
-        // Let's assume day/time for now or try to fill distinct fields if available
-        // If the form has a "Schedule" complex input, we might need more selectors
-        // For now filling Location
+        // Schedule
+        // Interact with Select components from Shadcn UI (Trigger -> Content -> Item)
+        
+        // Select Day
+        await page.getByLabel('Day of Week').click();
+        await page.getByLabel('Tuesday', { exact: true }).click(); // Select "Tuesday" option
+
+        // Select Block
+        await page.getByLabel('Block').click();
+        await page.getByRole('option', { name: 'Block 1', exact: true }).click();
+
         await page.getByLabel('Location').fill('Room 101');
 
         // Submit (Save/Create)
@@ -58,14 +64,7 @@ test.describe('Teacher Class Management', () => {
         // Verification: Should see the class in the list
         await expect(page.getByText(className)).toBeVisible();
         
-        // Check default status is draft (if visible) or just open it
-        // The implementation usually redirects to class list or class detail
-        
         // Publish the class
-        // Find the class card or row actions
-        // Assuming there is an "Edit" or "Publish" button
-        // Need to know the UI structure. 
-        // Let's click on the class to View/Edit it.
         await page.getByText(className).click();
         
         // Now in detail/edit view
@@ -75,5 +74,31 @@ test.describe('Teacher Class Management', () => {
         // Verify success message or status change
         await expect(page.getByText('Class published successfully')).toBeVisible();
         await expect(page.getByText('Published')).toBeVisible();
+    });
+
+    test('Teacher sees validation errors when submitting empty form', async ({ page }) => {
+        // Login
+        await page.goto('/login');
+        await page.fill('input[name="email"]', teacherUser.email);
+        await page.fill('input[name="password"]', teacherUser.password);
+        await page.click('button[type="submit"]');
+        await expect(page).toHaveURL(/.*teacher/, { timeout: 15000 });
+
+        // Navigate to Create Class
+        await page.goto('/teacher/classes/new');
+
+        // Submit empty form
+        await page.getByRole('button', { name: 'Create Class' }).click();
+
+        // Verify Validation Error Summary exists
+        const alert = page.locator('.text-destructive').first();
+        // The Alert component usually has text-destructive or border-destructive. 
+        // Based on my code: <Alert variant="destructive">
+        // It renders with `text-destructive-foreground` or similar, but let's check for the text explicitly.
+        
+        await expect(page.getByText('Please correct the following errors:')).toBeVisible();
+        await expect(page.getByText('Name must be at least 3 characters')).toBeVisible();
+        await expect(page.getByText('Please select a Day')).toBeVisible();
+        await expect(page.getByText('Please select a Block')).toBeVisible();
     });
 });

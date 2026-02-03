@@ -3,6 +3,8 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Loader2 } from 'lucide-react';
 import {
   Form,
@@ -28,19 +30,26 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createClass, updateClass } from '@/lib/actions/classes';
 import type { Class, ScheduleConfig } from '@/types';
 
-interface ClassFormValues {
-  name: string;
-  description: string;
-  price: string;
-  capacity: string;
-  startDate: string;
-  endDate: string;
-  day: string;
-  block: string;
-  location: string;
-  ageMin: string;
-  ageMax: string;
-}
+// Define Zod Schema for the flat form structure
+const classFormSchema = z.object({
+  name: z.string().min(3, 'Name must be at least 3 characters'),
+  description: z.string().optional(),
+  price: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
+    message: 'Price must be 0 or greater',
+  }),
+  capacity: z.string().refine((val) => !isNaN(parseInt(val, 10)) && parseInt(val, 10) >= 1, {
+    message: 'Capacity must be at least 1',
+  }),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  day: z.string().min(1, 'Please select a Day'),
+  block: z.string().min(1, 'Please select a Block'),
+  location: z.string().optional(),
+  ageMin: z.string().optional(),
+  ageMax: z.string().optional(),
+});
+
+type ClassFormValues = z.infer<typeof classFormSchema>;
 
 interface ClassFormProps {
   existingClass?: Class;
@@ -48,13 +57,10 @@ interface ClassFormProps {
 }
 
 const dayOptions = [
-  { value: 'Monday', label: 'Monday' },
+  { value: 'Tuesday/Thursday', label: 'Tuesday/Thursday' },
   { value: 'Tuesday', label: 'Tuesday' },
   { value: 'Wednesday', label: 'Wednesday' },
   { value: 'Thursday', label: 'Thursday' },
-  { value: 'Friday', label: 'Friday' },
-  { value: 'Saturday', label: 'Saturday' },
-  { value: 'Sunday', label: 'Sunday' },
 ];
 
 const blockOptions = [
@@ -64,12 +70,13 @@ const blockOptions = [
 export function ClassForm({ existingClass, mode }: ClassFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   // Helper to safely access schedule config
   const scheduleConfig = existingClass?.schedule_config as ScheduleConfig | undefined;
 
   const form = useForm<ClassFormValues>({
+    resolver: zodResolver(classFormSchema),
     defaultValues: {
       name: existingClass?.name || '',
       description: existingClass?.description || '',
@@ -86,31 +93,10 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
   });
 
   const onSubmit = (values: ClassFormValues) => {
-    // Validate required fields manually
-    if (!values.name || values.name.length < 3) {
-      setError('Name must be at least 3 characters');
-      return;
-    }
+    setServerError(null);
 
     const priceNum = parseFloat(values.price);
-    if (isNaN(priceNum) || priceNum < 0) {
-      setError('Price must be 0 or greater');
-      return;
-    }
-
     const capacityNum = parseInt(values.capacity, 10);
-    if (isNaN(capacityNum) || capacityNum < 1) {
-      setError('Capacity must be at least 1');
-      return;
-    }
-    
-    // Validate Schedule
-    if (!values.day || !values.block) {
-        setError('Please select both a Day and a Block');
-        return;
-    }
-
-    setError(null);
 
     startTransition(async () => {
       const input = {
@@ -147,17 +133,22 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
       }
 
       if (result && !result.success) {
-        setError(result.error || 'An error occurred');
+        setServerError(result.error || 'An error occurred');
       }
     });
   };
 
+  // Get errors for summary from form state
+  const formErrors = Object.values(form.formState.errors);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {error && (
+        
+        {/* Main Server Error */}
+        {serverError && (
           <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>{serverError}</AlertDescription>
           </Alert>
         )}
 
@@ -245,7 +236,7 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
               name="day"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Day of Week</FormLabel>
+                  <FormLabel>Day of Week *</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -270,7 +261,7 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
                 name="block" 
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Block</FormLabel>
+                    <FormLabel>Block *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                          <FormControl>
                            <SelectTrigger>
@@ -372,6 +363,20 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Validation Errors Summary */}
+        {formErrors.length > 0 && (
+            <Alert variant="destructive" className="mb-4">
+                <AlertDescription>
+                    <p className="font-semibold mb-2">Please correct the following errors:</p>
+                    <ul className="list-disc pl-4">
+                        {formErrors.map((error, index) => (
+                            <li key={index}>{error.message}</li>
+                        ))}
+                    </ul>
+                </AlertDescription>
+            </Alert>
+        )}
 
         <div className="flex gap-4">
           <Button type="submit" disabled={isPending}>

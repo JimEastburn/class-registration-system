@@ -188,7 +188,7 @@ import { sendClassCancellation, sendScheduleChangeNotification } from '@/lib/ema
 
 interface CreateClassInput {
   name: string;
-  description?: string;
+  description?: string | null;
   price: number; // in cents
   capacity: number;
   schedule_config?: ScheduleConfig;
@@ -196,7 +196,7 @@ interface CreateClassInput {
   teacherId?: string;
   // Legacy/Linear fields for backward compat or direct access if needed, 
   // but we prefer schedule_config object now.
-  location?: string;
+  location?: string | null;
   ageMin?: number;
   ageMax?: number;
 }

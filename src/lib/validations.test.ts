@@ -83,7 +83,7 @@ describe('validations', () => {
   describe('scheduleConfigSchema', () => {
     it('accepts valid schedule', () => {
         const result = scheduleConfigSchema.safeParse({
-            day: 'Tuesday',
+            day: 'Tuesday/Thursday',
             block: 'Block 1',
             recurring: true
         });
@@ -134,12 +134,27 @@ describe('validations', () => {
 
   describe('familyMemberSchema', () => {
       it('requires names', () => {
-          expect(familyMemberSchema.safeParse({ firstName: 'Child', lastName: 'One' }).success).toBe(true);
+          expect(familyMemberSchema.safeParse({ 
+              firstName: 'Child', 
+              lastName: 'One', 
+              email: 'test@example.com', 
+              relationship: 'Parent/Guardian' 
+          }).success).toBe(true);
           expect(familyMemberSchema.safeParse({ firstName: '' }).success).toBe(false);
       });
       it('validates optional email', () => {
-          expect(familyMemberSchema.safeParse({ firstName: 'A', lastName: 'B', email: 'valid@test.com' }).success).toBe(true);
-          expect(familyMemberSchema.safeParse({ firstName: 'A', lastName: 'B', email: 'invalid' }).success).toBe(false);
+          expect(familyMemberSchema.safeParse({ 
+              firstName: 'A', 
+              lastName: 'B', 
+              email: 'valid@test.com',
+              relationship: 'Parent/Guardian'
+          }).success).toBe(true);
+          expect(familyMemberSchema.safeParse({ 
+              firstName: 'A', 
+              lastName: 'B', 
+              email: 'invalid',
+              relationship: 'Parent/Guardian'
+          }).success).toBe(false);
       });
   });
 

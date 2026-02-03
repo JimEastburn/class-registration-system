@@ -137,8 +137,8 @@ export type FamilyMemberFormData = z.infer<typeof familyMemberSchema>;
  * Schedule configuration schema
  */
 export const scheduleConfigSchema = z.object({
-  day: z.enum(['Tuesday', 'Wednesday', 'Thursday'], {
-    message: 'Classes can only be scheduled on Tuesday, Wednesday, or Thursday',
+  day: z.enum(['Tuesday/Thursday', 'Tuesday', 'Wednesday', 'Thursday'], {
+    message: 'Classes can only be scheduled on Tuesday/Thursday, Tuesday, Wednesday, or Thursday',
   }),
   block: z.enum(['Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5'], {
     message: 'Classes can only be scheduled in Blocks 1-5',

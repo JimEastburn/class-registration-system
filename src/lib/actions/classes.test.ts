@@ -1,5 +1,5 @@
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { createClass, updateClass } from '@/lib/actions/classes';
 import { createClient } from '@/lib/supabase/server';
 
@@ -33,7 +33,7 @@ describe('Class Actions', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        (createClient as any).mockResolvedValue(mockSupabase);
+        (createClient as Mock).mockResolvedValue(mockSupabase);
         mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
     });
 
@@ -200,6 +200,47 @@ describe('Class Actions', () => {
              } else {
                  throw new Error('Expected failure');
              }
+        });
+
+        it('allows clearing location (setting to null)', async () => {
+            // Mock Existing Class Check
+             mockSupabase.from.mockReturnValueOnce({
+                 select: vi.fn().mockReturnValue({
+                     eq: vi.fn().mockReturnValue({
+                         single: vi.fn().mockResolvedValue({ data: { 
+                             teacher_id: 'teacher-1', 
+                             status: 'draft',
+                             location: 'Old Location'
+                         }, error: null })
+                     })
+                 })
+             });
+
+             // Mock Role Check
+             mockSupabase.from.mockReturnValueOnce({
+                 select: vi.fn().mockReturnValue({
+                     eq: vi.fn().mockReturnValue({
+                         single: vi.fn().mockResolvedValue({ data: { role: 'teacher' }, error: null })
+                     })
+                 })
+             });
+
+             const mockUpdate = vi.fn().mockReturnValue({
+                 eq: vi.fn().mockResolvedValue({ error: null })
+             });
+
+             // Mock Update
+             mockSupabase.from.mockReturnValueOnce({
+                 update: mockUpdate
+             });
+
+             // Type now allows null, so no error expected
+             const result = await updateClass('class-1', { location: null });
+             
+             expect(result.success).toBe(true);
+             expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({
+                 location: null
+             }));
         });
     });
 });
