@@ -43,7 +43,7 @@ const classFormSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   day: z.string().min(1, 'Please select a Day'),
-  block: z.string().min(1, 'Please select a Block'),
+  block: z.string().min(1, 'Please select a Block of time'),
   location: z.string().optional(),
   ageMin: z.string().optional(),
   ageMax: z.string().optional(),
@@ -261,7 +261,7 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
                 name="block" 
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Block *</FormLabel>
+                    <FormLabel>Block of time *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                          <FormControl>
                            <SelectTrigger>
@@ -318,19 +318,7 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
             <CardDescription>Optional class information</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Room 101, Building A" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
 
             <div className="grid gap-4 md:grid-cols-2">
               <FormField

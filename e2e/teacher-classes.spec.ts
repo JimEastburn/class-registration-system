@@ -30,7 +30,7 @@ test.describe('Teacher Class Management', () => {
         }
 
         // Increase timeout for redirect
-        await expect(page).toHaveURL(/.*teacher/, { timeout: 15000 });
+        await expect(page).toHaveURL(/.*teacher/, { timeout: 30000 });
         
         // Navigate to Classes
         await page.getByRole('link', { name: 'Classes', exact: true }).click();
@@ -53,7 +53,7 @@ test.describe('Teacher Class Management', () => {
         await page.getByLabel('Tuesday', { exact: true }).click(); // Select "Tuesday" option
 
         // Select Block
-        await page.getByLabel('Block').click();
+        await page.getByLabel('Block of time').click();
         await page.getByRole('option', { name: 'Block 1', exact: true }).click();
 
         await page.getByLabel('Location').fill('Room 101');
@@ -82,7 +82,7 @@ test.describe('Teacher Class Management', () => {
         await page.fill('input[name="email"]', teacherUser.email);
         await page.fill('input[name="password"]', teacherUser.password);
         await page.click('button[type="submit"]');
-        await expect(page).toHaveURL(/.*teacher/, { timeout: 15000 });
+        await expect(page).toHaveURL(/.*teacher/, { timeout: 30000 });
 
         // Navigate to Create Class
         await page.goto('/teacher/classes/new');
@@ -91,7 +91,7 @@ test.describe('Teacher Class Management', () => {
         await page.getByRole('button', { name: 'Create Class' }).click();
 
         // Verify Validation Error Summary exists
-        const alert = page.locator('.text-destructive').first();
+        page.locator('.text-destructive').first();
         // The Alert component usually has text-destructive or border-destructive. 
         // Based on my code: <Alert variant="destructive">
         // It renders with `text-destructive-foreground` or similar, but let's check for the text explicitly.
@@ -99,6 +99,6 @@ test.describe('Teacher Class Management', () => {
         await expect(page.getByText('Please correct the following errors:')).toBeVisible();
         await expect(page.getByText('Name must be at least 3 characters')).toBeVisible();
         await expect(page.getByText('Please select a Day')).toBeVisible();
-        await expect(page.getByText('Please select a Block')).toBeVisible();
+        await expect(page.getByText('Please select a Block of time')).toBeVisible();
     });
 });

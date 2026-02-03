@@ -171,7 +171,11 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
           </TableHeader>
           <TableBody>
             {classes.map((cls) => (
-              <TableRow key={cls.id}>
+              <TableRow 
+                key={cls.id}
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => router.push(`/teacher/classes/${cls.id}`)}
+              >
                 <TableCell className="font-medium">{cls.name}</TableCell>
                 <TableCell>
                   {cls.day ? (
@@ -189,7 +193,7 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
                     {statusConfig[cls.status]?.label || cls.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" disabled={isPending}>
