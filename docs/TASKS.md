@@ -763,26 +763,27 @@ This document tracks the detailed development tasks for the Class Registration S
 
 ## Summary
 
-| Phase                       | Tasks |
-| --------------------------- | ----- |
-| Phase 1: Foundation         | 33    |
-| Phase 2: Database Schema    | 31    |
-| Phase 3: Auth               | 16    |
-| Phase 4: Dashboard Layout   | 14    |
-| Phase 5: Parent Portal      | 37    |
-| Phase 6: Teacher Portal     | 29    |
-| Phase 7: Student Portal     | 13    |
-| Phase 8: Admin Portal       | 38    |
-| Phase 9: Class Scheduler    | 22    |
-| Phase 10: Super Admin       | 6     |
-| Phase 11: Stripe Payment    | 22    |
-| Phase 12: Zoho Integration  | 9     |
-| Phase 13: Email Integration | 10    |
-| Phase 14: Testing           | 22    |
-| Phase 15: Deployment        | 15    |
-| Phase 16: Refactoring       | 7     |
+| Phase                              | Tasks |
+| ---------------------------------- | ----- |
+| Phase 1: Foundation                | 33    |
+| Phase 2: Database Schema           | 31    |
+| Phase 3: Auth                      | 16    |
+| Phase 4: Dashboard Layout          | 14    |
+| Phase 5: Parent Portal             | 37    |
+| Phase 6: Teacher Portal            | 29    |
+| Phase 7: Student Portal            | 13    |
+| Phase 8: Admin Portal              | 38    |
+| Phase 9: Class Scheduler           | 22    |
+| Phase 10: Super Admin              | 6     |
+| Phase 11: Stripe Payment           | 22    |
+| Phase 12: Zoho Integration         | 9     |
+| Phase 13: Email Integration        | 10    |
+| Phase 14: Testing                  | 22    |
+| Phase 15: Deployment               | 15    |
+| Phase 16: Refactoring              | 7     |
+| Phase 17: Browser Automation Tests | 45    |
 
-**Total Tasks: ~324**
+**Total Tasks: ~369**
 
 ---
 
@@ -795,3 +796,102 @@ This document tracks the detailed development tasks for the Class Registration S
 - [x] **[Refactor]** Update UI: ClassForm (Teacher Portal) <!-- id: 16.1.5 -->
 - [x] **[Refactor]** Update UI: MasterCalendarGrid (Scheduler) <!-- id: 16.1.6 -->
 - [x] **[Refactor]** Update UI: Student Schedule View & ClassGrid <!-- id: 16.1.7 -->
+
+---
+
+## Phase 17: Browser Automation Tests (agent-browser)
+
+> Reference: `scripts/browser-tests/TEST_PLAN.md`
+
+### 17.1 Test Infrastructure Setup
+
+- [ ] **[Test]** Create auth state files for all roles (Parent, Student, Admin, Scheduler, Super Admin) <!-- id: 17.1.1 -->
+- [ ] **[Test]** Create `setup-auth-state-parent.sh` script <!-- id: 17.1.2 -->
+- [ ] **[Test]** Create `setup-auth-state-admin.sh` script <!-- id: 17.1.3 -->
+- [ ] **[Test]** Create `setup-auth-state-scheduler.sh` script <!-- id: 17.1.4 -->
+- [ ] **[Test]** Create `setup-auth-state-superadmin.sh` script <!-- id: 17.1.5 -->
+
+---
+
+### 17.2 Authentication Tests
+
+- [ ] **[Test]** `test-signup-parent.sh` - Parent registration with all fields <!-- id: 17.2.1 -->
+- [ ] **[Test]** `test-login-parent.sh` - Parent login → redirect to /parent <!-- id: 17.2.2 -->
+- [ ] **[Test]** `test-login-teacher.sh` - Teacher login → redirect to /teacher <!-- id: 17.2.3 -->
+- [ ] **[Test]** `test-login-failure.sh` - Login with wrong password <!-- id: 17.2.4 -->
+- [ ] **[Test]** `test-logout.sh` - Sign out → redirect to /login <!-- id: 17.2.5 -->
+
+---
+
+### 17.3 Parent Portal Tests
+
+- [ ] **[Test]** `test-parent-dashboard.sh` - View parent dashboard <!-- id: 17.3.1 -->
+- [ ] **[Test]** `test-add-child.sh` - Add child to family <!-- id: 17.3.2 -->
+- [ ] **[Test]** `test-browse-classes.sh` - Browse available classes <!-- id: 17.3.3 -->
+- [ ] **[Test]** `test-enrollment.sh` - Enroll child in open class <!-- id: 17.3.4 -->
+- [ ] **[Test]** `test-enrollment-full.sh` - Enroll in full class (rejected) <!-- id: 17.3.5 -->
+- [ ] **[Test]** `test-enrollment-duplicate.sh` - Duplicate enrollment (rejected) <!-- id: 17.3.6 -->
+- [ ] **[Test]** `test-payment.sh` - Stripe payment checkout <!-- id: 17.3.7 -->
+- [ ] **[Test]** `test-view-enrollments.sh` - View enrollments list <!-- id: 17.3.8 -->
+
+---
+
+### 17.4 Teacher Portal Tests
+
+- [x] **[Test]** `test-class-creation.sh` - Create class (draft) ✅ <!-- id: 17.4.1 -->
+- [ ] **[Test]** `test-teacher-dashboard.sh` - View teacher dashboard <!-- id: 17.4.2 -->
+- [ ] **[Test]** `test-edit-class.sh` - Update class details <!-- id: 17.4.3 -->
+- [ ] **[Test]** `test-publish-class.sh` - Publish class (draft → active) <!-- id: 17.4.4 -->
+- [ ] **[Test]** `test-student-roster.sh` - View student roster <!-- id: 17.4.5 -->
+- [ ] **[Test]** `test-teacher-to-parent.sh` - Switch to Parent view <!-- id: 17.4.6 -->
+
+---
+
+### 17.5 Student Portal Tests
+
+- [ ] **[Test]** `test-student-dashboard.sh` - View linked dashboard <!-- id: 17.5.1 -->
+- [ ] **[Test]** `test-student-schedule.sh` - View weekly schedule <!-- id: 17.5.2 -->
+
+---
+
+### 17.6 Admin Portal Tests
+
+- [ ] **[Test]** `test-admin-dashboard.sh` - View admin dashboard <!-- id: 17.6.1 -->
+- [ ] **[Test]** `test-user-list.sh` - List all users <!-- id: 17.6.2 -->
+- [ ] **[Test]** `test-promote-role.sh` - Promote user role <!-- id: 17.6.3 -->
+- [ ] **[Test]** `test-demote-role.sh` - Demote user role <!-- id: 17.6.4 -->
+- [ ] **[Test]** `test-refund.sh` - Process full refund <!-- id: 17.6.5 -->
+- [ ] **[Test]** `test-export-users.sh` - CSV export (users) <!-- id: 17.6.6 -->
+- [ ] **[Test]** `test-admin-to-parent.sh` - Switch to Parent view <!-- id: 17.6.7 -->
+
+---
+
+### 17.7 Class Scheduler Portal Tests
+
+- [ ] **[Test]** `test-scheduler-dashboard.sh` - View scheduler dashboard <!-- id: 17.7.1 -->
+- [ ] **[Test]** `test-scheduler-calendar.sh` - View master calendar grid <!-- id: 17.7.2 -->
+- [ ] **[Test]** `test-scheduler-create.sh` - Create class for any teacher <!-- id: 17.7.3 -->
+- [ ] **[Test]** `test-drag-new-block.sh` - Drag class to new block <!-- id: 17.7.4 -->
+- [ ] **[Test]** `test-teacher-conflict-block.sh` - Prevent overlap: same teacher <!-- id: 17.7.5 -->
+- [ ] **[Test]** `test-scheduler-to-parent.sh` - Switch to Parent view <!-- id: 17.7.6 -->
+
+---
+
+### 17.8 View Switching Tests
+
+- [ ] **[Test]** `test-student-default-view.sh` - Student login → Student View (default) <!-- id: 17.8.1 -->
+- [ ] **[Test]** `test-parent-default-view.sh` - Parent login → Parent View (default) <!-- id: 17.8.2 -->
+- [ ] **[Test]** `test-teacher-default-view.sh` - Teacher login → Teacher View (default) <!-- id: 17.8.3 -->
+- [ ] **[Test]** `test-admin-default-view.sh` - Admin login → Admin View (default) <!-- id: 17.8.4 -->
+- [ ] **[Test]** `test-superadmin-universal-switcher.sh` - Super Admin access all views <!-- id: 17.8.5 -->
+- [ ] **[Test]** `test-student-no-toggle.sh` - Student has NO view toggle <!-- id: 17.8.6 -->
+- [ ] **[Test]** `test-admin-no-scheduler.sh` - Admin CANNOT access Scheduler view <!-- id: 17.8.7 -->
+
+---
+
+### 17.9 Cross-Role Integration Tests
+
+- [ ] **[Test]** `test-full-enrollment-flow.sh` - Teacher creates → Parent enrolls → Payment → Roster → Schedule <!-- id: 17.9.1 -->
+- [ ] **[Test]** `test-waitlist-flow.sh` - Full class → Waitlist → Spot opens → Notify <!-- id: 17.9.2 -->
+- [ ] **[Test]** `test-refund-flow.sh` - Admin refunds → Enrollment reverts → Payment updated <!-- id: 17.9.3 -->
+
