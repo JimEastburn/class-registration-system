@@ -1031,3 +1031,215 @@ This document tracks the detailed development tasks for the Class Registration S
 - [x] **[Test]** Full enrollment loop: Teacher creates → Parent enrolls → Payment → Roster → Schedule <!-- id: 17.13.1 -->
 - [x] **[Test]** Waitlist flow: Full class → Waitlist → Spot opens → Notify <!-- id: 17.13.2 -->
 - [x] **[Test]** Refund flow: Admin refunds → Enrollment reverts → Payment updated <!-- id: 17.13.3 -->
+
+---
+
+## Phase 18: Playwright Test Suite
+
+> Convert agent-browser shell scripts to proper Playwright TypeScript tests for CI/CD integration.
+
+### 18.1 Playwright Infrastructure Setup (5)
+
+- [ ] **[Setup]** Initialize Playwright configuration (`playwright.config.ts`) <!-- id: 18.1.1 -->
+- [ ] **[Setup]** Configure test fixtures for auth state loading <!-- id: 18.1.2 -->
+- [ ] **[Setup]** Create base page objects for common interactions <!-- id: 18.1.3 -->
+- [ ] **[Setup]** Set up test data factories for user creation <!-- id: 18.1.4 -->
+- [ ] **[Setup]** Configure CI workflow for Playwright tests <!-- id: 18.1.5 -->
+
+---
+
+### 18.2 Authentication Tests - Playwright (10)
+
+- [ ] **[Test]** `auth/signup-parent.spec.ts` - Sign up (Parent) with all fields <!-- id: 18.2.1 -->
+- [ ] **[Test]** `auth/password-validation.spec.ts` - Weak password rejected <!-- id: 18.2.2 -->
+- [ ] **[Test]** `auth/coc-required.spec.ts` - Code of Conduct required <!-- id: 18.2.3 -->
+- [ ] **[Test]** `auth/login-parent.spec.ts` - Sign in (Parent) → /parent <!-- id: 18.2.4 -->
+- [ ] **[Test]** `auth/login-teacher.spec.ts` - Sign in (Teacher) → /teacher <!-- id: 18.2.5 -->
+- [ ] **[Test]** `auth/login-failure.spec.ts` - Wrong password rejected <!-- id: 18.2.6 -->
+- [ ] **[Test]** `auth/logout.spec.ts` - Sign out → /login <!-- id: 18.2.7 -->
+- [ ] **[Test]** `auth/session-persistence.spec.ts` - Session persists on refresh <!-- id: 18.2.8 -->
+- [ ] **[Test]** `auth/password-reset.spec.ts` - Password reset request <!-- id: 18.2.9 -->
+- [ ] **[Test]** `auth/password-update.spec.ts` - Password update via reset link <!-- id: 18.2.10 -->
+
+---
+
+### 18.3 Parent Portal Tests - Playwright (18)
+
+- [ ] **[Test]** `parent/dashboard.spec.ts` - View parent dashboard <!-- id: 18.3.1 -->
+- [ ] **[Test]** `parent/update-profile.spec.ts` - Update profile (phone) <!-- id: 18.3.2 -->
+- [ ] **[Test]** `parent/add-child.spec.ts` - Add child to family <!-- id: 18.3.3 -->
+- [ ] **[Test]** `parent/add-guardian.spec.ts` - Add family member (guardian) <!-- id: 18.3.4 -->
+- [ ] **[Test]** `parent/update-child.spec.ts` - Update child details <!-- id: 18.3.5 -->
+- [ ] **[Test]** `parent/delete-child.spec.ts` - Delete child profile <!-- id: 18.3.6 -->
+- [ ] **[Test]** `parent/link-student.spec.ts` - Link student via email <!-- id: 18.3.7 -->
+- [ ] **[Test]** `parent/browse-classes.spec.ts` - Browse available classes <!-- id: 18.3.8 -->
+- [ ] **[Test]** `parent/view-class-details.spec.ts` - View class details <!-- id: 18.3.9 -->
+- [ ] **[Test]** `parent/enroll-child.spec.ts` - Enroll child in class <!-- id: 18.3.10 -->
+- [ ] **[Test]** `parent/enroll-full-class.spec.ts` - Enroll in full class (rejected) <!-- id: 18.3.11 -->
+- [ ] **[Test]** `parent/duplicate-enrollment.spec.ts` - Duplicate enrollment (rejected) <!-- id: 18.3.12 -->
+- [ ] **[Test]** `parent/enroll-blocked.spec.ts` - Enroll blocked student (rejected) <!-- id: 18.3.13 -->
+- [ ] **[Test]** `parent/cancel-enrollment.spec.ts` - Cancel pending enrollment <!-- id: 18.3.14 -->
+- [ ] **[Test]** `parent/view-enrollments.spec.ts` - View enrollments list <!-- id: 18.3.15 -->
+- [ ] **[Test]** `parent/stripe-checkout.spec.ts` - Stripe payment checkout <!-- id: 18.3.16 -->
+- [ ] **[Test]** `parent/stripe-cancel.spec.ts` - Cancel on Stripe page <!-- id: 18.3.17 -->
+- [ ] **[Test]** `parent/payment-history.spec.ts` - View payment history <!-- id: 18.3.18 -->
+
+---
+
+### 18.4 Teacher Portal Tests - Playwright (14)
+
+- [ ] **[Test]** `teacher/dashboard.spec.ts` - View teacher dashboard <!-- id: 18.4.1 -->
+- [ ] **[Test]** `teacher/create-class.spec.ts` - Create class (draft) <!-- id: 18.4.2 -->
+- [ ] **[Test]** `teacher/update-class.spec.ts` - Update class details <!-- id: 18.4.3 -->
+- [ ] **[Test]** `teacher/publish-class.spec.ts` - Publish class (draft → active) <!-- id: 18.4.4 -->
+- [ ] **[Test]** `teacher/cancel-class.spec.ts` - Cancel class <!-- id: 18.4.5 -->
+- [ ] **[Test]** `teacher/delete-draft-class.spec.ts` - Delete draft class <!-- id: 18.4.6 -->
+- [ ] **[Test]** `teacher/delete-active-class.spec.ts` - Cannot delete active class <!-- id: 18.4.7 -->
+- [ ] **[Test]** `teacher/validate-dates.spec.ts` - Validate dates (end before start) <!-- id: 18.4.8 -->
+- [ ] **[Test]** `teacher/view-roster.spec.ts` - View student roster <!-- id: 18.4.9 -->
+- [ ] **[Test]** `teacher/block-student.spec.ts` - Block a student <!-- id: 18.4.10 -->
+- [ ] **[Test]** `teacher/upload-materials.spec.ts` - Upload class materials <!-- id: 18.4.11 -->
+- [ ] **[Test]** `teacher/delete-materials.spec.ts` - Delete class materials <!-- id: 18.4.12 -->
+- [ ] **[Test]** `teacher/no-schedule-access.spec.ts` - Teacher cannot create schedule <!-- id: 18.4.13 -->
+- [ ] **[Test]** `teacher/switch-to-parent.spec.ts` - Switch to Parent view <!-- id: 18.4.14 -->
+
+---
+
+### 18.5 Student Portal Tests - Playwright (4)
+
+- [ ] **[Test]** `student/dashboard.spec.ts` - View student dashboard <!-- id: 18.5.1 -->
+- [ ] **[Test]** `student/weekly-schedule.spec.ts` - View weekly schedule <!-- id: 18.5.2 -->
+- [ ] **[Test]** `student/class-details.spec.ts` - View class details <!-- id: 18.5.3 -->
+- [ ] **[Test]** `student/class-materials.spec.ts` - View class materials <!-- id: 18.5.4 -->
+
+---
+
+### 18.6 Admin Portal Tests - Playwright (22)
+
+- [ ] **[Test]** `admin/dashboard.spec.ts` - View admin dashboard <!-- id: 18.6.1 -->
+- [ ] **[Test]** `admin/list-users.spec.ts` - List all users <!-- id: 18.6.2 -->
+- [ ] **[Test]** `admin/promote-user.spec.ts` - Promote user role <!-- id: 18.6.3 -->
+- [ ] **[Test]** `admin/demote-user.spec.ts` - Demote user role <!-- id: 18.6.4 -->
+- [ ] **[Test]** `admin/delete-user.spec.ts` - Delete user account <!-- id: 18.6.5 -->
+- [ ] **[Test]** `admin/singleton-scheduler.spec.ts` - Singleton scheduler enforcement <!-- id: 18.6.6 -->
+- [ ] **[Test]** `admin/teacher-not-scheduler.spec.ts` - Teacher cannot be scheduler <!-- id: 18.6.7 -->
+- [ ] **[Test]** `admin/student-not-scheduler.spec.ts` - Student cannot be scheduler <!-- id: 18.6.8 -->
+- [ ] **[Test]** `admin/view-classes.spec.ts` - View all classes <!-- id: 18.6.9 -->
+- [ ] **[Test]** `admin/edit-class.spec.ts` - Edit any class (override) <!-- id: 18.6.10 -->
+- [ ] **[Test]** `admin/view-enrollments.spec.ts` - View all enrollments <!-- id: 18.6.11 -->
+- [ ] **[Test]** `admin/override-enrollment.spec.ts` - Override enrollment status <!-- id: 18.6.12 -->
+- [ ] **[Test]** `admin/force-cancel-enrollment.spec.ts` - Force cancel enrollment <!-- id: 18.6.13 -->
+- [ ] **[Test]** `admin/view-payments.spec.ts` - View all payments <!-- id: 18.6.14 -->
+- [ ] **[Test]** `admin/process-refund.spec.ts` - Process full refund <!-- id: 18.6.15 -->
+- [ ] **[Test]** `admin/invalid-refund.spec.ts` - Prevent invalid refund <!-- id: 18.6.16 -->
+- [ ] **[Test]** `admin/export-users.spec.ts` - CSV export (users) <!-- id: 18.6.17 -->
+- [ ] **[Test]** `admin/export-classes.spec.ts` - CSV export (classes) <!-- id: 18.6.18 -->
+- [ ] **[Test]** `admin/export-enrollments.spec.ts` - CSV export (enrollments) <!-- id: 18.6.19 -->
+- [ ] **[Test]** `admin/export-payments.spec.ts` - CSV export (payments) <!-- id: 18.6.20 -->
+- [ ] **[Test]** `admin/global-settings.spec.ts` - Update global settings <!-- id: 18.6.21 -->
+- [ ] **[Test]** `admin/switch-to-parent.spec.ts` - Switch to Parent view <!-- id: 18.6.22 -->
+
+---
+
+### 18.7 Scheduler Portal Tests - Playwright (30)
+
+- [ ] **[Test]** `scheduler/dashboard.spec.ts` - View scheduler dashboard <!-- id: 18.7.1 -->
+- [ ] **[Test]** `scheduler/master-calendar.spec.ts` - View master calendar grid <!-- id: 18.7.2 -->
+- [ ] **[Test]** `scheduler/calendar-x-axis.spec.ts` - Calendar X-axis (Day + Blocks) <!-- id: 18.7.3 -->
+- [ ] **[Test]** `scheduler/calendar-y-axis.spec.ts` - Calendar Y-axis (Day patterns) <!-- id: 18.7.4 -->
+- [ ] **[Test]** `scheduler/switch-to-parent.spec.ts` - Switch to Parent view <!-- id: 18.7.5 -->
+- [ ] **[Test]** `scheduler/create-class-any-teacher.spec.ts` - Create class for any teacher <!-- id: 18.7.6 -->
+- [ ] **[Test]** `scheduler/delete-class.spec.ts` - Delete any class <!-- id: 18.7.7 -->
+- [ ] **[Test]** `scheduler/class-modal-open.spec.ts` - Click class → modal opens <!-- id: 18.7.8 -->
+- [ ] **[Test]** `scheduler/modal-update-name.spec.ts` - Modal: Update class name <!-- id: 18.7.9 -->
+- [ ] **[Test]** `scheduler/modal-update-teacher.spec.ts` - Modal: Update assigned teacher <!-- id: 18.7.10 -->
+- [ ] **[Test]** `scheduler/modal-update-room.spec.ts` - Modal: Update room location <!-- id: 18.7.11 -->
+- [ ] **[Test]** `scheduler/modal-update-dates.spec.ts` - Modal: Update start/end date <!-- id: 18.7.12 -->
+- [ ] **[Test]** `scheduler/modal-update-capacity.spec.ts` - Modal: Update max class size <!-- id: 18.7.13 -->
+- [ ] **[Test]** `scheduler/modal-update-fee.spec.ts` - Modal: Update fee <!-- id: 18.7.14 -->
+- [ ] **[Test]** `scheduler/modal-update-syllabus.spec.ts` - Modal: Update syllabus URL <!-- id: 18.7.15 -->
+- [ ] **[Test]** `scheduler/modal-update-day-pattern.spec.ts` - Modal: Update day pattern <!-- id: 18.7.16 -->
+- [ ] **[Test]** `scheduler/modal-update-block.spec.ts` - Modal: Update time block <!-- id: 18.7.17 -->
+- [ ] **[Test]** `scheduler/one-block-at-time.spec.ts` - Class occupies one block <!-- id: 18.7.18 -->
+- [ ] **[Test]** `scheduler/day-pattern-tue-thu.spec.ts` - Day pattern: Tuesday/Thursday <!-- id: 18.7.19 -->
+- [ ] **[Test]** `scheduler/day-pattern-tue.spec.ts` - Day pattern: Tuesday Only <!-- id: 18.7.20 -->
+- [ ] **[Test]** `scheduler/day-pattern-thu.spec.ts` - Day pattern: Thursday Only <!-- id: 18.7.21 -->
+- [ ] **[Test]** `scheduler/day-pattern-wed.spec.ts` - Day pattern: Wednesday Only <!-- id: 18.7.22 -->
+- [ ] **[Test]** `scheduler/semester-dates.spec.ts` - Define semester dates <!-- id: 18.7.23 -->
+- [ ] **[Test]** `scheduler/drag-to-new-block.spec.ts` - Drag class to new block <!-- id: 18.7.24 -->
+- [ ] **[Test]** `scheduler/drag-removes-previous.spec.ts` - Drag removes from previous block <!-- id: 18.7.25 -->
+- [ ] **[Test]** `scheduler/drag-new-day-pattern.spec.ts` - Drag class to new day pattern <!-- id: 18.7.26 -->
+- [ ] **[Test]** `scheduler/prevent-teacher-overlap.spec.ts` - Prevent overlap: same teacher <!-- id: 18.7.27 -->
+- [ ] **[Test]** `scheduler/conflict-error-message.spec.ts` - Conflict error message displayed <!-- id: 18.7.28 -->
+- [ ] **[Test]** `scheduler/conflict-prevents-save.spec.ts` - Conflict prevents save (modal) <!-- id: 18.7.29 -->
+- [ ] **[Test]** `scheduler/conflict-prevents-drag.spec.ts` - Conflict prevents drag-drop <!-- id: 18.7.30 -->
+
+---
+
+### 18.8 Super Admin Tests - Playwright (3)
+
+- [ ] **[Test]** `superadmin/global-view-switcher.spec.ts` - Global view switcher <!-- id: 18.8.1 -->
+- [ ] **[Test]** `superadmin/access-all-portals.spec.ts` - Access all portals <!-- id: 18.8.2 -->
+- [ ] **[Test]** `superadmin/bypass-rls.spec.ts` - Bypass RLS (view draft classes) <!-- id: 18.8.3 -->
+
+---
+
+### 18.9 Student Linking Tests - Playwright (3)
+
+- [ ] **[Test]** `linking/parent-links-student.spec.ts` - Parent links student by email <!-- id: 18.9.1 -->
+- [ ] **[Test]** `linking/student-auto-link.spec.ts` - Student registers → auto-link <!-- id: 18.9.2 -->
+- [ ] **[Test]** `linking/prevent-double-link.spec.ts` - Prevent double linking <!-- id: 18.9.3 -->
+
+---
+
+### 18.10 View Switching Tests - Playwright (21)
+
+- [ ] **[Test]** `views/student-default.spec.ts` - Student login → Student View <!-- id: 18.10.1 -->
+- [ ] **[Test]** `views/parent-default.spec.ts` - Parent login → Parent View <!-- id: 18.10.2 -->
+- [ ] **[Test]** `views/teacher-default.spec.ts` - Teacher login → Teacher View <!-- id: 18.10.3 -->
+- [ ] **[Test]** `views/admin-default.spec.ts` - Admin login → Admin View <!-- id: 18.10.4 -->
+- [ ] **[Test]** `views/scheduler-default.spec.ts` - Scheduler login → Scheduler View <!-- id: 18.10.5 -->
+- [ ] **[Test]** `views/superadmin-default.spec.ts` - Super Admin login → Admin View <!-- id: 18.10.6 -->
+- [ ] **[Test]** `views/teacher-parent-toggle.spec.ts` - Teacher ↔ Parent toggle <!-- id: 18.10.7 -->
+- [ ] **[Test]** `views/admin-parent-toggle.spec.ts` - Admin ↔ Parent toggle <!-- id: 18.10.8 -->
+- [ ] **[Test]** `views/scheduler-parent-toggle.spec.ts` - Scheduler ↔ Parent toggle <!-- id: 18.10.9 -->
+- [ ] **[Test]** `views/superadmin-admin-view.spec.ts` - Super Admin → Admin view <!-- id: 18.10.10 -->
+- [ ] **[Test]** `views/superadmin-scheduler-view.spec.ts` - Super Admin → Scheduler view <!-- id: 18.10.11 -->
+- [ ] **[Test]** `views/superadmin-teacher-view.spec.ts` - Super Admin → Teacher view <!-- id: 18.10.12 -->
+- [ ] **[Test]** `views/superadmin-parent-view.spec.ts` - Super Admin → Parent view <!-- id: 18.10.13 -->
+- [ ] **[Test]** `views/superadmin-universal.spec.ts` - Super Admin universal switcher <!-- id: 18.10.14 -->
+- [ ] **[Test]** `views/student-no-toggle.spec.ts` - Student has NO view toggle <!-- id: 18.10.15 -->
+- [ ] **[Test]** `views/parent-no-toggle.spec.ts` - Parent has NO view toggle <!-- id: 18.10.16 -->
+- [ ] **[Test]** `views/teacher-no-admin.spec.ts` - Teacher CANNOT access Admin <!-- id: 18.10.17 -->
+- [ ] **[Test]** `views/teacher-no-scheduler.spec.ts` - Teacher CANNOT access Scheduler <!-- id: 18.10.18 -->
+- [ ] **[Test]** `views/admin-no-scheduler.spec.ts` - Admin CANNOT access Scheduler <!-- id: 18.10.19 -->
+- [ ] **[Test]** `views/scheduler-not-teacher.spec.ts` - Scheduler CANNOT be Teacher <!-- id: 18.10.20 -->
+- [ ] **[Test]** `views/scheduler-not-student.spec.ts` - Scheduler CANNOT be Student <!-- id: 18.10.21 -->
+
+---
+
+### 18.11 Enrollment Logic Tests - Playwright (6)
+
+- [ ] **[Test]** `enrollment/available-seats.spec.ts` - Enroll with available seats <!-- id: 18.11.1 -->
+- [ ] **[Test]** `enrollment/reject-full.spec.ts` - Reject when full <!-- id: 18.11.2 -->
+- [ ] **[Test]** `enrollment/join-waitlist.spec.ts` - Join waitlist when full <!-- id: 18.11.3 -->
+- [ ] **[Test]** `enrollment/no-waitlist-if-open.spec.ts` - Prevent waitlist if spots open <!-- id: 18.11.4 -->
+- [ ] **[Test]** `enrollment/no-double-booking.spec.ts` - Prevent double booking <!-- id: 18.11.5 -->
+- [ ] **[Test]** `enrollment/enforce-block-list.spec.ts` - Enforce block list <!-- id: 18.11.6 -->
+
+---
+
+### 18.12 Edge Cases & Error Handling - Playwright (4)
+
+- [ ] **[Test]** `edge-cases/missing-fields.spec.ts` - Submit form with missing fields <!-- id: 18.12.1 -->
+- [ ] **[Test]** `edge-cases/invalid-date-range.spec.ts` - Invalid date range <!-- id: 18.12.2 -->
+- [ ] **[Test]** `edge-cases/unauthorized-access.spec.ts` - Unauthorized route access <!-- id: 18.12.3 -->
+- [ ] **[Test]** `edge-cases/delete-class-enrollments.spec.ts` - Delete class with enrollments <!-- id: 18.12.4 -->
+
+---
+
+### 18.13 Cross-Role Integration Flows - Playwright (3)
+
+- [ ] **[Test]** `integration/full-enrollment-loop.spec.ts` - Full enrollment loop <!-- id: 18.13.1 -->
+- [ ] **[Test]** `integration/waitlist-flow.spec.ts` - Waitlist flow <!-- id: 18.13.2 -->
+- [ ] **[Test]** `integration/refund-flow.spec.ts` - Refund flow <!-- id: 18.13.3 -->
