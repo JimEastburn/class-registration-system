@@ -53,7 +53,7 @@ export function PaymentTable({ data }: PaymentTableProps) {
     };
 
     return (
-        <div className="rounded-md border">
+        <div className="rounded-md border" data-testid="payment-table">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -68,7 +68,7 @@ export function PaymentTable({ data }: PaymentTableProps) {
                 </TableHeader>
                 <TableBody>
                     {data.map((payment) => (
-                        <TableRow key={payment.id}>
+                        <TableRow key={payment.id} data-testid={`payment-row-${payment.id}`}>
                             <TableCell>{new Date(payment.created_at).toLocaleDateString()}</TableCell>
                             <TableCell>
                                 {payment.enrollment?.student?.parent?.first_name} {payment.enrollment?.student?.parent?.last_name}
@@ -96,7 +96,7 @@ export function PaymentTable({ data }: PaymentTableProps) {
                             <TableCell className="text-right">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" className="h-8 w-8 p-0" disabled={isPending}>
+                                        <Button variant="ghost" className="h-8 w-8 p-0" disabled={isPending} data-testid="payment-actions-trigger">
                                             <span className="sr-only">Open menu</span>
                                             <MoreHorizontal className="h-4 w-4" />
                                         </Button>

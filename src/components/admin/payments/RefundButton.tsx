@@ -21,6 +21,7 @@ export function RefundButton({ paymentId, amount, currency }: RefundButtonProps)
                 size="sm"
                 onClick={() => setOpen(true)}
                 className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                data-testid="refund-button"
             >
                 <RotateCcw className="h-4 w-4 mr-1" />
                 Refund

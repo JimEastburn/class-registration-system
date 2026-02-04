@@ -88,7 +88,7 @@ export function StudentRosterTable({ enrollments, classId }: StudentRosterTableP
           <CardTitle className="text-xl">Student Roster ({enrollments.length})</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
+          <Table data-testid="student-roster-table">
             <TableHeader>
               <TableRow>
                 <TableHead>Student</TableHead>
@@ -111,7 +111,7 @@ export function StudentRosterTable({ enrollments, classId }: StudentRosterTableP
                 const isBlocked = enrollment.isBlocked;
 
                 return (
-                   <TableRow key={enrollment.id}>
+                   <TableRow key={enrollment.id} data-testid={`student-row-${enrollment.student.id}`}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
@@ -167,7 +167,7 @@ export function StudentRosterTable({ enrollments, classId }: StudentRosterTableP
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
+                          <Button variant="ghost" className="h-8 w-8 p-0" data-testid="student-actions-trigger">
                             <span className="sr-only">Open menu</span>
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
@@ -179,7 +179,7 @@ export function StudentRosterTable({ enrollments, classId }: StudentRosterTableP
                                <Unlock className="mr-2 h-4 w-4" /> Unblock Student
                              </DropdownMenuItem>
                           ) : (
-                             <DropdownMenuItem onClick={() => handleBlockClick(enrollment.student)}>
+                             <DropdownMenuItem onClick={() => handleBlockClick(enrollment.student)} data-testid="block-student-button">
                                <Ban className="mr-2 h-4 w-4" /> Block Student
                              </DropdownMenuItem>
                           )}

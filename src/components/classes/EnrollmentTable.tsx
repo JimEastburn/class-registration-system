@@ -55,7 +55,7 @@ export function EnrollmentTable({
     }
 
     return (
-        <Table>
+        <Table data-testid="enrollment-table">
             <TableHeader>
                 <TableRow>
                     <TableHead>Class</TableHead>
@@ -68,7 +68,7 @@ export function EnrollmentTable({
             </TableHeader>
             <TableBody>
                 {enrollments.map((enrollment) => (
-                    <TableRow key={enrollment.id}>
+                    <TableRow key={enrollment.id} data-testid={`enrollment-row-${enrollment.id}`}>
                         <TableCell className="font-medium">
                             {enrollment.class?.title || 'Unknown Class'}
                         </TableCell>
@@ -107,7 +107,7 @@ export function EnrollmentTable({
                         <TableCell>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon">
+                                    <Button variant="ghost" size="icon" data-testid="enrollment-actions-trigger">
                                         <MoreHorizontal className="h-4 w-4" />
                                         <span className="sr-only">Actions</span>
                                     </Button>
@@ -129,6 +129,7 @@ export function EnrollmentTable({
                                             <DropdownMenuItem
                                                 onClick={() => onCancel(enrollment.id)}
                                                 className="text-destructive"
+                                                data-testid="cancel-enrollment-button"
                                             >
                                                 <XCircle className="mr-2 h-4 w-4" />
                                                 Cancel Enrollment

@@ -86,6 +86,7 @@ export function UserManagementTable({ users, totalCount, currentPage, totalPages
             <Input
                 placeholder="Search users..."
                 className="pl-8"
+                data-testid="user-search-input"
                 value={search}
                 onChange={(e) => {
                     setSearch(e.target.value);
@@ -101,7 +102,7 @@ export function UserManagementTable({ users, totalCount, currentPage, totalPages
         <Button variant="outline" onClick={() => handleSearch(search)}>Search</Button>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border" data-testid="user-management-table">
         <Table>
           <TableHeader>
             <TableRow>
@@ -121,7 +122,7 @@ export function UserManagementTable({ users, totalCount, currentPage, totalPages
                 </TableRow>
             ) : (
                 users.map((user) => (
-                    <TableRow key={user.id}>
+                    <TableRow key={user.id} data-testid={`user-row-${user.id}`}>
                         <TableCell>
                             <div>
                                 <div className="font-medium">{user.first_name} {user.last_name}</div>
@@ -136,7 +137,7 @@ export function UserManagementTable({ users, totalCount, currentPage, totalPages
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => onDeleteRequest(user)}>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => onDeleteRequest(user)} data-testid="delete-user-button">
                                 <Trash2 className="h-4 w-4" />
                             </Button>
                         </TableCell>

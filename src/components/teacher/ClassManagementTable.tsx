@@ -159,7 +159,7 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
   return (
     <>
       <Card>
-        <Table>
+        <Table data-testid="class-management-table">
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -176,6 +176,7 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
                 key={cls.id}
                 className="cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => router.push(`/teacher/classes/${cls.id}`)}
+                data-testid={`class-row-${cls.id}`}
               >
                 <TableCell className="font-medium">{cls.name}</TableCell>
                 <TableCell>
@@ -197,7 +198,7 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" disabled={isPending}>
+                      <Button variant="ghost" size="icon" disabled={isPending} data-testid="class-actions-trigger">
                         <MoreHorizontal className="h-4 w-4" />
                         <span className="sr-only">Actions</span>
                       </Button>

@@ -47,7 +47,7 @@ export function ChangeRoleDialog({ open, onOpenChange, userId, newRole, currentR
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogContent>
+            <AlertDialogContent data-testid="change-role-dialog">
                 <AlertDialogHeader>
                     <AlertDialogTitle>Change User Role?</AlertDialogTitle>
                     <AlertDialogDescription>
@@ -56,8 +56,8 @@ export function ChangeRoleDialog({ open, onOpenChange, userId, newRole, currentR
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={(e) => { e.preventDefault(); handleConfirm(); }} disabled={loading}>
+                    <AlertDialogCancel disabled={loading} data-testid="change-role-cancel">Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={(e) => { e.preventDefault(); handleConfirm(); }} disabled={loading} data-testid="change-role-confirm">
                         {loading ? 'Updating...' : 'Confirm'}
                     </AlertDialogAction>
                 </AlertDialogFooter>
