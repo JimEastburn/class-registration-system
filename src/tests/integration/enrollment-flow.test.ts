@@ -25,7 +25,7 @@ vi.mock('@/lib/email', () => ({
 
 // Simple types for mock DB
 type MockProfile = { id: string; role: string; email: string; first_name: string; last_name: string };
-type MockFamilyMember = { id: string; first_name: string; last_name: string; parent_id?: string };
+type MockFamilyMember = { id: string; first_name: string; last_name: string; parent_id?: string; relationship?: 'Student' | 'Parent/Guardian' };
 type MockClass = { id: string; name: string; capacity: number; price: number; status: string; teacher_id: string };
 type MockEnrollment = { id: string; student_id: string; class_id: string; status: string };
 
@@ -161,6 +161,7 @@ describe('Integration Flow: Family Creation -> Enrollment', () => {
         const studentData = {
             firstName: 'Timmy',
             lastName: 'Tester',
+            relationship: 'Student',
             dob: '2015-01-01',
             grade: '5th'
         };

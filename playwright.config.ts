@@ -19,10 +19,12 @@ export default defineConfig({
     },
 
     projects: [
-        // Setup project
+        // Setup project - run serially to avoid server overload
         {
             name: 'setup',
             testMatch: /auth\.setup\.ts/,
+            timeout: 120000, // 2 minute timeout for setup tests
+            fullyParallel: false, // Run setup tests sequentially
         },
         {
             name: 'chromium',

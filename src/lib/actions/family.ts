@@ -31,7 +31,13 @@ async function logAuditEntry(
 /**
  * Get all family members for the authenticated user
  */
-export async function getFamilyMembers(): Promise<{
+interface GetFamilyMembersOptions {
+    relationship?: 'Student' | 'Parent/Guardian';
+}
+
+export async function getFamilyMembers(
+    options: GetFamilyMembersOptions = {}
+): Promise<{
     data: FamilyMember[] | null;
     error: string | null;
 }> {
@@ -43,11 +49,16 @@ export async function getFamilyMembers(): Promise<{
             return { data: null, error: 'Not authenticated' };
         }
 
-        const { data, error } = await supabase
+        let query = supabase
             .from('family_members')
             .select('*')
-            .eq('parent_id', user.id)
-            .order('created_at', { ascending: false });
+            .eq('parent_id', user.id);
+
+        if (options.relationship) {
+            query = query.eq('relationship', options.relationship);
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false });
 
         if (error) {
             console.error('Error fetching family members:', error);

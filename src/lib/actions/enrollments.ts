@@ -187,7 +187,7 @@ export async function enrollStudent(
         // Verify the family member belongs to this parent
         const { data: familyMember, error: ownerError } = await supabase
             .from('family_members')
-            .select('id, first_name, last_name')
+            .select('id, first_name, last_name, relationship')
             .eq('id', input.familyMemberId)
             .eq('parent_id', user.id)
             .single();
@@ -197,6 +197,13 @@ export async function enrollStudent(
                 data: null,
                 status: null,
                 error: 'Family member not found or access denied',
+            };
+        }
+        if (familyMember.relationship !== 'Student') {
+            return {
+                data: null,
+                status: null,
+                error: 'Only students can be enrolled in classes',
             };
         }
 

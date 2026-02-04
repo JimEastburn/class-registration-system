@@ -33,7 +33,7 @@ vi.mock('@/lib/email', () => ({
 
 // Simple types for mock DB
 type MockProfile = { id: string; role: string; email: string; first_name: string; last_name: string };
-type MockFamilyMember = { id: string; first_name: string; last_name: string; parent_id?: string };
+type MockFamilyMember = { id: string; first_name: string; last_name: string; parent_id?: string; relationship?: 'Student' | 'Parent/Guardian' };
 type MockClass = { id: string; name: string; capacity: number; price: number; status: string; teacher_id: string; start_date?: string };
 type MockEnrollment = { 
     id: string; 
@@ -77,8 +77,8 @@ describe('Integration Flow: Waitlist -> Promotion', () => {
         ];
         
         dbFamilyMembers = [
-            { id: 'student-1', first_name: 'S1', last_name: 'U1', parent_id: 'parent-1' },
-            { id: 'student-2', first_name: 'S2', last_name: 'U2', parent_id: 'parent-2' },
+            { id: 'student-1', first_name: 'S1', last_name: 'U1', parent_id: 'parent-1', relationship: 'Student' },
+            { id: 'student-2', first_name: 'S2', last_name: 'U2', parent_id: 'parent-2', relationship: 'Student' },
         ];
 
         // Class with capacity 1

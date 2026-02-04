@@ -49,7 +49,7 @@ export function EnrollButton({
         if (members.length > 0) return;
         
         setLoadingMembers(true);
-        const { data, error } = await getFamilyMembers();
+        const { data, error } = await getFamilyMembers({ relationship: 'Student' });
         
         if (error) {
             toast.error('Failed to load family members');

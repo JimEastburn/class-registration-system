@@ -18,7 +18,7 @@ vi.mock('@/lib/actions/audit', () => ({
 
 describe('Enrollment Actions', () => {
     const mockUser = { id: 'parent-123' };
-    const mockMember = { id: 'child-1', parent_id: 'parent-123' };
+    const mockMember = { id: 'child-1', parent_id: 'parent-123', relationship: 'Student' };
     const mockClass = { id: 'class-1', capacity: 10, teacher_id: 'teacher-1', teacher: { first_name: 'Teacher', last_name: 'One' } };
 
     const mockSupabase = {

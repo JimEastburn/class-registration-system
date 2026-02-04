@@ -1,4 +1,4 @@
-import { test as setup, expect } from '@playwright/test';
+import { test as setup } from '@playwright/test';
 import { createTestUser, getAuthStatePath, type TestUser } from './fixtures';
 import type { UserRole } from '../src/types';
 
@@ -40,6 +40,16 @@ setup.describe('Auth State Setup', () => {
       // Submit login
       await page.getByTestId('login-submit-button').click();
       
+      // Wait a moment for the form submission to process
+      await page.waitForTimeout(1000);
+      
+      // Check for error message first
+      const errorMessage = await page.getByTestId('login-error-message').textContent().catch(() => null);
+      if (errorMessage) {
+        console.error(`Login failed for ${role}: ${errorMessage}`);
+        throw new Error(`Login failed: ${errorMessage}`);
+      }
+      
       // Wait for redirect based on role
       const roleRedirects: Record<UserRole, string> = {
         parent: '/parent',
@@ -52,11 +62,11 @@ setup.describe('Auth State Setup', () => {
       
       const expectedPath = roleRedirects[role];
       
-      // Wait for navigation to complete
-      await expect(async () => {
-        const url = page.url();
-        expect(url).toContain(expectedPath);
-      }).toPass({ timeout: 15000 });
+      // Wait for navigation to complete (long timeout to handle slow server)
+      await page.waitForURL(`**${expectedPath}**`, { timeout: 60000 });
+      
+      // Wait for page to be fully loaded
+      await page.waitForLoadState('networkidle', { timeout: 30000 });
       
       console.log(`${role} logged in successfully, saving state...`);
       

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vi
 import { POST } from '../route';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient, createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/types/supabase';
 
 // Mock the dependencies
@@ -21,8 +21,14 @@ vi.mock('@/lib/stripe', () => ({
     formatAmountForStripe: vi.fn((amount: number) => Math.round(amount * 100)),
 }));
 
+vi.mock('@supabase/supabase-js', () => ({
+    createClient: vi.fn(),
+}));
+
 describe('Checkout API Route', () => {
     let mockSupabase: Mocked<SupabaseClient<Database>>;
+    let adminFrom: Mock;
+    let adminInsert: Mock;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -47,6 +53,14 @@ describe('Checkout API Route', () => {
         } as unknown as Mocked<SupabaseClient<Database>>;
 
         (createClient as Mock).mockResolvedValue(mockSupabase);
+
+        adminInsert = vi.fn().mockResolvedValue({ error: null });
+        adminFrom = vi.fn(() => ({
+            insert: adminInsert,
+        }));
+        (createSupabaseClient as Mock).mockReturnValue({
+            from: adminFrom,
+        });
     });
 
     it('should return 401 if not authenticated', async () => {
@@ -147,7 +161,8 @@ describe('Checkout API Route', () => {
         expect(data.url).toBe('http://stripe.com/checkout/cs_123');
 
         expect(stripe.checkout.sessions.create).toHaveBeenCalled();
-        expect(mockSupabase.from).toHaveBeenCalledWith('payments');
-        expect(mockSupabase.from('payments').insert).toHaveBeenCalled();
+        expect(createSupabaseClient).toHaveBeenCalled();
+        expect(adminFrom).toHaveBeenCalledWith('payments');
+        expect(adminInsert).toHaveBeenCalled();
     });
 });

@@ -36,8 +36,8 @@ describe('EnrollButton', () => {
     const mockClassId = 'class-123';
     const mockEnrollmentId = 'enroll-456';
     const mockMembers = [
-        { id: 'member-1', first_name: 'John', last_name: 'Doe' },
-        { id: 'member-2', first_name: 'Jane', last_name: 'Doe' },
+        { id: 'member-1', first_name: 'John', last_name: 'Doe', relationship: 'Student' },
+        { id: 'member-2', first_name: 'Jane', last_name: 'Doe', relationship: 'Student' },
     ];
 
     beforeEach(() => {
@@ -65,6 +65,7 @@ describe('EnrollButton', () => {
         await waitFor(() => {
             expect(screen.queryByText('Loading family members...')).not.toBeInTheDocument();
         });
+        expect(getFamilyMembers).toHaveBeenCalledWith({ relationship: 'Student' });
 
         // Trigger Select to see options
         const trigger = screen.getByRole('combobox');
@@ -97,6 +98,7 @@ describe('EnrollButton', () => {
         await waitFor(() => {
             expect(screen.queryByText('Loading family members...')).not.toBeInTheDocument();
         });
+        expect(getFamilyMembers).toHaveBeenCalledWith({ relationship: 'Student' });
 
         // Open select
         fireEvent.click(screen.getByRole('combobox'));
@@ -144,6 +146,7 @@ describe('EnrollButton', () => {
         await waitFor(() => {
             expect(screen.queryByText('Loading family members...')).not.toBeInTheDocument();
         });
+        expect(getFamilyMembers).toHaveBeenCalledWith({ relationship: 'Student' });
         
         // Open select
         fireEvent.click(screen.getByRole('combobox'));
@@ -193,6 +196,7 @@ describe('EnrollButton', () => {
         await waitFor(() => {
             expect(screen.queryByText('Loading family members...')).not.toBeInTheDocument();
         });
+        expect(getFamilyMembers).toHaveBeenCalledWith({ relationship: 'Student' });
 
         fireEvent.click(screen.getByRole('combobox'));
         const option = await screen.findByText('John Doe');
@@ -226,6 +230,7 @@ describe('EnrollButton', () => {
         await waitFor(() => {
             expect(screen.queryByText('Loading family members...')).not.toBeInTheDocument();
         });
+        expect(getFamilyMembers).toHaveBeenCalledWith({ relationship: 'Student' });
 
         fireEvent.click(screen.getByRole('combobox'));
         const option = await screen.findByText('John Doe');
