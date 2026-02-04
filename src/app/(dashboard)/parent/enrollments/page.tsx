@@ -32,6 +32,54 @@ export default function EnrollmentsPage() {
                 </div>
             </div>
 
+            {/* Status Legend */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-lg">Enrollment Status Guide</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <div className="flex items-start gap-3">
+                        <div className="mt-1 h-3 w-3 rounded-full bg-yellow-500" />
+                        <div>
+                            <p className="font-medium text-sm">Pending Payment</p>
+                            <p className="text-xs text-muted-foreground">
+                                You have secured a spot but need to complete check out.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                        <div className="mt-1 h-3 w-3 rounded-full bg-green-500" />
+                        <div>
+                            <p className="font-medium text-sm">Confirmed</p>
+                            <p className="text-xs text-muted-foreground">
+                                Detailed success! You are fully enrolled in this class.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                        <div className="mt-1 h-3 w-3 rounded-full bg-orange-500" />
+                        <div>
+                            <p className="font-medium text-sm">Waitlisted</p>
+                            <p className="text-xs text-muted-foreground">
+                                The class is full. You are on the waiting list for a spot.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                        <div className="mt-1 h-3 w-3 rounded-full bg-destructive/50" />
+                        <div>
+                            <p className="font-medium text-sm">Cancelled</p>
+                            <p className="text-xs text-muted-foreground">
+                                This enrollment has been cancelled and is no longer active.
+                            </p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle>All Enrollments</CardTitle>
