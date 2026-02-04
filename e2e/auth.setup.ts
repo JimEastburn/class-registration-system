@@ -1,5 +1,70 @@
-import { test as setup } from '@playwright/test';
+import { test as setup, expect } from '@playwright/test';
+import { createTestUser, getAuthStatePath, type TestUser } from './fixtures';
+import type { UserRole } from '../src/types';
 
-setup('authenticate', async ({ page }) => {
-  // Authentication setup if needed
+/**
+ * Auth Setup Project
+ * 
+ * This setup file creates authenticated states for each role.
+ * These states are saved to disk and reused across tests for efficiency.
+ */
+
+const ROLES_TO_SETUP: UserRole[] = [
+  'parent',
+  'teacher',
+  'student',
+  'admin',
+  'class_scheduler',
+  'super_admin'
+];
+
+// Track created users for potential cleanup
+const createdUsers: TestUser[] = [];
+
+setup.describe('Auth State Setup', () => {
+  for (const role of ROLES_TO_SETUP) {
+    setup(`setup ${role} auth state`, async ({ page, context }) => {
+      // Create test user for this role
+      const user = await createTestUser(role);
+      createdUsers.push(user);
+      
+      console.log(`Created ${role} user: ${user.email}`);
+      
+      // Navigate to login
+      await page.goto('/login');
+      
+      // Fill login form
+      await page.fill('input[name="email"]', user.email);
+      await page.fill('input[name="password"]', user.password);
+      
+      // Submit login
+      await page.getByTestId('login-submit-button').click();
+      
+      // Wait for redirect based on role
+      const roleRedirects: Record<UserRole, string> = {
+        parent: '/parent',
+        teacher: '/teacher',
+        student: '/student',
+        admin: '/admin',
+        class_scheduler: '/class-scheduler',
+        super_admin: '/admin'
+      };
+      
+      const expectedPath = roleRedirects[role];
+      
+      // Wait for navigation to complete
+      await expect(async () => {
+        const url = page.url();
+        expect(url).toContain(expectedPath);
+      }).toPass({ timeout: 15000 });
+      
+      console.log(`${role} logged in successfully, saving state...`);
+      
+      // Save authenticated state
+      const statePath = getAuthStatePath(role);
+      await context.storageState({ path: statePath });
+      
+      console.log(`${role} auth state saved to: ${statePath}`);
+    });
+  }
 });

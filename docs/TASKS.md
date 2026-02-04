@@ -1040,11 +1040,11 @@ This document tracks the detailed development tasks for the Class Registration S
 
 ### 18.1 Playwright Infrastructure Setup (5)
 
-- [ ] **[Setup]** Initialize Playwright configuration (`playwright.config.ts`) <!-- id: 18.1.1 -->
-- [ ] **[Setup]** Configure test fixtures for auth state loading <!-- id: 18.1.2 -->
-- [ ] **[Setup]** Create base page objects for common interactions <!-- id: 18.1.3 -->
-- [ ] **[Setup]** Set up test data factories for user creation <!-- id: 18.1.4 -->
-- [ ] **[Setup]** Configure CI workflow for Playwright tests <!-- id: 18.1.5 -->
+- [x] **[Setup]** Initialize Playwright configuration (`playwright.config.ts`) <!-- id: 18.1.1 -->
+- [x] **[Setup]** Configure test fixtures for auth state loading <!-- id: 18.1.2 -->
+- [x] **[Setup]** Create base page objects for common interactions <!-- id: 18.1.3 -->
+- [x] **[Setup]** Set up test data factories for user creation <!-- id: 18.1.4 -->
+- [x] **[Setup]** Configure CI workflow for Playwright tests <!-- id: 18.1.5 -->
 
 ---
 
