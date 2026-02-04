@@ -21,7 +21,7 @@ export async function getSchedulerStats(): Promise<ActionResult<SchedulerStats>>
         if (!user) return { success: false, error: 'Not authenticated' };
 
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-        if (!profile || !['admin', 'class_scheduler', 'super_admin'].includes(profile.role)) {
+        if (!profile || !['class_scheduler', 'super_admin'].includes(profile.role)) {
             return { success: false, error: 'Unauthorized' };
         }
 
@@ -32,7 +32,7 @@ export async function getSchedulerStats(): Promise<ActionResult<SchedulerStats>>
         const { count: totalClasses, error: totalError } = await adminClient
             .from('classes')
             .select('*', { count: 'exact', head: true })
-            .neq('status', 'archived');
+            .neq('status', 'cancelled');
         
         if (totalError) throw totalError;
 
@@ -75,7 +75,7 @@ export async function schedulerUpdateClass(id: string, updates: Partial<Class>):
         if (!user) return { success: false, error: 'Not authenticated' };
 
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-        if (!profile || !['admin', 'class_scheduler'].includes(profile.role)) {
+        if (!profile || !['class_scheduler', 'super_admin'].includes(profile.role)) {
             return { success: false, error: 'Unauthorized' };
         }
 
@@ -142,9 +142,17 @@ export async function schedulerUpdateClass(id: string, updates: Partial<Class>):
         }
         // --- Conflict Detection End ---
 
+        const resolvedUpdates: Partial<Class> = { ...updates };
+        if (updates.schedule_config) {
+            resolvedUpdates.day = updates.schedule_config.day ?? null;
+            resolvedUpdates.block = updates.schedule_config.block ?? null;
+            resolvedUpdates.start_date = updates.schedule_config.startDate ?? null;
+            resolvedUpdates.end_date = updates.schedule_config.endDate ?? null;
+        }
+
         const { error } = await adminClient
             .from('classes')
-            .update(updates)
+            .update(resolvedUpdates)
             .eq('id', id);
 
         if (error) {
@@ -160,7 +168,9 @@ export async function schedulerUpdateClass(id: string, updates: Partial<Class>):
 }
 
 
-export async function schedulerCreateClass(data: Partial<Class>): Promise<ActionResult> {
+export async function schedulerCreateClass(
+    data: Partial<Class>
+): Promise<ActionResult<{ classId: string }>> {
     try {
         const supabase = await createClient();
         
@@ -169,7 +179,7 @@ export async function schedulerCreateClass(data: Partial<Class>): Promise<Action
         if (!user) return { success: false, error: 'Not authenticated' };
 
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-        if (!profile || !['admin', 'class_scheduler'].includes(profile.role)) {
+        if (!profile || !['class_scheduler', 'super_admin'].includes(profile.role)) {
             return { success: false, error: 'Unauthorized' };
         }
 
@@ -220,20 +230,27 @@ export async function schedulerCreateClass(data: Partial<Class>): Promise<Action
         }
         // --- Conflict Detection End ---
 
-        const { error } = await adminClient
+        const insertData: Partial<Class> = {
+            ...data,
+            day: data.schedule_config?.day ?? null,
+            block: data.schedule_config?.block ?? null,
+            start_date: data.schedule_config?.startDate ?? null,
+            end_date: data.schedule_config?.endDate ?? null,
+            status: data.status || 'draft',
+        };
+
+        const { data: createdClass, error } = await adminClient
             .from('classes')
-            .insert({
-                ...data,
-                // Ensure critical fields standard defaults if missing
-                status: data.status || 'draft',
-            });
+            .insert(insertData)
+            .select('id')
+            .single();
 
         if (error) {
             console.error('Error creating class:', error);
             return { success: false, error: 'Failed to create class' };
         }
 
-        return { success: true, data: undefined };
+        return { success: true, data: { classId: createdClass.id } };
     } catch (error) {
         console.error('Error in schedulerCreateClass:', error);
         return { success: false, error: 'Internal server error' };
@@ -247,7 +264,16 @@ export async function getConflictAlerts(): Promise<ActionResult<{ id: string; me
         // Verify role before doing heavy lifting
         const { data: { user } } = await supabase.auth.getUser();
          if (!user) return { success: false, error: 'Not authenticated' };
-         // (You might want to check the profile role here too, assuming this is an admin/scheduler tool)
+
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (!profile || !['class_scheduler', 'super_admin'].includes(profile.role)) {
+            return { success: false, error: 'Unauthorized' };
+        }
 
         // Use admin client to ensure we see ALL classes
         const adminClient = await createAdminClient();
@@ -336,7 +362,7 @@ export async function getClassesForScheduler(
         if (!user) return { success: false, error: 'Not authenticated' };
 
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-        if (!profile || !['admin', 'super_admin', 'class_scheduler'].includes(profile.role)) {
+        if (!profile || !['class_scheduler', 'super_admin'].includes(profile.role)) {
             return { success: false, error: 'Unauthorized' };
         }
 
@@ -356,7 +382,7 @@ export async function getClassesForScheduler(
                     email
                 )
             `, { count: 'exact' })
-            .in('status', ['published', 'draft', 'active']) 
+            .in('status', ['published', 'draft']) 
             .order('start_date', { ascending: true })
             .range(offset, offset + limit - 1);
 
@@ -387,7 +413,7 @@ export async function getUnscheduledClasses(limit = 5): Promise<ActionResult<Cla
         if (!user) return { success: false, error: 'Not authenticated' };
 
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-        if (!profile || !['admin', 'class_scheduler', 'super_admin'].includes(profile.role)) {
+        if (!profile || !['class_scheduler', 'super_admin'].includes(profile.role)) {
             return { success: false, error: 'Unauthorized' };
         }
 
@@ -413,3 +439,40 @@ export async function getUnscheduledClasses(limit = 5): Promise<ActionResult<Cla
     }
 }
 
+export async function getTeachersForScheduler(): Promise<
+    ActionResult<{ id: string; first_name: string | null; last_name: string | null; email: string }[]>
+> {
+    try {
+        const supabase = await createClient();
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return { success: false, error: 'Not authenticated' };
+
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (!profile || !['class_scheduler', 'super_admin'].includes(profile.role)) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
+        const adminClient = await createAdminClient();
+        const { data, error } = await adminClient
+            .from('profiles')
+            .select('id, first_name, last_name, email')
+            .eq('role', 'teacher')
+            .order('last_name', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching teachers:', error);
+            return { success: false, error: 'Failed to fetch teachers' };
+        }
+
+        return { success: true, data: data as { id: string; first_name: string | null; last_name: string | null; email: string }[] };
+    } catch (err) {
+        console.error('Error in getTeachersForScheduler:', err);
+        return { success: false, error: 'Internal server error' };
+    }
+}

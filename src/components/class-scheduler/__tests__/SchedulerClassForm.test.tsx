@@ -20,8 +20,13 @@ vi.mock('sonner', () => ({
 }));
 
 vi.mock('@/lib/actions/scheduler', () => ({
-    schedulerCreateClass: vi.fn().mockResolvedValue({ success: true }),
+    schedulerCreateClass: vi.fn().mockResolvedValue({ success: true, data: { classId: 'test-id' } }),
     schedulerUpdateClass: vi.fn().mockResolvedValue({ success: true }),
+    getTeachersForScheduler: vi.fn().mockResolvedValue({ success: true, data: [] }),
+}));
+
+vi.mock('@/lib/actions/materials', () => ({
+    upsertSyllabusLink: vi.fn().mockResolvedValue({ success: true }),
 }));
 
 describe('SchedulerClassForm', () => {
@@ -43,9 +48,9 @@ describe('SchedulerClassForm', () => {
         const optionValues = options.map(opt => opt.textContent);
 
         expect(optionValues).toContain('Tuesday/Thursday');
-        expect(optionValues).toContain('Tuesday');
-        expect(optionValues).toContain('Wednesday');
-        expect(optionValues).toContain('Thursday');
+        expect(optionValues).toContain('Tuesday only');
+        expect(optionValues).toContain('Wednesday only');
+        expect(optionValues).toContain('Thursday only');
         
         // Ensure invalid options are NOT present
         expect(optionValues).not.toContain('Monday');

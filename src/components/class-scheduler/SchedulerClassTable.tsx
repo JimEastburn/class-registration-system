@@ -15,15 +15,18 @@ import { Edit } from 'lucide-react';
 
 
 interface SchedulerClassTableProps {
-  classes: (Class & { teacher?: { full_name: string; email: string } })[]; // Extended type
+  classes: (Class & { teacher?: { first_name: string | null; last_name: string | null; email: string } })[]; // Extended type
   count: number;
 }
 
 export function SchedulerClassTable({ classes }: SchedulerClassTableProps) {
     // Helper to format schedule
     const formatSchedule = (config: any) => {
-        if (!config || !config.days) return 'Unscheduled';
-        return `${config.days.join(', ')} ${config.startTime || ''}-${config.endTime || ''}`;
+        if (!config || !config.day || !config.block) return 'Unscheduled';
+        const dates = config.startDate && config.endDate
+            ? ` • ${config.startDate}–${config.endDate}`
+            : '';
+        return `${config.day} • ${config.block}${dates}`;
     };
 
     return (
@@ -50,7 +53,11 @@ export function SchedulerClassTable({ classes }: SchedulerClassTableProps) {
                         classes.map((cls) => (
                             <TableRow key={cls.id}>
                                 <TableCell className="font-medium">{cls.name}</TableCell>
-                                <TableCell>{(cls as any).teacher?.full_name || 'Unknown'}</TableCell>
+                                <TableCell>
+                                    {cls.teacher
+                                        ? `${cls.teacher.first_name ?? ''} ${cls.teacher.last_name ?? ''}`.trim() || cls.teacher.email
+                                        : 'Unknown'}
+                                </TableCell>
                                 <TableCell>{cls.location || 'TBD'}</TableCell>
                                 <TableCell>{formatSchedule(cls.schedule_config)}</TableCell>
                                 <TableCell>

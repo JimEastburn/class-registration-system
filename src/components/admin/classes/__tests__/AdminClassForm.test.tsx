@@ -43,9 +43,9 @@ describe('AdminClassForm', () => {
         const optionValues = options.map(opt => opt.textContent);
 
         expect(optionValues).toContain('Tuesday/Thursday');
-        expect(optionValues).toContain('Tuesday');
-        expect(optionValues).toContain('Wednesday');
-        expect(optionValues).toContain('Thursday');
+        expect(optionValues).toContain('Tuesday only');
+        expect(optionValues).toContain('Wednesday only');
+        expect(optionValues).toContain('Thursday only');
         
         // Ensure invalid options are NOT present
         expect(optionValues).not.toContain('Monday');

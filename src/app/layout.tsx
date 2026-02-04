@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
 import { GlobalLoadingProvider } from "@/components/providers/GlobalLoadingProvider";
 import { GlobalSpinner } from "@/components/ui/global-spinner";
 import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased pb-24 md:pb-12`}
+        className={`${inter.variable} ${geistMono.variable} antialiased pb-24 md:pb-12`}
       >
         <GlobalLoadingProvider>
           {children}

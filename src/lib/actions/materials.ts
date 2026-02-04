@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod'; // Assuming zod is used for validation as per other files
 import type { ClassMaterial, ActionResult } from '@/types';
@@ -57,6 +57,7 @@ export async function addMaterial(
     const canEdit =
       profile.role === 'admin' ||
       profile.role === 'super_admin' ||
+      profile.role === 'class_scheduler' ||
       classData.teacher_id === user.id;
 
     if (!canEdit) {
@@ -117,8 +118,9 @@ export async function getMaterialsForClass(
 
     const isTeacher = classData.teacher_id === user.id;
     const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+    const isScheduler = profile?.role === 'class_scheduler';
 
-    if (!isTeacher && !isAdmin) {
+    if (!isTeacher && !isAdmin && !isScheduler) {
       // Check for enrollment (either as student or parent of student)
       // 1. Check if user is a student in family_members linked to this class
       // 2. Check if user is a parent of a student enrolled in this class
@@ -169,6 +171,47 @@ export async function getMaterialsForClass(
   }
 }
 
+export async function getSyllabusLink(
+  classId: string
+): Promise<ActionResult<string | null>> {
+  const supabase = await createClient();
+
+  try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile || !['admin', 'super_admin', 'class_scheduler'].includes(profile.role)) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const adminClient = await createAdminClient();
+    const { data: material, error } = await adminClient
+      .from('class_materials')
+      .select('file_url')
+      .eq('class_id', classId)
+      .eq('title', 'Syllabus')
+      .eq('type', 'link')
+      .maybeSingle();
+
+    if (error) {
+      return { success: false, error: 'Failed to fetch syllabus link' };
+    }
+
+    return { success: true, data: material?.file_url || null };
+  } catch (err) {
+    console.error('getSyllabusLink error:', err);
+    return { success: false, error: 'Internal server error' };
+  }
+}
+
 export async function updateMaterial(
   materialId: string,
   input: Partial<MaterialInput>
@@ -210,6 +253,7 @@ export async function updateMaterial(
     const canEdit =
       profile?.role === 'admin' ||
       profile?.role === 'super_admin' ||
+      profile?.role === 'class_scheduler' ||
       materialWithClass.classes.teacher_id === user.id;
 
     if (!canEdit) {
@@ -270,6 +314,7 @@ export async function deleteMaterial(
     const canEdit =
       profile?.role === 'admin' ||
       profile?.role === 'super_admin' ||
+      profile?.role === 'class_scheduler' ||
       materialWithClass.classes.teacher_id === user.id;
 
     if (!canEdit) {
@@ -291,6 +336,93 @@ export async function deleteMaterial(
     return { success: true, data: undefined };
 
   } catch {
+    return { success: false, error: 'Internal server error' };
+  }
+}
+
+export async function upsertSyllabusLink(
+  classId: string,
+  url: string
+): Promise<ActionResult<ClassMaterial>> {
+  const supabase = await createClient();
+
+  try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const urlCheck = z.string().url().safeParse(url);
+    if (!urlCheck.success) {
+      return { success: false, error: 'Invalid URL' };
+    }
+
+    const { data: classData, error: classError } = await supabase
+      .from('classes')
+      .select('teacher_id')
+      .eq('id', classId)
+      .single();
+
+    if (classError || !classData) {
+      return { success: false, error: 'Class not found' };
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const canEdit =
+      profile?.role === 'admin' ||
+      profile?.role === 'super_admin' ||
+      profile?.role === 'class_scheduler' ||
+      classData.teacher_id === user.id;
+
+    if (!canEdit) {
+      return { success: false, error: 'Not authorized' };
+    }
+
+    const adminClient = await createAdminClient();
+    const { data: existing } = await adminClient
+      .from('class_materials')
+      .select('id')
+      .eq('class_id', classId)
+      .eq('title', 'Syllabus')
+      .eq('type', 'link')
+      .maybeSingle();
+
+    let result;
+    if (existing?.id) {
+      result = await adminClient
+        .from('class_materials')
+        .update({ file_url: url })
+        .eq('id', existing.id)
+        .select()
+        .single();
+    } else {
+      result = await adminClient
+        .from('class_materials')
+        .insert({
+          class_id: classId,
+          title: 'Syllabus',
+          file_url: url,
+          type: 'link',
+        })
+        .select()
+        .single();
+    }
+
+    if (result.error) {
+      return { success: false, error: 'Failed to save syllabus link' };
+    }
+
+    revalidatePath(`/teacher/classes/${classId}`);
+    revalidatePath(`/parent/browse/${classId}`);
+
+    return { success: true, data: result.data as ClassMaterial };
+  } catch (err) {
+    console.error('upsertSyllabusLink error:', err);
     return { success: false, error: 'Internal server error' };
   }
 }

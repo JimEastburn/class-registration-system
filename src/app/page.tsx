@@ -15,15 +15,15 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="min-h-screen relative text-white bg-slate-900">
+    <div className="min-h-screen relative bg-background text-foreground">
       {/* Background Image & Overlay */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-slate-900/80 z-10" /> {/* Dark overlay for readability */}
+        <div className="absolute inset-0 bg-background/80 z-10" />
         <Image
           src="/Together_FADE.avif"
           alt="Class Registration Background"
           fill
-          className="object-contain object-center"
+          className="object-cover object-center"
           priority
         />
       </div>
@@ -42,12 +42,12 @@ export default async function HomePage() {
           />
           <div className="flex gap-2 md:gap-4">
             <Link href="/login">
-              <Button variant="ghost" className="text-white hover:bg-white/10 hover:text-white">
+              <Button variant="outline">
                 Sign In
               </Button>
             </Link>
             <Link href="/register">
-              <Button className="bg-teal-600 hover:bg-teal-700 text-white border-0">
+              <Button>
                 Get Started
               </Button>
             </Link>
@@ -57,18 +57,18 @@ export default async function HomePage() {
         {/* Hero Section */}
         <main className="container mx-auto px-4 py-20 flex-grow flex flex-col justify-center">
           <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-white mb-8 leading-tight tracking-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-foreground mb-8 leading-tight tracking-tight">
               Class Registration
-              <span className="block text-teal-400">
+              <span className="block text-primary">
                 Austin Arts + Academic Collaborative
               </span>
             </h1>
-            <p className="text-xl md:text-2xl text-slate-200 mb-12 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
               Manage class registrations, schedules, and payments.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/login">
-                <Button size="lg" variant="outline" className="bg-transparent text-white border-white/30 hover:bg-white/10 text-lg px-8 py-6 h-auto w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="text-lg px-8 py-6 h-auto w-full sm:w-auto">
                   Sign In
                 </Button>
               </Link>
@@ -81,7 +81,7 @@ export default async function HomePage() {
         </main>
 
         {/* Footer */}
-        <footer className="container mx-auto px-4 py-8 text-center text-slate-400 text-sm border-t border-white/10">
+        <footer className="container mx-auto px-4 py-8 text-center text-muted-foreground text-sm border-t border-border">
           © 2026 ClassReg. All rights reserved.
         </footer>
       </div>

@@ -59,9 +59,9 @@ interface ClassFormProps {
 
 const dayOptions = [
   { value: 'Tuesday/Thursday', label: 'Tuesday/Thursday' },
-  { value: 'Tuesday', label: 'Tuesday' },
-  { value: 'Wednesday', label: 'Wednesday' },
-  { value: 'Thursday', label: 'Thursday' },
+  { value: 'Tuesday', label: 'Tuesday only' },
+  { value: 'Wednesday', label: 'Wednesday only' },
+  { value: 'Thursday', label: 'Thursday only' },
 ];
 
 const blockOptions = [

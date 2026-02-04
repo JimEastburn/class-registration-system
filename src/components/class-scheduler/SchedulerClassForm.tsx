@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,21 +9,27 @@ import { Class } from '@/types'; // ClassStatus needed?
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { schedulerUpdateClass, schedulerCreateClass } from '@/lib/actions/scheduler';
+import { getTeachersForScheduler, schedulerUpdateClass, schedulerCreateClass } from '@/lib/actions/scheduler';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { upsertSyllabusLink } from '@/lib/actions/materials';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
   capacity: z.coerce.number().min(1, 'Capacity must be at least 1'),
+  price: z.coerce.number().min(0, 'Fee must be 0 or greater'),
   location: z.string().optional(),
   teacher_id: z.string().optional(),
   day: z.string().min(1, 'Day is required'),
   block: z.string().min(1, 'Block is required'),
-  status: z.enum(['draft', 'published', 'archived', 'completed']).default('draft'),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  syllabusUrl: z.string().url('Enter a valid URL').optional().or(z.literal('')),
+  status: z.enum(['draft', 'published', 'completed', 'cancelled']).default('draft'),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -30,24 +37,67 @@ type FormValues = z.infer<typeof formSchema>;
 interface SchedulerClassFormProps {
   initialData?: Partial<Class>;
   isEdit?: boolean;
+  initialSyllabusUrl?: string | null;
+  onSuccess?: () => void;
 }
 
-export function SchedulerClassForm({ initialData, isEdit = false }: SchedulerClassFormProps) {
+type TeacherOption = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string;
+};
+
+export function SchedulerClassForm({
+  initialData,
+  isEdit = false,
+  initialSyllabusUrl,
+  onSuccess,
+}: SchedulerClassFormProps) {
   const router = useRouter();
+  const [teacherOptions, setTeacherOptions] = useState<TeacherOption[]>([]);
   
+  const defaultValues = useMemo<FormValues>(() => ({
+    name: initialData?.name || '',
+    description: initialData?.description || '',
+    capacity: initialData?.capacity || 20,
+    price: initialData?.price != null ? Number(initialData.price) / 100 : 0,
+    location: initialData?.location || '',
+    teacher_id: initialData?.teacher_id || 'unassigned',
+    status: (initialData?.status as FormValues['status']) || 'draft',
+    day: initialData?.schedule_config?.day || '',
+    block: initialData?.schedule_config?.block || '',
+    startDate: initialData?.schedule_config?.startDate || '',
+    endDate: initialData?.schedule_config?.endDate || '',
+    syllabusUrl: initialSyllabusUrl || '',
+  }), [initialData, initialSyllabusUrl]);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as any,
-    defaultValues: {
-      name: initialData?.name || '',
-      description: initialData?.description || '',
-      capacity: initialData?.capacity || 20,
-      location: initialData?.location || '',
-      teacher_id: initialData?.teacher_id || '',
-      status: (initialData?.status as FormValues['status']) || 'draft',
-      day: initialData?.schedule_config?.day || '',
-      block: initialData?.schedule_config?.block || '',
-    },
+    defaultValues,
   });
+
+  useEffect(() => {
+    form.reset(defaultValues);
+  }, [defaultValues, form]);
+
+  useEffect(() => {
+    const loadTeachers = async () => {
+      const res = await getTeachersForScheduler();
+      if (res.success && res.data) {
+        setTeacherOptions(res.data);
+      }
+    };
+    void loadTeachers();
+  }, []);
+
+  const teacherSelectItems = useMemo(() => {
+    return teacherOptions.map((teacher) => {
+      const name = `${teacher.first_name ?? ''} ${teacher.last_name ?? ''}`.trim();
+      const label = name ? `${name} (${teacher.email})` : teacher.email;
+      return { id: teacher.id, label };
+    });
+  }, [teacherOptions]);
 
   async function onSubmit(values: FormValues) {
     try {
@@ -57,12 +107,14 @@ export function SchedulerClassForm({ initialData, isEdit = false }: SchedulerCla
             description: values.description,
             capacity: values.capacity,
             location: values.location,
-            teacherId: values.teacher_id,
-            price: initialData?.price || 0, // Ensure price is carried over or defaulted
+            teacher_id: values.teacher_id === 'unassigned' ? null : values.teacher_id,
+            price: Math.round(values.price * 100),
             schedule_config: {
                 day: values.day,
                 block: values.block,
-                recurring: true
+                recurring: true,
+                startDate: values.startDate || undefined,
+                endDate: values.endDate || undefined,
             },
             status: values.status as Class['status'] 
         };
@@ -78,7 +130,23 @@ export function SchedulerClassForm({ initialData, isEdit = false }: SchedulerCla
             return;
         }
 
+        const classId = isEdit ? initialData?.id : res.data?.classId;
+
+        if (classId && values.syllabusUrl && values.syllabusUrl.trim().length > 0) {
+          const syllabusRes = await upsertSyllabusLink(classId, values.syllabusUrl.trim());
+          if (!syllabusRes.success) {
+            toast.error(syllabusRes.error || 'Failed to save syllabus URL');
+            return;
+          }
+        }
+
         toast.success(isEdit ? 'Class updated' : 'Class created');
+
+        if (onSuccess) {
+          onSuccess();
+          return;
+        }
+
         router.push('/class-scheduler/classes');
         router.refresh();
     } catch(err) {
@@ -103,13 +171,53 @@ export function SchedulerClassForm({ initialData, isEdit = false }: SchedulerCla
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Class overview" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         
+        <FormField
+          control={form.control}
+          name="teacher_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Assigned Teacher</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value || 'unassigned'}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select teacher" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {teacherSelectItems.map((teacher) => (
+                    <SelectItem key={teacher.id} value={teacher.id}>
+                      {teacher.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="location"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Location / Room</FormLabel>
+              <FormLabel>Room Location</FormLabel>
               <FormControl>
                 <Input placeholder="Room 3B" {...field} />
               </FormControl>
@@ -132,8 +240,15 @@ export function SchedulerClassForm({ initialData, isEdit = false }: SchedulerCla
                         </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            {['Tuesday/Thursday', 'Tuesday', 'Wednesday', 'Thursday'].map(day => (
-                                <SelectItem key={day} value={day}>{day}</SelectItem>
+                            {[
+                              { value: 'Tuesday/Thursday', label: 'Tuesday/Thursday' },
+                              { value: 'Tuesday', label: 'Tuesday only' },
+                              { value: 'Wednesday', label: 'Wednesday only' },
+                              { value: 'Thursday', label: 'Thursday only' },
+                            ].map((day) => (
+                              <SelectItem key={day.value} value={day.value}>
+                                {day.label}
+                              </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -165,30 +280,75 @@ export function SchedulerClassForm({ initialData, isEdit = false }: SchedulerCla
             />
         </div>
 
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="startDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Start Date</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="endDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>End Date</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="capacity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Max Student Class Size</FormLabel>
+                <FormControl>
+                  <Input type="number" {...field} data-testid="capacity-input" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Fee ($)</FormLabel>
+                <FormControl>
+                  <Input type="number" step="0.01" min="0" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
         <FormField
           control={form.control}
-          name="capacity"
+          name="syllabusUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Capacity</FormLabel>
+              <FormLabel>Syllabus URL</FormLabel>
               <FormControl>
-                <Input type="number" {...field} data-testid="capacity-input" />
+                <Input placeholder="https://..." {...field} />
               </FormControl>
               <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-         <FormField
-          control={form.control}
-          name="teacher_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Teacher ID (UUID)</FormLabel>
-              <FormControl>
-                <Input placeholder="Teacher UUID" {...field} />
-              </FormControl>
-              <FormMessage>Ideally this would be a Select dropdown</FormMessage>
             </FormItem>
           )}
         />

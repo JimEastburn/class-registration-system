@@ -196,11 +196,18 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
                             </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                {['Tuesday/Thursday', 'Tuesday', 'Wednesday', 'Thursday'].map(day => (
-                                    <SelectItem key={day} value={day}>{day}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            {[
+                              { value: 'Tuesday/Thursday', label: 'Tuesday/Thursday' },
+                              { value: 'Tuesday', label: 'Tuesday only' },
+                              { value: 'Wednesday', label: 'Wednesday only' },
+                              { value: 'Thursday', label: 'Thursday only' },
+                            ].map((day) => (
+                              <SelectItem key={day.value} value={day.value}>
+                                {day.label}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                         <FormMessage />
                         </FormItem>
                     )}

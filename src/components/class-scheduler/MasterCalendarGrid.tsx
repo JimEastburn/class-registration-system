@@ -11,20 +11,34 @@ import { detectBatchConflicts } from '@/lib/logic/scheduling';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, useSensor, useSensors, MouseSensor, TouchSensor, closestCenter } from '@dnd-kit/core';
 import { DraggableEventWrapper } from './DraggableEventWrapper';
 import { DroppableBlock } from './DroppableBlock';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { SchedulerClassForm } from './SchedulerClassForm';
+import { getSyllabusLink } from '@/lib/actions/materials';
 
 // Define the Matrix Structure
 const COLUMNS = ['Block 1', 'Block 2', 'Lunch', 'Block 3', 'Block 4', 'Block 5'];
 const ROWS = [
   'Tuesday/Thursday',
   'Tuesday',
+  'Thursday',
   'Wednesday',
-  'Thursday'
 ];
+
+const DAY_LABELS: Record<string, string> = {
+  'Tuesday/Thursday': 'Tuesday/Thursday',
+  Tuesday: 'Tuesday only',
+  Thursday: 'Thursday only',
+  Wednesday: 'Wednesday only',
+};
 
 export function MasterCalendarGrid() {
   const [loading, setLoading] = useState(false);
   const [classes, setClasses] = useState<ClassWithTeacher[]>([]);
   const [activeDragEvent, setActiveDragEvent] = useState<CalendarUIEvent | null>(null);
+  const [selectedClass, setSelectedClass] = useState<ClassWithTeacher | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [syllabusUrl, setSyllabusUrl] = useState<string | null>(null);
+  const [isSyllabusLoading, setIsSyllabusLoading] = useState(false);
   
   // Filter states
   const [selectedTeacher, setSelectedTeacher] = useState<string>('all');
@@ -116,15 +130,16 @@ export function MasterCalendarGrid() {
   };
 
   // fetch classes once on mount
+  const fetchClasses = async () => {
+    setLoading(true);
+    const result = await getClassesForScheduler(1, 100);
+    if (result.success && result.data) {
+      setClasses(result.data.classes as unknown as ClassWithTeacher[]);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetchClasses = async () => {
-      setLoading(true);
-      const result = await getClassesForScheduler(1, 100);
-      if (result.success && result.data) {
-        setClasses(result.data.classes as unknown as ClassWithTeacher[]);
-      }
-      setLoading(false);
-    };
     void fetchClasses();
   }, []);
 
@@ -157,7 +172,7 @@ export function MasterCalendarGrid() {
     const conflictingClassIds = detectBatchConflicts(classes as unknown as Class[]);
 
     classes.forEach((cls) => {
-      if (!cls.schedule_config || cls.status !== 'published') return;
+      if (!cls.schedule_config || !['published', 'draft'].includes(cls.status)) return;
       
       const config = cls.schedule_config as ScheduleConfig;
       if (!config.day || !config.block) return;
@@ -185,6 +200,26 @@ export function MasterCalendarGrid() {
 
     return mappedEvents;
   }, [classes, selectedTeacher, selectedLocation]);
+
+  const handleOpenClassDialog = async (cls: ClassWithTeacher) => {
+    setSelectedClass(cls);
+    setIsDialogOpen(true);
+    setIsSyllabusLoading(true);
+    const res = await getSyllabusLink(cls.id);
+    setSyllabusUrl(res.success ? res.data ?? null : null);
+    setIsSyllabusLoading(false);
+  };
+
+  const handleDialogClose = () => {
+    setIsDialogOpen(false);
+    setSelectedClass(null);
+    setSyllabusUrl(null);
+  };
+
+  const handleFormSuccess = async () => {
+    await fetchClasses();
+    handleDialogClose();
+  };
 
   return (
     <DndContext
@@ -253,7 +288,7 @@ export function MasterCalendarGrid() {
                     <div key={pattern} className="flex border-b last:border-b-0 min-h-[140px]">
                         {/* Row Header */}
                         <div className="w-[180px] flex-none border-r bg-muted/10 p-3 text-sm font-medium flex items-center">
-                            {pattern}
+                            {DAY_LABELS[pattern] ?? pattern}
                         </div>
 
                         {/* Grid Cells */}
@@ -289,6 +324,12 @@ export function MasterCalendarGrid() {
                                                             <CalendarEventCard 
                                                                 event={event}
                                                                 isMonthView={false}
+                                                                onClick={() => {
+                                                                    const cls = classes.find(c => c.id === event.classId);
+                                                                    if (cls) {
+                                                                        void handleOpenClassDialog(cls);
+                                                                    }
+                                                                }}
                                                             />
                                                         </DraggableEventWrapper>
                                                     ))
@@ -314,6 +355,25 @@ export function MasterCalendarGrid() {
                 </div>
             ) : null}
         </DragOverlay>
+
+        <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleDialogClose()}>
+            <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle>Edit Class Details</DialogTitle>
+                    <DialogDescription>
+                        Update class details, schedule, and syllabus link.
+                    </DialogDescription>
+                </DialogHeader>
+                {selectedClass ? (
+                    <SchedulerClassForm
+                        initialData={selectedClass}
+                        initialSyllabusUrl={isSyllabusLoading ? '' : syllabusUrl}
+                        isEdit={true}
+                        onSuccess={handleFormSuccess}
+                    />
+                ) : null}
+            </DialogContent>
+        </Dialog>
     </DndContext>
   );
 }

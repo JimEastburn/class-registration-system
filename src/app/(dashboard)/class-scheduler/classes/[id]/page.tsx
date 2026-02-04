@@ -16,6 +16,13 @@ export default async function EditClassPage({ params }: PageProps) {
     // Using direct fetch for server component is fine.
     const supabase = await createClient();
     const { data: cls } = await supabase.from('classes').select('*').eq('id', id).single();
+    const { data: syllabus } = await supabase
+        .from('class_materials')
+        .select('file_url')
+        .eq('class_id', id)
+        .eq('title', 'Syllabus')
+        .eq('type', 'link')
+        .maybeSingle();
 
     if (!cls) {
         notFound();
@@ -24,7 +31,11 @@ export default async function EditClassPage({ params }: PageProps) {
     return (
         <div className="container mx-auto py-6">
             <h1 className="text-3xl font-bold tracking-tight mb-6">Edit Class</h1>
-            <SchedulerClassForm initialData={cls} isEdit={true} />
+            <SchedulerClassForm
+                initialData={cls}
+                initialSyllabusUrl={syllabus?.file_url || null}
+                isEdit={true}
+            />
         </div>
     );
 }

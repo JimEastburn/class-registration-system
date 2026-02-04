@@ -46,7 +46,7 @@ export async function switchProfileView(
   // Get user's profile to check role
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, is_parent')
     .eq('id', user.id)
     .single();
 
@@ -55,9 +55,10 @@ export async function switchProfileView(
   }
 
   const userRole = profile.role as UserRole;
+  const isParent = Boolean(profile.is_parent);
 
   // Validate the requested view is allowed for this role
-  if (!isViewAllowed(userRole, view)) {
+  if (!isViewAllowed(userRole, view, isParent)) {
     return {
       success: false,
       error: `You do not have permission to access the ${view} portal`,
@@ -101,11 +102,12 @@ export async function getActiveView(): Promise<PortalView> {
   // Get user's profile to determine role
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, is_parent')
     .eq('id', user.id)
     .single();
 
   const userRole = (profile?.role as UserRole) || 'parent';
+  const isParent = Boolean(profile?.is_parent);
 
   // Check for stored preference
   const cookieStore = await cookies();
@@ -115,7 +117,7 @@ export async function getActiveView(): Promise<PortalView> {
 
   // Validate the stored view is still allowed for the user's role
   // (role may have changed since cookie was set)
-  if (storedView && isViewAllowed(userRole, storedView)) {
+  if (storedView && isViewAllowed(userRole, storedView, isParent)) {
     return storedView;
   }
 
