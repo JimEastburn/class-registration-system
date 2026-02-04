@@ -303,6 +303,7 @@ This document tracks the detailed development tasks for the Class Registration S
 ---
 
 ### 6.2 Class Management - Server Actions
+
 - [x] **[Action]** Implement `createClass` action in `classes.ts` <!-- id: 6.2.1 -->
 - [x] **[Action]** Implement `updateClass` action with ownership check <!-- id: 6.2.2 -->
 - [x] **[Action]** Implement `deleteClass` action (drafts only, soft-delete published) <!-- id: 6.2.3 -->
@@ -805,220 +806,228 @@ This document tracks the detailed development tasks for the Class Registration S
 
 ### 17.1 Test Infrastructure Setup
 
-- [ ] **[Test]** Create auth state file: `auth-state-parent.json` <!-- id: 17.1.1 -->
-- [ ] **[Test]** Create auth state file: `auth-state-student.json` <!-- id: 17.1.2 -->
-- [ ] **[Test]** Create auth state file: `auth-state-admin.json` <!-- id: 17.1.3 -->
-- [ ] **[Test]** Create auth state file: `auth-state-scheduler.json` <!-- id: 17.1.4 -->
-- [ ] **[Test]** Create auth state file: `auth-state-superadmin.json` <!-- id: 17.1.5 -->
+- [x] **[Test]** Create auth state file: `auth-state-parent.json` <!-- id: 17.1.1 -->
+- [x] **[Test]** Create auth state file: `auth-state-student.json` <!-- id: 17.1.2 -->
+- [x] **[Test]** Create auth state file: `auth-state-admin.json` <!-- id: 17.1.3 -->
+- [x] **[Test]** Create auth state file: `auth-state-scheduler.json` <!-- id: 17.1.4 -->
+- [x] **[Test]** Create auth state file: `auth-state-superadmin.json` <!-- id: 17.1.5 -->
 
 ---
 
 ### 17.2 Authentication Tests (10)
 
-- [ ] **[Test]** Sign up (Parent) with all fields <!-- id: 17.2.1 -->
-- [ ] **[Test]** Password validation (weak password rejected) <!-- id: 17.2.2 -->
-- [ ] **[Test]** Code of Conduct required <!-- id: 17.2.3 -->
-- [ ] **[Test]** Sign in (Parent) → redirect to /parent <!-- id: 17.2.4 -->
-- [ ] **[Test]** Sign in (Teacher) → redirect to /teacher <!-- id: 17.2.5 -->
-- [ ] **[Test]** Login with wrong password (rejected) <!-- id: 17.2.6 -->
-- [ ] **[Test]** Sign out → redirect to /login <!-- id: 17.2.7 -->
-- [ ] **[Test]** Session persistence (refresh page) <!-- id: 17.2.8 -->
-- [ ] **[Test]** Password reset request <!-- id: 17.2.9 -->
-- [ ] **[Test]** Password update via reset link <!-- id: 17.2.10 -->
+- [x] **[Test]** Sign up (Parent) with all fields <!-- id: 17.2.1 -->
+- [x] **[Test]** Password validation (weak password rejected) <!-- id: 17.2.2 -->
+- [x] **[Test]** Code of Conduct required <!-- id: 17.2.3 -->
+- [x] **[Test]** Sign in (Parent) → redirect to /parent <!-- id: 17.2.4 -->
+- [x] **[Test]** Sign in (Teacher) → redirect to /teacher <!-- id: 17.2.5 -->
+- [x] **[Test]** Login with wrong password (rejected) <!-- id: 17.2.6 -->
+- [x] **[Test]** Sign out → redirect to /login <!-- id: 17.2.7 -->
+- [x] **[Test]** Session persistence (refresh page) <!-- id: 17.2.8 -->
+- [x] **[Test]** Password reset request <!-- id: 17.2.9 -->
+- [x] **[Test]** Password update via reset link <!-- id: 17.2.10 -->
 
 ---
 
 ### 17.3 Parent Portal Tests (18)
 
-- [ ] **[Test]** View parent dashboard <!-- id: 17.3.1 -->
-- [ ] **[Test]** Update profile (phone number) <!-- id: 17.3.2 -->
-- [ ] **[Test]** Add child to family (student) <!-- id: 17.3.3 -->
-- [ ] **[Test]** Add family member (parent/guardian) <!-- id: 17.3.4 -->
-- [ ] **[Test]** Update child details (grade level) <!-- id: 17.3.5 -->
-- [ ] **[Test]** Delete child profile <!-- id: 17.3.6 -->
-- [ ] **[Test]** Link student via email <!-- id: 17.3.7 -->
-- [ ] **[Test]** Browse available classes <!-- id: 17.3.8 -->
-- [ ] **[Test]** View class details <!-- id: 17.3.9 -->
-- [ ] **[Test]** Enroll child in open class <!-- id: 17.3.10 -->
-- [ ] **[Test]** Enroll in full class (rejected) <!-- id: 17.3.11 -->
-- [ ] **[Test]** Duplicate enrollment (rejected) <!-- id: 17.3.12 -->
-- [ ] **[Test]** Enroll blocked student (rejected) <!-- id: 17.3.13 -->
-- [ ] **[Test]** Cancel pending enrollment <!-- id: 17.3.14 -->
-- [ ] **[Test]** View enrollments list <!-- id: 17.3.15 -->
-- [ ] **[Test]** Stripe payment checkout <!-- id: 17.3.16 -->
-- [ ] **[Test]** Cancel on Stripe page <!-- id: 17.3.17 -->
-- [ ] **[Test]** View payment history <!-- id: 17.3.18 -->
+- [x] **[Test]** View parent dashboard <!-- id: 17.3.1 -->
+- [x] **[Test]** Update profile (phone number) <!-- id: 17.3.2 -->
+- [x] **[Test]** Add child to family (student) <!-- id: 17.3.3 -->
+- [x] **[Test]** Add family member (parent/guardian) <!-- id: 17.3.4 -->
+- [x] **[Test]** Update child details (grade level) <!-- id: 17.3.5 -->
+- [x] **[Test]** Delete child profile <!-- id: 17.3.6 -->
+- [x] **[Test]** Link student via email <!-- id: 17.3.7 -->
+- [x] **[Test]** Browse available classes <!-- id: 17.3.8 -->
+- [x] **[Test]** View class details <!-- id: 17.3.9 -->
+- [x] **[Test]** Enroll child in open class <!-- id: 17.3.10 -->
+- [x] **[Test]** Enroll in full class (rejected) <!-- id: 17.3.11 -->
+- [x] **[Test]** Duplicate enrollment (rejected) <!-- id: 17.3.12 -->
+- [x] **[Test]** Enroll blocked student (rejected) <!-- id: 17.3.13 -->
+- [x] **[Test]** Cancel pending enrollment <!-- id: 17.3.14 -->
+- [x] **[Test]** View enrollments list <!-- id: 17.3.15 -->
+- [x] **[Test]** Stripe payment checkout <!-- id: 17.3.16 -->
+- [x] **[Test]** Cancel on Stripe page <!-- id: 17.3.17 -->
+- [x] **[Test]** View payment history <!-- id: 17.3.18 -->
 
 ---
 
 ### 17.4 Teacher Portal Tests (14)
 
-- [ ] **[Test]** View teacher dashboard <!-- id: 17.4.1 -->
+- [x] **[Test]** View teacher dashboard <!-- id: 17.4.1 -->
 - [x] **[Test]** Create class (draft) ✅ <!-- id: 17.4.2 -->
-- [ ] **[Test]** Update class details <!-- id: 17.4.3 -->
-- [ ] **[Test]** Publish class (draft → active) <!-- id: 17.4.4 -->
-- [ ] **[Test]** Cancel class <!-- id: 17.4.5 -->
-- [ ] **[Test]** Delete draft class <!-- id: 17.4.6 -->
-- [ ] **[Test]** Cannot delete active class <!-- id: 17.4.7 -->
-- [ ] **[Test]** Validate dates (end before start) <!-- id: 17.4.8 -->
-- [ ] **[Test]** View student roster <!-- id: 17.4.9 -->
-- [ ] **[Test]** Block a student <!-- id: 17.4.10 -->
-- [ ] **[Test]** Upload class materials <!-- id: 17.4.11 -->
-- [ ] **[Test]** Delete class materials <!-- id: 17.4.12 -->
-- [ ] **[Test]** Teacher cannot create schedule <!-- id: 17.4.13 -->
-- [ ] **[Test]** Switch to Parent view <!-- id: 17.4.14 -->
+- [x] **[Test]** Update class details <!-- id: 17.4.3 -->
+- [x] **[Test]** Publish class (draft → active) <!-- id: 17.4.4 -->
+- [x] **[Test]** Cancel class <!-- id: 17.4.5 -->
+- [x] **[Test]** Delete draft class <!-- id: 17.4.6 -->
+- [x] **[Test]** Cannot delete active class <!-- id: 17.4.7 -->
+- [x] **[Test]** Validate dates (end before start) <!-- id: 17.4.8 -->
+- [x] **[Test]** View student roster <!-- id: 17.4.9 -->
+- [x] **[Test]** Block a student <!-- id: 17.4.10 -->
+- [x] **[Test]** Upload class materials <!-- id: 17.4.11 -->
+- [x] **[Test]** Delete class materials <!-- id: 17.4.12 -->
+- [x] **[Test]** Teacher cannot create schedule <!-- id: 17.4.13 -->
+- [x] **[Test]** Switch to Parent view <!-- id: 17.4.14 -->
 
 ---
 
 ### 17.5 Student Portal Tests (4)
 
-- [ ] **[Test]** View linked student dashboard <!-- id: 17.5.1 -->
-- [ ] **[Test]** View weekly schedule <!-- id: 17.5.2 -->
-- [ ] **[Test]** View class details <!-- id: 17.5.3 -->
-- [ ] **[Test]** View class materials <!-- id: 17.5.4 -->
+- [x] **[Test]** View linked student dashboard <!-- id: 17.5.1 -->
+- [x] **[Test]** View weekly schedule <!-- id: 17.5.2 -->
+- [x] **[Test]** View class details <!-- id: 17.5.3 -->
+- [x] **[Test]** View class materials <!-- id: 17.5.4 -->
 
 ---
 
 ### 17.6 Admin Portal Tests (22)
 
-- [ ] **[Test]** View admin dashboard <!-- id: 17.6.1 -->
-- [ ] **[Test]** List all users <!-- id: 17.6.2 -->
-- [ ] **[Test]** Promote user role <!-- id: 17.6.3 -->
-- [ ] **[Test]** Demote user role <!-- id: 17.6.4 -->
-- [ ] **[Test]** Delete user account <!-- id: 17.6.5 -->
-- [ ] **[Test]** Singleton scheduler enforcement <!-- id: 17.6.6 -->
-- [ ] **[Test]** Teacher cannot be scheduler <!-- id: 17.6.7 -->
-- [ ] **[Test]** Student cannot be scheduler <!-- id: 17.6.8 -->
-- [ ] **[Test]** View all classes <!-- id: 17.6.9 -->
-- [ ] **[Test]** Edit any class (override) <!-- id: 17.6.10 -->
-- [ ] **[Test]** View all enrollments <!-- id: 17.6.11 -->
-- [ ] **[Test]** Override enrollment status <!-- id: 17.6.12 -->
-- [ ] **[Test]** Force cancel enrollment <!-- id: 17.6.13 -->
-- [ ] **[Test]** View all payments <!-- id: 17.6.14 -->
-- [ ] **[Test]** Process full refund <!-- id: 17.6.15 -->
-- [ ] **[Test]** Prevent invalid refund <!-- id: 17.6.16 -->
-- [ ] **[Test]** CSV export (users) <!-- id: 17.6.17 -->
-- [ ] **[Test]** CSV export (classes) <!-- id: 17.6.18 -->
-- [ ] **[Test]** CSV export (enrollments) <!-- id: 17.6.19 -->
-- [ ] **[Test]** CSV export (payments) <!-- id: 17.6.20 -->
-- [ ] **[Test]** Update global settings <!-- id: 17.6.21 -->
-- [ ] **[Test]** Switch to Parent view <!-- id: 17.6.22 -->
+- [x] **[Test]** View admin dashboard <!-- id: 17.6.1 -->
+- [x] **[Test]** List all users <!-- id: 17.6.2 -->
+- [x] **[Test]** Promote user role <!-- id: 17.6.3 -->
+- [x] **[Test]** Demote user role <!-- id: 17.6.4 -->
+- [x] **[Test]** Delete user account <!-- id: 17.6.5 -->
+- [x] **[Test]** Singleton scheduler enforcement <!-- id: 17.6.6 -->
+- [x] **[Test]** Teacher cannot be scheduler <!-- id: 17.6.7 -->
+- [x] **[Test]** Student cannot be scheduler <!-- id: 17.6.8 -->
+- [x] **[Test]** View all classes <!-- id: 17.6.9 -->
+- [x] **[Test]** Edit any class (override) <!-- id: 17.6.10 -->
+- [x] **[Test]** View all enrollments <!-- id: 17.6.11 -->
+- [x] **[Test]** Override enrollment status <!-- id: 17.6.12 -->
+- [x] **[Test]** Force cancel enrollment <!-- id: 17.6.13 -->
+- [x] **[Test]** View all payments <!-- id: 17.6.14 -->
+- [x] **[Test]** Process full refund <!-- id: 17.6.15 -->
+- [x] **[Test]** Prevent invalid refund <!-- id: 17.6.16 -->
+- [x] **[Test]** CSV export (users) <!-- id: 17.6.17 -->
+- [x] **[Test]** CSV export (classes) <!-- id: 17.6.18 -->
+- [x] **[Test]** CSV export (enrollments) <!-- id: 17.6.19 -->
+- [x] **[Test]** CSV export (payments) <!-- id: 17.6.20 -->
+- [x] **[Test]** Update global settings <!-- id: 17.6.21 -->
+- [x] **[Test]** Switch to Parent view <!-- id: 17.6.22 -->
 
 ---
 
 ### 17.7 Class Scheduler Portal Tests (31)
 
 **Dashboard & Calendar**
-- [ ] **[Test]** View scheduler dashboard <!-- id: 17.7.1 -->
-- [ ] **[Test]** View master calendar grid <!-- id: 17.7.2 -->
-- [ ] **[Test]** Calendar shows correct X-axis (Day + Blocks 1-5) <!-- id: 17.7.3 -->
-- [ ] **[Test]** Calendar shows correct Y-axis (Tue/Thu, Tue, Thu, Wed) <!-- id: 17.7.4 -->
-- [ ] **[Test]** Switch to Parent view <!-- id: 17.7.5 -->
+
+- [x] **[Test]** View scheduler dashboard <!-- id: 17.7.1 -->
+- [x] **[Test]** View master calendar grid <!-- id: 17.7.2 -->
+- [x] **[Test]** Calendar shows correct X-axis (Day + Blocks 1-5) <!-- id: 17.7.3 -->
+- [x] **[Test]** Calendar shows correct Y-axis (Tue/Thu, Tue, Thu, Wed) <!-- id: 17.7.4 -->
+- [x] **[Test]** Switch to Parent view <!-- id: 17.7.5 -->
 
 **Class Management**
-- [ ] **[Test]** Create class for any teacher <!-- id: 17.7.6 -->
-- [ ] **[Test]** Delete any class <!-- id: 17.7.7 -->
-- [ ] **[Test]** Click class → modal opens <!-- id: 17.7.8 -->
-- [ ] **[Test]** Modal: Update class name <!-- id: 17.7.9 -->
-- [ ] **[Test]** Modal: Update assigned teacher <!-- id: 17.7.10 -->
-- [ ] **[Test]** Modal: Update room location <!-- id: 17.7.11 -->
-- [ ] **[Test]** Modal: Update start/end date <!-- id: 17.7.12 -->
-- [ ] **[Test]** Modal: Update max class size <!-- id: 17.7.13 -->
-- [ ] **[Test]** Modal: Update fee <!-- id: 17.7.14 -->
-- [ ] **[Test]** Modal: Update syllabus URL <!-- id: 17.7.15 -->
-- [ ] **[Test]** Modal: Update day pattern <!-- id: 17.7.16 -->
-- [ ] **[Test]** Modal: Update time block <!-- id: 17.7.17 -->
+
+- [x] **[Test]** Create class for any teacher <!-- id: 17.7.6 -->
+- [x] **[Test]** Delete any class <!-- id: 17.7.7 -->
+- [x] **[Test]** Click class → modal opens <!-- id: 17.7.8 -->
+- [x] **[Test]** Modal: Update class name <!-- id: 17.7.9 -->
+- [x] **[Test]** Modal: Update assigned teacher <!-- id: 17.7.10 -->
+- [x] **[Test]** Modal: Update room location <!-- id: 17.7.11 -->
+- [x] **[Test]** Modal: Update start/end date <!-- id: 17.7.12 -->
+- [x] **[Test]** Modal: Update max class size <!-- id: 17.7.13 -->
+- [x] **[Test]** Modal: Update fee <!-- id: 17.7.14 -->
+- [x] **[Test]** Modal: Update syllabus URL <!-- id: 17.7.15 -->
+- [x] **[Test]** Modal: Update day pattern <!-- id: 17.7.16 -->
+- [x] **[Test]** Modal: Update time block <!-- id: 17.7.17 -->
 
 **Block-Based Scheduling**
-- [ ] **[Test]** Class occupies one block at a time <!-- id: 17.7.18 -->
-- [ ] **[Test]** Day pattern: Tuesday/Thursday <!-- id: 17.7.19 -->
-- [ ] **[Test]** Day pattern: Tuesday Only <!-- id: 17.7.20 -->
-- [ ] **[Test]** Day pattern: Thursday Only <!-- id: 17.7.21 -->
-- [ ] **[Test]** Day pattern: Wednesday Only <!-- id: 17.7.22 -->
-- [ ] **[Test]** Define semester dates <!-- id: 17.7.23 -->
+
+- [x] **[Test]** Class occupies one block at a time <!-- id: 17.7.18 -->
+- [x] **[Test]** Day pattern: Tuesday/Thursday <!-- id: 17.7.19 -->
+- [x] **[Test]** Day pattern: Tuesday Only <!-- id: 17.7.20 -->
+- [x] **[Test]** Day pattern: Thursday Only <!-- id: 17.7.21 -->
+- [x] **[Test]** Day pattern: Wednesday Only <!-- id: 17.7.22 -->
+- [x] **[Test]** Define semester dates <!-- id: 17.7.23 -->
 
 **Drag-and-Drop**
-- [ ] **[Test]** Drag class to new block <!-- id: 17.7.24 -->
-- [ ] **[Test]** Drag removes from previous block <!-- id: 17.7.25 -->
-- [ ] **[Test]** Drag class to new day pattern <!-- id: 17.7.26 -->
+
+- [x] **[Test]** Drag class to new block <!-- id: 17.7.24 -->
+- [x] **[Test]** Drag removes from previous block <!-- id: 17.7.25 -->
+- [x] **[Test]** Drag class to new day pattern <!-- id: 17.7.26 -->
 
 **Teacher Conflict Detection**
-- [ ] **[Test]** Prevent overlap: same teacher, same block/day <!-- id: 17.7.27 -->
-- [ ] **[Test]** Conflict error message displayed <!-- id: 17.7.28 -->
-- [ ] **[Test]** Conflict prevents save (modal) <!-- id: 17.7.29 -->
-- [ ] **[Test]** Conflict prevents drag-drop <!-- id: 17.7.30 -->
+
+- [x] **[Test]** Prevent overlap: same teacher, same block/day <!-- id: 17.7.27 -->
+- [x] **[Test]** Conflict error message displayed <!-- id: 17.7.28 -->
+- [x] **[Test]** Conflict prevents save (modal) <!-- id: 17.7.29 -->
+- [x] **[Test]** Conflict prevents drag-drop <!-- id: 17.7.30 -->
 
 ---
 
 ### 17.8 Super Admin Tests (3)
 
-- [ ] **[Test]** Global view switcher <!-- id: 17.8.1 -->
-- [ ] **[Test]** Access all portals <!-- id: 17.8.2 -->
-- [ ] **[Test]** Bypass RLS (view draft classes) <!-- id: 17.8.3 -->
+- [x] **[Test]** Global view switcher <!-- id: 17.8.1 -->
+- [x] **[Test]** Access all portals <!-- id: 17.8.2 -->
+- [x] **[Test]** Bypass RLS (view draft classes) <!-- id: 17.8.3 -->
 
 ---
 
 ### 17.9 Student Linking Tests (3)
 
-- [ ] **[Test]** Parent links student by email <!-- id: 17.9.1 -->
-- [ ] **[Test]** Student registers → auto-link <!-- id: 17.9.2 -->
-- [ ] **[Test]** Prevent double linking <!-- id: 17.9.3 -->
+- [x] **[Test]** Parent links student by email <!-- id: 17.9.1 -->
+- [x] **[Test]** Student registers → auto-link <!-- id: 17.9.2 -->
+- [x] **[Test]** Prevent double linking <!-- id: 17.9.3 -->
 
 ---
 
 ### 17.10 View Switching Tests (22)
 
 **Default View Tests**
-- [ ] **[Test]** Student login → Student View (default) <!-- id: 17.10.1 -->
-- [ ] **[Test]** Parent login → Parent View (default) <!-- id: 17.10.2 -->
-- [ ] **[Test]** Teacher login → Teacher View (default) <!-- id: 17.10.3 -->
-- [ ] **[Test]** Admin login → Admin View (default) <!-- id: 17.10.4 -->
-- [ ] **[Test]** Scheduler login → Scheduler View (default) <!-- id: 17.10.5 -->
-- [ ] **[Test]** Super Admin login → Admin View (default) <!-- id: 17.10.6 -->
+
+- [x] **[Test]** Student login → Student View (default) <!-- id: 17.10.1 -->
+- [x] **[Test]** Parent login → Parent View (default) <!-- id: 17.10.2 -->
+- [x] **[Test]** Teacher login → Teacher View (default) <!-- id: 17.10.3 -->
+- [x] **[Test]** Admin login → Admin View (default) <!-- id: 17.10.4 -->
+- [x] **[Test]** Scheduler login → Scheduler View (default) <!-- id: 17.10.5 -->
+- [x] **[Test]** Super Admin login → Admin View (default) <!-- id: 17.10.6 -->
 
 **Toggle Capabilities**
-- [ ] **[Test]** Teacher ↔ Parent view toggle <!-- id: 17.10.7 -->
-- [ ] **[Test]** Admin ↔ Parent view toggle <!-- id: 17.10.8 -->
-- [ ] **[Test]** Scheduler ↔ Parent view toggle <!-- id: 17.10.9 -->
-- [ ] **[Test]** Super Admin → Admin view <!-- id: 17.10.10 -->
-- [ ] **[Test]** Super Admin → Scheduler view <!-- id: 17.10.11 -->
-- [ ] **[Test]** Super Admin → Teacher view <!-- id: 17.10.12 -->
-- [ ] **[Test]** Super Admin → Parent view <!-- id: 17.10.13 -->
-- [ ] **[Test]** Super Admin universal switcher (all 4 views) <!-- id: 17.10.14 -->
+
+- [x] **[Test]** Teacher ↔ Parent view toggle <!-- id: 17.10.7 -->
+- [x] **[Test]** Admin ↔ Parent view toggle <!-- id: 17.10.8 -->
+- [x] **[Test]** Scheduler ↔ Parent view toggle <!-- id: 17.10.9 -->
+- [x] **[Test]** Super Admin → Admin view <!-- id: 17.10.10 -->
+- [x] **[Test]** Super Admin → Scheduler view <!-- id: 17.10.11 -->
+- [x] **[Test]** Super Admin → Teacher view <!-- id: 17.10.12 -->
+- [x] **[Test]** Super Admin → Parent view <!-- id: 17.10.13 -->
+- [x] **[Test]** Super Admin universal switcher (all 4 views) <!-- id: 17.10.14 -->
 
 **Role Constraints (Negative Tests)**
-- [ ] **[Test]** Student has NO view toggle <!-- id: 17.10.15 -->
-- [ ] **[Test]** Parent has NO view toggle <!-- id: 17.10.16 -->
-- [ ] **[Test]** Teacher CANNOT access Admin view <!-- id: 17.10.17 -->
-- [ ] **[Test]** Teacher CANNOT access Scheduler view <!-- id: 17.10.18 -->
-- [ ] **[Test]** Admin CANNOT access Scheduler view <!-- id: 17.10.19 -->
-- [ ] **[Test]** Scheduler CANNOT be Teacher (role constraint) <!-- id: 17.10.20 -->
-- [ ] **[Test]** Scheduler CANNOT be Student (role constraint) <!-- id: 17.10.21 -->
+
+- [x] **[Test]** Student has NO view toggle <!-- id: 17.10.15 -->
+- [x] **[Test]** Parent has NO view toggle <!-- id: 17.10.16 -->
+- [x] **[Test]** Teacher CANNOT access Admin view <!-- id: 17.10.17 -->
+- [x] **[Test]** Teacher CANNOT access Scheduler view <!-- id: 17.10.18 -->
+- [x] **[Test]** Admin CANNOT access Scheduler view <!-- id: 17.10.19 -->
+- [x] **[Test]** Scheduler CANNOT be Teacher (role constraint) <!-- id: 17.10.20 -->
+- [x] **[Test]** Scheduler CANNOT be Student (role constraint) <!-- id: 17.10.21 -->
 
 ---
 
 ### 17.11 Enrollment Logic Tests (6)
 
-- [ ] **[Test]** Enroll with available seats <!-- id: 17.11.1 -->
-- [ ] **[Test]** Reject when full <!-- id: 17.11.2 -->
-- [ ] **[Test]** Join waitlist when full <!-- id: 17.11.3 -->
-- [ ] **[Test]** Prevent waitlist if spots open <!-- id: 17.11.4 -->
-- [ ] **[Test]** Prevent double booking <!-- id: 17.11.5 -->
-- [ ] **[Test]** Enforce block list <!-- id: 17.11.6 -->
+- [x] **[Test]** Enroll with available seats <!-- id: 17.11.1 -->
+- [x] **[Test]** Reject when full <!-- id: 17.11.2 -->
+- [x] **[Test]** Join waitlist when full <!-- id: 17.11.3 -->
+- [x] **[Test]** Prevent waitlist if spots open <!-- id: 17.11.4 -->
+- [x] **[Test]** Prevent double booking <!-- id: 17.11.5 -->
+- [x] **[Test]** Enforce block list <!-- id: 17.11.6 -->
 
 ---
 
 ### 17.12 Edge Cases & Error Handling (4)
 
-- [ ] **[Test]** Submit form with missing fields <!-- id: 17.12.1 -->
-- [ ] **[Test]** Invalid date range <!-- id: 17.12.2 -->
-- [ ] **[Test]** Unauthorized route access <!-- id: 17.12.3 -->
-- [ ] **[Test]** Delete class with enrollments <!-- id: 17.12.4 -->
+- [x] **[Test]** Submit form with missing fields <!-- id: 17.12.1 -->
+- [x] **[Test]** Invalid date range <!-- id: 17.12.2 -->
+- [x] **[Test]** Unauthorized route access <!-- id: 17.12.3 -->
+- [x] **[Test]** Delete class with enrollments <!-- id: 17.12.4 -->
 
 ---
 
 ### 17.13 Cross-Role Integration Flows (3)
 
-- [ ] **[Test]** Full enrollment loop: Teacher creates → Parent enrolls → Payment → Roster → Schedule <!-- id: 17.13.1 -->
-- [ ] **[Test]** Waitlist flow: Full class → Waitlist → Spot opens → Notify <!-- id: 17.13.2 -->
-- [ ] **[Test]** Refund flow: Admin refunds → Enrollment reverts → Payment updated <!-- id: 17.13.3 -->
+- [x] **[Test]** Full enrollment loop: Teacher creates → Parent enrolls → Payment → Roster → Schedule <!-- id: 17.13.1 -->
+- [x] **[Test]** Waitlist flow: Full class → Waitlist → Spot opens → Notify <!-- id: 17.13.2 -->
+- [x] **[Test]** Refund flow: Admin refunds → Enrollment reverts → Payment updated <!-- id: 17.13.3 -->

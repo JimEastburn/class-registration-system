@@ -1,0 +1,7 @@
+{
+  "_comment": "This is a placeholder file. Generate auth state by running: ./scripts/browser-tests/setup-all-auth-states.sh admin",
+  "_role": "admin",
+  "_instructions": "Start the dev server with 'npm run dev', then run the setup script above.",
+  "cookies": [],
+  "origins": []
+}
