@@ -87,14 +87,14 @@ export function EnrollmentTable({
                                 {enrollment.status === 'pending' && enrollment.class && (
                                      <PayButton
                                         enrollmentId={enrollment.id}
-                                        amount={enrollment.class.price}
+                                        amount={enrollment.class.price / 100}
                                         compact={true}
                                     />
                                 )}
                             </div>
                         </TableCell>
                         <TableCell>
-                            ${enrollment.class?.price?.toFixed(2) || '0.00'}
+                            ${(enrollment.class?.price ? enrollment.class.price / 100 : 0).toFixed(2)}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                             {new Date(enrollment.created_at).toLocaleDateString('en-US', {

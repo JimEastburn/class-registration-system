@@ -50,7 +50,7 @@ function ClassCard({ classItem }: ClassCardProps) {
                     <CardTitle className="text-lg line-clamp-2">
                         {classItem.name}
                     </CardTitle>
-                    <Badge variant="secondary">${classItem.price}</Badge>
+                    <Badge variant="secondary">${(classItem.price / 100).toFixed(2)}</Badge>
                 </div>
             </CardHeader>
             <CardContent className="flex-1">
@@ -87,7 +87,7 @@ function ClassCard({ classItem }: ClassCardProps) {
 
                     <div className="flex items-center gap-2 text-muted-foreground">
                         <DollarSign className="h-4 w-4" />
-                        <span>${classItem.price}</span>
+                        <span>${(classItem.price / 100).toFixed(2)}</span>
                     </div>
                 </div>
             </CardContent>

@@ -77,7 +77,7 @@ export async function exportData(
         c.description,
         c.capacity,
         c.status,
-        c.price,
+        c.price / 100,
         // @ts-expect-error - joined data
         c.teacher ? `${c.teacher.first_name} ${c.teacher.last_name}` : 'Unassigned',
         c.location

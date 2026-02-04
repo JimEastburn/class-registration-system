@@ -173,7 +173,7 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
                 <div className="space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-2xl">${classItem.price}</CardTitle>
+                            <CardTitle className="text-2xl">${(classItem.price / 100).toFixed(2)}</CardTitle>
                             <CardDescription>per enrollment</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -200,7 +200,7 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
                             <EnrollButton
                                 classId={classItem.id}
                                 className={classItem.name}
-                                price={classItem.price}
+                                price={classItem.price / 100}
                                 available={availability.available}
                             />
                         </CardContent>

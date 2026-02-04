@@ -72,7 +72,7 @@ export default async function AdminClassDetailPage({ params }: { params: Promise
                         </div>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">Price:</span>
-                            <span>{formatCurrency(cls.price)}</span>
+                            <span>{formatCurrency(cls.price / 100)}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">Capacity:</span>
@@ -117,7 +117,7 @@ export default async function AdminClassDetailPage({ params }: { params: Promise
                         <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Estimated Revenue:</span>
                             <span className="text-xl font-bold text-green-600">
-                                {formatCurrency(enrollments.filter(e => e.status === 'confirmed').length * cls.price)}
+                                {formatCurrency(enrollments.filter(e => e.status === 'confirmed').length * cls.price / 100)}
                             </span>
                         </div>
                     </CardContent>
