@@ -44,7 +44,7 @@ export async function getParentDashboardStats(): Promise<{
                 .from('enrollments')
                 .select('*', { count: 'exact', head: true })
                 .in('family_member_id', familyMemberIds)
-                .eq('status', 'active');
+                .eq('status', 'confirmed');
 
             activeEnrollmentCount = count || 0;
         }
@@ -74,7 +74,7 @@ export async function getParentDashboardStats(): Promise<{
                     { count: 'exact', head: true }
                 )
                 .in('family_member_id', familyMemberIds)
-                .eq('status', 'active')
+                .eq('status', 'confirmed')
                 .gte('classes.start_date', today);
 
             upcomingClassCount = count || 0;
@@ -152,7 +152,7 @@ export async function getUpcomingClassesForFamily(
             `
             )
             .in('family_member_id', familyMemberIds)
-            .eq('status', 'active')
+            .eq('status', 'confirmed')
             .limit(limit);
 
         if (error) {
@@ -420,7 +420,7 @@ export async function getTeacherDashboardData(): Promise<{
         .from('enrollments')
         .select('class_id')
         .in('class_id', classIds)
-        .eq('status', 'active');
+        .eq('status', 'confirmed');
 
       // Count enrollments per class
       const countMap = new Map<string, number>();
@@ -477,7 +477,7 @@ export async function getTeacherDashboardData(): Promise<{
           classes(name)
         `)
         .in('class_id', classIds)
-        .eq('status', 'active')
+        .eq('status', 'confirmed')
         .order('created_at', { ascending: false })
         .limit(5);
 
