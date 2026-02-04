@@ -6,10 +6,20 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Format a number as USD currency
+ * Convert cents to dollars
  */
-export function formatCurrency(amount: number): string {
-  return `$${amount.toFixed(2)}`;
+export function centsToDollars(cents: number): number {
+  return cents / 100;
+}
+
+/**
+ * Format a number as USD currency
+ * @param amount - Amount in dollars (or cents if fromCents is true)
+ * @param fromCents - If true, converts from cents to dollars before formatting
+ */
+export function formatCurrency(amount: number, fromCents: boolean = false): string {
+  const dollars = fromCents ? centsToDollars(amount) : amount;
+  return `$${dollars.toFixed(2)}`;
 }
 
 /**

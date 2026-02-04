@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   cn,
+  centsToDollars,
   formatCurrency,
   formatDate,
   formatDateTime,
@@ -38,6 +39,26 @@ describe('utils', () => {
       expect(formatCurrency(10)).toBe('$10.00');
       expect(formatCurrency(10.5)).toBe('$10.50');
       expect(formatCurrency(0)).toBe('$0.00');
+    });
+
+    it('converts from cents when fromCents is true', () => {
+      expect(formatCurrency(4800, true)).toBe('$48.00');
+      expect(formatCurrency(100, true)).toBe('$1.00');
+      expect(formatCurrency(9999, true)).toBe('$99.99');
+    });
+
+    it('does not convert when fromCents is false or omitted', () => {
+      expect(formatCurrency(48)).toBe('$48.00');
+      expect(formatCurrency(48, false)).toBe('$48.00');
+    });
+  });
+
+  describe('centsToDollars', () => {
+    it('converts cents to dollars', () => {
+      expect(centsToDollars(4800)).toBe(48);
+      expect(centsToDollars(100)).toBe(1);
+      expect(centsToDollars(0)).toBe(0);
+      expect(centsToDollars(9999)).toBe(99.99);
     });
   });
 

@@ -29,6 +29,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createClass, updateClass } from '@/lib/actions/classes';
 import type { Class, ScheduleConfig } from '@/types';
+import { centsToDollars } from '@/lib/utils';
 
 // Define Zod Schema for the flat form structure
 const classFormSchema = z.object({
@@ -80,7 +81,7 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
     defaultValues: {
       name: existingClass?.name || '',
       description: existingClass?.description || '',
-      price: existingClass ? String(existingClass.price / 100) : '0',
+      price: existingClass ? String(centsToDollars(existingClass.price)) : '0',
       capacity: existingClass ? String(existingClass.capacity) : '10',
       startDate: scheduleConfig?.startDate || '',
       endDate: scheduleConfig?.endDate || '',
