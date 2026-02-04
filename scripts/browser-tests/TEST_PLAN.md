@@ -12,6 +12,93 @@
 
 ---
 
+## ⚡ Best Practices for Efficient Tests
+
+### 1. Auth State Reuse (CRITICAL)
+```bash
+# ❌ SLOW: Login in every test
+agent-browser fill @e1 "$EMAIL"
+agent-browser fill @e2 "$PASSWORD"
+agent-browser click @e3
+
+# ✅ FAST: Load saved auth state
+agent-browser state load auth-state-teacher.json
+agent-browser open $APP_URL/teacher/classes
+```
+
+### 2. Scoped Snapshots
+```bash
+# ✅ Fast: Scope to specific form/section
+agent-browser snapshot -i -s "form.class-form"
+
+# ❌ Slow: Full page accessibility tree
+agent-browser snapshot -i
+```
+
+### 3. Re-snapshot Only When DOM Changes
+```bash
+# Fill fields (NO re-snapshot between fills)
+agent-browser fill @e1 "Math 101"
+agent-browser fill @e2 "100"
+agent-browser select @e3 "Block 1"
+
+# Click submit (DOM CHANGES - must re-snapshot after)
+agent-browser click @e4
+agent-browser wait --load networkidle
+agent-browser snapshot -i  # Required
+```
+
+### 4. Smart Waits
+```bash
+# ✅ Wait for specific element (faster)
+agent-browser wait @e5
+
+# ✅ Wait for navigation to complete
+agent-browser wait --load networkidle
+
+# ❌ Avoid: Fixed delays
+agent-browser wait 5000
+```
+
+### 5. Semantic Locators (Fallback)
+```bash
+# When refs are unreliable, use semantic locators
+agent-browser find text "Save Class" click
+agent-browser find role button click --name "Submit"
+agent-browser find testid "class-form-submit" click
+```
+
+### 6. Test Script Template
+```bash
+#!/bin/bash
+set -e
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APP_URL="${NEXT_PUBLIC_APP_URL:-http://localhost:3000}"
+
+# 1. Load auth state (skip login)
+agent-browser state load "$SCRIPT_DIR/auth-state-ROLE.json"
+
+# 2. Navigate directly to target page
+agent-browser open "$APP_URL/PORTAL/ACTION"
+
+# 3. Scoped snapshot
+agent-browser snapshot -i -s "MAIN_CONTENT_SELECTOR"
+
+# 4. Interact using refs
+agent-browser fill @e1 "VALUE"
+agent-browser click @e2
+
+# 5. Wait + verify
+agent-browser wait --load networkidle
+agent-browser snapshot -i
+agent-browser get text @SUCCESS_ELEMENT
+
+# 6. Screenshot for evidence
+agent-browser screenshot "$SCRIPT_DIR/screenshots/test-name.png"
+```
+
+---
+
 ## Test Suites by Portal
 
 ### 🔐 Authentication
