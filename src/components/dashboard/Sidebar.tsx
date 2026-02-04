@@ -238,7 +238,7 @@ export function Sidebar({ userRole, isParent, className }: SidebarProps & { isPa
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 overflow-y-auto px-3 py-4">
+            <nav className="flex-1 overflow-y-auto px-3 py-4" data-testid="sidebar-nav">
                 {/* Parent Portal Section */}
                 {parentItems.length > 0 && (
                     <NavSection
@@ -325,6 +325,7 @@ function NavSection({ title, items, pathname }: NavSectionProps) {
                                         ? 'bg-primary text-white'
                                         : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                                 )}
+                                data-testid={`nav-${item.href.split('/').pop()}-link`}
                             >
                                 <item.icon className="h-5 w-5" />
                                 {item.label}

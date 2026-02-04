@@ -15,7 +15,7 @@ interface FamilyMemberListProps {
 
 export function FamilyMemberList({ members }: FamilyMemberListProps) {
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="family-member-list">
             {members.map((member) => (
                 <FamilyMemberCard key={member.id} member={member} />
             ))}
@@ -32,7 +32,7 @@ function FamilyMemberCard({ member }: FamilyMemberCardProps) {
     const age = member.dob ? calculateAge(member.dob) : null;
 
     return (
-        <Card className="relative">
+        <Card className="relative" data-testid={`family-member-card-${member.id}`}>
             <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
@@ -91,7 +91,7 @@ function FamilyMemberCard({ member }: FamilyMemberCardProps) {
                             familyMemberId={member.id}
                             familyMemberName={fullName}
                             trigger={
-                                <Button variant="outline" size="sm">
+                                <Button variant="outline" size="sm" data-testid="link-student-button">
                                     <Link className="mr-2 h-3 w-3" />
                                     Link
                                 </Button>
@@ -99,7 +99,7 @@ function FamilyMemberCard({ member }: FamilyMemberCardProps) {
                         />
                     )}
                     <EditFamilyMemberDialog member={member}>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" data-testid="edit-member-button">
                             <Edit className="mr-2 h-3 w-3" />
                             Edit
                         </Button>
@@ -108,7 +108,7 @@ function FamilyMemberCard({ member }: FamilyMemberCardProps) {
                         memberId={member.id} 
                         memberName={fullName}
                     >
-                        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" data-testid="delete-member-button">
                             <Trash2 className="mr-2 h-3 w-3" />
                             Delete
                         </Button>

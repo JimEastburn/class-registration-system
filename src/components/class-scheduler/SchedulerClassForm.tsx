@@ -89,7 +89,7 @@ export function SchedulerClassForm({ initialData, isEdit = false }: SchedulerCla
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-2xl" data-testid="scheduler-class-form">
         <FormField
           control={form.control}
           name="name"
@@ -97,7 +97,7 @@ export function SchedulerClassForm({ initialData, isEdit = false }: SchedulerCla
             <FormItem>
               <FormLabel>Class Name</FormLabel>
               <FormControl>
-                <Input placeholder="Math 101" {...field} />
+                <Input placeholder="Math 101" {...field} data-testid="class-name-input" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -172,7 +172,7 @@ export function SchedulerClassForm({ initialData, isEdit = false }: SchedulerCla
             <FormItem>
               <FormLabel>Capacity</FormLabel>
               <FormControl>
-                <Input type="number" {...field} />
+                <Input type="number" {...field} data-testid="capacity-input" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -193,7 +193,7 @@ export function SchedulerClassForm({ initialData, isEdit = false }: SchedulerCla
           )}
         />
 
-        <Button type="submit">{isEdit ? 'Update Class' : 'Create Class'}</Button>
+        <Button type="submit" data-testid="scheduler-submit-button">{isEdit ? 'Update Class' : 'Create Class'}</Button>
       </form>
     </Form>
   );

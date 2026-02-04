@@ -52,7 +52,7 @@ export default function ResetPasswordForm() {
 
     if (success) {
         return (
-            <Card className="border-0 shadow-2xl bg-white/10 backdrop-blur-lg">
+            <Card className="border-0 shadow-2xl bg-white/10 backdrop-blur-lg" data-testid="reset-success-message">
                 <CardHeader className="text-center">
                     <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -75,10 +75,10 @@ export default function ResetPasswordForm() {
             <CardHeader>
                 <CardTitle className="text-white text-center">Set New Password</CardTitle>
             </CardHeader>
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form onSubmit={handleSubmit(onSubmit)} data-testid="reset-password-form">
                 <CardContent className="space-y-4">
                     {error && (
-                        <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm">
+                        <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm" data-testid="reset-error-message">
                             {error}
                         </div>
                     )}
@@ -91,6 +91,7 @@ export default function ResetPasswordForm() {
                             placeholder="••••••••"
                             className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
                             {...register('password')}
+                            data-testid="reset-password-input"
                         />
                         {errors.password && (
                             <p className="text-red-400 text-sm">{errors.password.message}</p>
@@ -108,6 +109,7 @@ export default function ResetPasswordForm() {
                             placeholder="••••••••"
                             className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
                             {...register('confirmPassword')}
+                            data-testid="reset-confirm-input"
                         />
                         {errors.confirmPassword && (
                             <p className="text-red-400 text-sm">{errors.confirmPassword.message}</p>
@@ -119,6 +121,7 @@ export default function ResetPasswordForm() {
                         type="submit"
                         disabled={isLoading}
                         className="w-full bg-gradient-to-r from-[#4c7c92] to-[#9BBFD3] hover:from-[#3a6073] hover:to-[#7aa9c2]"
+                        data-testid="reset-submit-button"
                     >
                         {isLoading ? 'Updating...' : 'Reset Password'}
                     </Button>

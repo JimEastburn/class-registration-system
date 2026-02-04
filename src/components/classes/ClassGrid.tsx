@@ -22,7 +22,7 @@ interface ClassGridProps {
 
 export function ClassGrid({ classes }: ClassGridProps) {
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" data-testid="class-grid">
             {classes.map((cls) => (
                 <ClassCard key={cls.id} classItem={cls} />
             ))}
@@ -45,7 +45,7 @@ function ClassCard({ classItem }: ClassCardProps) {
     const day = schedule?.day || null;
 
     return (
-        <Card className="flex flex-col">
+        <Card className="flex flex-col" data-testid={`class-card-${classItem.id}`}>
             <CardHeader>
                 <div className="flex items-start justify-between">
                     <CardTitle className="text-lg line-clamp-2">
@@ -93,7 +93,7 @@ function ClassCard({ classItem }: ClassCardProps) {
                 </div>
             </CardContent>
             <CardFooter>
-                <Button className="w-full" asChild>
+                <Button className="w-full" asChild data-testid="view-class-details-button">
                     <Link href={`/parent/browse/${classItem.id}`}>
                         View Details
                     </Link>

@@ -93,7 +93,7 @@ export function Topbar({ user, activeView, allowedViews }: TopbarProps) {
     const initials = getInitials(user);
 
     return (
-        <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 lg:px-6">
+        <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 lg:px-6" data-testid="topbar">
             {/* Spacer for mobile */}
             <div className="flex-1" />
 
@@ -107,7 +107,7 @@ export function Topbar({ user, activeView, allowedViews }: TopbarProps) {
                 />
 
                 {/* Role Badge */}
-                <Badge variant={getRoleBadgeVariant(user.role)}>
+                <Badge variant={getRoleBadgeVariant(user.role)} data-testid="role-badge">
                     {getRoleLabel(user.role)}
                 </Badge>
 
@@ -117,6 +117,7 @@ export function Topbar({ user, activeView, allowedViews }: TopbarProps) {
                         <Button
                             variant="ghost"
                             className="relative h-10 w-10 rounded-full"
+                            data-testid="user-menu-trigger"
                         >
                             <Avatar className="h-10 w-10">
                                 <AvatarImage
@@ -145,6 +146,7 @@ export function Topbar({ user, activeView, allowedViews }: TopbarProps) {
                             <Link
                                 href={`/${user.role === 'class_scheduler' ? 'class-scheduler' : user.role}/profile`}
                                 className="flex items-center"
+                                data-testid="profile-link"
                             >
                                 <User className="mr-2 h-4 w-4" />
                                 Profile
@@ -156,6 +158,7 @@ export function Topbar({ user, activeView, allowedViews }: TopbarProps) {
                             onClick={async () => {
                                 await signOut();
                             }}
+                            data-testid="logout-button"
                         >
                             <LogOut className="mr-2 h-4 w-4" />
                             Sign Out

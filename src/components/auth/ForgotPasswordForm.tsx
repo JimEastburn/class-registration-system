@@ -48,7 +48,7 @@ export default function ForgotPasswordForm() {
 
     if (success) {
         return (
-            <Card className="border-0 shadow-2xl bg-white/10 backdrop-blur-lg">
+            <Card className="border-0 shadow-2xl bg-white/10 backdrop-blur-lg" data-testid="forgot-success-message">
                 <CardHeader className="text-center">
                     <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                         <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,10 +82,10 @@ export default function ForgotPasswordForm() {
             <CardHeader>
                 <CardTitle className="text-white text-center">Reset Password</CardTitle>
             </CardHeader>
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form onSubmit={handleSubmit(onSubmit)} data-testid="forgot-password-form">
                 <CardContent className="space-y-4">
                     {error && (
-                        <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm">
+                        <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm" data-testid="forgot-error-message">
                             {error}
                         </div>
                     )}
@@ -102,6 +102,7 @@ export default function ForgotPasswordForm() {
                             placeholder="you@example.com"
                             className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
                             {...register('email')}
+                            data-testid="forgot-email-input"
                         />
                         {errors.email && (
                             <p className="text-red-400 text-sm">{errors.email.message}</p>
@@ -113,6 +114,7 @@ export default function ForgotPasswordForm() {
                         type="submit"
                         disabled={isLoading}
                         className="w-full bg-gradient-to-r from-[#4c7c92] to-[#9BBFD3] hover:from-[#3a6073] hover:to-[#7aa9c2]"
+                        data-testid="forgot-submit-button"
                     >
                         {isLoading ? 'Sending...' : 'Send Reset Link'}
                     </Button>

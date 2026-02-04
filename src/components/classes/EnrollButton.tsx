@@ -151,7 +151,7 @@ export function EnrollButton({
             }}
         >
             <DialogTrigger asChild>
-                <Button className="w-full">
+                <Button className="w-full" data-testid="enroll-now-button">
                     <UserPlus className="mr-2 h-4 w-4" />
                     Enroll Now
                 </Button>
@@ -186,7 +186,7 @@ export function EnrollButton({
                                 value={selectedMember}
                                 onValueChange={setSelectedMember}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger data-testid="family-member-select">
                                     <SelectValue placeholder="Select a family member" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -219,6 +219,7 @@ export function EnrollButton({
                     <Button
                         onClick={handleEnroll}
                         disabled={isLoading || !selectedMember || members.length === 0}
+                        data-testid="proceed-to-payment-button"
                     >
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Proceed to Payment

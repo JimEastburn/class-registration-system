@@ -142,6 +142,7 @@ export function PortalSwitcher({
             className
           )}
           disabled={isPending}
+          data-testid="portal-switcher-trigger"
         >
           <div
             className={cn('h-2 w-2 rounded-full', currentConfig.color)}
@@ -178,6 +179,7 @@ export function PortalSwitcher({
                 'cursor-pointer gap-3 py-2',
                 isActive && 'bg-slate-800'
               )}
+              data-testid={`portal-option-${view}`}
             >
               <div
                 className={cn(

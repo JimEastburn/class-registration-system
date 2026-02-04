@@ -110,10 +110,10 @@ export default function RegisterForm() {
                     Create Account
                 </h2>
             </CardHeader>
-            <form onSubmit={handleSubmit(onSubmit)} noValidate>
+            <form onSubmit={handleSubmit(onSubmit)} noValidate data-testid="register-form">
                 <CardContent className="space-y-4">
                     {error && (
-                        <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm">
+                        <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm" data-testid="register-error-message">
                             {error}
                         </div>
                     )}
@@ -128,6 +128,7 @@ export default function RegisterForm() {
                                 placeholder="John"
                                 className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
                                 {...register('firstName')}
+                                data-testid="first-name-input"
                             />
                             {errors.firstName && (
                                 <p className="text-red-400 text-sm">{errors.firstName.message}</p>
@@ -143,6 +144,7 @@ export default function RegisterForm() {
                                 placeholder="Doe"
                                 className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
                                 {...register('lastName')}
+                                data-testid="last-name-input"
                             />
                             {errors.lastName && (
                                 <p className="text-red-400 text-sm">{errors.lastName.message}</p>
@@ -160,6 +162,7 @@ export default function RegisterForm() {
                             placeholder="you@example.com"
                             className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
                             {...register('email')}
+                            data-testid="register-email-input"
                         />
                         {errors.email && (
                             <p className="text-red-400 text-sm">{errors.email.message}</p>
@@ -196,6 +199,7 @@ export default function RegisterForm() {
                             placeholder="+1 (555) 123-4567"
                             className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
                             {...register('phone')}
+                            data-testid="phone-input"
                         />
                     </div>
 
@@ -208,6 +212,7 @@ export default function RegisterForm() {
                             type="password"
                             className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
                             {...register('password')}
+                            data-testid="register-password-input"
                         />
                         {errors.password && (
                             <p className="text-red-400 text-sm">{errors.password.message}</p>
@@ -223,6 +228,7 @@ export default function RegisterForm() {
                             type="password"
                             className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
                             {...register('confirmPassword')}
+                            data-testid="confirm-password-input"
                         />
                         {errors.confirmPassword && (
                             <p className="text-red-400 text-sm">
@@ -240,6 +246,7 @@ export default function RegisterForm() {
                                     setValue('codeOfConduct', true, { shouldValidate: true });
                                 }
                             }}
+                            data-testid="coc-checkbox"
                         />
                         <div className="grid gap-1.5 leading-none">
                             <Label
@@ -270,6 +277,7 @@ export default function RegisterForm() {
                         type="submit"
                         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                         isLoading={isPending}
+                        data-testid="register-submit-button"
                     >
                         Create Account
                     </Button>

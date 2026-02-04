@@ -54,10 +54,10 @@ export default function LoginForm() {
                     Sign In
                 </h2>
             </CardHeader>
-            <form onSubmit={handleSubmit(onSubmit)} noValidate>
+            <form onSubmit={handleSubmit(onSubmit)} noValidate data-testid="login-form">
                 <CardContent className="space-y-4">
                     {error && (
-                        <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm">
+                        <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm" data-testid="login-error-message">
                             {error}
                         </div>
                     )}
@@ -87,6 +87,7 @@ export default function LoginForm() {
                             <Link
                                 href="/forgot-password"
                                 className="text-sm text-teal-400 hover:text-teal-300 transition-colors"
+                                data-testid="forgot-password-link"
                             >
                                 Forgot password?
                             </Link>
