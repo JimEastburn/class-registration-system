@@ -173,7 +173,7 @@ export async function enrollStudent(
     input: EnrollStudentInput
 ): Promise<{
     data: Enrollment | null;
-    status: 'confirmed' | 'waitlisted' | 'blocked' | null;
+    status: 'confirmed' | 'waitlisted' | 'blocked' | 'pending' | null;
     error: string | null;
 }> {
     try {

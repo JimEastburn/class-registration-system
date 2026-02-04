@@ -205,4 +205,42 @@ describe('EnrollButton', () => {
             expect(toast.error).toHaveBeenCalledWith('Database error');
         });
     });
+    it('handles confirmed flow (no payment needed) correctly', async () => {
+        (enrollStudent as any).mockResolvedValue({
+            data: { id: mockEnrollmentId },
+            status: 'confirmed',
+            error: null,
+        });
+
+        render(
+            <EnrollButton
+                classId={mockClassId}
+                className="Test Class"
+                price={100}
+                available={5}
+            />
+        );
+
+        fireEvent.click(screen.getByText('Enroll Now'));
+        
+        await waitFor(() => {
+            expect(screen.queryByText('Loading family members...')).not.toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByRole('combobox'));
+        const option = await screen.findByText('John Doe');
+        fireEvent.click(option);
+
+        const proceedBtn = await screen.findByText('Proceed to Payment');
+        fireEvent.click(proceedBtn);
+
+        await waitFor(() => {
+            expect(enrollStudent).toHaveBeenCalledWith({
+                classId: mockClassId,
+                familyMemberId: 'member-1',
+            });
+            expect(toast.success).toHaveBeenCalledWith('Enrollment confirmed');
+            expect(fetchMock).not.toHaveBeenCalled();
+        });
+    });
 });

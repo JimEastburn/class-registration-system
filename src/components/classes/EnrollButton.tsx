@@ -94,8 +94,15 @@ export function EnrollButton({
                 return;
             }
 
-            // 2. Proceed to Payment (if confirmed/pending)
-            if (enrollment && (status === 'confirmed' || status === 'pending')) {
+            if (status === 'confirmed') {
+                toast.success('Enrollment confirmed');
+                setOpen(false);
+                setIsLoading(false);
+                return;
+            }
+
+            // 2. Proceed to Payment (if pending)
+            if (enrollment && status === 'pending') {
                 const response = await fetch('/api/checkout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
