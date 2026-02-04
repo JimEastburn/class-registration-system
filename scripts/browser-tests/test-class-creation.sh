@@ -9,6 +9,31 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATE_FILE="$SCRIPT_DIR/auth-state.json"
 SCREENSHOTS_DIR="$SCRIPT_DIR/screenshots"
 
+# ============================================
+# Pre-flight: Kill stuck test processes
+# ============================================
+kill_stuck_processes() {
+  # Find vitest/jest processes running longer than 10 minutes (600 seconds)
+  local stuck_pids=$(ps -eo pid,etime,comm | grep -E 'vitest|jest' | awk '{
+    split($2, t, ":");
+    if (length(t) == 3) { # H:MM:SS or longer
+      if (t[1] > 0) print $1
+    } else if (length(t) == 2 && t[1] >= 10) { # MM:SS where MM >= 10
+      print $1
+    }
+  }')
+  
+  if [ -n "$stuck_pids" ]; then
+    echo "⚠️  Found stuck test processes running >10 minutes. Killing them..."
+    echo "$stuck_pids" | xargs -r kill -9 2>/dev/null || true
+    echo "✅ Killed stuck processes to speed up localhost"
+    sleep 1
+  fi
+}
+
+# Run pre-flight check
+kill_stuck_processes
+
 # Check for auth state
 if [ ! -f "$STATE_FILE" ]; then
   echo "❌ Auth state not found. Run setup-auth-state.sh first."
