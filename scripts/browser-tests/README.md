@@ -1,5 +1,7 @@
 # agent-browser Test Scripts
 
+> **🤖 AI AGENT:** Use workflow `/browser-tests` to run these scripts with auto-approval enabled.
+
 Browser automation tests using `agent-browser` CLI for testing class creation flow.
 
 ## Prerequisites
