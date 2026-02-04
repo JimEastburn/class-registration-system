@@ -1,0 +1,7 @@
+# Auth state and credentials (contain session tokens)
+auth-state.json
+.test-creds.json
+
+# Screenshots output
+screenshots/
+*.png
