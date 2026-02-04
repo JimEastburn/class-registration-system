@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 import { stripe, formatAmountForStripe } from '@/lib/stripe';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: Request) {
     try {
-        const supabase = await createClient();
+        const supabase = await createServerClient();
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {
