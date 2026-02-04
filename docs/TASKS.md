@@ -1050,16 +1050,16 @@ This document tracks the detailed development tasks for the Class Registration S
 
 ### 18.2 Authentication Tests - Playwright (10)
 
-- [ ] **[Test]** `auth/signup-parent.spec.ts` - Sign up (Parent) with all fields <!-- id: 18.2.1 -->
-- [ ] **[Test]** `auth/password-validation.spec.ts` - Weak password rejected <!-- id: 18.2.2 -->
-- [ ] **[Test]** `auth/coc-required.spec.ts` - Code of Conduct required <!-- id: 18.2.3 -->
-- [ ] **[Test]** `auth/login-parent.spec.ts` - Sign in (Parent) → /parent <!-- id: 18.2.4 -->
-- [ ] **[Test]** `auth/login-teacher.spec.ts` - Sign in (Teacher) → /teacher <!-- id: 18.2.5 -->
-- [ ] **[Test]** `auth/login-failure.spec.ts` - Wrong password rejected <!-- id: 18.2.6 -->
-- [ ] **[Test]** `auth/logout.spec.ts` - Sign out → /login <!-- id: 18.2.7 -->
-- [ ] **[Test]** `auth/session-persistence.spec.ts` - Session persists on refresh <!-- id: 18.2.8 -->
-- [ ] **[Test]** `auth/password-reset.spec.ts` - Password reset request <!-- id: 18.2.9 -->
-- [ ] **[Test]** `auth/password-update.spec.ts` - Password update via reset link <!-- id: 18.2.10 -->
+- [x] **[Test]** `auth/signup-parent.spec.ts` - Sign up (Parent) with all fields <!-- id: 18.2.1 -->
+- [x] **[Test]** `auth/password-validation.spec.ts` - Weak password rejected <!-- id: 18.2.2 -->
+- [x] **[Test]** `auth/coc-required.spec.ts` - Code of Conduct required <!-- id: 18.2.3 -->
+- [x] **[Test]** `auth/login-parent.spec.ts` - Sign in (Parent) → /parent <!-- id: 18.2.4 -->
+- [x] **[Test]** `auth/login-teacher.spec.ts` - Sign in (Teacher) → /teacher <!-- id: 18.2.5 -->
+- [x] **[Test]** `auth/login-failure.spec.ts` - Wrong password rejected <!-- id: 18.2.6 -->
+- [x] **[Test]** `auth/logout.spec.ts` - Sign out → /login <!-- id: 18.2.7 -->
+- [x] **[Test]** `auth/session-persistence.spec.ts` - Session persists on refresh <!-- id: 18.2.8 -->
+- [x] **[Test]** `auth/password-reset.spec.ts` - Password reset request <!-- id: 18.2.9 -->
+- [x] **[Test]** `auth/password-update.spec.ts` - Password update via reset link <!-- id: 18.2.10 -->
 
 ---
 
