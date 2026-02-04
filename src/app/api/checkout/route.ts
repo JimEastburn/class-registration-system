@@ -32,7 +32,7 @@ export async function POST(request: Request) {
         class:classes(
           id,
           name,
-          fee
+          price
         )
       `)
             .eq('id', enrollmentId)
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Enrollment is not in pending status' }, { status: 400 });
         }
 
-        const classData = enrollment.class as unknown as { id: string; name: string; fee: number };
+        const classData = enrollment.class as unknown as { id: string; name: string; price: number };
 
         // Create Stripe Checkout Session
         const session = await stripe.checkout.sessions.create({
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
                             name: classData.name,
                             description: `Enrollment for ${student.first_name} ${student.last_name}`,
                         },
-                        unit_amount: formatAmountForStripe(classData.fee),
+                        unit_amount: formatAmountForStripe(classData.price),
                     },
                     quantity: 1,
                 },
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
         // Create pending payment record
         await supabase.from('payments').insert({
             enrollment_id: enrollmentId,
-            amount: classData.fee,
+            amount: classData.price,
             currency: 'USD',
             status: 'pending',
             provider: 'stripe',

@@ -2,24 +2,29 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 interface PayButtonProps {
     enrollmentId: string;
-    className: string;
+    className?: string; // Optional
     amount: number;
+    compact?: boolean;
 }
 
 export default function PayButton({
     enrollmentId,
     className,
     amount,
+    compact = false,
 }: PayButtonProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handlePayment = async () => {
+    const handlePayment = async (e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
         setIsLoading(true);
         setError(null);
 
@@ -43,14 +48,31 @@ export default function PayButton({
                 throw new Error('No checkout URL returned');
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Something went wrong');
+            const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
+            setError(errorMessage);
+            if (compact) {
+                toast.error(errorMessage);
+            }
             setIsLoading(false);
         }
     };
 
+    if (compact) {
+        return (
+            <Button
+                onClick={handlePayment}
+                disabled={isLoading}
+                size="sm"
+                className={cn("bg-[#4c7c92] hover:bg-[#3a6174] text-white h-7 px-3 text-xs", className)}
+            >
+                {isLoading ? '...' : 'Pay'}
+            </Button>
+        );
+    }
+
     return (
-        <div className="space-y-3">
-            {error && (
+        <div className={cn("space-y-3", className)}>
+            {error && !compact && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                     {error}
                 </div>
@@ -74,18 +96,17 @@ export function PaymentAlert() {
     const searchParams = useSearchParams();
     const success = searchParams.get('success');
     const canceled = searchParams.get('canceled');
-    const [show, setShow] = useState(false);
+    const [show] = useState(!!(success || canceled));
 
     useEffect(() => {
-        if (success || canceled) {
-            setShow(true);
+        if (show) {
             // Remove query params after showing alert
             const timer = setTimeout(() => {
                 window.history.replaceState({}, '', '/parent/enrollments');
             }, 5000);
             return () => clearTimeout(timer);
         }
-    }, [success, canceled]);
+    }, [show]);
 
     if (!show) return null;
 

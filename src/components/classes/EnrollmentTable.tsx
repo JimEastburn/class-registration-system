@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { EnrollmentStatusBadge } from './EnrollmentStatusBadge';
+import PayButton from '@/components/payments/PayButton';
 import type { Enrollment } from '@/types';
 
 interface EnrollmentWithDetails extends Enrollment {
@@ -78,10 +79,19 @@ export function EnrollmentTable({
                             </TableCell>
                         )}
                         <TableCell>
-                            <EnrollmentStatusBadge
-                                status={enrollment.status}
-                                waitlistPosition={enrollment.waitlist_position}
-                            />
+                            <div className="flex items-center gap-2">
+                                <EnrollmentStatusBadge
+                                    status={enrollment.status}
+                                    waitlistPosition={enrollment.waitlist_position}
+                                />
+                                {enrollment.status === 'pending' && enrollment.class && (
+                                     <PayButton
+                                        enrollmentId={enrollment.id}
+                                        amount={enrollment.class.price}
+                                        compact={true}
+                                    />
+                                )}
+                            </div>
                         </TableCell>
                         <TableCell>
                             ${enrollment.class?.price?.toFixed(2) || '0.00'}
