@@ -5,7 +5,17 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user || user.user_metadata?.role !== 'admin') {
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+    if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -40,12 +50,14 @@ export async function GET(request: Request) {
 
             data = (classes || []).map(c => {
                 const teacher = c.teacher as { first_name: string; last_name: string };
+                const schedule = c.day && c.block ? `${c.day} ${c.block}` : '';
                 return {
                     ...c,
                     teacher_name: `${teacher.first_name} ${teacher.last_name}`,
+                    schedule,
                 };
             });
-            headers = ['ID', 'Name', 'Teacher', 'Status', 'Schedule', 'Location', 'Fee', 'Enrollment', 'Max Students', 'Start Date', 'End Date', 'Created At'];
+            headers = ['ID', 'Name', 'Teacher', 'Status', 'Schedule', 'Location', 'Fee', 'Capacity', 'Start Date', 'End Date', 'Created At'];
             filename = 'classes.csv';
             break;
         }
@@ -56,18 +68,18 @@ export async function GET(request: Request) {
                 .select(`
                     *,
                     student:family_members(first_name, last_name),
-                    class:classes(name, fee)
+                    class:classes(name, price)
                 `)
                 .order('enrolled_at', { ascending: false });
 
             data = (enrollments || []).map(e => {
                 const student = e.student as { first_name: string; last_name: string };
-                const classData = e.class as { name: string; fee: number };
+                const classData = e.class as { name: string; price: number };
                 return {
                     ...e,
                     student_name: `${student.first_name} ${student.last_name}`,
                     class_name: classData.name,
-                    class_fee: classData.fee,
+                    class_fee: classData.price,
                 };
             });
             headers = ['ID', 'Student', 'Class', 'Status', 'Fee', 'Enrolled At'];
@@ -145,14 +157,13 @@ function convertToCSV(data: Record<string, unknown>[], type: string): string {
                 String(d.status || ''),
                 String(d.schedule || ''),
                 String(d.location || ''),
-                `$${Number(d.fee || 0).toFixed(2)}`,
-                String(d.current_enrollment || 0),
-                String(d.max_students || 0),
+                `$${Number(d.price || 0).toFixed(2)}`,
+                String(d.capacity || 0),
                 formatDate(d.start_date as string),
                 formatDate(d.end_date as string),
                 formatDate(d.created_at as string),
             ]);
-            rows.unshift(['ID', 'Name', 'Teacher', 'Status', 'Schedule', 'Location', 'Fee', 'Enrollment', 'Max Students', 'Start Date', 'End Date', 'Created At']);
+            rows.unshift(['ID', 'Name', 'Teacher', 'Status', 'Schedule', 'Location', 'Fee', 'Capacity', 'Start Date', 'End Date', 'Created At']);
             break;
 
         case 'enrollments':

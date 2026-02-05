@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { Payment } from '@/types';
 
 export interface PaymentWithDetails extends Payment {
@@ -178,5 +178,52 @@ export async function updatePaymentStatus(
     } catch (err) {
         console.error('Unexpected error in updatePaymentStatus:', err);
         return { success: false, error: 'An unexpected error occurred' };
+    }
+}
+
+export async function cleanupCancelledCheckout(
+    enrollmentId: string,
+    sessionId: string
+): Promise<{ success: boolean; error: string | null }> {
+    try {
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return { success: false, error: 'Not authenticated' };
+        }
+
+        const { data: enrollment } = await supabase
+            .from('enrollments')
+            .select('id, student:family_members(parent_id)')
+            .eq('id', enrollmentId)
+            .single();
+
+        if (!enrollment) {
+            return { success: false, error: 'Enrollment not found' };
+        }
+
+        const student = enrollment.student as unknown as { parent_id: string };
+        if (student.parent_id !== user.id) {
+            return { success: false, error: 'Not authorized' };
+        }
+
+        const adminClient = await createAdminClient();
+
+        await adminClient
+            .from('payments')
+            .delete()
+            .eq('transaction_id', sessionId)
+            .eq('enrollment_id', enrollmentId);
+
+        await adminClient
+            .from('enrollments')
+            .update({ status: 'pending' })
+            .eq('id', enrollmentId);
+
+        return { success: true, error: null };
+    } catch (err) {
+        console.error('cleanupCancelledCheckout error:', err);
+        return { success: false, error: 'Failed to clean up cancelled checkout' };
     }
 }

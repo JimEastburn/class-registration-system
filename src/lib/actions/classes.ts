@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { ClassStatus, ClassWithTeacher, ScheduleConfig } from '@/types';
+import { checkScheduleConflict, validateScheduleConfig } from '@/lib/logic/scheduling';
 
 interface ClassFilters {
     status?: ClassStatus;
@@ -229,10 +230,40 @@ export async function createClass(
       return { success: false, error: 'Not authorized to create classes' };
     }
 
+    // Validate schedule config and teacher conflicts
+    if (input.schedule_config) {
+      const validation = validateScheduleConfig(input.schedule_config);
+      if (!validation.valid) {
+        return { success: false, error: validation.error || 'Invalid schedule configuration' };
+      }
+    }
+
     // Insert the class with draft status
     const teacherIdToUse = (input.teacherId && (profile.role === 'admin' || profile.role === 'super_admin')) 
         ? input.teacherId 
         : user.id;
+
+    if (input.schedule_config && teacherIdToUse) {
+      const { data: teacherClasses } = await supabase
+        .from('classes')
+        .select('*')
+        .eq('teacher_id', teacherIdToUse)
+        .in('status', ['published', 'draft']);
+
+      if (teacherClasses) {
+        const conflict = checkScheduleConflict(
+          input.schedule_config,
+          teacherIdToUse,
+          teacherClasses
+        );
+        if (conflict) {
+          return {
+            success: false,
+            error: `Teacher Conflict: ${conflict.name} at ${conflict.schedule_config?.day} ${conflict.schedule_config?.block}`,
+          };
+        }
+      }
+    }
 
     const { data: newClass, error } = await supabase
       .from('classes')
@@ -321,6 +352,10 @@ export async function updateClass(
     if (input.capacity !== undefined) updateData.capacity = input.capacity;
     
     if (input.schedule_config !== undefined) {
+        const validation = validateScheduleConfig(input.schedule_config);
+        if (!validation.valid) {
+          return { success: false, error: validation.error || 'Invalid schedule configuration' };
+        }
         updateData.schedule_config = input.schedule_config;
         updateData.day = input.schedule_config.day;
         updateData.block = input.schedule_config.block;
@@ -333,6 +368,35 @@ export async function updateClass(
     if (input.ageMax !== undefined) updateData.age_max = input.ageMax;
     if (input.teacherId !== undefined && isAdmin) updateData.teacher_id = input.teacherId;
     if (input.status !== undefined && isAdmin) updateData.status = input.status; // Allow admin to force status
+
+    // Teacher conflict check (if schedule or teacher changed)
+    const proposedTeacherId =
+      (input.teacherId !== undefined && isAdmin ? input.teacherId : existingClass.teacher_id) || undefined;
+    const proposedSchedule =
+      input.schedule_config ?? (existingClass.schedule_config as ScheduleConfig | null) ?? undefined;
+
+    if (proposedTeacherId && proposedSchedule) {
+      const { data: teacherClasses } = await supabase
+        .from('classes')
+        .select('*')
+        .eq('teacher_id', proposedTeacherId)
+        .neq('id', classId)
+        .in('status', ['published', 'draft']);
+
+      if (teacherClasses) {
+        const conflict = checkScheduleConflict(
+          proposedSchedule,
+          proposedTeacherId,
+          teacherClasses
+        );
+        if (conflict) {
+          return {
+            success: false,
+            error: `Teacher Conflict: ${conflict.name} at ${conflict.schedule_config?.day} ${conflict.schedule_config?.block}`,
+          };
+        }
+      }
+    }
 
     const { error } = await supabase
       .from('classes')

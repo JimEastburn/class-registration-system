@@ -1,19 +1,23 @@
 import type { Metadata } from "next";
-import { Inter, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Footer } from "@/components/layout/Footer";
 import { GlobalLoadingProvider } from "@/components/providers/GlobalLoadingProvider";
 import { GlobalSpinner } from "@/components/ui/global-spinner";
 import { Toaster } from "@/components/ui/sonner";
 
-const inter = Inter({
+const inter = localFont({
+  src: "../../public/fonts/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7W0Q5n-wU.woff2",
   variable: "--font-inter",
-  subsets: ["latin"],
+  weight: "100 900",
+  style: "normal",
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
+  src: "../../public/fonts/or3nQ6H-1_WfwkMZI_qYFrMdmhHkjkotbA.woff2",
   variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: "100 900",
+  style: "normal",
 });
 
 export const metadata: Metadata = {

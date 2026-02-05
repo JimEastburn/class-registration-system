@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { ActionResult, FamilyMember } from '@/types';
 
@@ -76,7 +76,9 @@ export async function linkStudentByEmail(
   }
 
   // Search for a student profile with the given email
-  const { data: studentProfile, error: searchError } = await supabase
+  const adminClient = await createAdminClient();
+
+  const { data: studentProfile, error: searchError } = await adminClient
     .from('profiles')
     .select('id, email, first_name, last_name, role')
     .eq('email', studentEmail.toLowerCase().trim())
@@ -92,7 +94,7 @@ export async function linkStudentByEmail(
   }
 
   // Check if the student is already linked to another family member
-  const { data: existingLink, error: linkCheckError } = await supabase
+  const { data: existingLink, error: linkCheckError } = await adminClient
     .from('family_members')
     .select('id, parent_id')
     .eq('student_user_id', studentProfile.id)
@@ -114,7 +116,7 @@ export async function linkStudentByEmail(
   }
 
   // Link the student to the family member
-  const { error: updateError } = await supabase
+  const { error: updateError } = await adminClient
     .from('family_members')
     .update({ student_user_id: studentProfile.id })
     .eq('id', familyMemberId);
@@ -184,7 +186,9 @@ export async function createPendingLink(
   }
 
   // Check if a user with this email already exists
-  const { data: existingUser } = await supabase
+  const adminClient = await createAdminClient();
+
+  const { data: existingUser } = await adminClient
     .from('profiles')
     .select('id')
     .eq('email', studentEmail.toLowerCase().trim())
@@ -201,7 +205,7 @@ export async function createPendingLink(
   // Using a pattern: pending_links -> { [email]: { familyMemberId, parentId, createdAt } }
   const pendingKey = `pending_link:${studentEmail.toLowerCase().trim()}`;
   
-  await supabase.from('system_settings').upsert(
+  await adminClient.from('system_settings').upsert(
     {
       key: pendingKey,
       value: {

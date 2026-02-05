@@ -23,7 +23,7 @@ const formSchema = z.object({
   capacity: z.coerce.number().min(1, 'Capacity must be at least 1'),
   price: z.coerce.number().min(0, 'Fee must be 0 or greater'),
   location: z.string().optional(),
-  teacher_id: z.string().optional(),
+  teacher_id: z.string().min(1, 'Assigned Teacher is required'),
   day: z.string().min(1, 'Day is required'),
   block: z.string().min(1, 'Block is required'),
   startDate: z.string().optional(),
@@ -63,7 +63,7 @@ export function SchedulerClassForm({
     capacity: initialData?.capacity || 20,
     price: initialData?.price != null ? Number(initialData.price) / 100 : 0,
     location: initialData?.location || '',
-    teacher_id: initialData?.teacher_id || 'unassigned',
+    teacher_id: initialData?.teacher_id || '',
     status: (initialData?.status as FormValues['status']) || 'draft',
     day: initialData?.schedule_config?.day || '',
     block: initialData?.schedule_config?.block || '',
@@ -107,7 +107,7 @@ export function SchedulerClassForm({
             description: values.description,
             capacity: values.capacity,
             location: values.location,
-            teacher_id: values.teacher_id === 'unassigned' ? null : values.teacher_id,
+            teacher_id: values.teacher_id,
             price: Math.round(values.price * 100),
             schedule_config: {
                 day: values.day,
@@ -192,14 +192,13 @@ export function SchedulerClassForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Assigned Teacher</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value || 'unassigned'}>
+              <Select onValueChange={field.onChange} defaultValue={field.value || ''}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select teacher" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
                   {teacherSelectItems.map((teacher) => (
                     <SelectItem key={teacher.id} value={teacher.id}>
                       {teacher.label}

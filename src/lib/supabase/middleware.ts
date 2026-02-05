@@ -7,9 +7,9 @@ import type { UserRole } from '@/types';
  * Maps route prefixes to allowed roles
  */
 const ROUTE_ROLE_MAP: Record<string, UserRole[]> = {
-  '/parent': ['parent', 'teacher', 'admin', 'super_admin'],
-  '/teacher': ['teacher', 'admin', 'super_admin'],
-  '/student': ['student', 'parent', 'admin', 'super_admin'],
+  '/parent': ['parent', 'teacher', 'admin', 'class_scheduler', 'super_admin'],
+  '/teacher': ['teacher', 'super_admin'],
+  '/student': ['student'],
   '/admin': ['admin', 'super_admin'],
   '/class-scheduler': ['class_scheduler', 'super_admin'],
 };
@@ -136,7 +136,7 @@ export async function updateSession(request: NextRequest) {
     // Fetch user profile to get role
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, is_parent')
       .eq('id', user.id)
       .single();
 
@@ -148,10 +148,18 @@ export async function updateSession(request: NextRequest) {
     }
 
     const userRole = profile.role as UserRole;
+    const isParent = Boolean(profile.is_parent);
 
     // Check if user has access to this route
     if (!hasRouteAccess(routePrefix, userRole)) {
       // User doesn't have permission, redirect to their default dashboard
+      const url = request.nextUrl.clone();
+      url.pathname = getDefaultPathForRole(userRole);
+      return NextResponse.redirect(url);
+    }
+
+    // Parent portal access requires is_parent unless they are super_admin
+    if (routePrefix === '/parent' && userRole !== 'parent' && userRole !== 'super_admin' && !isParent) {
       const url = request.nextUrl.clone();
       url.pathname = getDefaultPathForRole(userRole);
       return NextResponse.redirect(url);

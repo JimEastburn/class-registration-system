@@ -181,17 +181,17 @@ export async function POST(request: Request) {
         case 'checkout.session.expired': {
             const session = event.data.object as Stripe.Checkout.Session;
 
-            // Update payment status to failed
+            // Remove the pending payment record (cancelled checkout)
             await supabaseAdmin
                 .from('payments')
-                .update({ status: 'failed' })
+                .delete()
                 .eq('transaction_id', session.id);
-            
-            // Also cancel the pending enrollment
+
+            // Keep enrollment as pending so parent can retry payment
             if (session.metadata?.enrollmentId) {
                  await supabaseAdmin
                     .from('enrollments')
-                    .update({ status: 'cancelled' })
+                    .update({ status: 'pending' })
                     .eq('id', session.metadata.enrollmentId);
             }
 

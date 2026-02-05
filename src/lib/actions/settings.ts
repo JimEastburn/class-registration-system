@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { SystemSetting, ActionResult } from '@/types';
 import { revalidatePath } from 'next/cache';
 
@@ -11,8 +11,24 @@ import { revalidatePath } from 'next/cache';
 export async function getSetting(key: string): Promise<ActionResult<SystemSetting | null>> {
   try {
     const supabase = await createClient();
-    
-    const { data, error } = await supabase
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const adminClient = await createAdminClient();
+    const { data, error } = await adminClient
       .from('system_settings')
       .select('*')
       .eq('key', key)
@@ -56,12 +72,13 @@ export async function updateSetting(key: string, value: Record<string, unknown>)
       .eq('id', user.id)
       .single();
 
-    if (!profile || profile.role !== 'admin') {
+    if (!profile || !['admin', 'super_admin'].includes(profile.role)) {
       return { success: false, error: 'Unauthorized' };
     }
 
     // 3. Upsert Setting
-    const { error } = await supabase
+    const adminClient = await createAdminClient();
+    const { error } = await adminClient
       .from('system_settings')
       .upsert({ 
         key, 

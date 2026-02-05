@@ -33,7 +33,7 @@ const classFormSchema = z.object({
   day: z.string().min(1, 'Day is required'),
   block: z.string().min(1, 'Block is required'),
   status: z.enum(['draft', 'published', 'completed', 'cancelled']),
-  teacher_id: z.string().uuid().optional().or(z.literal('')),
+  teacher_id: z.string().uuid({ message: 'Assigned teacher is required' }),
 });
 
 type ClassFormValues = z.infer<typeof classFormSchema>;
@@ -73,7 +73,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
               block: data.block,
               recurring: true
             },
-            teacherId: data.teacher_id === 'unassigned' ? undefined : data.teacher_id,
+            teacherId: data.teacher_id,
             status: data.status,
             // Add other fields mapping if needed
         };
@@ -168,7 +168,6 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
                 </FormControl>
                 <SelectContent>
 
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {teachers.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
                             {t.first_name} {t.last_name}

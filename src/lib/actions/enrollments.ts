@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logAuditAction } from '@/lib/actions/audit';
 import type { Enrollment, EnrollmentStatus, FamilyMember, Profile } from '@/types';
@@ -184,6 +184,35 @@ export async function enrollStudent(
             return { data: null, status: null, error: 'Not authenticated' };
         }
 
+        // Enforce registration settings
+        const adminClient = await createAdminClient();
+        const { data: registrationSetting } = await adminClient
+            .from('system_settings')
+            .select('value')
+            .eq('key', 'registration_settings')
+            .maybeSingle();
+
+        if (registrationSetting?.value) {
+            const settings = registrationSetting.value as {
+                registrationOpen?: boolean;
+                semesterStart?: string;
+                semesterEnd?: string;
+            };
+
+            if (settings.registrationOpen === false) {
+                return { data: null, status: null, error: 'Registration is currently closed' };
+            }
+
+            if (settings.semesterStart && settings.semesterEnd) {
+                const now = new Date();
+                const start = new Date(settings.semesterStart);
+                const end = new Date(settings.semesterEnd);
+                if (now < start || now > end) {
+                    return { data: null, status: null, error: 'Registration is outside the current semester dates' };
+                }
+            }
+        }
+
         // Verify the family member belongs to this parent
         const { data: familyMember, error: ownerError } = await supabase
             .from('family_members')
@@ -358,7 +387,7 @@ export async function cancelEnrollment(
             .eq('id', user.id)
             .single();
 
-        const isAdmin = ['admin', 'super_admin', 'class_scheduler'].includes(profile?.role || '');
+        const isAdmin = ['admin', 'super_admin'].includes(profile?.role || '');
 
         if (ownerId !== user.id && !isAdmin) {
             return { success: false, error: 'Access denied' };
@@ -513,7 +542,7 @@ export async function getClassRoster(
             const { data: blocks } = await supabase
                 .from('class_blocks')
                 .select('student_id')
-                .eq('teacher_id', user.id)
+                .eq('teacher_id', classData.teacher_id)
                 .in('student_id', studentIds);
             
             if (blocks) {
@@ -555,7 +584,7 @@ export async function adminForceEnroll(
             .eq('id', user.id)
             .single();
 
-        const isAdmin = ['admin', 'super_admin', 'class_scheduler'].includes(profile?.role || '');
+        const isAdmin = ['admin', 'super_admin'].includes(profile?.role || '');
 
         if (!isAdmin) {
             return { data: null, error: 'Access denied: Admin privileges required' };
@@ -850,7 +879,7 @@ export async function getAllEnrollments(
             .eq('id', user.id)
             .single();
 
-        const isAdmin = ['admin', 'super_admin', 'class_scheduler'].includes(profile?.role || '');
+        const isAdmin = ['admin', 'super_admin'].includes(profile?.role || '');
 
         if (!isAdmin) {
             return { data: null, count: 0, error: 'Access denied' };

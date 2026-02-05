@@ -75,20 +75,20 @@ const navItems: NavItem[] = [
         href: '/teacher',
         label: 'Teacher Dashboard',
         icon: GraduationCap,
-        roles: ['teacher', 'admin', 'super_admin'],
+        roles: ['teacher', 'super_admin'],
         exact: true,
     },
     {
         href: '/teacher/classes',
         label: 'My Classes',
         icon: BookOpen,
-        roles: ['teacher', 'admin', 'super_admin'],
+        roles: ['teacher', 'super_admin'],
     },
     {
         href: '/teacher/profile',
         label: 'Profile',
         icon: User,
-        roles: ['teacher', 'admin', 'super_admin'],
+        roles: ['teacher', 'super_admin'],
     },
 
     // Student Portal Items

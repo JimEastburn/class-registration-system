@@ -2,8 +2,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { XCircle } from "lucide-react";
 import Link from "next/link";
+import { cleanupCancelledCheckout } from "@/lib/actions/payments";
 
-export default function CheckoutCancelPage() {
+interface CancelPageProps {
+    searchParams: Promise<{ session_id?: string; enrollment_id?: string }>;
+}
+
+export default async function CheckoutCancelPage({ searchParams }: CancelPageProps) {
+    const params = await searchParams;
+    if (params.session_id && params.enrollment_id) {
+        await cleanupCancelledCheckout(params.enrollment_id, params.session_id);
+    }
+
     return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] p-4">
             <Card className="w-full max-w-md text-center">

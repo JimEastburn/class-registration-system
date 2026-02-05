@@ -146,6 +146,12 @@ export async function createFamilyMember(
             return { data: null, error: error.message };
         }
 
+        // Mark profile as a parent for view switching/access
+        await supabase
+            .from('profiles')
+            .update({ is_parent: true })
+            .eq('id', user.id);
+
         // Log audit entry
         await logAuditEntry(user.id, 'family_member.created', data.id, {
           first_name: input.firstName,

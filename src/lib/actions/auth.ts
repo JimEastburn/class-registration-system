@@ -72,6 +72,39 @@ export async function signUp(
     // Don't fail the signup, the trigger should have handled it
   }
 
+  // Auto-link pending student invites
+  if (role === 'student' && authData.user.email) {
+    const pendingKey = `pending_link:${authData.user.email.toLowerCase().trim()}`;
+
+    const { data: pendingLink } = await adminClient
+      .from('system_settings')
+      .select('key, value')
+      .eq('key', pendingKey)
+      .maybeSingle();
+
+    if (pendingLink?.value && typeof pendingLink.value === 'object') {
+      const pendingValue = pendingLink.value as {
+        family_member_id?: string;
+        parent_id?: string;
+      };
+
+      if (pendingValue.family_member_id) {
+        // Link the student to the family member if still unlinked
+        await adminClient
+          .from('family_members')
+          .update({ student_user_id: authData.user.id })
+          .eq('id', pendingValue.family_member_id)
+          .is('student_user_id', null);
+      }
+
+      // Remove the pending link record
+      await adminClient
+        .from('system_settings')
+        .delete()
+        .eq('key', pendingKey);
+    }
+  }
+
   return { success: true, data: { userId: authData.user.id } };
 }
 

@@ -77,7 +77,7 @@ export async function POST(request: Request) {
             ],
             mode: 'payment',
             success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&enrollment_id=${enrollmentId}`,
-            cancel_url: `${origin}/checkout/cancel`,
+            cancel_url: `${origin}/checkout/cancel?session_id={CHECKOUT_SESSION_ID}&enrollment_id=${enrollmentId}`,
             metadata: {
                 enrollmentId: enrollmentId,
                 userId: user.id,
