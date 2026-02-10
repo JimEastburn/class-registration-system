@@ -15,21 +15,21 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="min-h-screen relative bg-background text-foreground">
+    <div className="min-h-screen relative bg-slate-900 text-foreground">
       {/* Background Image & Overlay */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-background/80 z-10" />
         <Image
           src="/Together_FADE.avif"
           alt="Class Registration Background"
           fill
-          className="object-cover object-center"
+          className="object-cover object-center opacity-30"
           priority
         />
+        <div className="absolute inset-0 bg-slate-900/60" />
       </div>
 
       {/* Content Wrapper */}
-      <div className="relative z-20 min-h-screen flex flex-col pb-24 md:pb-0">
+      <div className="relative z-10 min-h-screen flex flex-col pb-24 md:pb-0">
 
         {/* Navigation */}
         <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
@@ -57,8 +57,10 @@ export default async function HomePage() {
         {/* Hero Section */}
         <main className="container mx-auto px-4 py-20 flex-grow flex flex-col justify-center">
           <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-foreground mb-8 leading-tight tracking-tight">
-              Class Registration
+            <h1 className="text-5xl md:text-6xl lg:text-8xl font-bold text-foreground mb-8 leading-tight tracking-tight">
+              <span className="text-white">
+                Class Registration
+              </span>
               <span className="block text-primary">
                 Austin Arts + Academic Collaborative
               </span>
