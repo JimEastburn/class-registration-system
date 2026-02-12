@@ -25,7 +25,7 @@ import { centsToDollars, formatCurrency } from '@/lib/utils';
 interface EnrollmentWithDetails extends Enrollment {
     class: {
         id: string;
-        title: string;
+        name: string;
         price: number;
     } | null;
     student?: {
@@ -70,7 +70,7 @@ export function EnrollmentTable({
                 {enrollments.map((enrollment) => (
                     <TableRow key={enrollment.id} data-testid={`enrollment-row-${enrollment.id}`}>
                         <TableCell className="font-medium">
-                            {enrollment.class?.title || 'Unknown Class'}
+                            {enrollment.class?.name || 'Unknown Class'}
                         </TableCell>
                         {showStudent && (
                             <TableCell>

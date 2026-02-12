@@ -35,7 +35,7 @@ export async function NextClassCard({ studentId }: { studentId: string }) {
     .select(`
         *,
         class:classes (
-            title,
+            name,
             location
         )
     `)
@@ -64,7 +64,7 @@ export async function NextClassCard({ studentId }: { studentId: string }) {
     end_time: string;
     location?: string;
     class?: {
-      title: string;
+      name: string;
       location?: string;
     };
   }
@@ -81,7 +81,7 @@ export async function NextClassCard({ studentId }: { studentId: string }) {
       <CardContent>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-                <h3 className="text-xl font-bold">{event.class?.title || 'Untitled Class'}</h3>
+                <h3 className="text-xl font-bold">{event.class?.name || 'Untitled Class'}</h3>
                 <div className="flex items-center gap-2 text-muted-foreground mt-1 text-sm">
                     <Calendar className="h-4 w-4" />
                     <span>{format(startTime, 'EEEE, MMMM d')}</span>

@@ -65,7 +65,7 @@ export async function getStudentSchedule(
         .select(`
             *,
             class:classes (
-                title,
+                name,
                 location
             )
         `)
@@ -91,7 +91,7 @@ export async function getStudentSchedule(
     const scheduleEvents: ScheduleEvent[] = events.map((event) => ({
         id: event.id,
         class_id: event.class_id,
-        title: event.class?.title || 'Untitled Class',
+        title: event.class?.name || 'Untitled Class',
         date: event.date,
         block: event.block,
         location: event.location || event.class?.location,

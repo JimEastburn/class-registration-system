@@ -28,7 +28,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   const [familyMembers, enrollments, teachingClasses] = await Promise.all([
     supabase.from('family_members').select('*').eq('parent_id', id),
     // For enrollments, check if they are a student or family member student
-    supabase.from('enrollments').select('*, class:classes(title)').eq('student_id', id), // Direct student
+    supabase.from('enrollments').select('*, class:classes(name)').eq('student_id', id), // Direct student
     supabase.from('classes').select('*').eq('teacher_id', id)
   ]);
 
@@ -103,7 +103,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
                         <ul className="space-y-2">
                             {teachingClasses.data?.map((c) => (
                                 <li key={c.id} className="border p-2 rounded">
-                                    <div className="font-medium">{c.title}</div>
+                                    <div className="font-medium">{c.name}</div>
                                     <div className="text-xs text-muted-foreground">{c.day_of_week} {c.start_time}</div>
                                 </li>
                             ))}
@@ -126,7 +126,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
                             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                             {enrollments.data?.map((e: any) => (
                                 <li key={e.id} className="flex justify-between items-center border p-2 rounded">
-                                    <span>{e.class?.title || 'Unknown Class'}</span>
+                                    <span>{e.class?.name || 'Unknown Class'}</span>
                                     <Badge variant={e.status === 'confirmed' ? 'default' : 'secondary'}>{e.status}</Badge>
                                 </li>
                             ))}

@@ -71,7 +71,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
                 </Button>
            </Link>
            <div>
-                <h1 className="text-3xl font-bold tracking-tight">{classDetails.title}</h1>
+                <h1 className="text-3xl font-bold tracking-tight">{classDetails.name}</h1>
                 <p className="text-muted-foreground">{classDetails.program?.name} • {classDetails.semester?.name}</p>
            </div>
        </div>
