@@ -1,8 +1,6 @@
-import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { GET } from '../route';
 import { createClient } from '@/lib/supabase/server';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@/types/supabase';
 
 // Mock the dependencies
 vi.mock('@/lib/supabase/server', () => ({
@@ -10,34 +8,79 @@ vi.mock('@/lib/supabase/server', () => ({
 }));
 
 describe('Invoice API Route', () => {
-    let mockSupabase: Mocked<SupabaseClient<Database>>;
+    interface FakeUser {
+        id: string;
+        user_metadata?: { role?: string };
+    }
+    type FakeRow = Record<string, unknown>;
+
+    class FakeQueryBuilder {
+        private filters: Array<(row: FakeRow) => boolean> = [];
+        private shouldSingle = false;
+
+        constructor(private rows: FakeRow[]) {}
+
+        select() {
+            return this;
+        }
+
+        eq(column: string, value: unknown) {
+            this.filters.push((row) => row[column] === value);
+            return this;
+        }
+
+        in(column: string, values: unknown[]) {
+            this.filters.push((row) => values.includes(row[column]));
+            return this;
+        }
+
+        single() {
+            this.shouldSingle = true;
+            return this;
+        }
+
+        private execute() {
+            let result = [...this.rows];
+            for (const filter of this.filters) {
+                result = result.filter(filter);
+            }
+
+            if (this.shouldSingle) {
+                return { data: result[0] ?? null, error: null };
+            }
+
+            return { data: result, error: null };
+        }
+
+        then<TResult1 = { data: FakeRow[] | null; error: null }>(
+            onfulfilled?: ((value: { data: FakeRow[] | null; error: null }) => TResult1 | PromiseLike<TResult1>) | null
+        ): Promise<TResult1> {
+            return Promise.resolve(this.execute() as { data: FakeRow[] | null; error: null }).then(onfulfilled || undefined);
+        }
+    }
+
+    class FakeSupabase {
+        constructor(
+            private user: FakeUser | null,
+            private tables: Record<string, FakeRow[]>
+        ) {}
+
+        auth = {
+            getUser: async () => ({ data: { user: this.user }, error: null }),
+        };
+
+        from(table: string) {
+            return new FakeQueryBuilder(this.tables[table] || []);
+        }
+    }
 
     beforeEach(() => {
         vi.clearAllMocks();
-
-        const mockSingle = vi.fn();
-        const mockSelect = vi.fn().mockReturnThis();
-
-        const fromObj = {
-            single: mockSingle,
-            select: mockSelect,
-            eq: vi.fn().mockReturnThis(),
-            in: vi.fn().mockReturnThis(),
-        };
-
-        // Setup mock Supabase client
-        mockSupabase = {
-            auth: {
-                getUser: vi.fn(),
-            },
-            from: vi.fn(() => fromObj),
-        } as unknown as Mocked<SupabaseClient<Database>>;
-
-        (createClient as Mock).mockResolvedValue(mockSupabase);
+        (createClient as Mock).mockResolvedValue(new FakeSupabase(null, {}));
     });
 
     it('should return 401 if not authenticated', async () => {
-        (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: null }, error: null });
+        (createClient as Mock).mockResolvedValue(new FakeSupabase(null, {}));
 
         const request = new Request('http://localhost:3000/api/invoice?id=pay123');
 
@@ -49,10 +92,9 @@ describe('Invoice API Route', () => {
     });
 
     it('should return 400 if id is missing', async () => {
-        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
-            data: { user: { id: 'parent123' } },
-            error: null
-        });
+        (createClient as Mock).mockResolvedValue(
+            new FakeSupabase({ id: 'parent123' }, {})
+        );
 
         const request = new Request('http://localhost:3000/api/invoice');
 
@@ -64,37 +106,29 @@ describe('Invoice API Route', () => {
     });
 
     it('should return 403 if user not authorized to view invoice', async () => {
-        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
-            data: { user: { id: 'parent123', user_metadata: { role: 'parent' } } },
-            error: null
-        });
-
-        const mockPayment = {
-            id: 'pay123',
-            enrollment_id: 'enroll123',
-            amount: 100,
-            status: 'completed',
-            created_at: '2024-01-01',
-            enrollment: {
-                student: { first_name: 'Jane', last_name: 'Smith' },
-                class: { name: 'Art 101', fee: 100 },
-                parent: { first_name: 'John', last_name: 'Smith', email: 'john@example.com' }
-            }
-        };
-
-        // Payment check
-        mockSupabase.from.mockReturnValueOnce({
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: mockPayment, error: null })
-        });
-
-        // Family members check - return empty
-        mockSupabase.from.mockReturnValueOnce({
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: [], error: null })
-        });
+        (createClient as Mock).mockResolvedValue(
+            new FakeSupabase(
+                { id: 'parent123', user_metadata: { role: 'parent' } },
+                {
+                    payments: [
+                        {
+                            id: 'pay123',
+                            enrollment_id: 'enroll123',
+                            amount: 100,
+                            status: 'completed',
+                            created_at: '2024-01-01',
+                            enrollment: {
+                                student: { first_name: 'Jane', last_name: 'Smith' },
+                                class: { name: 'Art 101', fee: 100 },
+                                parent: { first_name: 'John', last_name: 'Smith', email: 'john@example.com' },
+                            },
+                        },
+                    ],
+                    family_members: [],
+                    enrollments: [],
+                }
+            )
+        );
 
         const request = new Request('http://localhost:3000/api/invoice?id=pay123');
 
@@ -106,42 +140,36 @@ describe('Invoice API Route', () => {
     });
 
     it('should return HTML invoice for authorized user', async () => {
-        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
-            data: { user: { id: 'parent123', user_metadata: { role: 'parent' } } },
-            error: null
-        });
-
-        const mockPayment = {
-            id: 'pay123',
-            enrollment_id: 'enroll123',
-            amount: 100,
-            status: 'completed',
-            created_at: '2024-01-01',
-            enrollment: {
-                student: { first_name: 'Jane', last_name: 'Smith' },
-                class: { name: 'Art 101', fee: 100, schedule: 'Mon 10am', location: 'Studio A', start_date: '2024-01-01', end_date: '2024-03-01' },
-                parent: { first_name: 'John', last_name: 'Smith', email: 'john@example.com', phone: '123' }
-            }
-        };
-
-        // Payment check
-        mockSupabase.from.mockReturnValueOnce({
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: mockPayment, error: null })
-        });
-
-        // Family members check
-        mockSupabase.from.mockReturnValueOnce({
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockResolvedValue({ data: [{ id: 'student123' }], error: null })
-        });
-
-        // Enrollments check
-        mockSupabase.from.mockReturnValueOnce({
-            select: vi.fn().mockReturnThis(),
-            in: vi.fn().mockResolvedValue({ data: [{ id: 'enroll123' }], error: null })
-        });
+        (createClient as Mock).mockResolvedValue(
+            new FakeSupabase(
+                { id: 'parent123', user_metadata: { role: 'parent' } },
+                {
+                    payments: [
+                        {
+                            id: 'pay123',
+                            enrollment_id: 'enroll123',
+                            amount: 100,
+                            status: 'completed',
+                            created_at: '2024-01-01',
+                            enrollment: {
+                                student: { first_name: 'Jane', last_name: 'Smith' },
+                                class: {
+                                    name: 'Art 101',
+                                    fee: 100,
+                                    schedule: 'Mon 10am',
+                                    location: 'Studio A',
+                                    start_date: '2024-01-01',
+                                    end_date: '2024-03-01',
+                                },
+                                parent: { first_name: 'John', last_name: 'Smith', email: 'john@example.com', phone: '123' },
+                            },
+                        },
+                    ],
+                    family_members: [{ id: 'student123', parent_id: 'parent123' }],
+                    enrollments: [{ id: 'enroll123', student_id: 'student123' }],
+                }
+            )
+        );
 
         const request = new Request('http://localhost:3000/api/invoice?id=pay123');
 

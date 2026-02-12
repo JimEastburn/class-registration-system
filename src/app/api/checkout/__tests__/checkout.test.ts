@@ -1,9 +1,8 @@
-import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { POST } from '../route';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
-import { SupabaseClient, createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@/types/supabase';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 // Mock the dependencies
 vi.mock('@/lib/supabase/server', () => ({
@@ -26,45 +25,92 @@ vi.mock('@supabase/supabase-js', () => ({
 }));
 
 describe('Checkout API Route', () => {
-    let mockSupabase: Mocked<SupabaseClient<Database>>;
-    let adminFrom: Mock;
+    interface FakeUser {
+        id: string;
+    }
+
+    type FakeRow = Record<string, unknown>;
+
+    class FakeQueryBuilder {
+        private filters: Array<(row: FakeRow) => boolean> = [];
+        private shouldSingle = false;
+
+        constructor(private rows: FakeRow[]) {}
+
+        select() {
+            return this;
+        }
+
+        eq(column: string, value: unknown) {
+            this.filters.push((row) => row[column] === value);
+            return this;
+        }
+
+        single() {
+            this.shouldSingle = true;
+            return this;
+        }
+
+        private execute() {
+            let result = [...this.rows];
+            for (const filter of this.filters) {
+                result = result.filter(filter);
+            }
+
+            if (this.shouldSingle) {
+                return { data: result[0] ?? null, error: null };
+            }
+
+            return { data: result, error: null };
+        }
+
+        then<TResult1 = { data: FakeRow[] | null; error: null }>(
+            onfulfilled?: ((value: { data: FakeRow[] | null; error: null }) => TResult1 | PromiseLike<TResult1>) | null
+        ): Promise<TResult1> {
+            return Promise.resolve(this.execute() as { data: FakeRow[] | null; error: null }).then(onfulfilled || undefined);
+        }
+    }
+
+    class FakeSupabase {
+        constructor(
+            private user: FakeUser | null,
+            private tables: Record<string, FakeRow[]>
+        ) {}
+
+        auth = {
+            getUser: async () => ({ data: { user: this.user }, error: null }),
+        };
+
+        from(table: string) {
+            return new FakeQueryBuilder(this.tables[table] || []);
+        }
+    }
+
+    const adminPayments: FakeRow[] = [];
     let adminInsert: Mock;
 
     beforeEach(() => {
         vi.clearAllMocks();
+        adminPayments.length = 0;
 
-        const mockInsert = vi.fn().mockResolvedValue({ error: null });
-        const mockSingle = vi.fn();
-        const mockSelect = vi.fn().mockReturnThis();
-
-        const fromObj = {
-            insert: mockInsert,
-            single: mockSingle,
-            select: mockSelect,
-            eq: vi.fn().mockReturnThis(),
-        };
-
-        // Setup mock Supabase client
-        mockSupabase = {
-            auth: {
-                getUser: vi.fn(),
-            },
-            from: vi.fn(() => fromObj),
-        } as unknown as Mocked<SupabaseClient<Database>>;
-
-        (createClient as Mock).mockResolvedValue(mockSupabase);
+        (createClient as Mock).mockResolvedValue(new FakeSupabase(null, {}));
 
         adminInsert = vi.fn().mockResolvedValue({ error: null });
-        adminFrom = vi.fn(() => ({
-            insert: adminInsert,
-        }));
         (createSupabaseClient as Mock).mockReturnValue({
-            from: adminFrom,
+            from: (table: string) => ({
+                insert: async (payload: FakeRow) => {
+                    if (table === 'payments') {
+                        adminPayments.push(payload);
+                    }
+                    await adminInsert(payload);
+                    return { error: null };
+                },
+            }),
         });
     });
 
     it('should return 401 if not authenticated', async () => {
-        (mockSupabase.auth.getUser as Mock).mockResolvedValue({ data: { user: null }, error: null });
+        (createClient as Mock).mockResolvedValue(new FakeSupabase(null, {}));
 
         const request = new Request('http://localhost:3000/api/checkout', {
             method: 'POST',
@@ -79,10 +125,9 @@ describe('Checkout API Route', () => {
     });
 
     it('should return 400 if enrollmentId is missing', async () => {
-        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
-            data: { user: { id: 'parent123' } },
-            error: null
-        });
+        (createClient as Mock).mockResolvedValue(
+            new FakeSupabase({ id: 'parent123' }, {})
+        );
 
         const request = new Request('http://localhost:3000/api/checkout', {
             method: 'POST',
@@ -97,20 +142,21 @@ describe('Checkout API Route', () => {
     });
 
     it('should return 403 if user does not own the enrollment', async () => {
-        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
-            data: { user: { id: 'parent123' } },
-            error: null
-        });
-
-        // Enrollment check - owned by different parent
-        mockSupabase.from.mockReturnValueOnce({
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-                data: { student: { parent_id: 'otherParent' } },
-                error: null
-            })
-        });
+        (createClient as Mock).mockResolvedValue(
+            new FakeSupabase(
+                { id: 'parent123' },
+                {
+                    enrollments: [
+                        {
+                            id: 'enroll123',
+                            status: 'pending',
+                            student: { parent_id: 'otherParent', first_name: 'Jane', last_name: 'Smith' },
+                            class: { id: 'class123', name: 'Art 101', price: 150 },
+                        },
+                    ],
+                }
+            )
+        );
 
         const request = new Request('http://localhost:3000/api/checkout', {
             method: 'POST',
@@ -125,23 +171,21 @@ describe('Checkout API Route', () => {
     });
 
     it('should create checkout session and payment record', async () => {
-        (mockSupabase.auth.getUser as Mock).mockResolvedValue({
-            data: { user: { id: 'parent123' } },
-            error: null
-        });
-
-        const mockEnrollment = {
-            id: 'enroll123',
-            status: 'pending',
-            student: { parent_id: 'parent123', first_name: 'Jane', last_name: 'Smith' },
-            class: { id: 'class123', name: 'Art 101', price: 150 }
-        };
-
-        mockSupabase.from.mockReturnValueOnce({
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: mockEnrollment, error: null })
-        });
+        (createClient as Mock).mockResolvedValue(
+            new FakeSupabase(
+                { id: 'parent123' },
+                {
+                    enrollments: [
+                        {
+                            id: 'enroll123',
+                            status: 'pending',
+                            student: { parent_id: 'parent123', first_name: 'Jane', last_name: 'Smith' },
+                            class: { id: 'class123', name: 'Art 101', price: 150 },
+                        },
+                    ],
+                }
+            )
+        );
 
         (stripe.checkout.sessions.create as Mock).mockResolvedValue({
             id: 'cs_123',
@@ -162,7 +206,8 @@ describe('Checkout API Route', () => {
 
         expect(stripe.checkout.sessions.create).toHaveBeenCalled();
         expect(createSupabaseClient).toHaveBeenCalled();
-        expect(adminFrom).toHaveBeenCalledWith('payments');
-        expect(adminInsert).toHaveBeenCalled();
+        expect(adminInsert).toHaveBeenCalledOnce();
+        expect(adminPayments).toHaveLength(1);
+        expect(adminPayments[0].enrollment_id).toBe('enroll123');
     });
 });

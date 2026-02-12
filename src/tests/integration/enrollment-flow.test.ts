@@ -161,7 +161,8 @@ describe('Integration Flow: Family Creation -> Enrollment', () => {
         const studentData = {
             firstName: 'Timmy',
             lastName: 'Tester',
-            relationship: 'Student',
+            email: 'timmy.tester@example.com',
+            relationship: 'Student' as const,
             dob: '2015-01-01',
             grade: '5th'
         };

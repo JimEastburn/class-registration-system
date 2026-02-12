@@ -1,5 +1,5 @@
+import { describe, it, expect } from 'vitest';
 import { getAllowedViews } from '../profile';
-import { UserRole } from '@/types';
 
 // Mock ALLOWED_VIEWS if necessary, but we are testing the function logic which imports it.
 // Assuming ALLOWED_VIEWS is exported or used internally in profile.ts

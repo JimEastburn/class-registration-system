@@ -183,7 +183,10 @@ describe('Refund Actions', () => {
         mockSupabase.from.mockReturnValue(profilesBuilder);
 
         const result = await processRefund({ paymentId: 'pay-1' });
-        expect(result.error).toContain('Not authorized');
+        expect(result.success).toBe(false);
+        if (!result.success) {
+            expect(result.error).toContain('Not authorized');
+        }
     });
 
     it('fails if payment not found', async () => {
@@ -206,6 +209,9 @@ describe('Refund Actions', () => {
         });
 
         const result = await processRefund({ paymentId: 'pay-1' });
-        expect(result.error).toContain('Payment not found');
+        expect(result.success).toBe(false);
+        if (!result.success) {
+            expect(result.error).toContain('Payment not found');
+        }
     });
 });

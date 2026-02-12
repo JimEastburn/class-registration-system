@@ -19,10 +19,26 @@ export async function resolveStudentFamilyMember(
   user: { id: string; email?: string | null }
 ): Promise<FamilyMemberLink | null> {
   const selectColumns = 'id, first_name, last_name, student_user_id';
-
-  const { data: linkedMember, error: linkedError } = await supabase
+  type SingleLookupQuery = {
+    eq: (column: string, value: string) => {
+      maybeSingle: () => Promise<{ data: FamilyMemberLink | null; error: unknown }>;
+    };
+  };
+  type EmailLookupQuery = {
+    eq: (column: string, value: string) => {
+      ilike: (column: string, pattern: string) => {
+        limit: (count: number) => Promise<{ data: FamilyMemberLink[] | null; error: unknown }>;
+      };
+    };
+  };
+  type UpdateQuery = {
+    eq: (column: string, value: string) => Promise<{ error: unknown }>;
+  };
+  const singleLookup = supabase
     .from('family_members')
-    .select(selectColumns)
+    .select(selectColumns) as SingleLookupQuery;
+
+  const { data: linkedMember, error: linkedError } = await singleLookup
     .eq('student_user_id', user.id)
     .maybeSingle();
 
@@ -35,9 +51,10 @@ export async function resolveStudentFamilyMember(
     return null;
   }
 
-  const { data: emailMatches, error: emailError } = await supabase
+  const emailLookup = supabase
     .from('family_members')
-    .select(selectColumns)
+    .select(selectColumns) as EmailLookupQuery;
+  const { data: emailMatches, error: emailError } = await emailLookup
     .eq('relationship', 'Student')
     .ilike('email', normalizedEmail)
     .limit(2);
@@ -48,9 +65,10 @@ export async function resolveStudentFamilyMember(
 
   const emailMatch = emailMatches[0];
   if (emailMatch.student_user_id !== user.id) {
-    const { error: relinkError } = await supabase
+    const relinkUpdate = supabase
       .from('family_members')
-      .update({ student_user_id: user.id })
+      .update({ student_user_id: user.id }) as UpdateQuery;
+    const { error: relinkError } = await relinkUpdate
       .eq('id', emailMatch.id);
 
     if (!relinkError) {

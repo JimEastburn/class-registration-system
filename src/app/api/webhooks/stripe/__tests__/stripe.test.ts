@@ -1,10 +1,8 @@
-import { describe, it, expect, vi, beforeEach, type Mock, type Mocked } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { POST } from '../route';
 import { stripe } from '@/lib/stripe';
 import { sendPaymentReceipt } from '@/lib/email';
 import { createClient } from '@supabase/supabase-js';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@/types/supabase';
 
 // Mock the dependencies
 vi.mock('@/lib/stripe', () => ({
@@ -35,33 +33,99 @@ vi.mock('next/headers', () => ({
     }),
 }));
 
-interface MockBuilder {
-    select: ReturnType<typeof vi.fn>;
-    eq: ReturnType<typeof vi.fn>;
-    update: ReturnType<typeof vi.fn>;
-    single: ReturnType<typeof vi.fn>;
-}
-
-
 describe('Stripe Webhook API Route', () => {
-    let mockSupabase: Mocked<SupabaseClient<Database>>;
-    let mockBuilder: MockBuilder;
+    type FakeRow = Record<string, unknown>;
+
+    class FakeQueryBuilder {
+        private filters: Array<(row: FakeRow) => boolean> = [];
+        private expectSingle = false;
+        private pendingUpdate: FakeRow | null = null;
+        private pendingDelete = false;
+
+        constructor(
+            private tableName: string,
+            private tables: Record<string, FakeRow[]>
+        ) {}
+
+        select() {
+            return this;
+        }
+
+        eq(column: string, value: unknown) {
+            this.filters.push((row) => row[column] === value);
+            return this;
+        }
+
+        update(payload: FakeRow) {
+            this.pendingUpdate = payload;
+            return this;
+        }
+
+        delete() {
+            this.pendingDelete = true;
+            return this;
+        }
+
+        single() {
+            this.expectSingle = true;
+            return this;
+        }
+
+        private execute() {
+            const table = this.tables[this.tableName] || [];
+            const matches = table.filter((row) => this.filters.every((f) => f(row)));
+
+            if (this.pendingDelete) {
+                this.tables[this.tableName] = table.filter((row) => !matches.includes(row));
+                return { data: null, error: null };
+            }
+
+            if (this.pendingUpdate) {
+                const updated = matches.map((row) => Object.assign(row, this.pendingUpdate || {}));
+                if (this.expectSingle) {
+                    return { data: updated[0] ?? null, error: null };
+                }
+                return { data: updated, error: null };
+            }
+
+            if (this.expectSingle) {
+                return { data: matches[0] ?? null, error: null };
+            }
+
+            return { data: matches, error: null };
+        }
+
+        then<TResult1 = { data: FakeRow[] | FakeRow | null; error: null }>(
+            onfulfilled?: ((value: { data: FakeRow[] | FakeRow | null; error: null }) => TResult1 | PromiseLike<TResult1>) | null
+        ): Promise<TResult1> {
+            return Promise.resolve(this.execute() as { data: FakeRow[] | FakeRow | null; error: null }).then(
+                onfulfilled || undefined
+            );
+        }
+    }
+
+    class FakeSupabase {
+        constructor(private tables: Record<string, FakeRow[]>) {}
+
+        from(table: string) {
+            return new FakeQueryBuilder(table, this.tables);
+        }
+
+        getTable(table: string) {
+            return this.tables[table] || [];
+        }
+    }
+
+    let fakeSupabase: FakeSupabase;
 
     beforeEach(() => {
         vi.clearAllMocks();
-
-        mockBuilder = {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            update: vi.fn().mockReturnThis(),
-            single: vi.fn().mockImplementation(() => Promise.resolve({ data: null, error: null })),
-        };
-
-        mockSupabase = {
-            from: vi.fn().mockReturnValue(mockBuilder),
-        } as unknown as Mocked<SupabaseClient<Database>>;
-
-        (createClient as Mock).mockReturnValue(mockSupabase);
+        fakeSupabase = new FakeSupabase({
+            payments: [],
+            enrollments: [],
+            profiles: [],
+        });
+        (createClient as Mock).mockReturnValue(fakeSupabase);
     });
 
     it('should return 400 if signature is missing', async () => {
@@ -89,44 +153,25 @@ describe('Stripe Webhook API Route', () => {
                 object: {
                     id: 'cs_123',
                     metadata: { enrollmentId: 'enroll123' },
+                    payment_intent: 'pi_123',
                 },
             },
         };
 
         (stripe.webhooks.constructEvent as Mock).mockReturnValue(mockEvent);
-
-        const mockEnrollment = {
-            student: { first_name: 'Jane', last_name: 'Smith', parent_id: 'parent123' },
-            class: { name: 'Art 101', fee: 150 }
-        };
-
-        const mockParent = {
-            first_name: 'John',
-            email: 'john@example.com'
-        };
-
-        // 1. Initial Idempotency check: status is 'pending'
-        // 2. Update payment execution
-        // 3. Update enrollment execution
-        // 4. Fetch enrollment data
-        // 5. Fetch profile data
-
-        mockBuilder.single.mockImplementation(() => {
-            // First time called (idempotency check): status is pending
-            if (mockBuilder.single.mock.calls.length === 1) {
-                return Promise.resolve({ data: { status: 'pending' }, error: null });
-            }
-            // Second time called (update payment returns id):
-            if (mockBuilder.single.mock.calls.length === 2) {
-                return Promise.resolve({ data: { id: 'payment123' }, error: null });
-            }
-            // Third time: fetch enrollment
-            if (mockBuilder.single.mock.calls.length === 3) {
-                return Promise.resolve({ data: mockEnrollment, error: null });
-            }
-            // Fourth time: fetch profile
-            return Promise.resolve({ data: mockParent, error: null });
+        fakeSupabase = new FakeSupabase({
+            payments: [{ id: 'payment123', transaction_id: 'cs_123', status: 'pending' }],
+            enrollments: [
+                {
+                    id: 'enroll123',
+                    status: 'pending',
+                    student: { first_name: 'Jane', last_name: 'Smith', parent_id: 'parent123' },
+                    class: { name: 'Art 101', fee: 150, day: 2, block: 1, location: 'Room A', start_date: '2024-01-10', teacher: null },
+                },
+            ],
+            profiles: [{ id: 'parent123', first_name: 'John', email: 'john@example.com' }],
         });
+        (createClient as Mock).mockReturnValue(fakeSupabase);
 
         const request = new Request('http://localhost:3000/api/webhooks/stripe', {
             method: 'POST',
@@ -138,7 +183,8 @@ describe('Stripe Webhook API Route', () => {
 
         expect(response.status).toBe(200);
         expect(data.received).toBe(true);
-        expect(mockBuilder.update).toHaveBeenCalledTimes(2); // One for payments, one for enrollments
+        expect(fakeSupabase.getTable('payments')[0].status).toBe('completed');
+        expect(fakeSupabase.getTable('enrollments')[0].status).toBe('confirmed');
         expect(sendPaymentReceipt).toHaveBeenCalled();
     });
 
@@ -148,11 +194,18 @@ describe('Stripe Webhook API Route', () => {
             data: {
                 object: {
                     id: 'cs_123',
+                    metadata: { enrollmentId: 'enroll123' },
                 },
             },
         };
 
         (stripe.webhooks.constructEvent as Mock).mockReturnValue(mockEvent);
+        fakeSupabase = new FakeSupabase({
+            payments: [{ id: 'pay1', transaction_id: 'cs_123', status: 'pending' }],
+            enrollments: [{ id: 'enroll123', status: 'pending' }],
+            profiles: [],
+        });
+        (createClient as Mock).mockReturnValue(fakeSupabase);
 
         const request = new Request('http://localhost:3000/api/webhooks/stripe', {
             method: 'POST',
@@ -164,7 +217,7 @@ describe('Stripe Webhook API Route', () => {
 
         expect(response.status).toBe(200);
         expect(data.received).toBe(true);
-        expect(mockSupabase.from).toHaveBeenCalledWith('payments');
-        expect(mockBuilder.update).toHaveBeenCalled();
+        expect(fakeSupabase.getTable('payments')).toHaveLength(0);
+        expect(fakeSupabase.getTable('enrollments')[0].status).toBe('pending');
     });
 });
