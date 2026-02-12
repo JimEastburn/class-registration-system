@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import type { ScheduleConfig } from '@/types';
 
 interface DashboardStats {
     familyMemberCount: number;
@@ -355,7 +356,7 @@ interface TodayClass {
   id: string;
   name: string;
   startTime: string;
-  endTime: string;
+  endTime?: string;
   enrolledCount: number;
   capacity: number;
 }
@@ -400,10 +401,10 @@ export async function getTeacherDashboardData(): Promise<{
       return { success: false, error: 'Not authorized' };
     }
 
-    // Get all classes taught by this teacher
+    // Get all classes taught by this teacher using current schedule fields.
     const { data: classes, error: classesError } = await supabase
       .from('classes')
-      .select('id, name, status, capacity, start_time, end_time, day_of_week')
+      .select('id, name, status, capacity, day, block, schedule_config')
       .eq('teacher_id', user.id);
 
     if (classesError) {
@@ -432,20 +433,24 @@ export async function getTeacherDashboardData(): Promise<{
 
     // Calculate stats
     const totalClasses = classes?.length || 0;
-    const activeClasses = classes?.filter(c => c.status === 'active').length || 0;
+    const isSchedulableStatus = (status: string | null | undefined) =>
+      status === 'published' || status === 'active';
+    const activeClasses = classes?.filter(c => isSchedulableStatus(c.status)).length || 0;
     const totalStudents = enrollmentCounts.reduce((sum, e) => sum + e.count, 0);
     
     // Today's day of week
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const todayDayOfWeek = dayNames[new Date().getDay()];
     
-    const classesTodayList = classes?.filter(c => 
-      c.day_of_week?.toLowerCase() === todayDayOfWeek && c.status === 'active'
-    ) || [];
+    const classesTodayList = classes?.filter(c => {
+      const config = c.schedule_config as ScheduleConfig | null;
+      const classDay = c.day || config?.day;
+      return classDay?.toLowerCase() === todayDayOfWeek && isSchedulableStatus(c.status);
+    }) || [];
     const classesToday = classesTodayList.length;
 
     // Get next 7 days of scheduled classes
-    const upcomingClasses = classes?.filter(c => c.status === 'active').length || 0;
+    const upcomingClasses = classes?.filter(c => isSchedulableStatus(c.status)).length || 0;
 
     const stats: TeacherStats = {
       totalClasses,
@@ -459,8 +464,7 @@ export async function getTeacherDashboardData(): Promise<{
     const todayClasses: TodayClass[] = classesTodayList.map(c => ({
       id: c.id,
       name: c.name,
-      startTime: c.start_time || 'TBA',
-      endTime: c.end_time || 'TBA',
+      startTime: c.block || (c.schedule_config as ScheduleConfig | null)?.block || 'TBA',
       enrolledCount: enrollmentCounts.find(e => e.class_id === c.id)?.count || 0,
       capacity: c.capacity || 0,
     }));
