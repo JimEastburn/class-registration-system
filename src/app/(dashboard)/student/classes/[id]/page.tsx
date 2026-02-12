@@ -47,12 +47,11 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
       );
   }
 
-  // Fetch Class Details
-  const { data: classDetails } = await supabase
+  // Fetch Class Details — separate teacher join to avoid RLS on profiles causing total failure
+  const { data: classDetails, error: classError } = await supabase
     .from('classes')
     .select(`
         *,
-        teacher:profiles!teacher_id (first_name, last_name, email),
         semester:semesters (name),
         program:programs (name),
         materials:class_materials(*)
@@ -60,7 +59,22 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
     .eq('id', id)
     .single();
 
+  if (classError) {
+    console.error('Error fetching class details:', classError.message);
+  }
+
   if (!classDetails) notFound();
+
+  // Fetch teacher profile separately — may be blocked by RLS for students
+  let teacher: { first_name: string | null; last_name: string | null; email: string | null } | null = null;
+  if (classDetails.teacher_id) {
+    const { data: teacherData } = await supabase
+      .from('profiles')
+      .select('first_name, last_name, email')
+      .eq('id', classDetails.teacher_id)
+      .single();
+    teacher = teacherData;
+  }
 
   return (
     <div className="space-y-6">
@@ -80,7 +94,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
            <div className="space-y-6 lg:col-span-2">
                 <ClassDetailCard 
                     description={classDetails.description} 
-                    teacher={classDetails.teacher}
+                    teacher={teacher}
                 />
                 
                 <ClassMaterialsList materials={classDetails.materials} />
