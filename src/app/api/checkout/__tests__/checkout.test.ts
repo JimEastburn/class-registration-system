@@ -18,7 +18,7 @@ vi.mock('@/lib/stripe', () => ({
             },
         },
     },
-    formatAmountForStripe: vi.fn((amount: number) => Math.round(amount * 100)),
+    formatAmountForStripe: vi.fn((amount: number) => Math.round(amount)),
 }));
 
 vi.mock('@supabase/supabase-js', () => ({
@@ -134,7 +134,7 @@ describe('Checkout API Route', () => {
             id: 'enroll123',
             status: 'pending',
             student: { parent_id: 'parent123', first_name: 'Jane', last_name: 'Smith' },
-            class: { id: 'class123', name: 'Art 101', fee: 150 }
+            class: { id: 'class123', name: 'Art 101', price: 150 }
         };
 
         mockSupabase.from.mockReturnValueOnce({

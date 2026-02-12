@@ -9,9 +9,9 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     typescript: true,
 });
 
-// Helper to format amount for Stripe (convert dollars to cents)
+// Class prices are stored in cents in our DB; Stripe Checkout expects cents.
 export function formatAmountForStripe(amount: number): number {
-    return Math.round(amount * 100);
+    return Math.round(amount);
 }
 
 // Helper to format amount from Stripe (convert cents to dollars)
