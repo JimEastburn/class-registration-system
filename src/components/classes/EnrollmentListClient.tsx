@@ -13,6 +13,11 @@ interface EnrollmentWithClass extends Enrollment {
         teacher_id: string;
         price: number;
     } | null;
+    student?: {
+        id: string;
+        first_name: string;
+        last_name: string;
+    } | null;
 }
 
 interface EnrollmentListClientProps {
@@ -40,7 +45,7 @@ export function EnrollmentListClient({
         <EnrollmentTable
             enrollments={enrollments}
             onCancel={handleCancel}
-            showStudent={false}
+            showStudent={true}
         />
     );
 }

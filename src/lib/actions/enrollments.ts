@@ -132,6 +132,11 @@ export async function getEnrollmentsForFamily(): Promise<{
                     name,
                     teacher_id,
                     price
+                ),
+                student:family_members (
+                    id,
+                    first_name,
+                    last_name
                 )
             `)
             .in('student_id', familyMemberIds)
