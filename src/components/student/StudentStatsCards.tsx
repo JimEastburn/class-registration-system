@@ -8,14 +8,14 @@ export async function StudentStatsCards({ studentId }: { studentId: string }) {
   
   const { data: enrollments } = await supabase
     .from('enrollments')
-    .select('class_id, classes(id, title)')
+    .select('class_id, classes(id, name)')
     .eq('student_id', studentId)
     .eq('status', 'confirmed');
 
   const classes = (enrollments ?? []).map((e) => {
-    const cls = e.classes as unknown as { id: string; title: string } | null;
-    return cls ? { id: cls.id, title: cls.title } : null;
-  }).filter(Boolean) as { id: string; title: string }[];
+    const cls = e.classes as unknown as { id: string; name: string } | null;
+    return cls ? { id: cls.id, name: cls.name } : null;
+  }).filter(Boolean) as { id: string; name: string }[];
 
   return (
     <Card>
@@ -34,7 +34,7 @@ export async function StudentStatsCards({ studentId }: { studentId: string }) {
                   href={`/student/classes/${cls.id}`}
                   className="flex items-center justify-between text-sm text-primary hover:underline py-1 group"
                 >
-                  <span className="truncate">{cls.title}</span>
+                  <span className="truncate">{cls.name}</span>
                   <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
                 </Link>
               </li>
