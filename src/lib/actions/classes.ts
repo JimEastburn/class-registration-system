@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import type { ClassStatus, ClassWithTeacher, ScheduleConfig } from '@/types';
 import { checkScheduleConflict, validateScheduleConfig } from '@/lib/logic/scheduling';
+import { generateClassEvents } from '@/lib/logic/calendar';
 
 interface ClassFilters {
     status?: ClassStatus;
@@ -284,7 +285,7 @@ export async function createClass(
         age_min: input.ageMin || null,
         age_max: input.ageMax || null,
       })
-      .select('id')
+      .select('id, schedule_config, location, description')
       .single();
 
     if (error) {
@@ -293,6 +294,25 @@ export async function createClass(
     }
 
     console.error(`[DEBUG] Created class ${newClass.id} for teacher ${teacherIdToUse}`);
+
+    // Generate calendar events
+    if (newClass.schedule_config) {
+        const events = generateClassEvents(newClass.id, newClass.schedule_config as ScheduleConfig, {
+            location: newClass.location,
+            description: newClass.description,
+        });
+
+        if (events.length > 0) {
+            const { error: eventsError } = await supabase
+                .from('calendar_events')
+                .insert(events);
+
+            if (eventsError) {
+                console.error('Error creating calendar events:', eventsError);
+                // Non-fatal, but should be logged/alerted
+            }
+        }
+    }
 
     await logAuditAction(user.id, 'class.created', 'class', newClass.id, { name: input.name });
     revalidatePath('/teacher/classes');
@@ -406,6 +426,56 @@ export async function updateClass(
     if (error) {
       console.error('Error updating class:', error);
       return { success: false, error: error.message };
+    }
+
+    // Update calendar events if schedule or location changed
+    if (input.schedule_config || input.location !== undefined) {
+        // 1. Delete future events (or all events? effectively rebuilding the calendar for this class)
+        // Keeping it simple: delete all future events for this class to avoid duplicates/orphans
+        // We might want to keep past events for history, but for now, full rebuild from start_date is safest for consistency
+        const today = new Date().toISOString().split('T')[0];
+        
+        const { error: deleteError } = await supabase
+            .from('calendar_events')
+            .delete()
+            .eq('class_id', classId)
+            .gte('date', today);
+
+        if (deleteError) {
+             console.error('Error deleting old calendar events:', deleteError);
+        } else {
+             // 2. Generate new events
+             // Need full class details to generate events
+             const { data: updatedClass } = await supabase
+                .from('classes')
+                .select('*')
+                .eq('id', classId)
+                .single();
+             
+             if (updatedClass && updatedClass.schedule_config) {
+                 const events = generateClassEvents(classId, updatedClass.schedule_config as ScheduleConfig, {
+                     location: updatedClass.location,
+                     description: updatedClass.description,
+                 });
+
+                 // Filter for future only if we only deleted future? 
+                 // Actually, generateClassEvents generates for the whole range.
+                 // If we deleted only >= today, we should only insert >= today to avoid duplicates with past events we didn't delete.
+                 // OR we delete ALL events and regenerate ALL.
+                 // Decision: Regenerate ALL to ensure consistency (e.g. if start date changed to be earlier).
+                 // Refining: Delete ALL events for this class.
+                 
+                 await supabase.from('calendar_events').delete().eq('class_id', classId);
+                 
+                 if (events.length > 0) {
+                     const { error: insertError } = await supabase
+                         .from('calendar_events')
+                         .insert(events);
+                     
+                     if (insertError) console.error('Error regenerating calendar events:', insertError);
+                 }
+             }
+        }
     }
 
     await logAuditAction(user.id, 'class.updated', 'class', classId, updateData);
