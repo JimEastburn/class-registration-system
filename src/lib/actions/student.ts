@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { resolveStudentFamilyMember } from '@/lib/logic/student-link';
 
 export interface ScheduleEvent {
   id: string;
@@ -28,24 +29,10 @@ export async function getStudentSchedule(
     }
 
     // Verify student belongs to user (security check)
-    // Although the page fetches the ID based on user, the action should double check
-    // or we assume server components pass trusted data?
-    // Using a server action called from client component might be vulnerable if we just pass any ID.
-    // Ideally we re-verify ownership.
-    
-    const { data: familyMember } = await supabase
-        .from('family_members')
-        .select('id')
-        .eq('id', studentId)
-        .eq('student_user_id', user.id) // Ensure this student is the logged in user
-        // OR checks parent ownership if parent is viewing?
-        // For now, let's assume strict student login access for the student portal.
-        // If parent portal uses this, we might need looser checks (parent_id = user.id).
-        // Let's check both possibilities or just user linkage for now.
-        .single();
-        
-    // If not direct student user, check if it's a parent of the student
-    if (!familyMember) {
+    const linkedFamilyMember = await resolveStudentFamilyMember(supabase, user);
+
+    // If not a linked student, check whether the user is parent of this student
+    if (!linkedFamilyMember || linkedFamilyMember.id !== studentId) {
         // Check if user is parent
         const { data: relationship } = await supabase
             .from('family_members')

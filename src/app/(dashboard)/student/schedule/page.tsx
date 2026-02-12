@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { WeeklyScheduleView } from '@/components/classes/WeeklyScheduleView';
+import { resolveStudentFamilyMember } from '@/lib/logic/student-link';
 
 export default async function StudentSchedulePage() {
   const supabase = await createClient();
@@ -8,11 +9,7 @@ export default async function StudentSchedulePage() {
   
   if (!user) redirect('/login');
 
-  const { data: familyMember } = await supabase
-    .from('family_members')
-    .select('id')
-    .eq('student_user_id', user.id)
-    .single();
+  const familyMember = await resolveStudentFamilyMember(supabase, user);
 
   if (!familyMember) {
       return (

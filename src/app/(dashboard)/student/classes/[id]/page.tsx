@@ -7,6 +7,7 @@ import { ClassDetailCard } from '@/components/student/ClassDetailCard';
 import { ClassLocationCard } from '@/components/student/ClassLocationCard';
 import { ClassMaterialsList } from '@/components/classes/ClassMaterialsList';
 import { ClassScheduleCard } from '@/components/student/ClassScheduleCard';
+import { resolveStudentFamilyMember } from '@/lib/logic/student-link';
 
 export default async function ClassDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,11 +17,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
   
   if (!user) redirect('/login');
 
-  const { data: familyMember } = await supabase
-    .from('family_members')
-    .select('id')
-    .eq('student_user_id', user.id)
-    .single();
+  const familyMember = await resolveStudentFamilyMember(supabase, user);
 
   if (!familyMember) {
       return (

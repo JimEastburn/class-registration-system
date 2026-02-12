@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { StudentStatsCards } from '@/components/student/StudentStatsCards';
 import { NextClassCard } from '@/components/student/NextClassCard';
+import { resolveStudentFamilyMember } from '@/lib/logic/student-link';
 
 export default async function StudentDashboardPage() {
   const supabase = await createClient();
@@ -9,11 +10,7 @@ export default async function StudentDashboardPage() {
   
   if (!user) redirect('/login');
 
-  const { data: familyMember } = await supabase
-    .from('family_members')
-    .select('*')
-    .eq('student_user_id', user.id)
-    .single();
+  const familyMember = await resolveStudentFamilyMember(supabase, user);
 
   if (!familyMember) {
       return (
