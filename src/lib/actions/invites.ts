@@ -94,12 +94,13 @@ export async function linkStudentByEmail(
   }
 
   // Check if the student is already linked to another family member
-  const { data: existingLink, error: linkCheckError } = await adminClient
+  const { data: existingLinks, error: linkCheckError } = await adminClient
     .from('family_members')
     .select('id, parent_id')
     .eq('student_user_id', studentProfile.id)
-    .single();
+    .limit(1);
 
+  const existingLink = existingLinks?.[0];
   if (!linkCheckError && existingLink) {
     // Check if it's a different parent
     if (existingLink.parent_id !== user.id) {

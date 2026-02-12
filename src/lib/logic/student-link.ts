@@ -19,9 +19,9 @@ export async function resolveStudentFamilyMember(
   user: { id: string; email?: string | null }
 ): Promise<FamilyMemberLink | null> {
   const selectColumns = 'id, first_name, last_name, student_user_id';
-  type SingleLookupQuery = {
+  type LinkedLookupQuery = {
     eq: (column: string, value: string) => {
-      maybeSingle: () => Promise<{ data: FamilyMemberLink | null; error: unknown }>;
+      limit: (count: number) => Promise<{ data: FamilyMemberLink[] | null; error: unknown }>;
     };
   };
   type EmailLookupQuery = {
@@ -36,14 +36,15 @@ export async function resolveStudentFamilyMember(
   };
   const singleLookup = supabase
     .from('family_members')
-    .select(selectColumns) as SingleLookupQuery;
+    .select(selectColumns) as LinkedLookupQuery;
 
-  const { data: linkedMember, error: linkedError } = await singleLookup
+  const { data: linkedMembers, error: linkedError } = await singleLookup
     .eq('student_user_id', user.id)
-    .maybeSingle();
+    .limit(2);
 
-  if (!linkedError && linkedMember) {
-    return linkedMember;
+  // Return the first match even if duplicates exist, instead of failing closed.
+  if (!linkedError && linkedMembers && linkedMembers.length > 0) {
+    return linkedMembers[0];
   }
 
   const normalizedEmail = user.email?.trim().toLowerCase();
