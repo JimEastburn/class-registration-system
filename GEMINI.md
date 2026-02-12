@@ -118,3 +118,4 @@ The following business logic safeguards are strictly enforced:
 - **Capacity Hand-off**: Class capacity is atomically checked. Vacated spots (cancellations/deletions) correctly release capacity for the waitlist.
 - **CSV Hardening**: All administrative data exports are escaped using `'` to prevent spreadsheet formula injection.
 - **Privilege Revocation**: Role demotions (Admin/Teacher/Class Scheduler -> Parent) immediately revoke all elevated action access.
+- **Cross-Cutting Refactors**: Any property rename, type change, or column rename MUST follow the `.agent/skills/systematic-refactoring/SKILL.md` audit process before editing files. No exceptions.
