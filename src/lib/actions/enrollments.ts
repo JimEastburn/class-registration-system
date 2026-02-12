@@ -229,13 +229,15 @@ export async function enrollStudent(
             };
         }
 
-        // Check if student is already enrolled in this class
+        // Check if student is already enrolled in this class (active status)
         const { data: existingEnrollment } = await supabase
             .from('enrollments')
             .select('id, status')
             .eq('student_id', input.familyMemberId)
             .eq('class_id', input.classId)
-            .single();
+            .in('status', ['confirmed', 'pending', 'waitlisted'])
+            .limit(1)
+            .maybeSingle();
 
         if (existingEnrollment) {
             return {
