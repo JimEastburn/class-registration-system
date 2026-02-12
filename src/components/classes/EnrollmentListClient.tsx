@@ -9,7 +9,7 @@ import type { Enrollment } from '@/types';
 interface EnrollmentWithClass extends Enrollment {
     class: {
         id: string;
-        title: string;
+        name: string;
         teacher_id: string;
         price: number;
     } | null;

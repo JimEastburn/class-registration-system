@@ -9,7 +9,7 @@ import { sendEnrollmentConfirmation } from '@/lib/email';
 interface EnrollmentWithClass extends Enrollment {
     class: {
         id: string;
-        title: string;
+        name: string;
         teacher_id: string;
         price: number;
     } | null;
@@ -28,7 +28,7 @@ export type AdminEnrollmentView = RosterEnrollment & {
         name: string;
         teacher_id: string;
         price: number | null;
-        title?: string; // Optional if joined query maps it differently
+
     } | null;
 };
 
@@ -85,13 +85,7 @@ export async function getEnrollmentsForFamilyMember(
             return { data: null, error: error.message };
         }
 
-        // Map 'name' to 'title' for backward compatibility if needed, or update types
-        const mappedData = data?.map(item => ({
-             ...item,
-             class: item.class ? { ...item.class, title: item.class.name } : null
-        }));
-
-        return { data: mappedData as unknown as EnrollmentWithClass[], error: null };
+        return { data: data as unknown as EnrollmentWithClass[], error: null };
     } catch (err) {
         console.error('Unexpected error in getEnrollmentsForFamilyMember:', err);
         return { data: null, error: 'An unexpected error occurred' };
@@ -148,13 +142,7 @@ export async function getEnrollmentsForFamily(): Promise<{
             return { data: null, error: error.message };
         }
         
-         // Map 'name' to 'title' for backward compatibility
-        const mappedData = data?.map(item => ({
-             ...item,
-             class: item.class ? { ...item.class, title: item.class.name } : null
-        }));
-
-        return { data: mappedData as unknown as EnrollmentWithClass[], error: null };
+        return { data: data as unknown as EnrollmentWithClass[], error: null };
     } catch (err) {
         console.error('Unexpected error in getEnrollmentsForFamily:', err);
         return { data: null, error: 'An unexpected error occurred' };
@@ -931,22 +919,7 @@ export async function getAllEnrollments(
             return { data: null, count: 0, error: error.message };
         }
 
-         // Map 'name' to 'title' in class object if needed, reusing RosterEnrollment type shape roughly
-        const mappedData = data.map(item => ({
-            ...item,
-             // Ensure class has title if type expects it (RosterEnrollment doesn't specify class properties explicitly in detail?)
-             // RosterEnrollment extends Enrollment.
-             // EnrollmentWithClass extends Enrollment.
-             // I'll return as RosterEnrollment which has 'student' populated.
-             // But RosterEnrollment definition earlier didn't have 'class'.
-             // I'll update RosterEnrollment or just cast nicely.
-             // RosterEnrollment from line 16 has `student`.
-             // It doesn't have `class`.
-             // But getAllEnrollments might want class info.
-             // I'll return it as is and let the component handle it or intersect type.
-             // Ideally we define a new type `AdminEnrollmentView`.
-             // For now, I'll cast to RosterEnrollment & { class: ... } implicitly in usage, or update return type.
-        }));
+        const mappedData = data;
 
         return { data: mappedData as AdminEnrollmentView[], count: count || 0, error: null };
 
