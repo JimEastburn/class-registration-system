@@ -2,8 +2,6 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import type { EnrollmentStatus } from '@/types';
 
-type BadgeVariant = React.ComponentProps<typeof Badge>['variant'];
-
 interface EnrollmentStatusBadgeProps {
     status: EnrollmentStatus;
     waitlistPosition?: number | null;
@@ -11,27 +9,43 @@ interface EnrollmentStatusBadgeProps {
 
 const statusConfig: Record<
     EnrollmentStatus,
-    { label: string; variant: BadgeVariant }
+    { label: string; className: string }
 > = {
-    pending: { label: 'Pending Payment', variant: 'outline' },
-    confirmed: { label: 'Confirmed', variant: 'default' },
-    cancelled: { label: 'Cancelled', variant: 'destructive' },
-    waitlisted: { label: 'Waitlisted', variant: 'secondary' },
+    pending: {
+        label: 'Pending Payment',
+        className: 'border-[var(--status-pending-border)] bg-[var(--status-pending-bg)] text-[var(--status-pending-fg)]',
+    },
+    confirmed: {
+        label: 'Confirmed',
+        className: 'border-[var(--status-confirmed-border)] bg-[var(--status-confirmed-bg)] text-[var(--status-confirmed-fg)]',
+    },
+    cancelled: {
+        label: 'Cancelled',
+        className: 'border-[var(--status-cancelled-border)] bg-[var(--status-cancelled-bg)] text-[var(--status-cancelled-fg)]',
+    },
+    waitlisted: {
+        label: 'Waitlisted',
+        className: 'border-[var(--status-waitlisted-border)] bg-[var(--status-waitlisted-bg)] text-[var(--status-waitlisted-fg)]',
+    },
 };
 
 export function EnrollmentStatusBadge({
     status,
     waitlistPosition,
 }: EnrollmentStatusBadgeProps) {
-    const config = statusConfig[status] || { label: status, variant: 'outline' as const };
+    const config = statusConfig[status] || { label: status, className: '' };
 
     if (status === 'waitlisted' && waitlistPosition) {
         return (
-            <Badge variant={config.variant}>
+            <Badge variant="outline" className={config.className}>
                 #{waitlistPosition} on Waitlist
             </Badge>
         );
     }
 
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    return (
+        <Badge variant="outline" className={config.className}>
+            {config.label}
+        </Badge>
+    );
 }

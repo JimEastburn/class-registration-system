@@ -103,6 +103,27 @@
   --sidebar-accent-foreground: #4c7c92;
   --sidebar-border: #E2E8F0;
   --sidebar-ring: #4c7c92;
+
+  /* Enrollment status tokens */
+  --status-pending-dot: #EAB308;
+  --status-pending-bg: #FEFCE8;
+  --status-pending-fg: #854D0E;
+  --status-pending-border: #FDE68A;
+
+  --status-confirmed-dot: #22C55E;
+  --status-confirmed-bg: #F0FDF4;
+  --status-confirmed-fg: #166534;
+  --status-confirmed-border: #BBF7D0;
+
+  --status-waitlisted-dot: #F97316;
+  --status-waitlisted-bg: #FFF7ED;
+  --status-waitlisted-fg: #9A3412;
+  --status-waitlisted-border: #FDBA74;
+
+  --status-cancelled-dot: #FCA5A5;
+  --status-cancelled-bg: #FFF1F2;
+  --status-cancelled-fg: #9F1239;
+  --status-cancelled-border: #FECDD3;
 }
 
 .dark {
@@ -158,6 +179,27 @@
   --sidebar-accent-foreground: #F8FAF8;
   --sidebar-border: #1E293B;
   --sidebar-ring: #818CF8;
+
+  /* Enrollment status tokens (dark mode) */
+  --status-pending-dot: #FACC15;
+  --status-pending-bg: #422006;
+  --status-pending-fg: #FEF08A;
+  --status-pending-border: #A16207;
+
+  --status-confirmed-dot: #22C55E;
+  --status-confirmed-bg: #052E16;
+  --status-confirmed-fg: #86EFAC;
+  --status-confirmed-border: #166534;
+
+  --status-waitlisted-dot: #F97316;
+  --status-waitlisted-bg: #431407;
+  --status-waitlisted-fg: #FDBA74;
+  --status-waitlisted-border: #9A3412;
+
+  --status-cancelled-dot: #FCA5A5;
+  --status-cancelled-bg: #4C0519;
+  --status-cancelled-fg: #FDA4AF;
+  --status-cancelled-border: #9F1239;
 }
 
 @layer base {

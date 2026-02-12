@@ -39,7 +39,7 @@ export default function EnrollmentsPage() {
                 </CardHeader>
                 <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <div className="flex items-start gap-3">
-                        <div className="mt-1 h-3 w-3 rounded-full bg-yellow-500" />
+                        <div className="mt-1 h-3 w-3 rounded-full bg-[var(--status-pending-dot)]" />
                         <div>
                             <p className="font-medium text-sm">Pending Payment</p>
                             <p className="text-xs text-muted-foreground">
@@ -49,7 +49,7 @@ export default function EnrollmentsPage() {
                     </div>
                     
                     <div className="flex items-start gap-3">
-                        <div className="mt-1 h-3 w-3 rounded-full bg-green-500" />
+                        <div className="mt-1 h-3 w-3 rounded-full bg-[var(--status-confirmed-dot)]" />
                         <div>
                             <p className="font-medium text-sm">Confirmed</p>
                             <p className="text-xs text-muted-foreground">
@@ -59,7 +59,7 @@ export default function EnrollmentsPage() {
                     </div>
 
                     <div className="flex items-start gap-3">
-                        <div className="mt-1 h-3 w-3 rounded-full bg-orange-500" />
+                        <div className="mt-1 h-3 w-3 rounded-full bg-[var(--status-waitlisted-dot)]" />
                         <div>
                             <p className="font-medium text-sm">Waitlisted</p>
                             <p className="text-xs text-muted-foreground">
@@ -69,7 +69,7 @@ export default function EnrollmentsPage() {
                     </div>
 
                     <div className="flex items-start gap-3">
-                        <div className="mt-1 h-3 w-3 rounded-full bg-destructive/50" />
+                        <div className="mt-1 h-3 w-3 rounded-full bg-[var(--status-cancelled-dot)]" />
                         <div>
                             <p className="font-medium text-sm">Cancelled</p>
                             <p className="text-xs text-muted-foreground">
