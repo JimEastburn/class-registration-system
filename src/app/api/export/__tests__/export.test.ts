@@ -83,7 +83,7 @@ describe('Export API Route', () => {
         });
 
         const mockClasses = [
-            { id: 'c1', name: 'Art 101', status: 'active', teacher: { first_name: 'Dali', last_name: 'Salvador' }, fee: 100 }
+            { id: 'c1', name: 'Art 101', status: 'published', teacher: { first_name: 'Dali', last_name: 'Salvador' }, fee: 100 }
         ];
 
         mockSupabase.from.mockReturnValueOnce({

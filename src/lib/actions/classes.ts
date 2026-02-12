@@ -666,14 +666,14 @@ export async function cancelClass(classId: string): Promise<ActionResult<{ affec
       .from('enrollments')
       .select('*, student:family_members(*), class:classes(name)')
       .eq('class_id', classId)
-      .in('status', ['active', 'pending', 'waitlisted']);
+      .in('status', ['confirmed', 'pending', 'waitlisted']);
 
-    // 2. Cancel all active enrollments (Update status)
+    // 2. Cancel all relevant enrollments (Update status)
     const { data: affectedEnrollments } = await supabase
         .from('enrollments')
         .update({ status: 'cancelled' })
         .eq('class_id', classId)
-        .in('status', ['active', 'pending', 'waitlisted'])
+        .in('status', ['confirmed', 'pending', 'waitlisted'])
         .select('id');
 
     // Send Cancellation Emails
@@ -757,8 +757,8 @@ export async function completeClass(classId: string): Promise<ActionResult<void>
       }
     }
 
-    if (existingClass.status !== 'active' && existingClass.status !== 'published') {
-      return { success: false, error: 'Only active or published classes can be completed' };
+    if (existingClass.status !== 'published') {
+      return { success: false, error: 'Only published classes can be completed' };
     }
 
     const { error } = await supabase

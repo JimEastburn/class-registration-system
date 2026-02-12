@@ -61,7 +61,6 @@ interface ClassManagementTableProps {
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
   draft: { label: 'Draft', variant: 'secondary' },
   published: { label: 'Published', variant: 'default' },
-  active: { label: 'Active', variant: 'default' },
   cancelled: { label: 'Cancelled', variant: 'destructive' },
   completed: { label: 'Completed', variant: 'outline' },
 };

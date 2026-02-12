@@ -434,7 +434,7 @@ export async function getTeacherDashboardData(): Promise<{
     // Calculate stats
     const totalClasses = classes?.length || 0;
     const isSchedulableStatus = (status: string | null | undefined) =>
-      status === 'published' || status === 'active';
+      status === 'published';
     const activeClasses = classes?.filter(c => isSchedulableStatus(c.status)).length || 0;
     const totalStudents = enrollmentCounts.reduce((sum, e) => sum + e.count, 0);
     

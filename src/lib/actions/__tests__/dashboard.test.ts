@@ -207,7 +207,7 @@ describe('Dashboard Actions', () => {
       // Classes query
       mockBuilder.then.mockImplementationOnce((resolve: any) =>
         resolve({
-          data: [{ id: 'class-1', name: 'Test Class', status: 'active' }],
+          data: [{ id: 'class-1', name: 'Test Class', status: 'published' }],
           error: null,
         })
       );

@@ -52,7 +52,7 @@ export default async function TeacherDashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalClasses}</div>
             <p className="text-xs text-muted-foreground">
-              {stats.activeClasses} active
+              {stats.activeClasses} published
             </p>
           </CardContent>
         </Card>
