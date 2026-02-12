@@ -52,8 +52,6 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
     .from('classes')
     .select(`
         *,
-        semester:semesters (name),
-        program:programs (name),
         materials:class_materials(*)
     `)
     .eq('id', id)
@@ -86,7 +84,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
            </Link>
            <div>
                 <h1 className="text-3xl font-bold tracking-tight">{classDetails.name}</h1>
-                <p className="text-muted-foreground">{classDetails.program?.name} • {classDetails.semester?.name}</p>
+                <p className="text-muted-foreground">{classDetails.day} • {classDetails.block}</p>
            </div>
        </div>
 
