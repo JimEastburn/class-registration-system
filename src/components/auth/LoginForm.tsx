@@ -120,6 +120,7 @@ export default function LoginForm() {
                         <Link
                             href="/register"
                             className="text-teal-400 hover:text-teal-300 font-medium transition-colors"
+                            data-testid="signup-link"
                         >
                             Create account
                         </Link>

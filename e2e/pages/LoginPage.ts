@@ -18,15 +18,17 @@ export class LoginPage extends BasePage {
     this.emailInput = page.locator('input[name="email"]');
     this.passwordInput = page.locator('input[name="password"]');
     this.submitButton = page.getByTestId('login-submit-button');
-    this.signUpLink = page.getByText('Sign up');
-    this.forgotPasswordLink = page.getByText('Forgot password');
+    this.signUpLink = page.getByTestId('signup-link');
+    this.forgotPasswordLink = page.getByTestId('forgot-password-link');
   }
   
   /**
    * Navigate to login page
    */
   async goto(): Promise<void> {
-    await this.page.goto('/login');
+    await this.page.goto('/login', { waitUntil: 'domcontentloaded' });
+    // Wait for the form to be ready
+    await this.emailInput.waitFor({ state: 'visible', timeout: 10000 });
   }
   
   /**
@@ -50,6 +52,8 @@ export class LoginPage extends BasePage {
   async login(email: string, password: string): Promise<void> {
     await this.fillForm(email, password);
     await this.submit();
+    // Wait for initial navigation after submit
+    await this.page.waitForLoadState('domcontentloaded');
   }
   
   /**

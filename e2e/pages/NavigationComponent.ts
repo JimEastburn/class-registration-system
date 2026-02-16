@@ -19,7 +19,7 @@ export class NavigationComponent extends BasePage {
     this.sidebar = page.getByTestId('sidebar');
     this.topbar = page.getByTestId('topbar');
     this.userMenu = page.getByTestId('user-menu-trigger');
-    this.signOutButton = page.getByTestId('sign-out-button');
+    this.signOutButton = page.getByTestId('logout-button');
     this.portalSwitcher = page.getByTestId('portal-switcher');
   }
   
@@ -27,7 +27,10 @@ export class NavigationComponent extends BasePage {
    * Open user dropdown menu
    */
   async openUserMenu(): Promise<void> {
+    await this.userMenu.waitFor({ state: 'visible', timeout: 10000 });
     await this.userMenu.click();
+    // Wait for dropdown content to appear (Radix animation)
+    await this.signOutButton.waitFor({ state: 'visible', timeout: 5000 });
   }
   
   /**

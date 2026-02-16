@@ -287,6 +287,7 @@ export default function RegisterForm() {
                         <Link
                             href="/login"
                             className="text-teal-400 hover:text-teal-300 font-medium transition-colors"
+                            data-testid="signin-link"
                         >
                             Sign in
                         </Link>

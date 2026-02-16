@@ -29,8 +29,8 @@ export class RegisterPage extends BasePage {
     this.confirmPasswordInput = page.locator('input[name="confirmPassword"]');
     this.roleSelectTrigger = page.getByTestId('role-select-trigger');
     this.codeOfConductCheckbox = page.locator('#codeOfConduct');
-    this.submitButton = page.locator('button[type="submit"]');
-    this.signInLink = page.getByText('Sign in');
+    this.submitButton = page.getByTestId('register-submit-button');
+    this.signInLink = page.getByTestId('signin-link');
   }
   
   /**

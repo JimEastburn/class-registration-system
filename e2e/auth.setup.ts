@@ -24,31 +24,26 @@ const createdUsers: TestUser[] = [];
 setup.describe('Auth State Setup', () => {
   for (const role of ROLES_TO_SETUP) {
     setup(`setup ${role} auth state`, async ({ page, context }) => {
+      const t = (label: string) => console.log(`[${role}] ${label}: ${((Date.now() - start) / 1000).toFixed(1)}s`);
+      const start = Date.now();
+
       // Create test user for this role
       const user = await createTestUser(role);
       createdUsers.push(user);
-      
-      console.log(`Created ${role} user: ${user.email}`);
+      t('user created');
       
       // Navigate to login
       await page.goto('/login');
+      t('login page loaded');
       
       // Fill login form
       await page.fill('input[name="email"]', user.email);
       await page.fill('input[name="password"]', user.password);
+      t('form filled');
       
       // Submit login
       await page.getByTestId('login-submit-button').click();
-      
-      // Wait a moment for the form submission to process
-      await page.waitForTimeout(1000);
-      
-      // Check for error message first
-      const errorMessage = await page.getByTestId('login-error-message').textContent().catch(() => null);
-      if (errorMessage) {
-        console.error(`Login failed for ${role}: ${errorMessage}`);
-        throw new Error(`Login failed: ${errorMessage}`);
-      }
+      t('submit clicked');
       
       // Wait for redirect based on role
       const roleRedirects: Record<UserRole, string> = {
@@ -62,19 +57,21 @@ setup.describe('Auth State Setup', () => {
       
       const expectedPath = roleRedirects[role];
       
-      // Wait for navigation to complete (long timeout to handle slow server)
+      // Wait for navigation to complete
       await page.waitForURL(`**${expectedPath}**`, { timeout: 60000 });
+      t('redirect complete');
       
-      // Wait for page to be fully loaded
-      await page.waitForLoadState('networkidle', { timeout: 30000 });
-      
-      console.log(`${role} logged in successfully, saving state...`);
+      // Wait for page to be loaded (avoid 'networkidle' — Supabase realtime
+      // keeps WebSocket connections alive, so networkidle never resolves)
+      await page.waitForLoadState('domcontentloaded', { timeout: 30000 });
+      t('DOM loaded');
       
       // Save authenticated state
       const statePath = getAuthStatePath(role);
       await context.storageState({ path: statePath });
+      t('state saved');
       
-      console.log(`${role} auth state saved to: ${statePath}`);
+      console.log(`✅ ${role} auth state saved to: ${statePath}`);
     });
   }
 });

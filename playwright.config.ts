@@ -5,7 +5,7 @@ export default defineConfig({
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
-    workers: process.env.CI ? 1 : undefined,
+    workers: 1,
     reporter: 'html',
 
     // Global setup and teardown for test isolation
@@ -23,15 +23,13 @@ export default defineConfig({
         {
             name: 'setup',
             testMatch: /auth\.setup\.ts/,
-            timeout: 120000, // 2 minute timeout for setup tests
+            timeout: 60000, // 60s — no cold-start compilation with production build
             fullyParallel: false, // Run setup tests sequentially
         },
         {
             name: 'chromium',
             use: {
                 ...devices['Desktop Chrome'],
-                // storageState will be added in specific tests if needed, 
-                // or we can set a default if most tests are authenticated.
             },
             dependencies: ['setup'],
         },
@@ -48,9 +46,11 @@ export default defineConfig({
     ],
 
     webServer: {
-        command: 'npm run dev',
+        command: process.env.CI
+            ? 'npm run build && npm run start'
+            : 'npm run dev',
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
-        timeout: 120 * 1000,
+        timeout: 180 * 1000, // 3 min — allows time for production build on CI
     },
 });

@@ -21,14 +21,11 @@ test.describe('Parent Login', () => {
     await loginPage.goto();
     await loginPage.login(testUser.email, testUser.password);
 
-    // Wait for redirect to parent dashboard
-    await expect(async () => {
-      const url = page.url();
-      expect(url).toContain('/parent');
-    }).toPass({ timeout: 15000 });
+    // Wait for page to load after login redirect
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify we're on the parent dashboard
-    await expect(page).toHaveURL(/\/parent/);
+    await expect(page).toHaveURL(/\/parent/, { timeout: 30000 });
   });
 
   test('should display login form elements', async ({ page }) => {

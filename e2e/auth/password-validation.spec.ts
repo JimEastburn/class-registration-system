@@ -109,21 +109,7 @@ test.describe('Password Validation', () => {
     });
 
     // Should proceed to success (no password validation errors)
-    await expect(async () => {
-      const url = page.url();
-      const content = await page.content();
-      
-      // Should NOT show password validation errors
-      const hasPasswordError = content.includes('at least 8 characters') ||
-                               content.includes('uppercase') ||
-                               content.includes('must contain');
-      
-      // Should either show success or redirect
-      const isSuccess = content.includes('registration is complete') ||
-                        url.includes('/parent');
-      
-      expect(hasPasswordError).toBe(false);
-      expect(isSuccess || !page.url().includes('/register')).toBe(true);
-    }).toPass({ timeout: 15000 });
+    // RegisterForm.tsx shows "Your registration is complete" on success
+    await expect(page.getByText('Your registration is complete')).toBeVisible({ timeout: 15000 });
   });
 });

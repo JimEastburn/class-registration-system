@@ -20,14 +20,16 @@ test.describe('Session Persistence', () => {
       // Wait for redirect to dashboard
       await expect(page).toHaveURL(/\/parent/, { timeout: 15000 });
 
+      // Wait for page to fully load (ensures auth cookies are set)
+      await page.waitForLoadState('domcontentloaded');
+
       // Refresh the page
-      await page.reload();
+      await page.reload({ waitUntil: 'domcontentloaded' });
 
       // Should still be on parent dashboard (session persisted)
-      await expect(async () => {
-        const url = page.url();
-        expect(url).toContain('/parent');
-      }).toPass({ timeout: 10000 });
+      // Allow time for middleware to verify session and potentially redirect
+      await page.waitForLoadState('domcontentloaded');
+      await expect(page).toHaveURL(/\/parent/, { timeout: 15000 });
 
       // Should NOT be redirected to login
       expect(page.url()).not.toContain('/login');
@@ -46,17 +48,13 @@ test.describe('Session Persistence', () => {
 
       // Wait for redirect to dashboard
       await expect(page).toHaveURL(/\/parent/, { timeout: 15000 });
+      await page.waitForLoadState('domcontentloaded');
 
       // Navigate to a different protected page
-      await page.goto('/parent/family');
+      await page.goto('/parent/family', { waitUntil: 'domcontentloaded' });
 
       // Should be able to access the page (session persisted)
-      await expect(async () => {
-        const url = page.url();
-        // Either on the family page or redirected there
-        const isOnProtectedPage = url.includes('/parent');
-        expect(isOnProtectedPage).toBe(true);
-      }).toPass({ timeout: 10000 });
+      await expect(page).toHaveURL(/\/parent/, { timeout: 15000 });
 
       // Should NOT be redirected to login
       expect(page.url()).not.toContain('/login');
@@ -75,18 +73,16 @@ test.describe('Session Persistence', () => {
 
       // Wait for redirect to dashboard
       await expect(page).toHaveURL(/\/parent/, { timeout: 15000 });
+      await page.waitForLoadState('domcontentloaded');
 
-      // Navigate to an unprotected page (like home or about)
-      await page.goto('/');
+      // Navigate to an unprotected page (like home)
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
 
       // Navigate back to protected area
-      await page.goto('/parent');
+      await page.goto('/parent', { waitUntil: 'domcontentloaded' });
 
-      // Should still be authenticated
-      await expect(async () => {
-        const url = page.url();
-        expect(url).toContain('/parent');
-      }).toPass({ timeout: 10000 });
+      // Should still be authenticated — allow redirect to resolve
+      await expect(page).toHaveURL(/\/parent/, { timeout: 15000 });
 
       // Should NOT be on login
       expect(page.url()).not.toContain('/login');

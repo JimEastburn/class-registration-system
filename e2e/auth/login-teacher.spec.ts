@@ -25,13 +25,8 @@ test.describe('Teacher Login', () => {
       await loginPage.login(teacherUser.email, teacherUser.password);
 
       // Wait for redirect to teacher dashboard
-      await expect(async () => {
-        const url = page.url();
-        expect(url).toContain('/teacher');
-      }).toPass({ timeout: 15000 });
-
-      // Verify we're on the teacher dashboard
-      await expect(page).toHaveURL(/\/teacher/);
+      await expect(page).toHaveURL(/\/teacher/, { timeout: 30000 });
+      await page.waitForLoadState('domcontentloaded');
     } finally {
       // Cleanup: delete the test user
       await deleteTestUser(teacherUser.userId);

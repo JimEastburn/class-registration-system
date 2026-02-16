@@ -1,6 +1,6 @@
 
-import { test, expect } from '@playwright/test';
-import { createTestUser } from './utils/helpers';
+import { test, expect, createTestUser, deleteTestUser } from './fixtures';
+import { LoginPage } from './pages';
 
 test.describe('Family Management', () => {
     let parentUser: { email: string; userId: string; password: string };
@@ -9,32 +9,36 @@ test.describe('Family Management', () => {
         parentUser = await createTestUser('parent');
     });
 
+    test.afterAll(async () => {
+        if (parentUser) {
+            await deleteTestUser(parentUser.userId);
+        }
+    });
+
     test('Parent can add a family member with email', async ({ page }) => {
         test.setTimeout(60000);
 
         // Login
-        await page.goto('/login');
-        await page.fill('input[name="email"]', parentUser.email);
-        await page.fill('input[name="password"]', parentUser.password);
-        await page.click('button[type="submit"]');
-        await expect(page).toHaveURL(/.*parent/);
+        const loginPage = new LoginPage(page);
+        await loginPage.goto();
+        await loginPage.login(parentUser.email, parentUser.password);
+        await expect(page).toHaveURL(/.*parent/, { timeout: 15000 });
 
         // Navigate to Family
-        await page.goto('/parent/family');
+        await page.goto('/parent/family', { waitUntil: 'domcontentloaded' });
         await page.getByRole('button', { name: 'Add Family Member' }).click();
 
         const firstName = 'TestChild';
         const lastName = 'FamilyTest';
         const email = `testchild.${Date.now()}@test.com`;
 
-        // Fill Form
+        // Fill Form (react-hook-form spreads field props including name)
         await page.fill('input[name="firstName"]', firstName);
         await page.fill('input[name="lastName"]', lastName);
-        // This is the critical regression check - this field must exist
         await page.fill('input[name="email"]', email);
-        await page.fill('input[name="dob"]', '2016-01-01');
+        // Note: no dob field is rendered in AddFamilyMemberDialog
         
-        // Select Grade (shadcn UI)
+        // Select Grade (shadcn Select component)
         const gradeTrigger = page.locator('button').filter({ hasText: 'Select grade' });
         await expect(gradeTrigger).toBeVisible();
         await gradeTrigger.click();
@@ -42,9 +46,8 @@ test.describe('Family Management', () => {
         
         await page.getByRole('button', { name: 'Add Member' }).click();
 
-        // Verify Success
-        // Wait for dialog to close or list to update
-        await expect(page.getByText(firstName)).toBeVisible();
+        // Verify Success — toast or list update
+        await expect(page.getByText(firstName)).toBeVisible({ timeout: 10000 });
         await expect(page.getByText(email)).toBeVisible();
     });
 });

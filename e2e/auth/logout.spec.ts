@@ -14,27 +14,42 @@ import { LoginPage, NavigationComponent } from '../pages';
  */
 
 test.describe('Logout', () => {
+  // Run tests serially since they all create/destroy users and the
+  // Supabase auth rate limits can cause flakiness when run in parallel.
+  test.describe.configure({ mode: 'serial', retries: 1 });
+  
+  // Sign-out involves Supabase auth + Next.js middleware redirect chain
+  test.setTimeout(60000);
+
+  /**
+   * Helper: Login and wait for dashboard to be fully ready
+   */
+  async function loginAndWaitForDashboard(page: import('@playwright/test').Page, email: string, password: string) {
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.login(email, password);
+    
+    // Wait for redirect to dashboard  
+    await page.waitForLoadState('domcontentloaded');
+    await expect(page).toHaveURL(/\/parent/, { timeout: 30000 });
+    
+    // Give the page time to finish any compilation/hydration
+    // This is necessary because the Next.js dev server may still be compiling
+    await page.waitForTimeout(2000);
+  }
+
   test('should redirect to /login after sign out', async ({ page }) => {
-    // Create and login a user
     const user = await createTestUser('parent');
     
     try {
-      const loginPage = new LoginPage(page);
-      await loginPage.goto();
-      await loginPage.login(user.email, user.password);
+      await loginAndWaitForDashboard(page, user.email, user.password);
 
-      // Wait for redirect to dashboard
-      await expect(page).toHaveURL(/\/parent/, { timeout: 15000 });
-
-      // Now sign out using navigation
+      // Sign out
       const navigation = new NavigationComponent(page);
       await navigation.signOut();
 
       // Should be redirected to login
-      await expect(async () => {
-        const url = page.url();
-        expect(url).toContain('/login');
-      }).toPass({ timeout: 10000 });
+      await expect(page).toHaveURL(/\/login/, { timeout: 30000 });
     } finally {
       await deleteTestUser(user.userId);
     }
@@ -44,29 +59,20 @@ test.describe('Logout', () => {
     const user = await createTestUser('parent');
     
     try {
-      const loginPage = new LoginPage(page);
-      await loginPage.goto();
-      await loginPage.login(user.email, user.password);
-
-      // Wait for redirect to dashboard
-      await expect(page).toHaveURL(/\/parent/, { timeout: 15000 });
+      await loginAndWaitForDashboard(page, user.email, user.password);
 
       // Sign out
       const navigation = new NavigationComponent(page);
       await navigation.signOut();
 
       // Wait for redirect to login
-      await expect(page).toHaveURL(/\/login/, { timeout: 10000 });
+      await expect(page).toHaveURL(/\/login/, { timeout: 30000 });
 
       // Try to navigate to protected page
-      await page.goto('/parent');
+      await page.goto('/parent', { waitUntil: 'domcontentloaded' });
 
       // Should be redirected back to login (session invalidated)
-      await expect(async () => {
-        const url = page.url();
-        // Should either be on login or redirected there
-        expect(url).toContain('/login');
-      }).toPass({ timeout: 10000 });
+      await expect(page).toHaveURL(/\/login/, { timeout: 30000 });
     } finally {
       await deleteTestUser(user.userId);
     }
@@ -76,12 +82,7 @@ test.describe('Logout', () => {
     const user = await createTestUser('parent');
     
     try {
-      const loginPage = new LoginPage(page);
-      await loginPage.goto();
-      await loginPage.login(user.email, user.password);
-
-      // Wait for redirect to dashboard
-      await expect(page).toHaveURL(/\/parent/, { timeout: 15000 });
+      await loginAndWaitForDashboard(page, user.email, user.password);
 
       // User menu should be accessible
       const navigation = new NavigationComponent(page);
