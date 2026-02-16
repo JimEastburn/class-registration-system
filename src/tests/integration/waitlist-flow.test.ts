@@ -2,12 +2,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { enrollStudent } from '@/lib/actions/enrollments';
 import { processRefund } from '@/lib/actions/refunds';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
 
 // Mock Dependencies
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
+  createAdminClient: vi.fn(),
 }));
 
 vi.mock('@/lib/stripe', () => ({
@@ -99,6 +100,23 @@ describe('Integration Flow: Waitlist -> Promotion', () => {
         (createClient as unknown as { mockResolvedValue: (val: unknown) => void }).mockResolvedValue(mockSupabase);
         (stripe.refunds.create as any).mockResolvedValue({ id: 're_123' });
 
+        // Mock admin client for system_settings check in enrollStudent
+        const mockAdminSupabase = {
+            from: vi.fn().mockImplementation((table: string) => {
+                if (table === 'system_settings') {
+                    return {
+                        select: vi.fn().mockReturnValue({
+                            eq: vi.fn().mockReturnValue({
+                                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null })
+                            })
+                        })
+                    };
+                }
+                return {};
+            })
+        };
+        (createAdminClient as unknown as { mockResolvedValue: (val: unknown) => void }).mockResolvedValue(mockAdminSupabase);
+
         // Robust Mock Builder
         mockSupabase.from.mockImplementation((table: string) => {
             const queryState: { 
@@ -127,6 +145,10 @@ describe('Integration Flow: Waitlist -> Promotion', () => {
                 }),
                 eq: vi.fn().mockImplementation((col, val) => {
                     queryState.filters[col] = val;
+                    return builder;
+                }),
+                in: vi.fn().mockImplementation((col: string, vals: unknown[]) => {
+                    queryState.filters[`_in_${col}`] = vals;
                     return builder;
                 }),
                 order: vi.fn().mockImplementation((col, opts) => {

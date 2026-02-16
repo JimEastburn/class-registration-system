@@ -40,10 +40,17 @@ describe('Family Actions', () => {
                  })
              });
              
-            mockSupabase.from.mockImplementation((table) => {
+            mockSupabase.from.mockImplementation((table: string) => {
                 if (table === 'family_members') {
                     return {
                         insert: mockInsert,
+                    };
+                }
+                if (table === 'profiles') {
+                    return {
+                        update: vi.fn().mockReturnValue({
+                            eq: vi.fn().mockResolvedValue({ error: null })
+                        })
                     };
                 }
                 if (table === 'audit_logs') {

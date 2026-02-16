@@ -2,11 +2,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createFamilyMember } from '@/lib/actions/family';
 import { enrollStudent } from '@/lib/actions/enrollments';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 // Mock Dependencies
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
+  createAdminClient: vi.fn(),
 }));
 
 vi.mock('next/cache', () => ({
@@ -65,6 +66,23 @@ describe('Integration Flow: Family Creation -> Enrollment', () => {
         dbClassBlocks = [];
 
         (createClient as unknown as { mockResolvedValue: (val: unknown) => void }).mockResolvedValue(mockSupabase);
+
+        // Mock admin client for system_settings check in enrollStudent
+        const mockAdminSupabase = {
+            from: vi.fn().mockImplementation((table: string) => {
+                if (table === 'system_settings') {
+                    return {
+                        select: vi.fn().mockReturnValue({
+                            eq: vi.fn().mockReturnValue({
+                                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null })
+                            })
+                        })
+                    };
+                }
+                return {};
+            })
+        };
+        (createAdminClient as unknown as { mockResolvedValue: (val: unknown) => void }).mockResolvedValue(mockAdminSupabase);
         
         // Mock Auth
         mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: mockUserId } }, error: null });
@@ -92,6 +110,11 @@ describe('Integration Flow: Family Creation -> Enrollment', () => {
                 single: vi.fn().mockImplementation(async () => {
                     return executeQuery(table, queryState, 'single');
                 }),
+                in: vi.fn().mockImplementation((col: string, vals: unknown[]) => {
+                    queryState.filters[`_in_${col}`] = vals;
+                    return builder;
+                }),
+                limit: vi.fn().mockReturnThis(),
                 maybeSingle: vi.fn().mockImplementation(async () => {
                     return executeQuery(table, queryState, 'maybeSingle');
                 }),

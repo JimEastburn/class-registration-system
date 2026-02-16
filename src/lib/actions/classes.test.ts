@@ -21,6 +21,17 @@ vi.mock('@/lib/email', () => ({
     sendScheduleChangeNotification: vi.fn(),
 }));
 
+// Mock scheduling logic
+vi.mock('@/lib/logic/scheduling', () => ({
+    validateScheduleConfig: vi.fn().mockReturnValue({ valid: true }),
+    checkScheduleConflict: vi.fn().mockReturnValue(null),
+}));
+
+// Mock calendar logic
+vi.mock('@/lib/logic/calendar', () => ({
+    generateClassEvents: vi.fn().mockReturnValue([]),
+}));
+
 describe('Class Actions', () => {
     const mockUser = { id: 'teacher-1' };
     
@@ -39,7 +50,7 @@ describe('Class Actions', () => {
 
     describe('createClass', () => {
         it('allows teacher to create draft class', async () => {
-             // Mock Role Check
+             // Mock Role Check: profiles
              mockSupabase.from.mockReturnValueOnce({
                  select: vi.fn().mockReturnValue({
                      eq: vi.fn().mockReturnValue({
@@ -48,11 +59,11 @@ describe('Class Actions', () => {
                  })
              });
 
-             // Mock Insert
+             // Mock Insert: classes → .insert().select().single()
              mockSupabase.from.mockReturnValueOnce({
                  insert: vi.fn().mockReturnValue({
                      select: vi.fn().mockReturnValue({
-                         single: vi.fn().mockResolvedValue({ data: { id: 'class-new' }, error: null })
+                         single: vi.fn().mockResolvedValue({ data: { id: 'class-new', schedule_config: null, location: null, description: null }, error: null })
                      })
                  })
              });
@@ -82,9 +93,18 @@ describe('Class Actions', () => {
                  })
              });
 
+             // Mock teacher conflict check: classes → .select().eq().in()
+             mockSupabase.from.mockReturnValueOnce({
+                 select: vi.fn().mockReturnValue({
+                     eq: vi.fn().mockReturnValue({
+                         in: vi.fn().mockResolvedValue({ data: [], error: null })
+                     })
+                 })
+             });
+
              const mockInsert = vi.fn().mockReturnValue({
                  select: vi.fn().mockReturnValue({
-                     single: vi.fn().mockResolvedValue({ data: { id: 'class-schedule-test' }, error: null })
+                     single: vi.fn().mockResolvedValue({ data: { id: 'class-schedule-test', schedule_config: { day: 'Tuesday', block: 'Block 2 (10:00 AM - 11:00 AM)', startDate: '2025-01-01', endDate: '2025-05-31' }, location: null, description: null }, error: null })
                  })
              });
 
@@ -146,11 +166,11 @@ describe('Class Actions', () => {
 
     describe('updateClass', () => {
         it('allows owner to update class', async () => {
-             // Mock Existing Class Check
+             // Mock Existing Class Check (expanded select columns)
              mockSupabase.from.mockReturnValueOnce({
                  select: vi.fn().mockReturnValue({
                      eq: vi.fn().mockReturnValue({
-                         single: vi.fn().mockResolvedValue({ data: { teacher_id: 'teacher-1', status: 'draft', schedule_config: null }, error: null })
+                         single: vi.fn().mockResolvedValue({ data: { teacher_id: 'teacher-1', status: 'draft', name: 'Math 101', location: null, schedule_config: null, start_date: null, end_date: null }, error: null })
                      })
                  })
              });
@@ -180,7 +200,7 @@ describe('Class Actions', () => {
              mockSupabase.from.mockReturnValueOnce({
                  select: vi.fn().mockReturnValue({
                      eq: vi.fn().mockReturnValue({
-                         single: vi.fn().mockResolvedValue({ data: { teacher_id: 'teacher-2', status: 'draft' }, error: null })
+                         single: vi.fn().mockResolvedValue({ data: { teacher_id: 'teacher-2', status: 'draft', name: 'Math 101', location: null, schedule_config: null, start_date: null, end_date: null }, error: null })
                      })
                  })
              });
@@ -210,7 +230,11 @@ describe('Class Actions', () => {
                          single: vi.fn().mockResolvedValue({ data: { 
                              teacher_id: 'teacher-1', 
                              status: 'draft',
-                             location: 'Old Location'
+                             name: 'Math 101',
+                             location: 'Old Location',
+                             schedule_config: null,
+                             start_date: null,
+                             end_date: null
                          }, error: null })
                      })
                  })
@@ -232,6 +256,29 @@ describe('Class Actions', () => {
              // Mock Update
              mockSupabase.from.mockReturnValueOnce({
                  update: mockUpdate
+             });
+
+             // Mock calendar_events delete for location change (delete future events)
+             mockSupabase.from.mockReturnValueOnce({
+                 delete: vi.fn().mockReturnValue({
+                     eq: vi.fn().mockReturnValue({
+                         gte: vi.fn().mockResolvedValue({ error: null })
+                     })
+                 })
+             });
+
+             // Mock re-fetch updated class for calendar regeneration
+             mockSupabase.from.mockReturnValueOnce({
+                 select: vi.fn().mockReturnValue({
+                     eq: vi.fn().mockReturnValue({
+                         single: vi.fn().mockResolvedValue({ data: { 
+                             id: 'class-1',
+                             schedule_config: null,
+                             location: null,
+                             description: null
+                         }, error: null })
+                     })
+                 })
              });
 
              // Type now allows null, so no error expected
