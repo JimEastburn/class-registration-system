@@ -119,3 +119,4 @@ The following business logic safeguards are strictly enforced:
 - **CSV Hardening**: All administrative data exports are escaped using `'` to prevent spreadsheet formula injection.
 - **Privilege Revocation**: Role demotions (Admin/Teacher/Class Scheduler -> Parent) immediately revoke all elevated action access.
 - **Cross-Cutting Refactors**: Any property rename, type change, or column rename MUST follow the `.agent/skills/systematic-refactoring/SKILL.md` audit process before editing files. No exceptions.
+- **Migration File Sync**: Every call to `mcp_supabase_apply_migration` MUST be immediately followed by creating a matching local SQL file in `supabase/migrations/<version>_<name>.sql` with identical content. No exceptions—remote and local migrations must always stay in sync.
