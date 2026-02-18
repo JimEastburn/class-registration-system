@@ -19,67 +19,42 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createClass, updateClass } from '@/lib/actions/classes';
 import type { Class, ScheduleConfig } from '@/types';
 
 
 // Define Zod Schema for the flat form structure
-const createClassFormSchema = (hideScheduleSelects: boolean) =>
-  z.object({
-    name: z.string().min(3, 'Name must be at least 3 characters'),
-    description: z.string().optional(),
-    price: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
-      message: 'Price must be 0 or greater',
-    }),
-    capacity: z.string().refine((val) => !isNaN(parseInt(val, 10)) && parseInt(val, 10) >= 1, {
-      message: 'Capacity must be at least 1',
-    }),
-    startDate: z.string().optional(),
-    endDate: z.string().optional(),
-    day: hideScheduleSelects ? z.string().optional() : z.string().min(1, 'Please select a Day'),
-    block: hideScheduleSelects ? z.string().optional() : z.string().min(1, 'Please select a Block of time'),
-    location: z.string().optional(),
-    ageMin: z.string().optional(),
-    ageMax: z.string().optional(),
-  });
+const classFormSchema = z.object({
+  name: z.string().min(3, 'Name must be at least 3 characters'),
+  description: z.string().optional(),
+  price: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
+    message: 'Price must be 0 or greater',
+  }),
+  capacity: z.string().refine((val) => !isNaN(parseInt(val, 10)) && parseInt(val, 10) >= 1, {
+    message: 'Capacity must be at least 1',
+  }),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  location: z.string().optional(),
+  ageMin: z.string().optional(),
+  ageMax: z.string().optional(),
+});
 
-type ClassFormValues = z.infer<ReturnType<typeof createClassFormSchema>>;
+type ClassFormValues = z.infer<typeof classFormSchema>;
 
 interface ClassFormProps {
   existingClass?: Class;
   mode: 'create' | 'edit';
-  /** When true, hides Day of Week and Block of Time selects (used for teacher edit view) */
-  hideScheduleSelects?: boolean;
 }
 
-const dayOptions = [
-  { value: 'Tuesday/Thursday', label: 'Tuesday/Thursday' },
-  { value: 'Tuesday', label: 'Tuesday only' },
-  { value: 'Wednesday', label: 'Wednesday only' },
-  { value: 'Thursday', label: 'Thursday only' },
-];
-
-const blockOptions = [
-  'Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5'
-];
-
-export function ClassForm({ existingClass, mode, hideScheduleSelects = false }: ClassFormProps) {
+export function ClassForm({ existingClass, mode }: ClassFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
 
   // Helper to safely access schedule config
   const scheduleConfig = existingClass?.schedule_config as ScheduleConfig | undefined;
-
-  const classFormSchema = createClassFormSchema(hideScheduleSelects);
 
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classFormSchema),
@@ -90,8 +65,6 @@ export function ClassForm({ existingClass, mode, hideScheduleSelects = false }: 
       capacity: existingClass ? String(existingClass.capacity) : '10',
       startDate: scheduleConfig?.startDate || '',
       endDate: scheduleConfig?.endDate || '',
-      day: scheduleConfig?.day || '',
-      block: scheduleConfig?.block || '',
       location: existingClass?.location || '',
       ageMin: existingClass?.age_min != null ? String(existingClass.age_min) : '',
       ageMax: existingClass?.age_max != null ? String(existingClass.age_max) : '',
@@ -110,10 +83,10 @@ export function ClassForm({ existingClass, mode, hideScheduleSelects = false }: 
         description: values.description || undefined,
         price: priceNum,
         capacity: capacityNum,
-        // Construct ScheduleConfig — fall back to existing values when selects are hidden
+        // Preserve existing day/block from schedule_config (teachers cannot change these)
         schedule_config: {
-            day: values.day || scheduleConfig?.day || '',
-            block: values.block || scheduleConfig?.block || '',
+            day: scheduleConfig?.day || '',
+            block: scheduleConfig?.block || '',
             recurring: true, // Default to recurring for now
             startDate: values.startDate || undefined,
             endDate: values.endDate || undefined,
@@ -246,58 +219,6 @@ export function ClassForm({ existingClass, mode, hideScheduleSelects = false }: 
             <CardDescription>When will this class take place?</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!hideScheduleSelects && (
-            <div className="grid gap-4 md:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="day"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Day of Week *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a day" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {dayOptions.map((day) => (
-                        <SelectItem key={day.value} value={day.value}>
-                          {day.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-                control={form.control}
-                name="block" 
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Block of time *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                         <FormControl>
-                           <SelectTrigger>
-                             <SelectValue placeholder="Select a block" />
-                           </SelectTrigger>
-                         </FormControl>
-                         <SelectContent>
-                             {blockOptions.map(blk => (
-                                 <SelectItem key={blk} value={blk}>{blk}</SelectItem>
-                             ))}
-                         </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-            />
-            </div>
-            )}
-            
             <div className="grid gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
