@@ -29,7 +29,7 @@ export default async function HomePage() {
       </div>
 
       {/* Content Wrapper */}
-      <div className="relative z-10 min-h-screen flex flex-col pb-24 md:pb-0">
+      <div className="relative z-10 min-h-screen flex flex-col pb-8">
 
         {/* Navigation */}
         <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
@@ -42,7 +42,7 @@ export default async function HomePage() {
           />
           <div className="flex gap-2 md:gap-4">
             <Link href="/login">
-              <Button variant="outline">
+              <Button variant="outline" className="bg-amber-200/80 text-slate-900 border-amber-300 hover:bg-accent hover:text-accent-foreground">
                 Sign In
               </Button>
             </Link>
@@ -55,8 +55,8 @@ export default async function HomePage() {
         </nav>
 
         {/* Hero Section */}
-        <main className="container mx-auto px-4 py-20 flex-grow flex flex-col justify-center">
-          <div className="text-center max-w-4xl mx-auto">
+        <main className="container mx-auto px-4 py-8 flex-grow flex flex-col justify-center">
+          <div className="text-center max-w-4xl mx-auto md:-mt-56 xl:mt-0">
             <h1 className="text-5xl md:text-6xl lg:text-8xl font-bold text-foreground mb-8 leading-tight tracking-tight">
               <span className="text-white">
                 Class Registration
@@ -70,7 +70,7 @@ export default async function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/login">
-                <Button size="lg" variant="outline" className="text-lg px-8 py-6 h-auto w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="text-lg px-12 py-6 h-auto w-full sm:w-auto bg-amber-200/80 text-slate-900 border-amber-300 hover:bg-accent hover:text-accent-foreground">
                   Sign In
                 </Button>
               </Link>

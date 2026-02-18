@@ -19,11 +19,12 @@ interface ParentInfo {
 interface StudentInfo {
     first_name: string;
     last_name: string;
+    parent_id?: string;
 }
 
 interface ClassInfo {
     name: string;
-    fee: number;
+    price: number;
     description?: string;
 }
 
@@ -77,9 +78,8 @@ export async function syncPaymentToZoho(paymentId: string) {
                 *,
                 enrollment:enrollments(
                     id,
-                    student:family_members(first_name, last_name),
-                    class:classes(name, fee, description),
-                    parent:profiles!enrollments_parent_id_fkey(first_name, last_name, email, phone)
+                    student:family_members(first_name, last_name, parent_id),
+                    class:classes(name, price, description)
                 )
             `)
             .eq('id', paymentId)
@@ -91,7 +91,18 @@ export async function syncPaymentToZoho(paymentId: string) {
 
         const typedPayment = payment as unknown as PaymentWithEnrollment;
         const enrollment = typedPayment.enrollment;
-        const parent = enrollment.parent;
+
+        // Resolve parent through student's parent_id
+        const { data: parentData, error: parentError } = await supabaseAdmin
+            .from('profiles')
+            .select('first_name, last_name, email, phone')
+            .eq('id', enrollment.student.parent_id!)
+            .single();
+
+        if (parentError || !parentData) {
+            throw new Error(`Parent profile not found for payment ${paymentId}`);
+        }
+        const parent = parentData as ParentInfo;
 
         const accessToken = await getAccessToken();
 
