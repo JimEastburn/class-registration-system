@@ -111,7 +111,7 @@ async function runFullSync(token: string) {
     }
 
     paymentId = data.id;
-    log('📋', `Found payment: ${paymentId} ($${(data.amount / 100).toFixed(2)}, sync_status: ${data.sync_status})`);
+    log('📋', `Found payment: ${paymentId} ($${Number(data.amount).toFixed(2)}, sync_status: ${data.sync_status})`);
   } else {
     log('📋', `Using specified payment: ${paymentId}`);
   }
@@ -156,7 +156,7 @@ async function runFullSync(token: string) {
 
   log('👤', `Parent:  ${parent.first_name} ${parent.last_name} (${parent.email})`);
   log('🎓', `Student: ${student.first_name} ${student.last_name}`);
-  log('📚', `Class:   ${classInfo.name} — $${(payment.amount / 100).toFixed(2)}`);
+  log('📚', `Class:   ${classInfo.name} — $${Number(payment.amount).toFixed(2)}`);
 
   // Step A: Find or create Zoho contact
   log('🔍', `Searching for existing Zoho contact: ${parent.email}...`);
@@ -257,7 +257,7 @@ async function createInvoice(
           {
             name: enrollment.class.name,
             description: `Enrollment for ${enrollment.student.first_name} ${enrollment.student.last_name}`,
-            rate: payment.amount / 100, // cents → dollars
+            rate: payment.amount,
             quantity: 1,
           },
         ],
@@ -289,7 +289,7 @@ async function recordPayment(
       body: JSON.stringify({
         customer_id: contactId,
         payment_mode: 'creditcard',
-        amount: payment.amount / 100,
+        amount: payment.amount,
         date: new Date(payment.paid_at || payment.created_at)
           .toISOString()
           .split('T')[0],
@@ -297,7 +297,7 @@ async function recordPayment(
         invoices: [
           {
             invoice_id: invoiceId,
-            amount_applied: payment.amount / 100,
+            amount_applied: payment.amount,
           },
         ],
       }),
