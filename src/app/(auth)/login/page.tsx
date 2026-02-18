@@ -35,12 +35,12 @@ export default async function LoginPage() {
             {/* Support Info Card */}
             <div className="w-full bg-slate-800/50 backdrop-blur-md rounded-xl p-4 border border-slate-700 shadow-lg text-center">
                 <p className="text-slate-300 text-sm">
-                    For help please email{' '}
+                    For help, please text Jim Eastburn{' '}
                     <a
-                        href="mailto:communitysupport@austinaac.org"
+                        href="sms:+15126896860"
                         className="text-teal-400 font-medium hover:text-teal-300 transition-colors"
                     >
-                        communitysupport@austinaac.org
+                        (512) 689-6860
                     </a>
                 </p>
             </div>

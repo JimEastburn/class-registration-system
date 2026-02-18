@@ -12,12 +12,12 @@ export function Footer() {
 
     return (
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-gray-200 p-2 text-center text-sm text-muted-foreground z-50 backdrop-blur-sm">
-            For help, please email{" "}
+            For help, please text Jim Eastburn{" "}
             <a
-                href="mailto:communitysupport@austinaac.org"
+                href="sms:+15126896860"
                 className="text-blue-600 hover:underline font-medium"
             >
-                communitysupport@austinaac.org
+                (512) 689-6860
             </a>
             <span className="mx-6 text-gray-300">|</span>
             <a
