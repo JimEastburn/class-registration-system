@@ -12,7 +12,6 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { signOut } from '@/lib/actions/auth';
 import type { UserRole } from '@/types';
 
@@ -52,37 +51,7 @@ function getInitials(user: TopbarUser): string {
     return user.email.slice(0, 2).toUpperCase();
 }
 
-/**
- * Get role display label
- */
-function getRoleLabel(role: UserRole): string {
-    const labels: Record<UserRole, string> = {
-        parent: 'Parent',
-        teacher: 'Teacher',
-        student: 'Student',
-        admin: 'Admin',
-        class_scheduler: 'Class Scheduler',
-        super_admin: 'Super Admin',
-    };
-    return labels[role] || role;
-}
 
-/**
- * Get role badge variant
- */
-function getRoleBadgeVariant(role: UserRole): 'default' | 'secondary' | 'destructive' | 'outline' {
-    switch (role) {
-        case 'super_admin':
-            return 'destructive';
-        case 'admin':
-            return 'default';
-        case 'teacher':
-        case 'class_scheduler':
-            return 'secondary';
-        default:
-            return 'outline';
-    }
-}
 
 export function Topbar({ user }: TopbarProps) {
     const displayName = getDisplayName(user);
@@ -95,10 +64,6 @@ export function Topbar({ user }: TopbarProps) {
 
             {/* Right side: User menu */}
             <div className="flex items-center gap-4">
-                {/* Role Badge */}
-                <Badge variant={getRoleBadgeVariant(user.role)} data-testid="role-badge">
-                    {getRoleLabel(user.role)}
-                </Badge>
 
                 {/* User Dropdown */}
                 <DropdownMenu>
