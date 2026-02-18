@@ -188,7 +188,7 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
                   )}
                 </TableCell>
                 <TableCell>{cls.capacity}</TableCell>
-                <TableCell>{formatCurrency(cls.price, true)}</TableCell>
+                <TableCell>{formatCurrency(cls.price)}</TableCell>
                 <TableCell>
                   <Badge variant={statusConfig[cls.status]?.variant || 'outline'}>
                     {statusConfig[cls.status]?.label || cls.status}

@@ -127,7 +127,7 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(classData.price, true)}
+              {formatCurrency(classData.price)}
             </div>
             <p className="text-xs text-muted-foreground">
               Per enrollment

@@ -90,7 +90,7 @@ export default function AdminClassTable({
                   </Badge>
                 </TableCell>
                 <TableCell>{cls.capacity}</TableCell>
-                <TableCell>{formatCurrency(cls.price, true)}</TableCell>
+                <TableCell>{formatCurrency(cls.price)}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button variant="ghost" size="icon" asChild>

@@ -21,7 +21,7 @@ import { Class } from '@/types';
 import { createClass, updateClass } from '@/lib/actions/classes';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { centsToDollars } from '@/lib/utils';
+
 
 const classFormSchema = z.object({
   name: z.string().min(2, {
@@ -52,7 +52,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
             name: initialData?.name || '',
             description: initialData?.description || '',
             capacity: initialData?.capacity || 10,
-            price: initialData?.price ? centsToDollars(initialData.price) : 80, 
+            price: initialData?.price ?? 80,
             day: initialData?.schedule_config?.day || '',
             block: initialData?.schedule_config?.block || '',
             status: (['draft', 'published', 'completed', 'cancelled'].includes(initialData?.status as string) 
@@ -67,7 +67,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
             name: data.name,
             description: data.description,
             capacity: data.capacity,
-            price: Math.round(data.price * 100), // Convert to cents
+            price: data.price,
             schedule_config: {
               day: data.day,
               block: data.block,

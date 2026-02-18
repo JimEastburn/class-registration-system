@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { ActionResult } from '@/types';
-import { centsToDollars } from '@/lib/utils';
+
 
 type ExportType = 'classes' | 'enrollments' | 'users';
 
@@ -78,7 +78,7 @@ export async function exportData(
         c.description,
         c.capacity,
         c.status,
-        centsToDollars(c.price),
+        c.price,
         // @ts-expect-error - joined data
         c.teacher ? `${c.teacher.first_name} ${c.teacher.last_name}` : 'Unassigned',
         c.location

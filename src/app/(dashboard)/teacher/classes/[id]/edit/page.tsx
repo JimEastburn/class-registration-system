@@ -33,7 +33,7 @@ export default async function EditClassPage({ params }: EditClassPageProps) {
         </div>
       </div>
 
-      <ClassForm mode="edit" existingClass={result.data} />
+      <ClassForm mode="edit" existingClass={result.data} hideScheduleSelects />
     </div>
   );
 }

@@ -29,32 +29,35 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createClass, updateClass } from '@/lib/actions/classes';
 import type { Class, ScheduleConfig } from '@/types';
-import { centsToDollars } from '@/lib/utils';
+
 
 // Define Zod Schema for the flat form structure
-const classFormSchema = z.object({
-  name: z.string().min(3, 'Name must be at least 3 characters'),
-  description: z.string().optional(),
-  price: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
-    message: 'Price must be 0 or greater',
-  }),
-  capacity: z.string().refine((val) => !isNaN(parseInt(val, 10)) && parseInt(val, 10) >= 1, {
-    message: 'Capacity must be at least 1',
-  }),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  day: z.string().min(1, 'Please select a Day'),
-  block: z.string().min(1, 'Please select a Block of time'),
-  location: z.string().optional(),
-  ageMin: z.string().optional(),
-  ageMax: z.string().optional(),
-});
+const createClassFormSchema = (hideScheduleSelects: boolean) =>
+  z.object({
+    name: z.string().min(3, 'Name must be at least 3 characters'),
+    description: z.string().optional(),
+    price: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
+      message: 'Price must be 0 or greater',
+    }),
+    capacity: z.string().refine((val) => !isNaN(parseInt(val, 10)) && parseInt(val, 10) >= 1, {
+      message: 'Capacity must be at least 1',
+    }),
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
+    day: hideScheduleSelects ? z.string().optional() : z.string().min(1, 'Please select a Day'),
+    block: hideScheduleSelects ? z.string().optional() : z.string().min(1, 'Please select a Block of time'),
+    location: z.string().optional(),
+    ageMin: z.string().optional(),
+    ageMax: z.string().optional(),
+  });
 
-type ClassFormValues = z.infer<typeof classFormSchema>;
+type ClassFormValues = z.infer<ReturnType<typeof createClassFormSchema>>;
 
 interface ClassFormProps {
   existingClass?: Class;
   mode: 'create' | 'edit';
+  /** When true, hides Day of Week and Block of Time selects (used for teacher edit view) */
+  hideScheduleSelects?: boolean;
 }
 
 const dayOptions = [
@@ -68,7 +71,7 @@ const blockOptions = [
   'Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5'
 ];
 
-export function ClassForm({ existingClass, mode }: ClassFormProps) {
+export function ClassForm({ existingClass, mode, hideScheduleSelects = false }: ClassFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
@@ -76,12 +79,14 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
   // Helper to safely access schedule config
   const scheduleConfig = existingClass?.schedule_config as ScheduleConfig | undefined;
 
+  const classFormSchema = createClassFormSchema(hideScheduleSelects);
+
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classFormSchema),
     defaultValues: {
       name: existingClass?.name || '',
       description: existingClass?.description || '',
-      price: existingClass ? String(centsToDollars(existingClass.price)) : '0',
+      price: existingClass ? String(existingClass.price) : '0',
       capacity: existingClass ? String(existingClass.capacity) : '10',
       startDate: scheduleConfig?.startDate || '',
       endDate: scheduleConfig?.endDate || '',
@@ -103,12 +108,12 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
       const input = {
         name: values.name,
         description: values.description || undefined,
-        price: Math.round(priceNum * 100), // Convert to cents
+        price: priceNum,
         capacity: capacityNum,
-        // Construct ScheduleConfig
+        // Construct ScheduleConfig — fall back to existing values when selects are hidden
         schedule_config: {
-            day: values.day,
-            block: values.block,
+            day: values.day || scheduleConfig?.day || '',
+            block: values.block || scheduleConfig?.block || '',
             recurring: true, // Default to recurring for now
             startDate: values.startDate || undefined,
             endDate: values.endDate || undefined,
@@ -241,6 +246,7 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
             <CardDescription>When will this class take place?</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {!hideScheduleSelects && (
             <div className="grid gap-4 md:grid-cols-2">
             <FormField
               control={form.control}
@@ -290,6 +296,7 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
                 )}
             />
             </div>
+            )}
             
             <div className="grid gap-4 md:grid-cols-2">
               <FormField

@@ -138,7 +138,7 @@ export async function POST(request: Request) {
                                 parentName: parent.first_name,
                                 studentName: studentName,
                                 className: classData.name,
-                                amount: classData.fee / 100, // Convert cents to dollars
+                                amount: classData.fee,
                                 paymentDate: new Date().toLocaleDateString(),
                                 transactionId: paymentIntentId || session.id,
                             });
@@ -165,7 +165,7 @@ export async function POST(request: Request) {
                                 schedule: `Day ${classData.day}, Block ${classData.block}`,
                                 location: classData.location || 'TBA',
                                 startDate: startDate,
-                                fee: classData.fee / 100
+                                fee: classData.fee
                             });
                         } catch (emailError) {
                             console.error('Failed to send enrollment confirmation:', emailError);

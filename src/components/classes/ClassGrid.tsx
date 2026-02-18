@@ -51,7 +51,7 @@ function ClassCard({ classItem }: ClassCardProps) {
                     <CardTitle className="text-lg line-clamp-2">
                         {classItem.name}
                     </CardTitle>
-                    <Badge variant="secondary">{formatCurrency(classItem.price, true)}</Badge>
+                    <Badge variant="secondary">{formatCurrency(classItem.price)}</Badge>
                 </div>
             </CardHeader>
             <CardContent className="flex-1">
@@ -88,7 +88,7 @@ function ClassCard({ classItem }: ClassCardProps) {
 
                     <div className="flex items-center gap-2 text-muted-foreground">
                         <DollarSign className="h-4 w-4" />
-                        <span>{formatCurrency(classItem.price, true)}</span>
+                        <span>{formatCurrency(classItem.price)}</span>
                     </div>
                 </div>
             </CardContent>
