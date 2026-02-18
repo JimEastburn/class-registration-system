@@ -4,8 +4,6 @@ import { Sidebar } from '@/components/dashboard/Sidebar';
 import { Topbar } from '@/components/dashboard/Topbar';
 import { MobileNav } from '@/components/dashboard/MobileNav';
 import type { UserRole } from '@/types';
-import { getActiveView } from '@/lib/actions/profile';
-import { getAllowedViews } from '@/lib/logic/profile';
 
 export default async function DashboardLayout({
     children,
@@ -32,12 +30,11 @@ export default async function DashboardLayout({
     }
 
     const userRole = profile.role as UserRole;
-    const isParent = profile.is_parent === true;
 
     return (
         <div className="min-h-screen bg-background">
             {/* Desktop Sidebar - hidden on mobile */}
-            <Sidebar userRole={userRole} isParent={isParent} className="hidden lg:flex" />
+            <Sidebar userRole={userRole} isParent={profile.is_parent === true} className="hidden lg:flex" />
 
             {/* Main content area with left margin for sidebar on desktop */}
             <div className="lg:ml-64 flex flex-col min-h-screen">
@@ -51,12 +48,10 @@ export default async function DashboardLayout({
                         role: userRole,
                         avatarUrl: profile.avatar_url,
                     }}
-                    activeView={await getActiveView()}
-                    allowedViews={getAllowedViews(userRole, isParent)}
                 />
 
                 {/* Mobile navigation - visible only on mobile */}
-                <MobileNav userRole={userRole} isParent={isParent} />
+                <MobileNav userRole={userRole} isParent={profile.is_parent === true} />
 
                 {/* Main content */}
                 <main className="flex-1 p-4 lg:p-6">

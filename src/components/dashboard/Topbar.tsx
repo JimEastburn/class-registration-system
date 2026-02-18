@@ -15,8 +15,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { signOut } from '@/lib/actions/auth';
 import type { UserRole } from '@/types';
-import type { PortalView } from '@/lib/logic/profile';
-import { PortalSwitcher } from './PortalSwitcher';
 
 interface TopbarUser {
     id: string;
@@ -29,8 +27,6 @@ interface TopbarUser {
 
 interface TopbarProps {
     user: TopbarUser;
-    activeView: PortalView;
-    allowedViews: PortalView[];
 }
 
 /**
@@ -88,7 +84,7 @@ function getRoleBadgeVariant(role: UserRole): 'default' | 'secondary' | 'destruc
     }
 }
 
-export function Topbar({ user, activeView, allowedViews }: TopbarProps) {
+export function Topbar({ user }: TopbarProps) {
     const displayName = getDisplayName(user);
     const initials = getInitials(user);
 
@@ -99,13 +95,6 @@ export function Topbar({ user, activeView, allowedViews }: TopbarProps) {
 
             {/* Right side: User menu */}
             <div className="flex items-center gap-4">
-                {/* Portal Switcher */}
-                <PortalSwitcher
-                    currentView={activeView}
-                    allowedViews={allowedViews}
-                    userRole={user.role}
-                />
-
                 {/* Role Badge */}
                 <Badge variant={getRoleBadgeVariant(user.role)} data-testid="role-badge">
                     {getRoleLabel(user.role)}
