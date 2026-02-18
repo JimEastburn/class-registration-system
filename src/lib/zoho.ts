@@ -123,8 +123,6 @@ export async function syncPaymentToZoho(paymentId: string) {
             .from('payments')
             .update({
                 sync_status: 'synced',
-                zoho_invoice_id: invoiceId,
-                sync_error: null,
                 updated_at: new Date().toISOString()
             })
             .eq('id', paymentId);
@@ -141,7 +139,6 @@ export async function syncPaymentToZoho(paymentId: string) {
             .from('payments')
             .update({
                 sync_status: 'failed',
-                sync_error: errorMessage,
                 updated_at: new Date().toISOString()
             })
             .eq('id', paymentId);
@@ -226,4 +223,167 @@ async function recordZohoPayment(invoiceId: string, contactId: string, payment: 
     });
     const data = await response.json();
     if (data.code !== 0) throw new Error(`Zoho Payment recording failed: ${data.message}`);
+}
+
+/**
+ * Sync a Stripe refund to Zoho Books by creating a credit note
+ * against the original invoice.
+ */
+export async function syncRefundToZoho(paymentId: string) {
+    try {
+        // 1. Fetch payment data from Supabase
+        const { data: payment, error: pError } = await supabaseAdmin
+            .from('payments')
+            .select(`
+                id, amount, transaction_id, paid_at, created_at,
+                enrollment:enrollments(
+                    id,
+                    student:family_members(first_name, last_name),
+                    class:classes(name)
+                )
+            `)
+            .eq('id', paymentId)
+            .single();
+
+        if (pError || !payment) {
+            throw new Error(`Payment ${paymentId} not found in database`);
+        }
+
+        const enrollment = payment.enrollment as unknown as {
+            id: string;
+            student: { first_name: string; last_name: string };
+            class: { name: string };
+        };
+
+        const accessToken = await getAccessToken();
+
+        // 2. Find the original Zoho invoice by reference number
+        const invoiceId = await findZohoInvoiceByReference(
+            `ST-${payment.transaction_id}`,
+            accessToken
+        );
+
+        if (!invoiceId) {
+            throw new Error(
+                `No Zoho invoice found with reference ST-${payment.transaction_id}`
+            );
+        }
+
+        // 3. Get invoice details to find customer_id
+        const invoice = await getZohoInvoice(invoiceId, accessToken);
+
+        // 4. Create a credit note (Supabase amount is already in dollars)
+        const amountDollars = payment.amount as number;
+        const creditNoteId = await createZohoCreditNote(
+            invoice.customer_id,
+            {
+                className: enrollment.class.name,
+                studentName: `${enrollment.student.first_name} ${enrollment.student.last_name}`,
+                amount: amountDollars,
+                transactionId: payment.transaction_id as string,
+            },
+            accessToken
+        );
+
+        // Credit note alone serves as the refund record in Zoho.
+        // Paid invoices can't have credits applied (error 12006),
+        // and refund-from-credit-note requires a bank account ID.
+
+        // 6. Update local sync status
+        await supabaseAdmin
+            .from('payments')
+            .update({
+                sync_status: 'synced',
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', paymentId);
+
+        console.log(
+            `Successfully synced refund for payment ${paymentId} to Zoho Books (Credit Note: ${creditNoteId})`
+        );
+        return { success: true, creditNoteId };
+    } catch (error) {
+        const errorMessage =
+            error instanceof Error ? error.message : String(error);
+        console.error(
+            `Zoho Refund Sync Error for payment ${paymentId}:`,
+            errorMessage
+        );
+
+        // Log failure — don't overwrite the 'refunded' payment status
+        await supabaseAdmin
+            .from('payments')
+            .update({
+                sync_status: 'failed',
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', paymentId);
+
+        return { success: false, error: errorMessage };
+    }
+}
+
+async function findZohoInvoiceByReference(
+    referenceNumber: string,
+    token: string
+): Promise<string | null> {
+    const response = await fetch(
+        `${ZOHO_BASE_URL}/invoices?reference_number=${encodeURIComponent(referenceNumber)}&organization_id=${ZOHO_ORGANIZATION_ID}`,
+        { headers: { Authorization: `Zoho-oauthtoken ${token}` } }
+    );
+    const data = await response.json();
+    return data.invoices?.[0]?.invoice_id || null;
+}
+
+async function getZohoInvoice(
+    invoiceId: string,
+    token: string
+): Promise<{ customer_id: string; invoice_id: string }> {
+    const response = await fetch(
+        `${ZOHO_BASE_URL}/invoices/${invoiceId}?organization_id=${ZOHO_ORGANIZATION_ID}`,
+        { headers: { Authorization: `Zoho-oauthtoken ${token}` } }
+    );
+    const data = await response.json();
+    if (data.code !== 0)
+        throw new Error(`Failed to fetch Zoho invoice: ${data.message}`);
+    return data.invoice;
+}
+
+async function createZohoCreditNote(
+    customerId: string,
+    details: {
+        className: string;
+        studentName: string;
+        amount: number;
+        transactionId: string;
+    },
+    token: string
+): Promise<string> {
+    const response = await fetch(
+        `${ZOHO_BASE_URL}/creditnotes?organization_id=${ZOHO_ORGANIZATION_ID}`,
+        {
+            method: 'POST',
+            headers: {
+                Authorization: `Zoho-oauthtoken ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                customer_id: customerId,
+                reference_number: `REFUND-${details.transactionId}`,
+                date: new Date().toISOString().split('T')[0],
+                line_items: [
+                    {
+                        name: details.className,
+                        description: `Refund for ${details.studentName}`,
+                        rate: details.amount,
+                        quantity: 1,
+                    },
+                ],
+            }),
+        }
+    );
+    const data = await response.json();
+    if (data.code !== 0)
+        throw new Error(`Zoho Credit Note creation failed: ${data.message}`);
+    return data.creditnote.creditnote_id;
 }

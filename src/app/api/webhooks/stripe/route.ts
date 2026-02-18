@@ -304,6 +304,12 @@ export async function POST(request: Request) {
                     }
                  }
                  console.log(`Refund processed for payment: ${payment.id}`);
+
+                 // Trigger Zoho refund sync (credit note)
+                 const { syncRefundToZoho } = await import('@/lib/zoho');
+                 syncRefundToZoho(payment.id).catch((err: Error) => {
+                     console.error('Zoho refund sync failed:', err);
+                 });
             }
             break;
         }

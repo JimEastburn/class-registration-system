@@ -20,6 +20,7 @@ vi.mock('@supabase/supabase-js', () => ({
 // Mock Zoho library
 vi.mock('@/lib/zoho', () => ({
     syncPaymentToZoho: vi.fn().mockResolvedValue({ success: true }),
+    syncRefundToZoho: vi.fn().mockResolvedValue({ success: true }),
 }));
 
 vi.mock('@/lib/email', () => ({
@@ -63,6 +64,14 @@ describe('Stripe Webhook API Route', () => {
 
         delete() {
             this.pendingDelete = true;
+            return this;
+        }
+
+        order() {
+            return this;
+        }
+
+        limit() {
             return this;
         }
 
@@ -219,5 +228,60 @@ describe('Stripe Webhook API Route', () => {
         expect(data.received).toBe(true);
         expect(fakeSupabase.getTable('payments')).toHaveLength(0);
         expect(fakeSupabase.getTable('enrollments')[0].status).toBe('pending');
+    });
+
+    it('should handle charge.refunded and trigger Zoho refund sync', async () => {
+        const mockEvent = {
+            type: 'charge.refunded',
+            data: {
+                object: {
+                    id: 'ch_123',
+                    payment_intent: 'pi_123',
+                },
+            },
+        };
+
+        (stripe.webhooks.constructEvent as Mock).mockReturnValue(mockEvent);
+        fakeSupabase = new FakeSupabase({
+            payments: [
+                {
+                    id: 'pay1',
+                    transaction_id: 'pi_123',
+                    status: 'completed',
+                    enrollment_id: 'enroll123',
+                },
+            ],
+            enrollments: [
+                {
+                    id: 'enroll123',
+                    status: 'confirmed',
+                    class_id: 'class1',
+                },
+            ],
+            profiles: [],
+        });
+        (createClient as Mock).mockReturnValue(fakeSupabase);
+
+        const request = new Request(
+            'http://localhost:3000/api/webhooks/stripe',
+            {
+                method: 'POST',
+                body: 'payload',
+            }
+        );
+
+        const response = await POST(request);
+        const data = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(data.received).toBe(true);
+        expect(fakeSupabase.getTable('payments')[0].status).toBe('refunded');
+        expect(fakeSupabase.getTable('enrollments')[0].status).toBe(
+            'cancelled'
+        );
+
+        // Verify Zoho refund sync was triggered
+        const { syncRefundToZoho } = await import('@/lib/zoho');
+        expect(syncRefundToZoho).toHaveBeenCalledWith('pay1');
     });
 });
