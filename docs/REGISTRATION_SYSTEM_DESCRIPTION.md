@@ -1,6 +1,6 @@
 # Class Registration System
 
-A web-based class registration system for middle and high school students.
+A web-based class registration system for elementary, middle and high school students.
 
 ## Overview
 
@@ -72,14 +72,14 @@ This system enables parents to manage their families and enroll children in clas
 
 ## Data Entities
 
-| Entity              | Description                                                                                           |
-| ------------------- | ----------------------------------------------------------------------------------------------------- |
-| **Profiles**        | User accounts with role, name, email, phone                                                           |
+| Entity              | Description                                                                |
+| ------------------- | -------------------------------------------------------------------------- |
+| **Profiles**        | User accounts with role, name, email, phone                                |
 | **Family Members**  | Additional family members (children/spouses) linked to the primary account |
-| **Classes**         | Courses with schedule, location, fee, capacity                                                        |
-| **Enrollments**     | Student-to-class registrations with status                                                            |
-| **Payments**        | Payment records for enrollments via Stripe                                                            |
-| **Calendar Events** | Calendar events with start and end times, location, and description                                   |
+| **Classes**         | Courses with schedule, location, fee, capacity                             |
+| **Enrollments**     | Student-to-class registrations with status                                 |
+| **Payments**        | Payment records for enrollments via Stripe                                 |
+| **Calendar Events** | Calendar events with start and end times, location, and description        |
 
 ## Payment Processing
 
