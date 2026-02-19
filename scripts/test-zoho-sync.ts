@@ -278,7 +278,7 @@ async function runFullSync(token: string) {
   // ── A: Run production sync ────────────────────────────────────────────────
   log('🚀', 'Calling production syncPaymentToZoho()...');
   const { syncPaymentToZoho } = await import('../src/lib/zoho');
-  const syncResult = await syncPaymentToZoho(paymentId);
+  const syncResult = await syncPaymentToZoho(paymentId!);
 
   if (!syncResult.success) {
     console.error(`❌ syncPaymentToZoho failed: ${syncResult.error}`);
