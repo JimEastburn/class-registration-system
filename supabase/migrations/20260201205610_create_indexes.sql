@@ -1,1 +1,10 @@
--- Created indexes;
+-- Create indexes for performance
+CREATE INDEX idx_classes_teacher_id ON public.classes(teacher_id);
+CREATE INDEX idx_classes_status ON public.classes(status);
+CREATE INDEX idx_enrollments_student_id ON public.enrollments(student_id);
+CREATE INDEX idx_enrollments_class_id ON public.enrollments(class_id);
+CREATE INDEX idx_enrollments_status ON public.enrollments(status);
+CREATE INDEX idx_family_members_parent_id ON public.family_members(parent_id);
+CREATE INDEX idx_payments_enrollment_id ON public.payments(enrollment_id);
+CREATE INDEX idx_payments_status ON public.payments(status);
+CREATE INDEX idx_profiles_role ON public.profiles(role);
