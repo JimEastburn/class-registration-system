@@ -191,7 +191,7 @@ import { sendClassCancellation, sendScheduleChangeNotification } from '@/lib/ema
 interface CreateClassInput {
   name: string;
   description?: string | null;
-  price: number; // in cents
+  price?: number; // Ignored — all classes are $30 (3000 cents)
   capacity: number;
   schedule_config?: ScheduleConfig;
   status?: ClassStatus;
@@ -271,7 +271,7 @@ export async function createClass(
       .insert({
         name: input.name,
         description: input.description || null,
-        price: input.price,
+        price: 3000, // Fixed $30 for all classes
         capacity: input.capacity,
         teacher_id: teacherIdToUse,
         status: 'draft',
@@ -368,7 +368,7 @@ export async function updateClass(
     const updateData: Record<string, unknown> = {};
     if (input.name !== undefined) updateData.name = input.name;
     if (input.description !== undefined) updateData.description = input.description;
-    if (input.price !== undefined) updateData.price = input.price;
+    updateData.price = 3000; // Fixed $30 for all classes
     if (input.capacity !== undefined) updateData.capacity = input.capacity;
     
     if (input.schedule_config !== undefined) {
@@ -1017,7 +1017,7 @@ export async function adminUpdateClass(
     const updateData: Record<string, unknown> = {};
     if (input.name !== undefined) updateData.name = input.name;
     if (input.description !== undefined) updateData.description = input.description;
-    if (input.price !== undefined) updateData.price = input.price;
+    updateData.price = 3000; // Fixed $30 for all classes
     if (input.capacity !== undefined) updateData.capacity = input.capacity;
     
     if (input.schedule_config !== undefined) {

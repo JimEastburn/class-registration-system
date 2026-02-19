@@ -10,7 +10,7 @@ import { getEnrollmentsForFamily } from '@/lib/actions/enrollments';
 import { getMaterialsForClass } from '@/lib/actions/materials';
 import { EnrollButton } from '@/components/classes/EnrollButton';
 import { ClassMaterialsList } from '@/components/classes/ClassMaterialsList';
-import { formatCurrency } from '@/lib/utils';
+
 
 interface ClassDetailPageProps {
     params: Promise<{ id: string }>;
@@ -174,7 +174,7 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
                 <div className="space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-2xl">{formatCurrency(classItem.price)}</CardTitle>
+                            <CardTitle className="text-2xl">$30.00</CardTitle>
                             <CardDescription>per enrollment</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -201,7 +201,6 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
                             <EnrollButton
                                 classId={classItem.id}
                                 className={classItem.name}
-                                price={classItem.price}
                                 available={availability.available}
                             />
                         </CardContent>

@@ -24,19 +24,19 @@ import { Label } from '@/components/ui/label';
 import { Loader2, UserPlus } from 'lucide-react';
 import { getFamilyMembers } from '@/lib/actions/family';
 import { enrollStudent } from '@/lib/actions/enrollments';
+import { hasCompleteAddress } from '@/lib/actions/profile';
+import { AddressModal } from '@/components/payments/AddressModal';
 import type { FamilyMember } from '@/types';
 
 interface EnrollButtonProps {
     classId: string;
     className: string;
-    price: number;
     available: number;
 }
 
 export function EnrollButton({
     classId,
     className,
-    price,
     available,
 }: EnrollButtonProps) {
     const [open, setOpen] = useState(false);
@@ -44,6 +44,8 @@ export function EnrollButton({
     const [selectedMember, setSelectedMember] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
     const [loadingMembers, setLoadingMembers] = useState(false);
+    const [showAddressModal, setShowAddressModal] = useState(false);
+    const [pendingEnrollmentId, setPendingEnrollmentId] = useState<string | null>(null);
 
     async function loadMembers() {
         if (members.length > 0) return;
@@ -103,23 +105,16 @@ export function EnrollButton({
 
             // 2. Proceed to Payment (if pending)
             if (enrollment && status === 'pending') {
-                const response = await fetch('/api/checkout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ enrollmentId: enrollment.id }),
-                });
-
-                const checkoutData = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(checkoutData.error || 'Failed to create checkout session');
+                // Check if user has a billing address before checkout
+                const addressComplete = await hasCompleteAddress();
+                if (!addressComplete) {
+                    setPendingEnrollmentId(enrollment.id);
+                    setShowAddressModal(true);
+                    setIsLoading(false);
+                    return;
                 }
 
-                if (checkoutData.url) {
-                    window.location.href = checkoutData.url;
-                } else {
-                    throw new Error('No checkout URL returned');
-                }
+                await proceedToCheckout(enrollment.id);
             } else {
                  // Should not happen for standard flow, but handle gracefully
                  toast.success('Enrollment processed');
@@ -134,6 +129,33 @@ export function EnrollButton({
         }
     }
 
+    async function proceedToCheckout(enrollmentId: string) {
+        setIsLoading(true);
+        try {
+            const response = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enrollmentId }),
+            });
+
+            const checkoutData = await response.json();
+
+            if (!response.ok) {
+                throw new Error(checkoutData.error || 'Failed to create checkout session');
+            }
+
+            if (checkoutData.url) {
+                window.location.href = checkoutData.url;
+            } else {
+                throw new Error('No checkout URL returned');
+            }
+        } catch (err) {
+            console.error('Checkout error:', err);
+            toast.error('Something went wrong. Please try again.');
+            setIsLoading(false);
+        }
+    }
+
     if (available <= 0) {
         return (
             <Button className="w-full" disabled>
@@ -142,7 +164,7 @@ export function EnrollButton({
         );
     }
 
-    return (
+    return (<>
         <Dialog 
             open={open} 
             onOpenChange={(isOpen) => {
@@ -203,7 +225,7 @@ export function EnrollButton({
                     <div className="rounded-lg bg-muted p-4">
                         <div className="flex items-center justify-between">
                             <span className="text-sm">Class Fee</span>
-                            <span className="font-medium">${price.toFixed(2)}</span>
+                            <span className="font-medium">$30.00</span>
                         </div>
                     </div>
                 </div>
@@ -227,5 +249,20 @@ export function EnrollButton({
                 </DialogFooter>
             </DialogContent>
         </Dialog>
-    );
+
+        <AddressModal
+            open={showAddressModal}
+            onComplete={() => {
+                setShowAddressModal(false);
+                if (pendingEnrollmentId) {
+                    proceedToCheckout(pendingEnrollmentId);
+                }
+            }}
+            onCancel={() => {
+                setShowAddressModal(false);
+                setPendingEnrollmentId(null);
+                setIsLoading(false);
+            }}
+        />
+    </>);
 }

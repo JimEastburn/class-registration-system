@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import { stripe, formatAmountForStripe } from '@/lib/stripe';
+import { stripe } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: Request) {
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
                             name: classData.name,
                             description: `Enrollment for ${student.first_name} ${student.last_name}`,
                         },
-                        unit_amount: formatAmountForStripe(classData.price),
+                        unit_amount: 3000, // Fixed $30 for all classes
                     },
                     quantity: 1,
                 },
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
         // Create pending payment record
         const { error: insertError } = await supabaseAdmin.from('payments').insert({
             enrollment_id: enrollmentId,
-            amount: classData.price,
+            amount: 30, // Fixed $30 for all classes
             currency: 'USD',
             status: 'pending',
             provider: 'stripe',

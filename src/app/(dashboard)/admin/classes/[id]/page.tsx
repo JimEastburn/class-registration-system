@@ -4,7 +4,7 @@ import { getClassRoster } from '@/lib/actions/enrollments';
 import AdminRosterTable from '@/components/admin/AdminRosterTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency } from '@/lib/utils';
+
 import { notFound } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -72,7 +72,7 @@ export default async function AdminClassDetailPage({ params }: { params: Promise
                         </div>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">Price:</span>
-                            <span>{formatCurrency(cls.price)}</span>
+                            <span>$30.00</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">Capacity:</span>
@@ -117,7 +117,7 @@ export default async function AdminClassDetailPage({ params }: { params: Promise
                         <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Estimated Revenue:</span>
                             <span className="text-xl font-bold text-green-600">
-                                {formatCurrency(enrollments.filter(e => e.status === 'confirmed').length * cls.price)}
+                                ${(enrollments.filter(e => e.status === 'confirmed').length * 30).toFixed(2)}
                             </span>
                         </div>
                     </CardContent>

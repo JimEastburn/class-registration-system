@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { hasCompleteAddress } from '@/lib/actions/profile';
+import { AddressModal } from '@/components/payments/AddressModal';
 
 interface PayButtonProps {
     enrollmentId: string;
@@ -22,9 +24,34 @@ export default function PayButton({
 }: PayButtonProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showAddressModal, setShowAddressModal] = useState(false);
 
     const handlePayment = async (e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            // Check if user has a billing address before checkout
+            const addressComplete = await hasCompleteAddress();
+            if (!addressComplete) {
+                setShowAddressModal(true);
+                setIsLoading(false);
+                return;
+            }
+
+            await proceedToCheckout();
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Something went wrong';
+            setError(errorMessage);
+            if (compact) {
+                toast.error(errorMessage);
+            }
+            setIsLoading(false);
+        }
+    };
+
+    const proceedToCheckout = async () => {
         setIsLoading(true);
         setError(null);
 
@@ -58,7 +85,7 @@ export default function PayButton({
     };
 
     if (compact) {
-        return (
+        return (<>
             <Button
                 onClick={handlePayment}
                 disabled={isLoading}
@@ -67,12 +94,24 @@ export default function PayButton({
             >
                 {isLoading ? '...' : 'Pay'}
             </Button>
-        );
+
+            <AddressModal
+                open={showAddressModal}
+                onComplete={() => {
+                    setShowAddressModal(false);
+                    proceedToCheckout();
+                }}
+                onCancel={() => {
+                    setShowAddressModal(false);
+                    setIsLoading(false);
+                }}
+            />
+        </>);
     }
 
-    return (
+    return (<>
         <div className={cn("space-y-3", className)}>
-            {error && !compact && (
+            {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
                     {error}
                 </div>
@@ -88,7 +127,19 @@ export default function PayButton({
                 Secure payment powered by Stripe
             </p>
         </div>
-    );
+
+        <AddressModal
+            open={showAddressModal}
+            onComplete={() => {
+                setShowAddressModal(false);
+                proceedToCheckout();
+            }}
+            onCancel={() => {
+                setShowAddressModal(false);
+                setIsLoading(false);
+            }}
+        />
+    </>);
 }
 
 // Payment success/cancel alert component

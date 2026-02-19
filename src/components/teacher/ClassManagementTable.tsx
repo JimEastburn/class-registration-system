@@ -44,7 +44,6 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import type { Class } from '@/types';
 import { deleteClass, publishClass, cancelClass, completeClass } from '@/lib/actions/classes';
-import { formatCurrency } from '@/lib/utils';
 
 interface ClassWithTeacher extends Class {
   teacher: {
@@ -188,7 +187,7 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
                   )}
                 </TableCell>
                 <TableCell>{cls.capacity}</TableCell>
-                <TableCell>{formatCurrency(cls.price)}</TableCell>
+                <TableCell>$30.00</TableCell>
                 <TableCell>
                   <Badge variant={statusConfig[cls.status]?.variant || 'outline'}>
                     {statusConfig[cls.status]?.label || cls.status}

@@ -21,7 +21,7 @@ const formSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
   capacity: z.coerce.number().min(1, 'Capacity must be at least 1'),
-  price: z.coerce.number().min(0, 'Fee must be 0 or greater'),
+
   location: z.string().optional(),
   teacher_id: z.string().min(1, 'Assigned Teacher is required'),
   day: z.string().min(1, 'Day is required'),
@@ -61,7 +61,7 @@ export function SchedulerClassForm({
     name: initialData?.name || '',
     description: initialData?.description || '',
     capacity: initialData?.capacity || 20,
-    price: initialData?.price != null ? Number(initialData.price) / 100 : 0,
+
     location: initialData?.location || '',
     teacher_id: initialData?.teacher_id || '',
     status: (initialData?.status as FormValues['status']) || 'draft',
@@ -108,7 +108,7 @@ export function SchedulerClassForm({
             capacity: values.capacity,
             location: values.location,
             teacher_id: values.teacher_id,
-            price: Math.round(values.price * 100),
+
             schedule_config: {
                 day: values.day,
                 block: values.block,
@@ -323,19 +323,7 @@ export function SchedulerClassForm({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Fee ($)</FormLabel>
-                <FormControl>
-                  <Input type="number" step="0.01" min="0" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+
         </div>
 
         <FormField

@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { EnrollmentStatusBadge } from './EnrollmentStatusBadge';
 import PayButton from '@/components/payments/PayButton';
 import type { Enrollment } from '@/types';
-import { formatCurrency } from '@/lib/utils';
+
 
 interface EnrollmentWithDetails extends Enrollment {
     class: {
@@ -88,14 +88,14 @@ export function EnrollmentTable({
                                 {enrollment.status === 'pending' && enrollment.class && (
                                      <PayButton
                                         enrollmentId={enrollment.id}
-                                        amount={enrollment.class.price}
+                                        amount={30}
                                         compact={true}
                                     />
                                 )}
                             </div>
                         </TableCell>
                         <TableCell>
-                            {formatCurrency(enrollment.class?.price ?? 0)}
+                            $30.00
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                             {new Date(enrollment.created_at).toLocaleDateString('en-US', {

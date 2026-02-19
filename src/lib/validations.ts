@@ -97,6 +97,19 @@ export const profileSchema = z.object({
 
 export type ProfileFormData = z.infer<typeof profileSchema>;
 
+/**
+ * Profile address schema (billing address for Zoho invoices)
+ */
+export const profileAddressSchema = z.object({
+  addressLine1: z.string().min(1, 'Street address is required'),
+  addressLine2: z.string().optional(),
+  city: z.string().min(1, 'City is required'),
+  state: z.string().min(1, 'State is required'),
+  zip: z.string().min(5, 'ZIP code must be at least 5 characters'),
+});
+
+export type ProfileAddressFormData = z.infer<typeof profileAddressSchema>;
+
 // =============================================================================
 // Family Member Schemas
 // =============================================================================

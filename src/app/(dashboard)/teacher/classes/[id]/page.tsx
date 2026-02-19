@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getClassDetails, getClassAvailability } from '@/lib/actions/classes';
 import { getClassRoster } from '@/lib/actions/enrollments';
 import { StudentRosterTable } from '@/components/teacher/StudentRosterTable';
-import { formatCurrency } from '@/lib/utils';
+
 
 interface ClassDetailPageProps {
   params: Promise<{ id: string }>;
@@ -127,7 +127,7 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(classData.price)}
+              $30.00
             </div>
             <p className="text-xs text-muted-foreground">
               Per enrollment

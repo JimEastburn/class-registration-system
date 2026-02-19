@@ -13,7 +13,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { formatCurrency } from '@/lib/utils';
 import { useTransition } from 'react';
 import { adminDeleteClass } from '@/lib/actions/classes';
 import { toast } from 'sonner';
@@ -90,7 +89,7 @@ export default function AdminClassTable({
                   </Badge>
                 </TableCell>
                 <TableCell>{cls.capacity}</TableCell>
-                <TableCell>{formatCurrency(cls.price)}</TableCell>
+                <TableCell>$30.00</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button variant="ghost" size="icon" asChild>

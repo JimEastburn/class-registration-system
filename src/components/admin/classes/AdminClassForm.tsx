@@ -29,7 +29,7 @@ const classFormSchema = z.object({
   }),
   description: z.string().optional(),
   capacity: z.coerce.number().min(1),
-  price: z.coerce.number().min(0),
+
   day: z.string().min(1, 'Day is required'),
   block: z.string().min(1, 'Block is required'),
   status: z.enum(['draft', 'published', 'completed', 'cancelled']),
@@ -52,7 +52,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
             name: initialData?.name || '',
             description: initialData?.description || '',
             capacity: initialData?.capacity || 10,
-            price: initialData?.price ?? 80,
+
             day: initialData?.schedule_config?.day || '',
             block: initialData?.schedule_config?.block || '',
             status: (['draft', 'published', 'completed', 'cancelled'].includes(initialData?.status as string) 
@@ -67,7 +67,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
             name: data.name,
             description: data.description,
             capacity: data.capacity,
-            price: data.price,
+
             schedule_config: {
               day: data.day,
               block: data.block,
@@ -139,19 +139,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
                     </FormItem>
                 )}
                 />
-                <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Price ($)</FormLabel>
-                    <FormControl>
-                        <Input type="number" step="0.01" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
+
             </div>
 
             <FormField

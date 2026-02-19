@@ -240,3 +240,101 @@ export async function updateProfile(
   revalidatePath('/', 'layout');
   return { success: true, data: undefined };
 }
+
+// =============================================================================
+// Address Actions (for Zoho invoice billing address)
+// =============================================================================
+
+export interface ProfileAddress {
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+  country: string | null;
+}
+
+/**
+ * Get the current user's billing address from their profile
+ */
+export async function getProfileAddress(): Promise<ActionResult<ProfileAddress>> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('address_line1, address_line2, city, state, zip, country')
+    .eq('id', user.id)
+    .single();
+
+  if (error || !profile) {
+    return { success: false, error: 'Failed to fetch profile address' };
+  }
+
+  return { success: true, data: profile as ProfileAddress };
+}
+
+/**
+ * Check if the user has a complete billing address
+ */
+export async function hasCompleteAddress(): Promise<boolean> {
+  const result = await getProfileAddress();
+  if (!result.success || !result.data) return false;
+  const { address_line1, city, state, zip } = result.data;
+  return !!(address_line1 && city && state && zip);
+}
+
+/**
+ * Update the user's billing address
+ */
+export async function updateProfileAddress(data: {
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  zip: string;
+}): Promise<ActionResult<void>> {
+  const { profileAddressSchema } = await import('@/lib/validations');
+  const parsed = profileAddressSchema.safeParse(data);
+
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message || 'Invalid address' };
+  }
+
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      address_line1: parsed.data.addressLine1,
+      address_line2: parsed.data.addressLine2 || null,
+      city: parsed.data.city,
+      state: parsed.data.state,
+      zip: parsed.data.zip,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', user.id);
+
+  if (error) {
+    console.error('Address update error:', error);
+    return { success: false, error: 'Failed to update address' };
+  }
+
+  revalidatePath('/', 'layout');
+  return { success: true, data: undefined };
+}

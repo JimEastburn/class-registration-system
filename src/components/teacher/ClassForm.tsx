@@ -28,9 +28,7 @@ import type { Class, ScheduleConfig } from '@/types';
 const classFormSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
   description: z.string().optional(),
-  price: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
-    message: 'Price must be 0 or greater',
-  }),
+
   capacity: z.string().refine((val) => !isNaN(parseInt(val, 10)) && parseInt(val, 10) >= 1, {
     message: 'Capacity must be at least 1',
   }),
@@ -61,7 +59,7 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
     defaultValues: {
       name: existingClass?.name || '',
       description: existingClass?.description || '',
-      price: existingClass ? String(existingClass.price) : '0',
+
       capacity: existingClass ? String(existingClass.capacity) : '10',
       startDate: scheduleConfig?.startDate || '',
       endDate: scheduleConfig?.endDate || '',
@@ -74,14 +72,14 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
   const onSubmit = (values: ClassFormValues) => {
     setServerError(null);
 
-    const priceNum = parseFloat(values.price);
+
     const capacityNum = parseInt(values.capacity, 10);
 
     startTransition(async () => {
       const input = {
         name: values.name,
         description: values.description || undefined,
-        price: priceNum,
+
         capacity: capacityNum,
         // Preserve existing day/block from schedule_config (teachers cannot change these)
         schedule_config: {
@@ -170,30 +168,7 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
             />
 
             <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Price ($) *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="text"
-                        inputMode="decimal"
-                        {...field}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          if (value === '' || /^[0-9.]+$/.test(value)) {
-                            field.onChange(value);
-                          }
-                        }}
-                      />
-                    </FormControl>
-                    <FormDescription>Class fee in dollars</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
 
               <FormField
                 control={form.control}

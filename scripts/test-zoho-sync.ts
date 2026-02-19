@@ -1,14 +1,25 @@
 /**
- * Zoho Books Integration Smoke Test
+ * Zoho Books E2E Sync Test with Invoice Format Verification
  *
- * Tests the full sync flow: token refresh → find/create contact → create invoice → record payment
+ * Tests the full sync flow using the production `syncPaymentToZoho` function,
+ * then fetches the created invoice and contact from Zoho and asserts the
+ * format matches the INV-000305 specification:
+ *
+ *   - Line item name: "Community Fee"
+ *   - Description: "{Student} - {Class} ({Grade}) - {Teacher}"
+ *   - Rate: class price (not payment.amount)
+ *   - Subject: "AAC …"
+ *   - Terms: "Due on Receipt"
+ *   - Notes: T&C footer
+ *   - Contact billing address populated
  *
  * Usage:
- *   npx tsx scripts/test-zoho-sync.ts [--dry-run] [--payment-id <id>]
+ *   npx tsx scripts/test-zoho-sync.ts [--dry-run] [--payment-id <id>] [--skip-cleanup]
  *
  * Options:
- *   --dry-run      Test API connectivity only (get access token + list contacts) without creating records
- *   --payment-id   Specify a payment ID to sync (defaults to most recent completed/pending-sync payment)
+ *   --dry-run        Test API connectivity only (token + list contacts)
+ *   --payment-id     Specify a payment ID to sync (defaults to most recent pending)
+ *   --skip-cleanup   Don't void/delete the test invoice after verification
  */
 
 import { config } from 'dotenv';
@@ -46,12 +57,50 @@ const supabase = createClient(
 // ── CLI args ────────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
+const skipCleanup = args.includes('--skip-cleanup');
 const paymentIdIndex = args.indexOf('--payment-id');
 const paymentIdArg = paymentIdIndex !== -1 ? args[paymentIdIndex + 1] : null;
 
 // ── Helpers ─────────────────────────────────────────────────────────────────────
 function log(emoji: string, msg: string) {
   console.log(`${emoji}  ${msg}`);
+}
+
+// ── Assertion helpers ───────────────────────────────────────────────────────────
+interface AssertionResult {
+  field: string;
+  expected: string;
+  actual: string;
+  pass: boolean;
+}
+
+const results: AssertionResult[] = [];
+
+function assert(field: string, expected: string, actual: string | undefined | null): boolean {
+  const actualStr = actual ?? '(empty)';
+  const pass = actualStr === expected;
+  results.push({ field, expected, actual: actualStr, pass });
+  return pass;
+}
+
+function assertContains(field: string, expected: string, actual: string | undefined | null): boolean {
+  const actualStr = actual ?? '(empty)';
+  const pass = actualStr.includes(expected);
+  results.push({ field, expected: `contains "${expected}"`, actual: actualStr, pass });
+  return pass;
+}
+
+function assertMatches(field: string, pattern: RegExp, actual: string | undefined | null): boolean {
+  const actualStr = actual ?? '(empty)';
+  const pass = pattern.test(actualStr);
+  results.push({ field, expected: `matches ${pattern}`, actual: actualStr, pass });
+  return pass;
+}
+
+function assertTruthy(field: string, description: string, value: unknown): boolean {
+  const pass = !!value;
+  results.push({ field, expected: description, actual: value ? String(value) : '(empty)', pass });
+  return pass;
 }
 
 // ── Step 1: Get Access Token ────────────────────────────────────────────────────
@@ -88,9 +137,69 @@ async function checkConnectivity(token: string) {
   log('✅', `Connected to Zoho Books org ${ZOHO_ORGANIZATION_ID} — ${total} existing contact(s)`);
 }
 
-// ── Step 3: Full sync ───────────────────────────────────────────────────────────
+// ── Zoho Read Helpers ───────────────────────────────────────────────────────────
+async function fetchInvoiceByReference(referenceNumber: string, token: string) {
+  const res = await fetch(
+    `${ZOHO_BASE_URL}/invoices?reference_number=${encodeURIComponent(referenceNumber)}&organization_id=${ZOHO_ORGANIZATION_ID}`,
+    { headers: { Authorization: `Zoho-oauthtoken ${token}` } }
+  );
+  const data = await res.json();
+  const invoiceId = data.invoices?.[0]?.invoice_id;
+  if (!invoiceId) return null;
+
+  // Fetch full invoice details
+  const detailRes = await fetch(
+    `${ZOHO_BASE_URL}/invoices/${invoiceId}?organization_id=${ZOHO_ORGANIZATION_ID}`,
+    { headers: { Authorization: `Zoho-oauthtoken ${token}` } }
+  );
+  const detailData = await detailRes.json();
+  if (detailData.code !== 0) throw new Error(`Failed to fetch invoice: ${detailData.message}`);
+  return detailData.invoice;
+}
+
+async function fetchContact(contactId: string, token: string) {
+  const res = await fetch(
+    `${ZOHO_BASE_URL}/contacts/${contactId}?organization_id=${ZOHO_ORGANIZATION_ID}`,
+    { headers: { Authorization: `Zoho-oauthtoken ${token}` } }
+  );
+  const data = await res.json();
+  if (data.code !== 0) throw new Error(`Failed to fetch contact: ${data.message}`);
+  return data.contact;
+}
+
+// ── Cleanup helpers ─────────────────────────────────────────────────────────────
+async function voidAndDeleteInvoice(invoiceId: string, token: string) {
+  // Delete associated payments first
+  const paymentsRes = await fetch(
+    `${ZOHO_BASE_URL}/invoices/${invoiceId}/payments?organization_id=${ZOHO_ORGANIZATION_ID}`,
+    { headers: { Authorization: `Zoho-oauthtoken ${token}` } }
+  );
+  const paymentsData = await paymentsRes.json();
+  if (paymentsData.payments) {
+    for (const p of paymentsData.payments) {
+      await fetch(
+        `${ZOHO_BASE_URL}/customerpayments/${p.payment_id}?organization_id=${ZOHO_ORGANIZATION_ID}`,
+        { method: 'DELETE', headers: { Authorization: `Zoho-oauthtoken ${token}` } }
+      );
+    }
+  }
+
+  // Void the invoice
+  await fetch(
+    `${ZOHO_BASE_URL}/invoices/${invoiceId}/status/void?organization_id=${ZOHO_ORGANIZATION_ID}`,
+    { method: 'POST', headers: { Authorization: `Zoho-oauthtoken ${token}` } }
+  );
+
+  // Delete the invoice
+  await fetch(
+    `${ZOHO_BASE_URL}/invoices/${invoiceId}?organization_id=${ZOHO_ORGANIZATION_ID}`,
+    { method: 'DELETE', headers: { Authorization: `Zoho-oauthtoken ${token}` } }
+  );
+}
+
+// ── Step 3: Full sync + verification ────────────────────────────────────────────
 async function runFullSync(token: string) {
-  // Find a payment to sync
+  // ── Find a payment to sync ────────────────────────────────────────────────
   let paymentId = paymentIdArg;
 
   if (!paymentId) {
@@ -116,16 +225,18 @@ async function runFullSync(token: string) {
     log('📋', `Using specified payment: ${paymentId}`);
   }
 
-  // Fetch full payment with enrollment data (mirrors zoho.ts query)
-  // The parent relationship goes through family_members.parent_id → profiles
+  // ── Fetch payment details for display ─────────────────────────────────────
   const { data: payment, error: pError } = await supabase
     .from('payments')
     .select(`
       *,
       enrollment:enrollments(
         id,
-        student:family_members(first_name, last_name, parent_id),
-        class:classes(name, price, description)
+        student:family_members(first_name, last_name, parent_id, grade),
+        class:classes(
+          name, price, description,
+          teacher:profiles(first_name, last_name)
+        )
       )
     `)
     .eq('id', paymentId)
@@ -136,13 +247,13 @@ async function runFullSync(token: string) {
     process.exit(1);
   }
 
-  // Fetch parent profile separately via the student's parent_id
   const enrollment = payment.enrollment as any;
   const parentId = enrollment.student.parent_id;
 
+  // Fetch parent profile (with address)
   const { data: parent, error: parentError } = await supabase
     .from('profiles')
-    .select('first_name, last_name, email, phone')
+    .select('first_name, last_name, email, phone, address_line1, address_line2, city, state, zip, country')
     .eq('id', parentId)
     .single();
 
@@ -153,166 +264,134 @@ async function runFullSync(token: string) {
 
   const student = enrollment.student;
   const classInfo = enrollment.class;
+  const teacher = classInfo.teacher;
 
+  console.log('');
   log('👤', `Parent:  ${parent.first_name} ${parent.last_name} (${parent.email})`);
-  log('🎓', `Student: ${student.first_name} ${student.last_name}`);
-  log('📚', `Class:   ${classInfo.name} — $${Number(payment.amount).toFixed(2)}`);
+  log('📍', `Address: ${parent.address_line1 || '(none)'}, ${parent.city || ''} ${parent.state || ''} ${parent.zip || ''}`);
+  log('🎓', `Student: ${student.first_name} ${student.last_name} (grade: ${student.grade || 'N/A'})`);
+  log('📚', `Class:   ${classInfo.name} — $${Number(classInfo.price).toFixed(2)}`);
+  log('👩‍🏫', `Teacher: ${teacher ? `${teacher.first_name} ${teacher.last_name}` : 'N/A'}`);
+  log('💰', `Payment: $${Number(payment.amount).toFixed(2)} (txn: ${payment.transaction_id})`);
+  console.log('');
 
-  // Step A: Find or create Zoho contact
-  log('🔍', `Searching for existing Zoho contact: ${parent.email}...`);
-  let contactId = await findContact(parent.email, token);
+  // ── A: Run production sync ────────────────────────────────────────────────
+  log('🚀', 'Calling production syncPaymentToZoho()...');
+  const { syncPaymentToZoho } = await import('../src/lib/zoho');
+  const syncResult = await syncPaymentToZoho(paymentId);
 
-  if (contactId) {
-    log('✅', `Found existing contact: ${contactId}`);
-  } else {
-    log('➕', 'Contact not found — creating...');
-    contactId = await createContact(parent, token);
-    log('✅', `Created contact: ${contactId}`);
+  if (!syncResult.success) {
+    console.error(`❌ syncPaymentToZoho failed: ${syncResult.error}`);
+    process.exit(1);
   }
 
-  // Step B: Create invoice
-  log('📄', 'Creating Zoho invoice...');
-  const invoiceId = await createInvoice(contactId, enrollment, payment, token);
-  log('✅', `Invoice created: ${invoiceId}`);
+  log('✅', `Sync completed — Invoice ID: ${syncResult.invoiceId}`);
+  console.log('');
 
-  // Step C: Record payment
-  log('💰', 'Recording payment against invoice...');
-  await recordPayment(invoiceId, contactId, payment, token);
-  log('✅', 'Payment recorded in Zoho Books');
+  // ── B: Verify invoice format ──────────────────────────────────────────────
+  log('🔍', 'Fetching created invoice from Zoho for verification...');
+  const refNumber = `ST-${payment.transaction_id}`;
+  const invoice = await fetchInvoiceByReference(refNumber, token);
 
-  // Step D: Update local sync status
-  const { error: updateError } = await supabase
-    .from('payments')
-    .update({
-      sync_status: 'synced',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', paymentId);
-
-  if (updateError) {
-    console.error('⚠️  DB update failed:', updateError.message);
-  } else {
-    log('✅', `Local payment record updated (sync_status: synced)`);
+  if (!invoice) {
+    console.error(`❌ Invoice not found with reference ${refNumber}`);
+    process.exit(1);
   }
 
-  log('🎉', 'Full Zoho sync completed successfully!');
-}
+  log('📄', `Invoice ${invoice.invoice_number} fetched — verifying format...`);
+  console.log('');
 
-// ── Zoho API Calls ──────────────────────────────────────────────────────────────
-async function findContact(email: string, token: string): Promise<string | null> {
-  const res = await fetch(
-    `${ZOHO_BASE_URL}/contacts?email=${email}&organization_id=${ZOHO_ORGANIZATION_ID}`,
-    { headers: { Authorization: `Zoho-oauthtoken ${token}` } }
-  );
-  const data = await res.json();
-  return data.contacts?.[0]?.contact_id || null;
-}
+  // Line item checks
+  const lineItem = invoice.line_items?.[0];
+  assert('line_items[0].name', 'Community Fee', lineItem?.name);
 
-async function createContact(parent: any, token: string): Promise<string> {
-  const res = await fetch(
-    `${ZOHO_BASE_URL}/contacts?organization_id=${ZOHO_ORGANIZATION_ID}`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Zoho-oauthtoken ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contact_name: `${parent.first_name} ${parent.last_name}`,
-        contact_type: 'customer',
-        contact_persons: [
-          {
-            first_name: parent.first_name,
-            last_name: parent.last_name,
-            email: parent.email,
-            phone: parent.phone || '',
-          },
-        ],
-      }),
+  // Description: "{Student} - {Class} ({Grade}) - {Teacher}"
+  const expectedDesc = `${student.first_name} ${student.last_name} - ${classInfo.name} (${student.grade || 'N/A'}) - ${teacher ? `${teacher.first_name} ${teacher.last_name}` : 'TBD'}`;
+  assert('line_items[0].description', expectedDesc, lineItem?.description);
+
+  // Rate should be class price, not payment amount
+  assert('line_items[0].rate', String(classInfo.price), String(lineItem?.rate));
+
+  // Subject
+  assertContains('subject', 'AAC', invoice.subject);
+
+  // Terms
+  assert('payment_terms_label', 'Due on Receipt', invoice.payment_terms_label);
+
+  // Notes / T&C
+  assertTruthy('notes (T&C)', 'non-empty T&C footer', invoice.notes);
+
+  // ── C: Verify contact billing address ─────────────────────────────────────
+  log('🔍', 'Fetching contact to verify billing address...');
+  const contact = await fetchContact(invoice.customer_id, token);
+  const billingAddr = contact.billing_address || {};
+
+  if (parent.address_line1) {
+    assertTruthy('billing_address.address', 'non-empty street', billingAddr.address);
+    assertTruthy('billing_address.city', 'non-empty city', billingAddr.city);
+    assertTruthy('billing_address.state', 'non-empty state', billingAddr.state);
+    assertTruthy('billing_address.zip', 'non-empty zip', billingAddr.zip);
+  } else {
+    log('⚠️', 'Parent has no address on file — skipping billing address assertions');
+    results.push({ field: 'billing_address', expected: 'skipped (no address on profile)', actual: 'N/A', pass: true });
+  }
+
+  // ── D: Print results table ────────────────────────────────────────────────
+  console.log('');
+  console.log('┌──────────────────────────────────────────────────────────────────────────────┐');
+  console.log('│  INV-000305 Format Verification Results                                      │');
+  console.log('├────────────────────────────┬──────┬───────────────────────────────────────────┤');
+  console.log('│ Field                      │ Pass │ Details                                   │');
+  console.log('├────────────────────────────┼──────┼───────────────────────────────────────────┤');
+
+  for (const r of results) {
+    const passStr = r.pass ? '  ✅  ' : '  ❌  ';
+    const fieldCol = r.field.padEnd(26).slice(0, 26);
+    const detailText = r.pass ? r.actual : `expected: ${r.expected} | got: ${r.actual}`;
+    const detailCol = detailText.slice(0, 41).padEnd(41);
+    console.log(`│ ${fieldCol} │${passStr}│ ${detailCol} │`);
+  }
+
+  console.log('└────────────────────────────┴──────┴───────────────────────────────────────────┘');
+
+  const passed = results.filter((r) => r.pass).length;
+  const total = results.length;
+  const allPassed = passed === total;
+  console.log('');
+  log(allPassed ? '🎉' : '❌', `${passed}/${total} checks passed`);
+
+  // ── E: Optional cleanup ───────────────────────────────────────────────────
+  if (!skipCleanup && invoice.invoice_id) {
+    console.log('');
+    log('🧹', 'Cleaning up test invoice from Zoho...');
+    try {
+      await voidAndDeleteInvoice(invoice.invoice_id, token);
+      log('✅', 'Test invoice voided and deleted');
+
+      // Reset sync status back to pending so the payment can be re-tested
+      await supabase
+        .from('payments')
+        .update({ sync_status: 'pending', updated_at: new Date().toISOString() })
+        .eq('id', paymentId);
+      log('✅', 'Payment sync_status reset to "pending"');
+    } catch (err) {
+      log('⚠️', `Cleanup failed (non-fatal): ${err instanceof Error ? err.message : err}`);
     }
-  );
-  const data = await res.json();
-  if (data.code !== 0) throw new Error(`Contact creation failed: ${data.message}`);
-  return data.contact.contact_id;
-}
+  } else if (skipCleanup) {
+    log('ℹ️', 'Skipping cleanup (--skip-cleanup). Invoice remains in Zoho for manual review.');
+  }
 
-async function createInvoice(
-  contactId: string,
-  enrollment: any,
-  payment: any,
-  token: string
-): Promise<string> {
-  const res = await fetch(
-    `${ZOHO_BASE_URL}/invoices?organization_id=${ZOHO_ORGANIZATION_ID}`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Zoho-oauthtoken ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        customer_id: contactId,
-        reference_number: `ST-${payment.transaction_id}`,
-        line_items: [
-          {
-            name: enrollment.class.name,
-            description: `Enrollment for ${enrollment.student.first_name} ${enrollment.student.last_name}`,
-            rate: payment.amount,
-            quantity: 1,
-          },
-        ],
-        date: new Date(payment.paid_at || payment.created_at)
-          .toISOString()
-          .split('T')[0],
-      }),
-    }
-  );
-  const data = await res.json();
-  if (data.code !== 0) throw new Error(`Invoice creation failed: ${data.message}`);
-  return data.invoice.invoice_id;
-}
-
-async function recordPayment(
-  invoiceId: string,
-  contactId: string,
-  payment: any,
-  token: string
-) {
-  const res = await fetch(
-    `${ZOHO_BASE_URL}/customerpayments?organization_id=${ZOHO_ORGANIZATION_ID}`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Zoho-oauthtoken ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        customer_id: contactId,
-        payment_mode: 'creditcard',
-        amount: payment.amount,
-        date: new Date(payment.paid_at || payment.created_at)
-          .toISOString()
-          .split('T')[0],
-        reference_number: payment.transaction_id,
-        invoices: [
-          {
-            invoice_id: invoiceId,
-            amount_applied: payment.amount,
-          },
-        ],
-      }),
-    }
-  );
-  const data = await res.json();
-  if (data.code !== 0) throw new Error(`Payment recording failed: ${data.message}`);
+  if (!allPassed) {
+    process.exit(1);
+  }
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────────
 async function main() {
   console.log('');
   console.log('═══════════════════════════════════════════════════');
-  console.log('  Zoho Books Integration Smoke Test');
-  console.log(`  Mode: ${dryRun ? '🔍 DRY RUN (connectivity only)' : '🚀 FULL SYNC'}`);
+  console.log('  Zoho Books E2E Sync Test + Format Verification');
+  console.log(`  Mode: ${dryRun ? '🔍 DRY RUN (connectivity only)' : '🚀 FULL SYNC + VERIFY'}`);
   console.log('═══════════════════════════════════════════════════');
   console.log('');
 

@@ -51,7 +51,6 @@ describe('EnrollButton', () => {
             <EnrollButton
                 classId={mockClassId}
                 className="Test Class"
-                price={100}
                 available={5}
             />
         );
@@ -88,7 +87,6 @@ describe('EnrollButton', () => {
             <EnrollButton
                 classId={mockClassId}
                 className="Test Class"
-                price={100}
                 available={5}
             />
         );
@@ -136,7 +134,6 @@ describe('EnrollButton', () => {
             <EnrollButton
                 classId={mockClassId}
                 className="Test Class"
-                price={100}
                 available={5}
             />
         );
@@ -186,7 +183,6 @@ describe('EnrollButton', () => {
             <EnrollButton
                 classId={mockClassId}
                 className="Test Class"
-                price={100}
                 available={5}
             />
         );
@@ -220,7 +216,6 @@ describe('EnrollButton', () => {
             <EnrollButton
                 classId={mockClassId}
                 className="Test Class"
-                price={100}
                 available={5}
             />
         );

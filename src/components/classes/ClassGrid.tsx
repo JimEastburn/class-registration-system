@@ -6,7 +6,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Class } from '@/types';
-import { formatCurrency } from '@/lib/utils';
 
 interface ClassWithTeacher extends Class {
     teacher: {
@@ -51,7 +50,7 @@ function ClassCard({ classItem }: ClassCardProps) {
                     <CardTitle className="text-lg line-clamp-2">
                         {classItem.name}
                     </CardTitle>
-                    <Badge variant="secondary">{formatCurrency(classItem.price)}</Badge>
+                    <Badge variant="secondary">$30.00</Badge>
                 </div>
             </CardHeader>
             <CardContent className="flex-1">
@@ -88,7 +87,7 @@ function ClassCard({ classItem }: ClassCardProps) {
 
                     <div className="flex items-center gap-2 text-muted-foreground">
                         <DollarSign className="h-4 w-4" />
-                        <span>{formatCurrency(classItem.price)}</span>
+                        <span>$30.00</span>
                     </div>
                 </div>
             </CardContent>

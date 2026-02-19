@@ -8,24 +8,41 @@ const ZOHO_REFRESH_TOKEN = process.env.ZOHO_REFRESH_TOKEN;
 const ZOHO_ORGANIZATION_ID = process.env.ZOHO_ORGANIZATION_ID;
 const ZOHO_BASE_URL = 'https://www.zohoapis.com/books/v3';
 
+// Invoice configuration
+const ZOHO_INVOICE_SUBJECT = process.env.ZOHO_INVOICE_SUBJECT || 'AAC Fall \'26 Registration';
+const ZOHO_TERMS_AND_CONDITIONS = 'Thank you for registering with Austin AAC. All fees are non-refundable unless the class is canceled by the organization.';
+
 // Type definitions for Zoho integration
 interface ParentInfo {
     first_name: string;
     last_name: string;
     email: string;
     phone?: string;
+    address_line1?: string;
+    address_line2?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
 }
 
 interface StudentInfo {
     first_name: string;
     last_name: string;
     parent_id?: string;
+    grade?: string;
+}
+
+interface TeacherInfo {
+    first_name: string;
+    last_name: string;
 }
 
 interface ClassInfo {
     name: string;
     price: number;
     description?: string;
+    teacher?: TeacherInfo;
 }
 
 interface PaymentEnrollment {
@@ -78,8 +95,11 @@ export async function syncPaymentToZoho(paymentId: string) {
                 *,
                 enrollment:enrollments(
                     id,
-                    student:family_members(first_name, last_name, parent_id),
-                    class:classes(name, price, description)
+                    student:family_members(first_name, last_name, parent_id, grade),
+                    class:classes(
+                        name, price, description,
+                        teacher:profiles(first_name, last_name)
+                    )
                 )
             `)
             .eq('id', paymentId)
@@ -95,7 +115,7 @@ export async function syncPaymentToZoho(paymentId: string) {
         // Resolve parent through student's parent_id
         const { data: parentData, error: parentError } = await supabaseAdmin
             .from('profiles')
-            .select('first_name, last_name, email, phone')
+            .select('first_name, last_name, email, phone, address_line1, address_line2, city, state, zip, country')
             .eq('id', enrollment.student.parent_id!)
             .single();
 
@@ -156,26 +176,54 @@ async function findZohoContact(email: string, token: string): Promise<string | n
 }
 
 async function createZohoContact(parent: ParentInfo, token: string): Promise<string> {
+    const contactBody: Record<string, unknown> = {
+        contact_name: `${parent.first_name} ${parent.last_name}`,
+        contact_type: 'customer',
+        contact_persons: [{
+            first_name: parent.first_name,
+            last_name: parent.last_name,
+            email: parent.email,
+            phone: parent.phone || ''
+        }]
+    };
+
+    // Include billing address if available
+    if (parent.address_line1 && parent.city && parent.state && parent.zip) {
+        contactBody.billing_address = {
+            address: parent.address_line1,
+            street2: parent.address_line2 || '',
+            city: parent.city,
+            state: parent.state,
+            zip: parent.zip,
+            country: 'U.S.A.',
+        };
+    }
+
     const response = await fetch(`${ZOHO_BASE_URL}/contacts?organization_id=${ZOHO_ORGANIZATION_ID}`, {
         method: 'POST',
         headers: {
             Authorization: `Zoho-oauthtoken ${token}`,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            contact_name: `${parent.first_name} ${parent.last_name}`,
-            contact_type: 'customer',
-            contact_persons: [{
-                first_name: parent.first_name,
-                last_name: parent.last_name,
-                email: parent.email,
-                phone: parent.phone || ''
-            }]
-        })
+        body: JSON.stringify(contactBody)
     });
     const data = await response.json();
     if (data.code !== 0) throw new Error(`Zoho Contact creation failed: ${data.message}`);
     return data.contact.contact_id;
+}
+
+/**
+ * Build the line item description in format:
+ * "{Student Name} - {Class Name} ({Grade Level}) - {Teacher Name}"
+ */
+function buildLineItemDescription(enrollment: PaymentEnrollment): string {
+    const studentName = `${enrollment.student.first_name} ${enrollment.student.last_name}`;
+    const className = enrollment.class.name;
+    const grade = enrollment.student.grade || 'N/A';
+    const teacher = enrollment.class.teacher
+        ? `${enrollment.class.teacher.first_name} ${enrollment.class.teacher.last_name}`
+        : 'TBD';
+    return `${studentName} - ${className} (${grade}) - ${teacher}`;
 }
 
 async function createZohoInvoice(contactId: string, enrollment: PaymentEnrollment, payment: PaymentWithEnrollment, token: string): Promise<string> {
@@ -188,10 +236,13 @@ async function createZohoInvoice(contactId: string, enrollment: PaymentEnrollmen
         body: JSON.stringify({
             customer_id: contactId,
             reference_number: `ST-${payment.transaction_id}`,
+            subject: ZOHO_INVOICE_SUBJECT,
+            payment_terms_label: 'Due on Receipt',
+            notes: ZOHO_TERMS_AND_CONDITIONS,
             line_items: [{
-                name: enrollment.class.name,
-                description: `Enrollment for ${enrollment.student.first_name} ${enrollment.student.last_name}`,
-                rate: payment.amount,
+                name: 'Community Fee',
+                description: buildLineItemDescription(enrollment),
+                rate: enrollment.class.price,
                 quantity: 1
             }],
             date: new Date(payment.paid_at || payment.created_at).toISOString().split('T')[0]
@@ -238,8 +289,11 @@ export async function syncRefundToZoho(paymentId: string) {
                 id, amount, transaction_id, paid_at, created_at,
                 enrollment:enrollments(
                     id,
-                    student:family_members(first_name, last_name),
-                    class:classes(name)
+                    student:family_members(first_name, last_name, grade),
+                    class:classes(
+                        name,
+                        teacher:profiles(first_name, last_name)
+                    )
                 )
             `)
             .eq('id', paymentId)
@@ -251,8 +305,8 @@ export async function syncRefundToZoho(paymentId: string) {
 
         const enrollment = payment.enrollment as unknown as {
             id: string;
-            student: { first_name: string; last_name: string };
-            class: { name: string };
+            student: { first_name: string; last_name: string; grade?: string };
+            class: { name: string; teacher?: { first_name: string; last_name: string } };
         };
 
         const accessToken = await getAccessToken();
@@ -373,8 +427,8 @@ async function createZohoCreditNote(
                 date: new Date().toISOString().split('T')[0],
                 line_items: [
                     {
-                        name: details.className,
-                        description: `Refund for ${details.studentName}`,
+                        name: 'Community Fee',
+                        description: `Refund - ${details.studentName} - ${details.className}`,
                         rate: details.amount,
                         quantity: 1,
                     },

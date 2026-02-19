@@ -70,7 +70,6 @@ describe('Class Actions', () => {
 
              const input = {
                  name: 'Math 101',
-                 price: 10000,
                  capacity: 20
              };
 
@@ -115,7 +114,6 @@ describe('Class Actions', () => {
 
              const input = {
                  name: 'Math 101',
-                 price: 10000,
                  capacity: 20,
                  schedule_config: {
                      day: 'Tuesday',
@@ -151,7 +149,6 @@ describe('Class Actions', () => {
 
              const input = {
                  name: 'Math 101',
-                 price: 10000,
                  capacity: 20
              };
 
