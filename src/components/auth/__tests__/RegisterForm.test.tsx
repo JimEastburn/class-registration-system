@@ -8,6 +8,10 @@ vi.mock('@/lib/actions/auth', () => ({
     signUp: vi.fn(),
 }));
 
+vi.mock('@/lib/actions/google-auth', () => ({
+    signInWithGoogle: vi.fn(),
+}));
+
 vi.mock('@/components/providers/GlobalLoadingProvider', () => ({
     useGlobalLoading: () => ({
         startLoading: vi.fn(),

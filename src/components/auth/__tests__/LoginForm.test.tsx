@@ -7,6 +7,10 @@ vi.mock('@/lib/actions/auth', () => ({
     signIn: vi.fn(),
 }));
 
+vi.mock('@/lib/actions/google-auth', () => ({
+    signInWithGoogle: vi.fn(),
+}));
+
 vi.mock('@/components/providers/GlobalLoadingProvider', () => ({
     useGlobalLoading: () => ({
         startLoading: vi.fn(),
@@ -38,5 +42,17 @@ describe('LoginForm', () => {
         await waitFor(() => {
             expect(screen.queryByText(/unexpected error/i)).not.toBeInTheDocument();
         });
+    });
+
+    it('renders the Google sign-in button', () => {
+        render(<LoginForm />);
+        const googleButton = screen.getByTestId('google-signin-button');
+        expect(googleButton).toBeInTheDocument();
+        expect(googleButton).toHaveTextContent(/sign in with google/i);
+    });
+
+    it('renders the "or continue with email" divider', () => {
+        render(<LoginForm />);
+        expect(screen.getByText(/or continue with email/i)).toBeInTheDocument();
     });
 });
