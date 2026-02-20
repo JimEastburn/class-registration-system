@@ -19,7 +19,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 
 export default function RegisterForm() {
     const [isPending, startTransition] = useTransition();
@@ -114,20 +113,6 @@ export default function RegisterForm() {
                     Create Account
                 </h2>
             </CardHeader>
-            <CardContent className="space-y-4 pb-4">
-                <GoogleSignInButton label="Sign up with Google" />
-
-                <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t border-white/20" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-white/10 backdrop-blur-lg px-2 text-slate-400">
-                            or register with email
-                        </span>
-                    </div>
-                </div>
-            </CardContent>
             <form onSubmit={handleSubmit(onSubmit)} noValidate data-testid="register-form">
                 <CardContent className="space-y-4">
                     {error && (

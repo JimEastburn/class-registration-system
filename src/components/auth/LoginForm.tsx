@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 
 export default function LoginForm() {
     const [isPending, startTransition] = useTransition();
@@ -57,20 +56,6 @@ export default function LoginForm() {
                     Sign In
                 </h2>
             </CardHeader>
-            <CardContent className="space-y-4 pb-4">
-                <GoogleSignInButton label="Sign in with Google" />
-
-                <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t border-white/20" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-white/10 backdrop-blur-lg px-2 text-slate-400">
-                            or continue with email
-                        </span>
-                    </div>
-                </div>
-            </CardContent>
             <form onSubmit={handleSubmit(onSubmit)} noValidate data-testid="login-form">
                 <CardContent className="space-y-4">
                     {error && (
