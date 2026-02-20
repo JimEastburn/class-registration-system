@@ -32,28 +32,17 @@ test.describe('Parent Enrollment Flow', () => {
         // Navigate to Create Class
         await page.goto('/teacher/classes/new', { waitUntil: 'domcontentloaded' });
         
-        // Fill Class Form — labels from ClassForm.tsx
-        await page.getByLabel('Class Name *').fill(className);
-        await expect(page.getByLabel('Class Name *')).toHaveValue(className);
+        // Fill Class Form using data-testid selectors
+        await page.getByTestId('class-name-input').fill(className);
+        await expect(page.getByTestId('class-name-input')).toHaveValue(className);
 
-        await page.getByLabel('Description').fill('Test class for enrollment E2E');
-        await page.getByLabel('Price ($) *').fill('50');
-        await page.getByLabel('Capacity *').fill('5');
-        
-        // Select Day (ClassForm.tsx options: Tuesday/Thursday, Tuesday only, Wednesday only, Thursday only)
-        const dayTrigger = page.locator('button').filter({ hasText: 'Select a day' });
-        await dayTrigger.click();
-        await page.getByRole('option', { name: 'Tuesday only' }).click();
-        
-        // Select Block 
-        const blockTrigger = page.locator('button').filter({ hasText: 'Select a block' });
-        await blockTrigger.click();
-        await page.getByRole('option', { name: 'Block 1' }).click();
+        await page.getByTestId('class-description-input').fill('Test class for enrollment E2E');
+        await page.getByTestId('class-capacity-input').fill('5');
 
         console.log(`Submitting form with Class Name: "${className}"`);
         await page.waitForTimeout(1000); // Wait for state updates
 
-        await page.getByRole('button', { name: 'Create Class' }).click();
+        await page.getByTestId('class-submit-button').click();
         
         // Wait for redirect to class detail page
         await expect(page).toHaveURL(/\/teacher\/classes\/.+/, { timeout: 30000 }).catch(async () => {
@@ -134,15 +123,14 @@ test.describe('Parent Enrollment Flow', () => {
         const childLastName = 'Test';
         const childEmail = `kiddo.${Date.now()}@test.com`;
         
-        await page.fill('input[name="firstName"]', childFirstName);
-        await page.fill('input[name="lastName"]', childLastName);
-        await page.fill('input[name="email"]', childEmail);
-        // Note: no dob field is rendered in AddFamilyMemberDialog
+        await page.getByTestId('family-first-name-input').fill(childFirstName);
+        await page.getByTestId('family-last-name-input').fill(childLastName);
+        await page.getByTestId('family-email-input').fill(childEmail);
         
-        // Select Grade
-        await page.locator('button').filter({ hasText: 'Select grade' }).click();
+        // Select Grade using data-testid
+        await page.getByTestId('family-grade-select').click();
         await page.getByRole('option', { name: 'Elementary' }).click();
-        await page.getByRole('button', { name: 'Add Member' }).click();
+        await page.getByTestId('family-submit-button').click();
         
         await expect(page.getByText(`${childFirstName} ${childLastName}`)).toBeVisible({ timeout: 10000 });
 

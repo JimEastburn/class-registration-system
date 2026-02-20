@@ -92,7 +92,7 @@ export function AddFamilyMemberDialog({ children }: AddFamilyMemberDialogProps) 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[425px]" data-testid="add-family-member-dialog">
                 <DialogHeader>
                     <DialogTitle>Add Family Member</DialogTitle>
                     <DialogDescription>
@@ -109,7 +109,7 @@ export function AddFamilyMemberDialog({ children }: AddFamilyMemberDialogProps) 
                                     <FormItem>
                                         <FormLabel>First Name</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="John" {...field} />
+                                            <Input placeholder="John" {...field} data-testid="family-first-name-input" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -122,7 +122,7 @@ export function AddFamilyMemberDialog({ children }: AddFamilyMemberDialogProps) 
                                     <FormItem>
                                         <FormLabel>Last Name</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Doe" {...field} />
+                                            <Input placeholder="Doe" {...field} data-testid="family-last-name-input" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -137,7 +137,7 @@ export function AddFamilyMemberDialog({ children }: AddFamilyMemberDialogProps) 
                                 <FormItem>
                                     <FormLabel>Email</FormLabel>
                                     <FormControl>
-                                        <Input type="email" placeholder="john.doe@example.com" {...field} />
+                                        <Input type="email" placeholder="john.doe@example.com" {...field} data-testid="family-email-input" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -152,7 +152,7 @@ export function AddFamilyMemberDialog({ children }: AddFamilyMemberDialogProps) 
                                     <FormLabel>Relationship</FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl>
-                                            <SelectTrigger>
+                                            <SelectTrigger data-testid="family-relationship-select">
                                                 <SelectValue placeholder="Select relationship" />
                                             </SelectTrigger>
                                         </FormControl>
@@ -175,7 +175,7 @@ export function AddFamilyMemberDialog({ children }: AddFamilyMemberDialogProps) 
                                     <FormLabel>Grade</FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl>
-                                            <SelectTrigger>
+                                            <SelectTrigger data-testid="family-grade-select">
                                                 <SelectValue placeholder="Select grade" />
                                             </SelectTrigger>
                                         </FormControl>
@@ -197,10 +197,11 @@ export function AddFamilyMemberDialog({ children }: AddFamilyMemberDialogProps) 
                                 variant="outline"
                                 onClick={() => setOpen(false)}
                                 disabled={isLoading}
+                                data-testid="family-cancel-button"
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit" disabled={isLoading}>
+                            <Button type="submit" disabled={isLoading} data-testid="family-submit-button">
                                 {isLoading && (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 )}

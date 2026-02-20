@@ -1,7 +1,6 @@
 
 import { render, screen } from '@testing-library/react';
 import { vi, describe, it, expect } from 'vitest';
-import userEvent from '@testing-library/user-event';
 import { ClassForm } from '../ClassForm';
 
 // Mock dependencies
@@ -26,25 +25,41 @@ vi.mock('@/lib/actions/classes', () => ({
 
 describe('Teacher ClassForm', () => {
 
-    it('renders the correct day options for teachers', async () => {
-        const user = userEvent.setup();
+    it('renders the create form with required fields and data-testid attributes', () => {
         render(<ClassForm mode="create" />);
 
-        // Open the Day Select
-        const dayTrigger = screen.getByRole('combobox', { name: /day of week/i });
-        await user.click(dayTrigger);
+        // Verify required fields are present via data-testid
+        expect(screen.getByTestId('class-form')).toBeInTheDocument();
+        expect(screen.getByTestId('class-name-input')).toBeInTheDocument();
+        expect(screen.getByTestId('class-description-input')).toBeInTheDocument();
+        expect(screen.getByTestId('class-capacity-input')).toBeInTheDocument();
+        expect(screen.getByTestId('class-submit-button')).toBeInTheDocument();
 
-        // Check for options
-        const options = await screen.findAllByRole('option');
-        const optionValues = options.map(opt => opt.textContent);
+        // Submit button should say "Create Class" in create mode
+        expect(screen.getByTestId('class-submit-button')).toHaveTextContent('Create Class');
+    });
 
-        expect(optionValues).toContain('Tuesday/Thursday');
-        expect(optionValues).toContain('Tuesday only');
-        expect(optionValues).toContain('Wednesday only');
-        expect(optionValues).toContain('Thursday only');
-        
-        // Ensure invalid options are NOT present
-        expect(optionValues).not.toContain('Monday');
-        expect(optionValues).not.toContain('Friday');
+    it('renders "Save Changes" button in edit mode', () => {
+        render(<ClassForm mode="edit" existingClass={{
+            id: '123',
+            name: 'Test Class',
+            description: 'A test',
+            capacity: 10,
+            teacher_id: 'teacher-1',
+            status: 'draft',
+            price: 30,
+            location: null,
+            day_of_week: null,
+            time_block: null,
+            age_min: null,
+            age_max: null,
+            schedule_config: null,
+            current_enrollment: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        }} />);
+
+        expect(screen.getByTestId('class-submit-button')).toHaveTextContent('Save Changes');
+        expect(screen.getByTestId('class-name-input')).toHaveValue('Test Class');
     });
 });

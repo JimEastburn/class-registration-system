@@ -120,7 +120,7 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" data-testid="class-form">
         
         {/* Main Server Error */}
         {serverError && (
@@ -142,7 +142,7 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
                 <FormItem>
                   <FormLabel>Class Name *</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Beginner Guitar" {...field} />
+                    <Input placeholder="e.g., Beginner Guitar" {...field} data-testid="class-name-input" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -160,6 +160,7 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
                       placeholder="Describe what students will learn..."
                       className="min-h-[100px]"
                       {...field}
+                      data-testid="class-description-input"
                     />
                   </FormControl>
                   <FormMessage />
@@ -177,7 +178,7 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
                   <FormItem>
                     <FormLabel>Capacity *</FormLabel>
                     <FormControl>
-                      <Input type="number" min="1" {...field} />
+                      <Input type="number" min="1" {...field} data-testid="class-capacity-input" />
                     </FormControl>
                     <FormDescription>Maximum students</FormDescription>
                     <FormMessage />
@@ -268,7 +269,7 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
 
         {/* Validation Errors Summary */}
         {formErrors.length > 0 && (
-            <Alert variant="destructive" className="mb-4">
+            <Alert variant="destructive" className="mb-4" data-testid="class-form-error-summary">
                 <AlertDescription>
                     <p className="font-semibold mb-2">Please correct the following errors:</p>
                     <ul className="list-disc pl-4">
@@ -281,7 +282,7 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
         )}
 
         <div className="flex gap-4">
-          <Button type="submit" disabled={isPending}>
+          <Button type="submit" disabled={isPending} data-testid="class-submit-button">
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {mode === 'create' ? 'Create Class' : 'Save Changes'}
           </Button>

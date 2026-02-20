@@ -29,7 +29,7 @@ test.describe('Parent Family Management', () => {
 
         // Deterministic Flow: Expect Success Message -> Click Login -> Login
         try {
-            await expect(page.getByText('Your registration is complete')).toBeVisible({ timeout: 15000 });
+            await expect(page.getByTestId('registration-success')).toBeVisible({ timeout: 15000 });
         } catch (e) {
             // Check for error message if success failed
             const errorElement = page.locator('.bg-red-500\\/20'); // class found in RegisterForm
@@ -72,19 +72,15 @@ test.describe('Parent Family Management', () => {
         const childFirstName = 'Little';
         const childLastName = `Junior-${randomId}`;
 
-        await page.fill('input[name="firstName"]', childFirstName);
-        await page.fill('input[name="lastName"]', childLastName);
-        // Note: no dob field is rendered in AddFamilyMemberDialog
+        await page.getByTestId('family-first-name-input').fill(childFirstName);
+        await page.getByTestId('family-last-name-input').fill(childLastName);
 
-        // Select Grade — this is a Select component, not a text input
-        // Relationship defaults to "Student", so grade Select should be visible
-        const gradeTrigger = page.locator('button').filter({ hasText: 'Select grade' });
-        await expect(gradeTrigger).toBeVisible();
-        await gradeTrigger.click();
+        // Select Grade using data-testid
+        await page.getByTestId('family-grade-select').click();
         await page.getByRole('option', { name: 'Elementary' }).click();
 
         // Submit
-        await page.getByRole('button', { name: 'Add Member' }).click();
+        await page.getByTestId('family-submit-button').click();
 
         // --- 3. Verification Phase ---
         

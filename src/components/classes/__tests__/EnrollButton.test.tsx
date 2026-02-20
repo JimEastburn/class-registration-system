@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { EnrollButton } from '../EnrollButton';
 import { enrollStudent } from '@/lib/actions/enrollments';
 import { getFamilyMembers } from '@/lib/actions/family';
+import { hasCompleteAddress } from '@/lib/actions/profile';
 import { toast } from 'sonner';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
@@ -12,6 +13,10 @@ vi.mock('@/lib/actions/enrollments', () => ({
 
 vi.mock('@/lib/actions/family', () => ({
     getFamilyMembers: vi.fn(),
+}));
+
+vi.mock('@/lib/actions/profile', () => ({
+    hasCompleteAddress: vi.fn(),
 }));
 
 vi.mock('sonner', () => ({
@@ -124,6 +129,8 @@ describe('EnrollButton', () => {
             status: 'pending',
             error: null,
         });
+
+        (hasCompleteAddress as any).mockResolvedValue(true);
 
         fetchMock.mockResolvedValue({
             ok: true,

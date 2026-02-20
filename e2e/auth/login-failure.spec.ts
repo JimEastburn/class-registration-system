@@ -20,17 +20,8 @@ test.describe('Login Failure', () => {
       // Attempt login with wrong password
       await loginPage.login(user.email, 'WrongPassword123!');
 
-      // Should show error message
-      await expect(async () => {
-        const content = await page.content();
-        const hasError = 
-          content.includes('Invalid') ||
-          content.includes('incorrect') ||
-          content.includes('wrong') ||
-          content.includes('failed') ||
-          content.includes('Error');
-        expect(hasError).toBe(true);
-      }).toPass({ timeout: 10000 });
+      // Should show error message via data-testid
+      await expect(page.getByTestId('login-error-message')).toBeVisible({ timeout: 10000 });
 
       // Should still be on login page
       expect(page.url()).toContain('/login');
@@ -47,17 +38,8 @@ test.describe('Login Failure', () => {
     const fakeEmail = `nonexistent-${Date.now()}@example.com`;
     await loginPage.login(fakeEmail, 'Password123!');
 
-    // Should show error message
-    await expect(async () => {
-      const content = await page.content();
-      const hasError = 
-        content.includes('Invalid') ||
-        content.includes('not found') ||
-        content.includes('incorrect') ||
-        content.includes('failed') ||
-        content.includes('Error');
-      expect(hasError).toBe(true);
-    }).toPass({ timeout: 10000 });
+    // Should show error message via data-testid
+    await expect(page.getByTestId('login-error-message')).toBeVisible({ timeout: 10000 });
 
     // Should still be on login page
     expect(page.url()).toContain('/login');

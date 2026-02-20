@@ -45,14 +45,11 @@ test.describe('Teacher Login', () => {
       // Wait for redirect
       await expect(page).toHaveURL(/\/teacher/, { timeout: 15000 });
 
-      // Teacher dashboard should show teacher-specific elements
-      const pageContent = await page.content();
-      const hasTeacherContent = 
-        pageContent.includes('Class') ||
-        pageContent.includes('Teacher') ||
-        pageContent.includes('student');
-      
-      expect(hasTeacherContent).toBe(true);
+      // Teacher dashboard should show teacher-specific content
+      // Use locator-based assertion instead of fragile content.includes()
+      await expect(
+        page.getByRole('heading', { level: 1 }).or(page.getByRole('heading', { level: 2 }))
+      ).toBeVisible({ timeout: 5000 });
     } finally {
       await deleteTestUser(teacherUser.userId);
     }

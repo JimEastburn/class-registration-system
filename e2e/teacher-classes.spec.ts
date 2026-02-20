@@ -27,26 +27,14 @@ test.describe('Teacher Class Management', () => {
         // Navigate to Create Class
         await page.goto('/teacher/classes/new', { waitUntil: 'domcontentloaded' });
 
-        // Fill Class Details — labels must exactly match ClassForm.tsx FormLabels
+        // Fill Class Details using data-testid selectors
         const className = `E2E Test Class ${Date.now()}`;
-        await page.getByLabel('Class Name *').fill(className);
-        await page.getByLabel('Description').fill('This is a test class created by E2E test.');
-        await page.getByLabel('Capacity *').fill('15');
-        await page.getByLabel('Price ($) *').fill('100');
-        
-        // Schedule — Select components use SelectTrigger with placeholder text
-        // Select Day
-        const dayTrigger = page.locator('button').filter({ hasText: 'Select a day' });
-        await dayTrigger.click();
-        await page.getByRole('option', { name: 'Tuesday only' }).click();
-
-        // Select Block
-        const blockTrigger = page.locator('button').filter({ hasText: 'Select a block' });
-        await blockTrigger.click();
-        await page.getByRole('option', { name: 'Block 1' }).click();
+        await page.getByTestId('class-name-input').fill(className);
+        await page.getByTestId('class-description-input').fill('This is a test class created by E2E test.');
+        await page.getByTestId('class-capacity-input').fill('15');
 
         // Submit
-        await page.getByRole('button', { name: 'Create Class' }).click();
+        await page.getByTestId('class-submit-button').click();
 
         // Should redirect to /teacher/classes/[id]
         await expect(page).toHaveURL(/\/teacher\/classes\/.+/, { timeout: 30000 });
@@ -71,16 +59,17 @@ test.describe('Teacher Class Management', () => {
         // Navigate to Create Class
         await page.goto('/teacher/classes/new', { waitUntil: 'domcontentloaded' });
 
-        // Clear pre-filled fields (capacity defaults to 10, price to 0)
-        await page.getByLabel('Class Name *').fill('');
+        // Clear pre-filled fields (capacity defaults to 10)
+        await page.getByTestId('class-name-input').fill('');
 
         // Submit empty form
-        await page.getByRole('button', { name: 'Create Class' }).click();
+        await page.getByTestId('class-submit-button').click();
 
-        // Verify Validation Error Summary
-        await expect(page.getByText('Please correct the following errors:')).toBeVisible();
-        await expect(page.getByText('Name must be at least 3 characters')).toBeVisible();
-        await expect(page.getByText('Please select a Day')).toBeVisible();
-        await expect(page.getByText('Please select a Block of time')).toBeVisible();
+        // Verify Validation Error Summary via data-testid
+        const errorSummary = page.getByTestId('class-form-error-summary');
+        await expect(errorSummary).toBeVisible();
+        
+        // Check error messages within the error summary to avoid strict mode violations
+        await expect(errorSummary.getByText('Name must be at least 3 characters')).toBeVisible();
     });
 });

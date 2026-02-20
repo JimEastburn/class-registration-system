@@ -32,19 +32,16 @@ test.describe('Family Management', () => {
         const lastName = 'FamilyTest';
         const email = `testchild.${Date.now()}@test.com`;
 
-        // Fill Form (react-hook-form spreads field props including name)
-        await page.fill('input[name="firstName"]', firstName);
-        await page.fill('input[name="lastName"]', lastName);
-        await page.fill('input[name="email"]', email);
-        // Note: no dob field is rendered in AddFamilyMemberDialog
+        // Fill Form using data-testid selectors
+        await page.getByTestId('family-first-name-input').fill(firstName);
+        await page.getByTestId('family-last-name-input').fill(lastName);
+        await page.getByTestId('family-email-input').fill(email);
         
-        // Select Grade (shadcn Select component)
-        const gradeTrigger = page.locator('button').filter({ hasText: 'Select grade' });
-        await expect(gradeTrigger).toBeVisible();
-        await gradeTrigger.click();
+        // Select Grade using data-testid
+        await page.getByTestId('family-grade-select').click();
         await page.getByRole('option', { name: 'Elementary' }).click();
         
-        await page.getByRole('button', { name: 'Add Member' }).click();
+        await page.getByTestId('family-submit-button').click();
 
         // Verify Success — toast or list update
         await expect(page.getByText(firstName)).toBeVisible({ timeout: 10000 });

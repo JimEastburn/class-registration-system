@@ -70,7 +70,7 @@ export default function RegisterForm() {
         return (
             <Card className="bg-white/10 backdrop-blur-lg border-white/20">
                 <CardContent className="pt-6">
-                    <div className="text-center space-y-4">
+                    <div className="text-center space-y-4" data-testid="registration-success">
                         <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
                             <svg
                                 className="w-8 h-8 text-green-400"
@@ -93,7 +93,7 @@ export default function RegisterForm() {
                             Please click the Back to Login button below
                         </p>
                         <Button className="bg-primary hover:bg-primary/90" asChild>
-                            <Link href="/login">
+                            <Link href="/login" data-testid="back-to-login-link">
                                 Back to Login
                             </Link>
                         </Button>

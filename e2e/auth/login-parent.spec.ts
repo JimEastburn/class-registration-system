@@ -21,11 +21,12 @@ test.describe('Parent Login', () => {
     await loginPage.goto();
     await loginPage.login(testUser.email, testUser.password);
 
-    // Wait for page to load after login redirect
+    // Wait for redirect to parent dashboard (handles Vercel cold-start latency)
+    await page.waitForURL('**/parent/**', { timeout: 30000 });
     await page.waitForLoadState('domcontentloaded');
 
     // Verify we're on the parent dashboard
-    await expect(page).toHaveURL(/\/parent/, { timeout: 30000 });
+    await expect(page).toHaveURL(/\/parent/, { timeout: 10000 });
   });
 
   test('should display login form elements', async ({ page }) => {

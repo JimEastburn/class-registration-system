@@ -109,7 +109,7 @@ test.describe('Password Validation', () => {
     });
 
     // Should proceed to success (no password validation errors)
-    // RegisterForm.tsx shows "Your registration is complete" on success
-    await expect(page.getByText('Your registration is complete')).toBeVisible({ timeout: 15000 });
+    // RegisterForm.tsx renders data-testid="registration-success" on success
+    await expect(page.getByTestId('registration-success')).toBeVisible({ timeout: 15000 });
   });
 });
