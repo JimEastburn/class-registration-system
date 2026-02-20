@@ -1,13 +1,46 @@
 # Deployment Guide
 
-This guide covers deploying the Class Registration System to Vercel.
+This guide covers deploying the Class Registration System to Vercel with a **two-environment workflow**: Preview (staging) → Production (manual promotion).
 
 ## Live Environments
 
-| Environment          | URL                                                                |
-| -------------------- | ------------------------------------------------------------------ |
-| **Production**       | https://class-registration-system-two.vercel.app                   |
-| **Vercel Dashboard** | https://vercel.com/jimeastburns-projects/class-registration-system |
+| Environment           | URL                                                                           | Branch       | Supabase DB                                |
+| --------------------- | ----------------------------------------------------------------------------- | ------------ | ------------------------------------------ |
+| **Preview (Staging)** | https://class-registration-system-git-master-jimeastburns-projects.vercel.app | `master`     | `class-registration-system`                |
+| **Production**        | https://class-registration.austinaac.org                                      | `production` | `production-AAC-class-registration-system` |
+| **Vercel Dashboard**  | https://vercel.com/jimeastburns-projects/class-registration-system            | —            | —                                          |
+
+## Deployment Workflow
+
+```
+git push master → Preview deployment (auto) → Manual "Promote to Production" → Production
+```
+
+### 1. Push to `master` (Auto-Deploy to Preview)
+
+Every push to `master` automatically creates a **Preview** deployment:
+
+- Uses **Preview** environment variables (dev Supabase DB)
+- Accessible at the Preview URL above
+- Does **NOT** update the production site
+
+### 2. Promote to Production (Manual)
+
+When ready to update production:
+
+1. Go to **[Deployments](https://vercel.com/jimeastburns-projects/class-registration-system/deployments)**
+2. Find the Preview deployment to promote
+3. Click the **⋮** (three dots) menu → **Promote to Production**
+4. Vercel re-serves the build with **Production** environment variables
+
+> **Note**: Vercel automatically substitutes `NEXT_PUBLIC_*` variables during promotion.
+
+### 3. Alternative: Direct Production Deploy via CLI
+
+```bash
+# Deploy directly to production (bypasses preview)
+npx vercel --prod
+```
 
 ## Quick CLI Commands
 
@@ -26,51 +59,40 @@ npx vercel env pull
 
 - GitHub repository with the project
 - Vercel account (free tier works)
-- Supabase project with database ready
+- Supabase projects: **dev** and **production** databases
 - Stripe account with API keys
 
-## Step 1: Connect to Vercel
+## Environment Variables
 
-1. Go to [vercel.com](https://vercel.com) and sign in
-2. Click **"Add New Project"**
-3. Import your GitHub repository
-4. Vercel will auto-detect Next.js
+### Per-Environment Configuration
 
-## Step 2: Configure Environment Variables
+Environment variables are scoped per environment in the Vercel Dashboard. Go to **[Settings → Environment Variables](https://vercel.com/jimeastburns-projects/class-registration-system/settings/environment-variables)**.
 
-In the Vercel project settings, add these environment variables:
+#### Supabase (Different per environment)
 
-### Supabase
+| Variable                        | Production                                 | Preview / Development  |
+| ------------------------------- | ------------------------------------------ | ---------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Production Supabase URL                    | Dev Supabase URL       |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Production anon key                        | Dev anon key           |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Production service role key                | Dev service role key   |
+| `NEXT_PUBLIC_APP_URL`           | `https://class-registration.austinaac.org` | Preview deployment URL |
 
-| Variable                        | Description                              |
-| ------------------------------- | ---------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Your Supabase project URL                |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key                 |
-| `SUPABASE_SERVICE_ROLE_KEY`     | Supabase service role key (for webhooks) |
-
-### Stripe
+#### Stripe
 
 | Variable                             | Description                                       |
 | ------------------------------------ | ------------------------------------------------- |
 | `STRIPE_SECRET_KEY`                  | Stripe secret key (use `sk_live_` for production) |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key                            |
-| `STRIPE_WEBHOOK_SECRET`              | Webhook signing secret (see Step 4)               |
+| `STRIPE_WEBHOOK_SECRET`              | Webhook signing secret (see Stripe Webhooks)      |
 
-### Application
-
-| Variable                    | Description                                                      |
-| --------------------------- | ---------------------------------------------------------------- |
-| `NEXT_PUBLIC_APP_URL`       | Your Vercel deployment URL (e.g., `https://your-app.vercel.app`) |
-| `BYPASS_EMAIL_CONFIRMATION` | Set to `true` to skip email verification (use for testing)       |
-
-### Resend (Emails)
+#### Resend (Emails)
 
 | Variable             | Description                                             |
 | -------------------- | ------------------------------------------------------- |
 | `RESEND_API_KEY`     | API Key from Resend Dashboard                           |
 | `EMAIL_FROM_ADDRESS` | Verified sender address (e.g., `onboarding@resend.dev`) |
 
-### Zoho Books (Accounting)
+#### Zoho Books (Accounting)
 
 | Variable               | Description                             |
 | ---------------------- | --------------------------------------- |
@@ -79,76 +101,50 @@ In the Vercel project settings, add these environment variables:
 | `ZOHO_ORGANIZATION_ID` | Your Zoho Books Org ID                  |
 | `ZOHO_REFRESH_TOKEN`   | Long-lived refresh token for API access |
 
-## Step 3: Deploy
+#### Other
 
-1. Click **"Deploy"** in Vercel
-2. Wait for the build to complete
-3. Your app is now live at `your-app.vercel.app`
+| Variable                    | Description                                             |
+| --------------------------- | ------------------------------------------------------- |
+| `BYPASS_EMAIL_CONFIRMATION` | Set to `true` to skip email verification (Preview only) |
 
-## Pre-deployment Verification
-
-Before deploying or merging changes, ensure that all tests are passing:
-
-```bash
-# Run all tests
-npm test
-
-# Check code coverage
-npm run test:coverage
-```
-
-## Step 4: Configure Stripe Webhooks
+## Stripe Webhooks
 
 1. Go to [Stripe Dashboard → Webhooks](https://dashboard.stripe.com/webhooks)
 2. Click **"Add endpoint"**
-3. Set the endpoint URL: `https://your-app.vercel.app/api/webhooks/stripe`
+3. Set the endpoint URL: `https://class-registration.austinaac.org/api/webhooks/stripe`
 4. Select events to listen:
    - `checkout.session.completed`
    - `checkout.session.expired`
    - `charge.refunded`
 5. Copy the **Signing secret** and add it as `STRIPE_WEBHOOK_SECRET` in Vercel
 
-## Step 5: Run Database Migrations
+## Database Migrations
 
-1. Go to your Supabase project
-2. Navigate to **SQL Editor**
-3. Run the following migration files in order:
-   - `supabase/migrations/001_initial_schema.sql` (Initial Setup)
-   - `supabase/migrations/004_waitlist.sql` (Waitlist feature)
-   - `supabase/migrations/005_recurring_schedules.sql` (Recurring Schedules)
-   - `supabase/migrations/006_class_materials.sql` (Class Materials)
-   - `supabase/migrations/20260122112000_robust_profile_trigger.sql` (Robust Profile Trigger)
-
-Or, if you have the Supabase CLI installed, you can simply run:
+Run migration files in order via the Supabase SQL Editor, or use the CLI:
 
 ```bash
 supabase db push
 ```
 
-## Step 6: Create Initial Admin User
+## Create Initial Admin User
 
 1. Register a new account at `/register`
 2. In Supabase SQL Editor, run:
    ```sql
-   -- Create a profile if it doesn't exist
    INSERT INTO profiles (id, email, role, first_name, last_name)
    VALUES ('user_uuid_here', 'your-email@example.com', 'super_admin', 'Admin', 'User')
    ON CONFLICT (id) DO UPDATE SET role = 'super_admin';
    ```
 
-## Step 7: CI/CD Pipeline Setup
+## Git Branch Strategy
 
-To match the project tasks (`docs/TASKS.md`), configure the following pipeline in Vercel:
+| Branch       | Purpose             | Auto-Deploy Target |
+| ------------ | ------------------- | ------------------ |
+| `master`     | Active development  | Preview (staging)  |
+| `production` | Production releases | Production         |
 
-1.  **Preview Environment**:
-    - **Trigger**: Any Pull Request.
-    - **Action**: Automatically deploys a unique preview URL.
-2.  **Staging Environment**:
-    - **Trigger**: Push to `main` (or `develop` if using GitFlow).
-    - **Action**: Automatically deploys to your Staging domain.
-3.  **Production Environment**:
-    - **Trigger**: **Manual Promotion** from Staging.
-    - **Action**: Go to Vercel Dashboard -> Deployments -> [Select Staging Deployment] -> **Promote to Production**. This ensures exactly the same build artifact is used.
+- **Day-to-day development**: Push to `master`. Preview auto-deploys.
+- **Release to production**: Promote a preview deployment via the Vercel Dashboard, or merge `master` → `production`.
 
 ## Vercel Settings
 
@@ -157,10 +153,20 @@ To match the project tasks (`docs/TASKS.md`), configure the following pipeline i
 - **Framework Preset**: Next.js
 - **Build Command**: `npm run build`
 - **Output Directory**: `.next`
+- **Production Branch**: `production`
 
-### Environment Variables Scope
+### Key Configuration (`vercel.json`)
 
-- Set all variables for **Production**, **Preview**, and **Development**
+- `github.autoAlias: false` — Prevents automatic domain promotion on push
+- Stripe webhook function timeout: 30s
+- Health check cron: every 3 days at 8am UTC
+
+## Pre-deployment Verification
+
+```bash
+npm run build   # Ensure production build passes
+npm test        # Run all tests
+```
 
 ## Troubleshooting
 
@@ -179,30 +185,18 @@ To match the project tasks (`docs/TASKS.md`), configure the following pipeline i
 
 - Ensure `NEXT_PUBLIC_SUPABASE_URL` is correct
 - **Email Rate Limits**: Supabase's default email service has strict limits (3 per hour).
-  - **Option A (Fixed)**: [Configure Custom SMTP](#setup-custom-smtp-recommended).
-  - **Option B (Bypass)**: Set `BYPASS_EMAIL_CONFIRMATION=true` in Vercel env vars.
+  - Configure Custom SMTP (see below) or set `BYPASS_EMAIL_CONFIRMATION=true`.
 - Add your Vercel domain to Supabase Auth settings:
   - Go to **Authentication → URL Configuration**
   - Add your domain to **Redirect URLs**
 
 ## Setup Custom SMTP (Recommended)
 
-To avoid "email rate limit exceeded" errors in production, you should use a custom SMTP provider like [Resend](https://resend.com).
+1. **Get SMTP Credentials**: Sign up for Resend (or SendGrid/Postmark), create an API key.
+2. **Configure Supabase**: Go to **Authentication → Settings → SMTP Settings** → Enable Custom SMTP.
+3. **Disable Link Tracking**: In your SMTP provider, disable link tracking to prevent breaking confirmation links.
 
-1.  **Get SMTP Credentials**:
-    - Sign up for Resend (or SendGrid/Postmark).
-    - Create an API key.
-    - Find your SMTP settings (Host: `smtp.resend.com`, Port: `587`, User: `resend`).
-2.  **Configure Supabase**:
-    - Go to your **Supabase Dashboard**.
-    - Navigate to **Authentication → Settings → SMTP Settings**.
-    - Toggle **Enable Custom SMTP** to ON.
-    - Fill in the host, port, user, and password (your Resend API key).
-    - Save changes.
-3.  **Disable Link Tracking**:
-    - In your SMTP provider settings, ensure "Link Tracking" is disabled to prevent breaking Supabase's confirmation links.
-
-## Custom Domain (Optional)
+## Custom Domain
 
 1. In Vercel, go to **Settings → Domains**
 2. Add your custom domain
