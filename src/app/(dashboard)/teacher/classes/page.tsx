@@ -9,8 +9,6 @@ export const metadata = {
   description: 'Manage your classes',
 };
 
-export const dynamic = 'force-dynamic';
-
 export default async function TeacherClassesPage() {
   console.error('Rendering TeacherClassesPage...'); // Log to stderr to ensure visibility
   const result = await getTeacherClasses();

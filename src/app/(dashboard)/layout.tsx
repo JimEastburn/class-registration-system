@@ -5,6 +5,8 @@ import { Topbar } from '@/components/dashboard/Topbar';
 import { MobileNav } from '@/components/dashboard/MobileNav';
 import type { UserRole } from '@/types';
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardLayout({
     children,
 }: {
