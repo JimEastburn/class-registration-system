@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -23,6 +24,8 @@ export default function RegisterForm() {
     const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const {
         register,
@@ -207,13 +210,24 @@ export default function RegisterForm() {
                         <Label htmlFor="password" className="text-slate-200">
                             Password
                         </Label>
-                        <Input
-                            id="password"
-                            type="password"
-                            className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
-                            {...register('password')}
-                            data-testid="register-password-input"
-                        />
+                        <div className="relative">
+                            <Input
+                                id="password"
+                                type={showPassword ? 'text' : 'password'}
+                                className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 pr-10"
+                                {...register('password')}
+                                data-testid="register-password-input"
+                            />
+                            <button
+                                type="button"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                                onClick={() => setShowPassword(!showPassword)}
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                data-testid="toggle-password-visibility"
+                            >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                        </div>
                         {errors.password && (
                             <p className="text-red-400 text-sm">{errors.password.message}</p>
                         )}
@@ -223,13 +237,24 @@ export default function RegisterForm() {
                         <Label htmlFor="confirmPassword" className="text-slate-200">
                             Confirm Password
                         </Label>
-                        <Input
-                            id="confirmPassword"
-                            type="password"
-                            className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
-                            {...register('confirmPassword')}
-                            data-testid="confirm-password-input"
-                        />
+                        <div className="relative">
+                            <Input
+                                id="confirmPassword"
+                                type={showConfirmPassword ? 'text' : 'password'}
+                                className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 pr-10"
+                                {...register('confirmPassword')}
+                                data-testid="confirm-password-input"
+                            />
+                            <button
+                                type="button"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                                data-testid="toggle-confirm-password-visibility"
+                            >
+                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                        </div>
                         {errors.confirmPassword && (
                             <p className="text-red-400 text-sm">
                                 {errors.confirmPassword.message}

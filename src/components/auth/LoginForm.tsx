@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -14,6 +15,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 export default function LoginForm() {
     const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
 
     const {
         register,
@@ -92,13 +94,24 @@ export default function LoginForm() {
                                 Forgot password?
                             </Link>
                         </div>
-                        <Input
-                            id="password"
-                            type="password"
-                            className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
-                            {...register('password')}
-                            data-testid="password-input"
-                        />
+                        <div className="relative">
+                            <Input
+                                id="password"
+                                type={showPassword ? 'text' : 'password'}
+                                className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 pr-10"
+                                {...register('password')}
+                                data-testid="password-input"
+                            />
+                            <button
+                                type="button"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                                onClick={() => setShowPassword(!showPassword)}
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                data-testid="toggle-password-visibility"
+                            >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                        </div>
                         {errors.password && (
                             <p className="text-red-400 text-sm">{errors.password.message}</p>
                         )}

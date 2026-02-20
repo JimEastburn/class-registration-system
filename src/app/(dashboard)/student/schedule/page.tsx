@@ -23,7 +23,7 @@ export default async function StudentSchedulePage() {
   }
 
   return (
-    <div className="flex flex-col space-y-6 h-[calc(100vh-100px)]">
+    <div className="flex flex-col space-y-6 h-[calc(100dvh-100px)]">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Class Schedule</h1>
         <p className="text-muted-foreground">View your upcoming classes and events.</p>

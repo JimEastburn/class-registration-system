@@ -19,7 +19,7 @@ export default async function HomePage() {
       {/* Background Image & Overlay */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/Together_FADE.avif"
+          src="/Together_FADE.webp"
           alt="Class Registration Background"
           fill
           className="object-cover object-center opacity-30"
@@ -34,7 +34,7 @@ export default async function HomePage() {
         {/* Navigation */}
         <nav className="container mx-auto px-4 py-6 flex items-center justify-between">
           <Image
-            src="/AAC_FINAL.avif"
+            src="/AAC_FINAL.webp"
             alt="Logo"
             width={165}
             height={152}

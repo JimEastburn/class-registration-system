@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -51,155 +51,155 @@
   /* Austin AAC "Arts + Academic" Palette */
 
   /* Background: Limestone Cream */
-  --background: #F8FAF8;
+  --background: #f8faf8;
   /* Foreground: Deep Slate (Professional Text) */
   --foreground: #334155;
 
-  --card: #FFFFFF;
+  --card: #ffffff;
   --card-foreground: #334155;
 
-  --popover: #FFFFFF;
+  --popover: #ffffff;
   --popover-foreground: #334155;
 
   /* Primary: Steel Blue (Primary Brand, Professional) */
   --primary: #4c7c92;
-  --primary-foreground: #FFFFFF;
+  --primary-foreground: #ffffff;
 
   /* Secondary: Soft Sky Blue (Secondary Brand, Calm) */
-  --secondary: #9BBFD3;
-  --secondary-foreground: #FFFFFF;
+  --secondary: #9bbfd3;
+  --secondary-foreground: #ffffff;
 
   /* Muted: Soft Gray for backgrounds */
-  --muted: #F1F5F9;
-  --muted-foreground: #64748B;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
 
   /* Accent: Sunset Gold */
-  --accent: #FBBF24;
-  --accent-foreground: #4C1D95;
+  --accent: #fbbf24;
+  --accent-foreground: #4c1d95;
 
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
 
-  --border: #E2E8F0;
-  --input: #E2E8F0;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
   --ring: #4c7c92;
 
   --chart-1: #4c7c92;
   /* Deep Indigo */
-  --chart-2: #9BBFD3;
+  --chart-2: #9bbfd3;
   /* Vibrant Teal */
-  --chart-3: #FBBF24;
+  --chart-3: #fbbf24;
   /* Sunset Gold */
   --chart-4: #334155;
   /* Slate Gray */
-  --chart-5: #10B981;
+  --chart-5: #10b981;
   /* Success Green */
 
-  --sidebar: #F8FAF8;
+  --sidebar: #f8faf8;
   --sidebar-foreground: #334155;
   --sidebar-primary: #4c7c92;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F1F5F9;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
   --sidebar-accent-foreground: #4c7c92;
-  --sidebar-border: #E2E8F0;
+  --sidebar-border: #e2e8f0;
   --sidebar-ring: #4c7c92;
 
   /* Enrollment status tokens */
-  --status-pending-dot: #EAB308;
-  --status-pending-bg: #FEFCE8;
-  --status-pending-fg: #854D0E;
-  --status-pending-border: #FDE68A;
+  --status-pending-dot: #eab308;
+  --status-pending-bg: #fefce8;
+  --status-pending-fg: #854d0e;
+  --status-pending-border: #fde68a;
 
-  --status-confirmed-dot: #22C55E;
-  --status-confirmed-bg: #F0FDF4;
+  --status-confirmed-dot: #22c55e;
+  --status-confirmed-bg: #f0fdf4;
   --status-confirmed-fg: #166534;
-  --status-confirmed-border: #BBF7D0;
+  --status-confirmed-border: #bbf7d0;
 
-  --status-waitlisted-dot: #F97316;
-  --status-waitlisted-bg: #FFF7ED;
-  --status-waitlisted-fg: #9A3412;
-  --status-waitlisted-border: #FDBA74;
+  --status-waitlisted-dot: #f97316;
+  --status-waitlisted-bg: #fff7ed;
+  --status-waitlisted-fg: #9a3412;
+  --status-waitlisted-border: #fdba74;
 
-  --status-cancelled-dot: #FCA5A5;
-  --status-cancelled-bg: #FFF1F2;
-  --status-cancelled-fg: #9F1239;
-  --status-cancelled-border: #FECDD3;
+  --status-cancelled-dot: #fca5a5;
+  --status-cancelled-bg: #fff1f2;
+  --status-cancelled-fg: #9f1239;
+  --status-cancelled-border: #fecdd3;
 }
 
 .dark {
   /* Dark Mode Adaptation - Keeping consistency but readable on dark */
 
   /* Background: Darker Deep Indigo variant or Slate */
-  --background: #0F172A;
+  --background: #0f172a;
   /* Slate 900 */
-  --foreground: #F8FAF8;
+  --foreground: #f8faf8;
   /* Limestone Cream */
 
-  --card: #1E293B;
+  --card: #1e293b;
   /* Slate 800 */
-  --card-foreground: #F8FAF8;
+  --card-foreground: #f8faf8;
 
-  --popover: #1E293B;
-  --popover-foreground: #F8FAF8;
+  --popover: #1e293b;
+  --popover-foreground: #f8faf8;
 
   /* Primary: Lighten Deep Indigo for dark mode or keep as brand color if contrast allows */
-  --primary: #818CF8;
+  --primary: #818cf8;
   /* Indogo 400 for better visibility in dark mode? Or stick to brand. Let's stick closer to brand but readable. */
-  --primary-foreground: #FFFFFF;
+  --primary-foreground: #ffffff;
 
   /* Secondary: Vibrant Teal */
-  --secondary: #14B8A6;
+  --secondary: #14b8a6;
   /* Teal 500 */
-  --secondary-foreground: #FFFFFF;
+  --secondary-foreground: #ffffff;
 
-  --muted: #1E293B;
-  --muted-foreground: #94A3B8;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
 
-  --accent: #1E293B;
-  --accent-foreground: #F8FAF8;
+  --accent: #1e293b;
+  --accent-foreground: #f8faf8;
 
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
 
-  --border: #1E293B;
-  --input: #1E293B;
-  --ring: #818CF8;
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #818cf8;
 
-  --chart-1: #818CF8;
-  --chart-2: #14B8A6;
-  --chart-3: #FBBF24;
-  --chart-4: #94A3B8;
-  --chart-5: #34D399;
+  --chart-1: #818cf8;
+  --chart-2: #14b8a6;
+  --chart-3: #fbbf24;
+  --chart-4: #94a3b8;
+  --chart-5: #34d399;
 
-  --sidebar: #0F172A;
-  --sidebar-foreground: #F8FAF8;
-  --sidebar-primary: #818CF8;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #1E293B;
-  --sidebar-accent-foreground: #F8FAF8;
-  --sidebar-border: #1E293B;
-  --sidebar-ring: #818CF8;
+  --sidebar: #0f172a;
+  --sidebar-foreground: #f8faf8;
+  --sidebar-primary: #818cf8;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #f8faf8;
+  --sidebar-border: #1e293b;
+  --sidebar-ring: #818cf8;
 
   /* Enrollment status tokens (dark mode) */
-  --status-pending-dot: #FACC15;
+  --status-pending-dot: #facc15;
   --status-pending-bg: #422006;
-  --status-pending-fg: #FEF08A;
-  --status-pending-border: #A16207;
+  --status-pending-fg: #fef08a;
+  --status-pending-border: #a16207;
 
-  --status-confirmed-dot: #22C55E;
-  --status-confirmed-bg: #052E16;
-  --status-confirmed-fg: #86EFAC;
+  --status-confirmed-dot: #22c55e;
+  --status-confirmed-bg: #052e16;
+  --status-confirmed-fg: #86efac;
   --status-confirmed-border: #166534;
 
-  --status-waitlisted-dot: #F97316;
+  --status-waitlisted-dot: #f97316;
   --status-waitlisted-bg: #431407;
-  --status-waitlisted-fg: #FDBA74;
-  --status-waitlisted-border: #9A3412;
+  --status-waitlisted-fg: #fdba74;
+  --status-waitlisted-border: #9a3412;
 
-  --status-cancelled-dot: #FCA5A5;
-  --status-cancelled-bg: #4C0519;
-  --status-cancelled-fg: #FDA4AF;
-  --status-cancelled-border: #9F1239;
+  --status-cancelled-dot: #fca5a5;
+  --status-cancelled-bg: #4c0519;
+  --status-cancelled-fg: #fda4af;
+  --status-cancelled-border: #9f1239;
 }
 
 @layer base {
@@ -209,5 +209,13 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* iOS Safari: use dynamic viewport height so min-h-screen
+   accounts for the collapsible URL bar */
+@supports (min-height: 100dvh) {
+  .min-h-screen {
+    min-height: 100dvh !important;
   }
 }

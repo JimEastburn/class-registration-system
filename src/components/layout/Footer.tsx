@@ -11,7 +11,7 @@ export function Footer() {
     }
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-gray-200 p-2 text-center text-sm text-muted-foreground z-50 backdrop-blur-sm">
+        <div className="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-gray-200 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-center text-sm text-muted-foreground z-50 backdrop-blur-sm">
             For help, please text Jim Eastburn{" "}
             <a
                 href="sms:+15126896860"
