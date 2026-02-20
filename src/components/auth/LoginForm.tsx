@@ -38,7 +38,7 @@ export default function LoginForm() {
                     setError(result.error);
                 }
             } catch (e) {
-                if ((e as Error).message === 'NEXT_REDIRECT' || (e as any)?.digest === 'NEXT_REDIRECT') {
+                if ((e as Error).message === 'NEXT_REDIRECT' || (e as { digest?: string })?.digest === 'NEXT_REDIRECT') {
                     throw e;
                 }
                 console.error('Login error:', e);
@@ -125,6 +125,18 @@ export default function LoginForm() {
                             Create account
                         </Link>
                     </p>
+
+                    {process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production' && (
+                        <a
+                            href="https://docs.google.com/document/d/1S3cZFvcQM8-ifrSRnZvrO-xAo1v8xTeL/edit?usp=sharing&ouid=107223564146613814103&rtpof=true&sd=true"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-amber-400 hover:text-amber-300 transition-colors text-center"
+                            data-testid="test-accounts-link"
+                        >
+                            Test Accounts
+                        </a>
+                    )}
                 </CardFooter>
             </form>
         </Card>
