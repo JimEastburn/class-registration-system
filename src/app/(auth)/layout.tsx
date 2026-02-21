@@ -7,9 +7,9 @@ export default function AuthLayout({
 }) {
     return (
         <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-            <div className="flex flex-col lg:flex-row items-center justify-center gap-16 w-full max-w-7xl">
+            <div className="flex flex-col lg:flex-row items-start justify-center gap-16 w-full max-w-7xl">
                 {/* Left Decorative Image */}
-                <div className="hidden lg:block flex-shrink-0 w-[165px]">
+                <div className="hidden lg:block flex-shrink-0 w-[165px] lg:sticky lg:top-[33vh]">
                     <Image
                         src="/AAC_FINAL.webp"
                         alt="Austin AAC"
@@ -26,7 +26,7 @@ export default function AuthLayout({
                 </div>
 
                 {/* Right Decorative Image */}
-                <div className="hidden lg:block flex-shrink-0 w-[165px]">
+                <div className="hidden lg:block flex-shrink-0 w-[165px] lg:sticky lg:top-[33vh]">
                     <Image
                         src="/AAC_FINAL.webp"
                         alt="Austin AAC"
