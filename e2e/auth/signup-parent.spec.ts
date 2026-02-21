@@ -47,7 +47,7 @@ test.describe('Parent Sign Up', () => {
       const url = page.url();
       const content = await page.content();
       
-      const isOnConfirmation = content.includes('registration is complete') ||
+      const isOnConfirmation = content.includes('Check your email') ||
                                content.includes('verify your email') ||
                                content.includes('confirmation');
       const isOnDashboard = url.includes('/parent');

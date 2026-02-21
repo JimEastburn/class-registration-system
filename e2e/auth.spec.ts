@@ -31,7 +31,7 @@ test.describe('Authentication Flow', () => {
 
     // Debugging: Check for error message if success message doesn't appear immediately
     try {
-        await expect(page.getByText('Your registration is complete')).toBeVisible({ timeout: 5000 });
+        await expect(page.getByText('Check your email')).toBeVisible({ timeout: 5000 });
         // Verify "Back to Login" button
         await expect(page.getByRole('button', { name: 'Back to Login' })).toBeVisible();
     } catch (e) {

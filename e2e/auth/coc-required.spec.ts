@@ -69,7 +69,7 @@ test.describe('Code of Conduct Requirement', () => {
       const hasCoCAgreementError = content.includes('must agree') &&
                                     content.includes('Code of Conduct');
       
-      const isSuccess = content.includes('registration is complete') ||
+      const isSuccess = content.includes('Check your email') ||
                         url.includes('/parent') ||
                         !url.includes('/register');
       

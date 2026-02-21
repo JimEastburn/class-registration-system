@@ -27,6 +27,7 @@ export async function signUp(
     email,
     password,
     options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm`,
       data: {
         first_name: firstName,
         last_name: lastName,

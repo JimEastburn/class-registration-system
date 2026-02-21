@@ -34,6 +34,9 @@ export default function RegisterForm() {
         formState: { errors },
     } = useForm<RegisterFormData>({
         resolver: zodResolver(registerSchema),
+        defaultValues: {
+            codeOfConduct: false as unknown as true,
+        },
     });
 
     useEffect(() => {
@@ -85,15 +88,16 @@ export default function RegisterForm() {
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                     strokeWidth={2}
-                                    d="M5 13l4 4L19 7"
+                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                                 />
                             </svg>
                         </div>
                         <h3 className="text-xl font-semibold text-white">
-                            Your registration is complete
+                            Check your email
                         </h3>
                         <p className="text-slate-300">
-                            Please click the Back to Login button below
+                            We sent a confirmation link to your email address.
+                            Please click it to verify your account before signing in.
                         </p>
                         <Button className="bg-primary hover:bg-primary/90" asChild>
                             <Link href="/login" data-testid="back-to-login-link">
@@ -267,9 +271,7 @@ export default function RegisterForm() {
                         <Checkbox
                             id="codeOfConduct"
                             onCheckedChange={(checked) => {
-                                if (checked === true) {
-                                    setValue('codeOfConduct', true, { shouldValidate: true });
-                                }
+                                setValue('codeOfConduct', checked === true ? true : false as unknown as true, { shouldValidate: true });
                             }}
                             data-testid="coc-checkbox"
                         />
