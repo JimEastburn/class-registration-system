@@ -44,7 +44,7 @@ export async function getParentDashboardStats(): Promise<{
             const { count } = await supabase
                 .from('enrollments')
                 .select('*', { count: 'exact', head: true })
-                .in('family_member_id', familyMemberIds)
+                .in('student_id', familyMemberIds)
                 .eq('status', 'confirmed');
 
             activeEnrollmentCount = count || 0;
@@ -74,7 +74,7 @@ export async function getParentDashboardStats(): Promise<{
                 `,
                     { count: 'exact', head: true }
                 )
-                .in('family_member_id', familyMemberIds)
+                .in('student_id', familyMemberIds)
                 .eq('status', 'confirmed')
                 .gte('classes.start_date', today);
 
@@ -141,7 +141,7 @@ export async function getUpcomingClassesForFamily(
             .select(
                 `
                 id,
-                family_member_id,
+                student_id,
                 classes(
                     id,
                     name,
@@ -152,7 +152,7 @@ export async function getUpcomingClassesForFamily(
                 )
             `
             )
-            .in('family_member_id', familyMemberIds)
+            .in('student_id', familyMemberIds)
             .eq('status', 'confirmed')
             .limit(limit);
 
@@ -182,7 +182,7 @@ export async function getUpcomingClassesForFamily(
                     ? `${classData.profiles.first_name} ${classData.profiles.last_name}`
                     : 'TBD',
                 familyMemberName:
-                    familyMemberMap.get(e.family_member_id) || 'Unknown',
+                    familyMemberMap.get(e.student_id) || 'Unknown',
             };
         });
 
@@ -229,7 +229,7 @@ export async function getRecentPayments(
             const { data: enrollments } = await supabase
                 .from('enrollments')
                 .select('id')
-                .in('family_member_id', familyMemberIds);
+                .in('student_id', familyMemberIds);
             
             enrollmentIds = enrollments?.map(e => e.id) || [];
         }
@@ -308,11 +308,11 @@ export async function getPendingEnrollments(): Promise<{
             .select(
                 `
                 id,
-                family_member_id,
+                student_id,
                 classes(name, price)
             `
             )
-            .in('family_member_id', familyMemberIds)
+            .in('student_id', familyMemberIds)
             .eq('status', 'pending');
 
         if (error) {
@@ -328,7 +328,7 @@ export async function getPendingEnrollments(): Promise<{
                 id: e.id,
                 className: classData.name,
                 familyMemberName:
-                    familyMemberMap.get(e.family_member_id) || 'Unknown',
+                    familyMemberMap.get(e.student_id) || 'Unknown',
                 amountDue: (classData.price || 0) / 100,
             };
         });

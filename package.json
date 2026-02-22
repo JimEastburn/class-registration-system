@@ -15,6 +15,7 @@
     "test:api": "npx tsx scripts/test-api.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "db:types": "supabase gen types typescript --project-id nztngdpneuyhhnrkhehq > src/types/database.ts",
     "test:integration": "vitest --config vitest.integration.config.ts"
   },
   "dependencies": {
@@ -38,6 +39,7 @@
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.90.1",
     "@vercel/analytics": "^1.6.1",
+    "@vercel/speed-insights": "^1.3.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

@@ -6,6 +6,7 @@ import { GlobalLoadingProvider } from "@/components/providers/GlobalLoadingProvi
 import { GlobalSpinner } from "@/components/ui/global-spinner";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = localFont({
   src: "../../public/fonts/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa2JL7W0Q5n-wU.woff2",
@@ -47,6 +48,7 @@ export default function RootLayout({
           <Toaster />
         </GlobalLoadingProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

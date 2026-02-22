@@ -3,6 +3,7 @@ import {
   getParentDashboardStats,
   getUpcomingClassesForFamily,
   getTeacherDashboardData,
+  getPendingEnrollments,
 } from '../dashboard';
 import { createClient } from '@/lib/supabase/server';
 
@@ -100,6 +101,8 @@ describe('Dashboard Actions', () => {
 
       // Verify the enrollment query used 'confirmed' status
       expect(mockBuilder.eq).toHaveBeenCalledWith('status', 'confirmed');
+      // Verify the enrollment query used the correct column name 'student_id'
+      expect(mockBuilder.in).toHaveBeenCalledWith('student_id', ['fm-1', 'fm-2']);
     });
 
     it('should return stats with correct values', async () => {
@@ -160,7 +163,7 @@ describe('Dashboard Actions', () => {
       expect(result.error).toBeNull();
     });
 
-    it('should query enrollments with confirmed status', async () => {
+    it('should query enrollments with confirmed status and correct column name', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({
         data: { user: { id: 'parent-123' } },
       });
@@ -182,6 +185,51 @@ describe('Dashboard Actions', () => {
 
       // Verify the enrollment query used 'confirmed' status
       expect(mockBuilder.eq).toHaveBeenCalledWith('status', 'confirmed');
+      // Verify the enrollment query used the correct column name 'student_id'
+      expect(mockBuilder.in).toHaveBeenCalledWith('student_id', ['fm-1']);
+    });
+  });
+
+  describe('getPendingEnrollments', () => {
+    it('should return empty array when no family members', async () => {
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: 'parent-123' } },
+      });
+
+      mockBuilder.then.mockImplementationOnce((resolve: any) =>
+        resolve({ data: [], error: null })
+      );
+
+      const result = await getPendingEnrollments();
+
+      expect(result.data).toEqual([]);
+      expect(result.error).toBeNull();
+    });
+
+    it('should query enrollments with pending status and correct column name', async () => {
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: 'parent-123' } },
+      });
+
+      // Family members query
+      mockBuilder.then.mockImplementationOnce((resolve: any) =>
+        resolve({
+          data: [{ id: 'fm-1', first_name: 'Jane', last_name: 'Doe' }],
+          error: null,
+        })
+      );
+
+      // Pending enrollments query
+      mockBuilder.then.mockImplementationOnce((resolve: any) =>
+        resolve({ data: [], error: null })
+      );
+
+      await getPendingEnrollments();
+
+      // Verify the enrollment query used 'pending' status
+      expect(mockBuilder.eq).toHaveBeenCalledWith('status', 'pending');
+      // Verify the enrollment query used the correct column name 'student_id'
+      expect(mockBuilder.in).toHaveBeenCalledWith('student_id', ['fm-1']);
     });
   });
 
