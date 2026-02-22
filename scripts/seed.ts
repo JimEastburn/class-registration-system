@@ -449,23 +449,46 @@ async function main() {
   }
 
   // Also create family_members for multi-role users (teachers/admins with is_parent)
+  let multiRoleFamilyCount = 0;
   for (const multiRoleUser of [...teachersWithParentView, ...adminsWithParentView]) {
-    // Give each multi-role user 1 child (a new family member, not tied to a student account)
-    const { first, last } = nextName();
+    // Give each multi-role user 2 children (new family members, not tied to student accounts)
+    for (let childNum = 1; childNum <= 2; childNum++) {
+      const { first } = nextName();
+      const { error } = await supabase.from("family_members").insert({
+        parent_id: multiRoleUser.id,
+        first_name: first,
+        last_name: multiRoleUser.lastName, // children share the parent's last name
+        email: `${first.toLowerCase()}.${multiRoleUser.lastName.toLowerCase()}@seedchild.local`,
+        grade: pick(GRADES),
+        dob: randomDob(5, 15),
+        relationship: "Student",
+      });
+      if (error) console.warn(`  ⚠️  Could not create child for ${multiRoleUser.email}: ${error.message}`);
+      else multiRoleFamilyCount++;
+    }
+  }
+
+  // Add a Parent/Guardian family member to teacher1 and admin1
+  const usersGettingGuardian = [
+    teachersWithParentView[0], // teacher1
+    adminsWithParentView[0],   // admin1
+  ].filter(Boolean);
+
+  for (const user of usersGettingGuardian) {
+    const { first } = nextName();
     const { error } = await supabase.from("family_members").insert({
-      parent_id: multiRoleUser.id,
+      parent_id: user.id,
       first_name: first,
-      last_name: last,
-      email: `${first.toLowerCase()}.${last.toLowerCase()}@seedchild.local`,
-      grade: pick(GRADES),
-      dob: randomDob(5, 15),
-      relationship: "Student",
+      last_name: user.lastName, // share the parent's last name
+      email: `${first.toLowerCase()}.${user.lastName.toLowerCase()}@seedguardian.local`,
+      relationship: "Parent/Guardian",
     });
-    if (error) console.warn(`  ⚠️  Could not create family member for ${multiRoleUser.email}: ${error.message}`);
+    if (error) console.warn(`  ⚠️  Could not create guardian for ${user.email}: ${error.message}`);
+    else multiRoleFamilyCount++;
   }
 
   console.log(`  ✓ Created ${familyMembers.length} student-linked family members`);
-  console.log(`  ✓ Created ${teachersWithParentView.length + adminsWithParentView.length} family members for multi-role users\n`);
+  console.log(`  ✓ Created ${multiRoleFamilyCount} family members for multi-role users (${teachersWithParentView.length + adminsWithParentView.length} users × 2 children + 2 guardians)\n`);
 
   // ── Step 5b: Seed enrollments ───────────────────────────────────────────
   console.log("📝 Creating enrollments...\n");

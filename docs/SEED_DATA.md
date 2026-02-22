@@ -52,11 +52,13 @@ All seeded accounts use the password: **`SeedPass123!`**
 - Semester: March 1 – May 31, 2026
 - Capacity: 15–25 students per class
 
-### Family Members (114 total)
+### Family Members (120 total)
 
 - **110** student-linked (connecting parents → students)
   - First 43 parents have 2 children, remaining 24 have 1 child
-- **4** for multi-role users (teachers/admins with parent view)
+- **10** for multi-role users (teachers/admins with parent view)
+  - 2 children each for `teacher1`, `teacher2`, `teacher3`, and `admin1`
+  - 1 Parent/Guardian each for `teacher1` and `admin1`
 - Grades randomly assigned: `elementary`, `middle school`, `high school`
 
 ### Enrollments (40 total)

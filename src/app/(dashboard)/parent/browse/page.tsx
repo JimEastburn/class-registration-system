@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -36,6 +36,13 @@ export default async function BrowsePage({ searchParams }: BrowsePageProps) {
                         Find and enroll your family members in available classes
                     </p>
                 </div>
+            </div>
+
+            <div className="flex w-fit items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300">
+                <Info className="mt-0.5 h-5 w-5 shrink-0" />
+                <p>
+                    The $30 fee is the community fee for the class. Payment will still need to be made to the teacher of the class for the teacher&apos;s fee.
+                </p>
             </div>
 
             <Suspense fallback={<ClassGridSkeleton />}>
