@@ -20,7 +20,7 @@ async function logAuditEntry(
       action,
       target_type: 'family_member',
       target_id: targetId,
-      details: details || {},
+      details: (details || {}) as import('@/types/database').Json,
     });
   } catch (error) {
     // Log but don't fail the main operation
@@ -65,7 +65,7 @@ export async function getFamilyMembers(
             return { data: null, error: error.message };
         }
 
-        return { data, error: null };
+        return { data: data as FamilyMember[], error: null };
     } catch (err) {
         console.error('Unexpected error in getFamilyMembers:', err);
         return { data: null, error: 'An unexpected error occurred' };
@@ -163,7 +163,7 @@ export async function createFamilyMember(
         revalidatePath('/parent/family');
         revalidatePath('/parent');
 
-        return { data, error: null };
+        return { data: data as FamilyMember, error: null };
     } catch (err) {
         console.error('Unexpected error in createFamilyMember:', err);
         return { data: null, error: 'An unexpected error occurred' };
@@ -242,7 +242,7 @@ export async function updateFamilyMember(
         revalidatePath('/parent/family');
         revalidatePath('/parent');
 
-        return { data, error: null };
+        return { data: data as FamilyMember, error: null };
     } catch (err) {
         console.error('Unexpected error in updateFamilyMember:', err);
         return { data: null, error: 'An unexpected error occurred' };

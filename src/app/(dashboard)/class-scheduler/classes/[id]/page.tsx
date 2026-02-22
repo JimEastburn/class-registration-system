@@ -46,7 +46,7 @@ export default async function EditClassPage({ params }: PageProps) {
             <div>
                 <h1 className="text-3xl font-bold tracking-tight mb-6">Edit Class</h1>
                 <SchedulerClassForm
-                    initialData={cls}
+                    initialData={cls as unknown as import('@/types').Class}
                     initialSyllabusUrl={syllabus?.file_url || null}
                     isEdit={true}
                 />

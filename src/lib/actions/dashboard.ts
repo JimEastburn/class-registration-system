@@ -197,7 +197,7 @@ interface RecentPayment {
     id: string;
     amount: number;
     status: string;
-    createdAt: string;
+    createdAt: string | null;
     description: string;
 }
 
@@ -490,7 +490,7 @@ export async function getTeacherDashboardData(): Promise<{
         const cls = e.classes as unknown as { name: string } | null;
         
         // Calculate time ago
-        const enrolledDate = new Date(e.created_at);
+        const enrolledDate = new Date(e.created_at || new Date());
         const now = new Date();
         const diffMs = now.getTime() - enrolledDate.getTime();
         const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));

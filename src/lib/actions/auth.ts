@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { sendPasswordReset } from '@/lib/email';
-import type { ActionResult } from '@/types';
+import type { ActionResult, Profile } from '@/types';
 
 /**
  * Sign up a new user with email and password
@@ -237,7 +237,7 @@ export async function updatePassword(
 /**
  * Get the current user's profile
  */
-export async function getCurrentUserProfile() {
+export async function getCurrentUserProfile(): Promise<Profile | null> {
   const supabase = await createClient();
 
   const {
@@ -254,5 +254,5 @@ export async function getCurrentUserProfile() {
     .eq('id', user.id)
     .single();
 
-  return profile;
+  return profile as Profile | null;
 }

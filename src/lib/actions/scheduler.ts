@@ -110,7 +110,7 @@ export async function schedulerUpdateClass(id: string, updates: Partial<Class>):
                  const conflict = checkScheduleConflict(
                      proposedState.schedule_config as ScheduleConfig,
                      proposedState.teacher_id,
-                     teacherClasses
+                     teacherClasses as Class[]
                  );
                  
                  if (conflict) {
@@ -132,7 +132,7 @@ export async function schedulerUpdateClass(id: string, updates: Partial<Class>):
                 const conflict = checkRoomConflict(
                     proposedState.schedule_config as ScheduleConfig,
                     proposedState.location,
-                    roomClasses
+                    roomClasses as Class[]
                 );
 
                 if (conflict) {
@@ -152,7 +152,8 @@ export async function schedulerUpdateClass(id: string, updates: Partial<Class>):
 
         const { error } = await adminClient
             .from('classes')
-            .update(resolvedUpdates)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .update(resolvedUpdates as any)
             .eq('id', id);
 
         if (error) {
@@ -199,7 +200,7 @@ export async function schedulerCreateClass(
                  const conflict = checkScheduleConflict(
                      data.schedule_config as ScheduleConfig,
                      data.teacher_id,
-                     teacherClasses
+                     teacherClasses as Class[]
                  );
                  
                  if (conflict) {
@@ -220,7 +221,7 @@ export async function schedulerCreateClass(
                 const conflict = checkRoomConflict(
                     data.schedule_config as ScheduleConfig,
                     data.location,
-                    roomClasses
+                    roomClasses as Class[]
                 );
 
                 if (conflict) {
@@ -241,7 +242,8 @@ export async function schedulerCreateClass(
 
         const { data: createdClass, error } = await adminClient
             .from('classes')
-            .insert(insertData)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .insert(insertData as any)
             .select('id')
             .single();
 
@@ -302,9 +304,9 @@ export async function getConflictAlerts(): Promise<ActionResult<{ id: string; me
                 // Check Teacher Conflict
                 if (c1.teacher_id === c2.teacher_id) {
                     const conflict = checkScheduleConflict(
-                        c1.schedule_config as ScheduleConfig,
+                        c1.schedule_config as unknown as ScheduleConfig,
                         c1.teacher_id,
-                        [c2] // Check against single class
+                        [c2] as Class[] // Check against single class
                     );
                     
                     if (conflict) {
@@ -318,8 +320,8 @@ export async function getConflictAlerts(): Promise<ActionResult<{ id: string; me
 
                 // Check Room Conflict (if location is used)
                 if (c1.location && c2.location && c1.location === c2.location) {
-                     const c1Config = c1.schedule_config as ScheduleConfig;
-                     const c2Config = c2.schedule_config as ScheduleConfig;
+                     const c1Config = c1.schedule_config as unknown as ScheduleConfig;
+                     const c2Config = c2.schedule_config as unknown as ScheduleConfig;
 
                      if (c1Config.day && c2Config.day) {
                          // Check day

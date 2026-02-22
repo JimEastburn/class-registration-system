@@ -79,7 +79,6 @@ export async function exportData(
         c.capacity,
         c.status,
         c.price,
-        // @ts-expect-error - joined data
         c.teacher ? `${c.teacher.first_name} ${c.teacher.last_name}` : 'Unassigned',
         c.location
       ]);
@@ -96,26 +95,24 @@ export async function exportData(
         .select(`
           id, status, created_at,
           class:classes(name),
-          student:family_members(first_name, last_name),
-          parent:profiles(email, first_name, last_name)
+          student:family_members(first_name, last_name, parent:profiles!family_members_parent_id_fkey(email, first_name, last_name))
         `);
 
       if (error) throw error;
 
       const headers = ['ID', 'Status', 'Enrollment Date', 'Class Name', 'Student Name', 'Parent Name', 'Parent Email'];
-      const rows = (enrollments || []).map(e => [
-        e.id,
-        e.status,
-        e.created_at,
-        // @ts-expect-error - joined data
-        e.class?.name || 'Unknown',
-        // @ts-expect-error - joined data
-        e.student ? `${e.student.first_name} ${e.student.last_name}` : 'Unknown',
-        // @ts-expect-error - joined data
-        e.parent ? `${e.parent.first_name} ${e.parent.last_name}` : 'Unknown',
-        // @ts-expect-error - joined data
-        e.parent?.email || 'Unknown'
-      ]);
+      const rows = (enrollments || []).map(e => {
+        const parent = (e.student as unknown as { parent: { email: string; first_name: string; last_name: string } | null })?.parent;
+        return [
+          e.id,
+          e.status,
+          e.created_at,
+          e.class?.name || 'Unknown',
+          e.student ? `${e.student.first_name} ${e.student.last_name}` : 'Unknown',
+          parent ? `${parent.first_name} ${parent.last_name}` : 'Unknown',
+          parent?.email || 'Unknown'
+        ];
+      });
 
       csvContent = [
         headers.join(','),

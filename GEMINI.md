@@ -78,7 +78,7 @@ npm run dev    # Start dev server (Turbopack)
 npm run build  # Production build
 npm run lint   # Run ESLint
 npm run test   # Run all tests
-
+npx supabase gen types --lang=typescript --project-id jakjpigeafqqgispwlhl --schema public > src/types/database.ts  # Regenerate DB types
 ```
 
 ## Environment Variables
@@ -121,3 +121,4 @@ The following business logic safeguards are strictly enforced:
 - **Cross-Cutting Refactors**: Any property rename, type change, or column rename MUST follow the `.agent/skills/systematic-refactoring/SKILL.md` audit process before editing files. No exceptions.
 - **Migration File Sync**: Every call to `mcp_supabase_apply_migration` MUST be immediately followed by creating a matching local SQL file in `supabase/migrations/<version>_<name>.sql` with identical content. No exceptions—remote and local migrations must always stay in sync.
 - **Dual-Database Migrations**: Every migration MUST be pushed to BOTH Supabase databases: **production** (`jakjpigeafqqgispwlhl`) and **dev/preview** (`nztngdpneuyhhnrkhehq`). After pushing, run `supabase migration list` against both to verify Local and Remote are fully aligned. Always re-link back to **production** when done. Use the `/push-migrations` workflow for the full procedure.
+- **Type Regeneration After Migrations**: After any database migration, ALWAYS regenerate Supabase types (`npx supabase gen types ...`) and run `npm run build` to verify no type errors were introduced. Stale types cause silent drift between the schema and application code.

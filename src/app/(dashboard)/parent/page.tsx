@@ -240,7 +240,7 @@ export default async function ParentDashboardPage() {
                                             {payment.description}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
-                                            {new Date(payment.createdAt).toLocaleDateString()}
+                                            {payment.createdAt ? new Date(payment.createdAt).toLocaleDateString() : 'N/A'}
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2">

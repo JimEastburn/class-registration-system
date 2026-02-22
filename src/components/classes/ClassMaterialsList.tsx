@@ -7,7 +7,7 @@ interface Material {
     id: string;
     title: string;
     file_url: string;
-    type: string;
+    type: string | null;
 }
 
 export function ClassMaterialsList({ materials }: { materials: Material[] | null }) {
@@ -33,7 +33,7 @@ export function ClassMaterialsList({ materials }: { materials: Material[] | null
                     <li key={m.id} className="flex items-center justify-between p-2 border rounded-md hover:bg-muted/50 transition-colors">
                         <div className="flex items-center gap-3 overflow-hidden">
                             <div className="p-2 bg-primary/10 rounded-full text-primary">
-                                {getIcon(m.type)}
+                                {getIcon(m.type || '')}
                             </div>
                             <span className="font-medium text-sm truncate">{m.title}</span>
                         </div>

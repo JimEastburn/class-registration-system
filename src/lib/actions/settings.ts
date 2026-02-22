@@ -82,7 +82,7 @@ export async function updateSetting(key: string, value: Record<string, unknown>)
       .from('system_settings')
       .upsert({ 
         key, 
-        value,
+        value: value as import('@/types/database').Json,
         // updated_at is handled by trigger 2.5.4, but passing it explicitly ensures freshness
         updated_at: new Date().toISOString() 
       })
@@ -117,7 +117,7 @@ async function logAdminAction(userId: string, action: string, targetType: string
             action,
             target_type: targetType,
             target_id: targetId,
-            details
+            details: details as import('@/types/database').Json
         });
     } catch (error) {
         console.error('Failed to write audit log:', error);

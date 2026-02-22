@@ -92,10 +92,10 @@ export async function getStudentSchedule(
         id: event.id,
         class_id: event.class_id,
         title: event.class?.name || 'Untitled Class',
-        date: event.date,
-        block: event.block,
-        location: event.location || event.class?.location,
-        description: event.description,
+        date: event.date || '',
+        block: event.block || '',
+        location: event.location || event.class?.location || undefined,
+        description: event.description || undefined,
     }));
 
     return { data: scheduleEvents, error: null };

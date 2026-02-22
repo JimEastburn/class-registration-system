@@ -63,7 +63,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
                 </div>
                 <div className="flex justify-between border-b pb-2">
                     <span className="font-medium">Joined</span>
-                    <span>{new Date(profile.created_at).toLocaleDateString()}</span>
+                    <span>{profile.created_at ? new Date(profile.created_at).toLocaleDateString() : 'N/A'}</span>
                 </div>
             </CardContent>
         </Card>

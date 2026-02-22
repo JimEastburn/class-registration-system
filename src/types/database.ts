@@ -17,7 +17,7 @@ export type Database = {
       audit_logs: {
         Row: {
           action: string
-          created_at: string | null
+          created_at: string
           details: Json | null
           id: string
           target_id: string | null
@@ -26,7 +26,7 @@ export type Database = {
         }
         Insert: {
           action: string
-          created_at?: string | null
+          created_at?: string
           details?: Json | null
           id?: string
           target_id?: string | null
@@ -35,7 +35,7 @@ export type Database = {
         }
         Update: {
           action?: string
-          created_at?: string | null
+          created_at?: string
           details?: Json | null
           id?: string
           target_id?: string | null
@@ -56,7 +56,7 @@ export type Database = {
         Row: {
           block: string | null
           class_id: string
-          created_at: string | null
+          created_at: string
           date: string | null
           description: string | null
           id: string
@@ -66,7 +66,7 @@ export type Database = {
         Insert: {
           block?: string | null
           class_id: string
-          created_at?: string | null
+          created_at?: string
           date?: string | null
           description?: string | null
           id?: string
@@ -76,7 +76,7 @@ export type Database = {
         Update: {
           block?: string | null
           class_id?: string
-          created_at?: string | null
+          created_at?: string
           date?: string | null
           description?: string | null
           id?: string
@@ -95,31 +95,31 @@ export type Database = {
       }
       class_blocks: {
         Row: {
-          created_at: string | null
+          created_at: string
           created_by: string | null
           id: string
           reason: string | null
           student_id: string
           teacher_id: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           id?: string
           reason?: string | null
           student_id: string
           teacher_id: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           created_by?: string | null
           id?: string
           reason?: string | null
           student_id?: string
           teacher_id?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -148,7 +148,7 @@ export type Database = {
       class_materials: {
         Row: {
           class_id: string
-          created_at: string | null
+          created_at: string
           file_url: string
           id: string
           title: string
@@ -158,7 +158,7 @@ export type Database = {
         }
         Insert: {
           class_id: string
-          created_at?: string | null
+          created_at?: string
           file_url: string
           id?: string
           title: string
@@ -168,7 +168,7 @@ export type Database = {
         }
         Update: {
           class_id?: string
-          created_at?: string | null
+          created_at?: string
           file_url?: string
           id?: string
           title?: string
@@ -199,7 +199,7 @@ export type Database = {
           age_min: number | null
           block: string | null
           capacity: number
-          created_at: string | null
+          created_at: string
           current_enrollment: number
           day: string | null
           day_of_week: string | null
@@ -215,14 +215,14 @@ export type Database = {
           start_time: string | null
           status: Database["public"]["Enums"]["ClassStatus"]
           teacher_id: string
-          updated_at: string | null
+          updated_at: string
         }
         Insert: {
           age_max?: number | null
           age_min?: number | null
           block?: string | null
           capacity?: number
-          created_at?: string | null
+          created_at?: string
           current_enrollment?: number
           day?: string | null
           day_of_week?: string | null
@@ -238,14 +238,14 @@ export type Database = {
           start_time?: string | null
           status?: Database["public"]["Enums"]["ClassStatus"]
           teacher_id: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Update: {
           age_max?: number | null
           age_min?: number | null
           block?: string | null
           capacity?: number
-          created_at?: string | null
+          created_at?: string
           current_enrollment?: number
           day?: string | null
           day_of_week?: string | null
@@ -261,7 +261,7 @@ export type Database = {
           start_time?: string | null
           status?: Database["public"]["Enums"]["ClassStatus"]
           teacher_id?: string
-          updated_at?: string | null
+          updated_at?: string
         }
         Relationships: [
           {
@@ -276,29 +276,29 @@ export type Database = {
       enrollments: {
         Row: {
           class_id: string
-          created_at: string | null
+          created_at: string
           id: string
           status: Database["public"]["Enums"]["EnrollmentStatus"]
           student_id: string
-          updated_at: string | null
+          updated_at: string
           waitlist_position: number | null
         }
         Insert: {
           class_id: string
-          created_at?: string | null
+          created_at?: string
           id?: string
           status?: Database["public"]["Enums"]["EnrollmentStatus"]
           student_id: string
-          updated_at?: string | null
+          updated_at?: string
           waitlist_position?: number | null
         }
         Update: {
           class_id?: string
-          created_at?: string | null
+          created_at?: string
           id?: string
           status?: Database["public"]["Enums"]["EnrollmentStatus"]
           student_id?: string
-          updated_at?: string | null
+          updated_at?: string
           waitlist_position?: number | null
         }
         Relationships: [
@@ -320,7 +320,7 @@ export type Database = {
       }
       family_members: {
         Row: {
-          created_at: string | null
+          created_at: string
           dob: string | null
           email: string
           first_name: string
@@ -333,7 +333,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          created_at?: string | null
+          created_at?: string
           dob?: string | null
           email: string
           first_name: string
@@ -346,7 +346,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          created_at?: string | null
+          created_at?: string
           dob?: string | null
           email?: string
           first_name?: string
@@ -378,7 +378,7 @@ export type Database = {
       payments: {
         Row: {
           amount: number
-          created_at: string | null
+          created_at: string
           currency: string | null
           enrollment_id: string
           id: string
@@ -394,7 +394,7 @@ export type Database = {
         }
         Insert: {
           amount: number
-          created_at?: string | null
+          created_at?: string
           currency?: string | null
           enrollment_id: string
           id?: string
@@ -410,7 +410,7 @@ export type Database = {
         }
         Update: {
           amount?: number
-          created_at?: string | null
+          created_at?: string
           currency?: string | null
           enrollment_id?: string
           id?: string
@@ -443,17 +443,17 @@ export type Database = {
           city: string | null
           code_of_conduct_agreed_at: string | null
           country: string | null
-          created_at: string | null
+          created_at: string
           email: string
-          first_name: string | null
+          first_name: string
           id: string
           is_parent: boolean
-          last_name: string | null
+          last_name: string
           phone: string | null
           role: Database["public"]["Enums"]["UserRole"]
           specializations: string[] | null
           state: string | null
-          updated_at: string | null
+          updated_at: string
           zip: string | null
         }
         Insert: {
@@ -464,17 +464,17 @@ export type Database = {
           city?: string | null
           code_of_conduct_agreed_at?: string | null
           country?: string | null
-          created_at?: string | null
+          created_at?: string
           email: string
-          first_name?: string | null
+          first_name?: string
           id: string
           is_parent?: boolean
-          last_name?: string | null
+          last_name?: string
           phone?: string | null
           role?: Database["public"]["Enums"]["UserRole"]
           specializations?: string[] | null
           state?: string | null
-          updated_at?: string | null
+          updated_at?: string
           zip?: string | null
         }
         Update: {
@@ -485,17 +485,17 @@ export type Database = {
           city?: string | null
           code_of_conduct_agreed_at?: string | null
           country?: string | null
-          created_at?: string | null
+          created_at?: string
           email?: string
-          first_name?: string | null
+          first_name?: string
           id?: string
           is_parent?: boolean
-          last_name?: string | null
+          last_name?: string
           phone?: string | null
           role?: Database["public"]["Enums"]["UserRole"]
           specializations?: string[] | null
           state?: string | null
-          updated_at?: string | null
+          updated_at?: string
           zip?: string | null
         }
         Relationships: []

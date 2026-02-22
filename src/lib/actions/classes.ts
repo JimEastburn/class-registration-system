@@ -11,7 +11,7 @@ interface ClassFilters {
     search?: string;
     minPrice?: number;
     maxPrice?: number;
-    dayOfWeek?: number;
+    dayOfWeek?: string;
 }
 
 
@@ -255,7 +255,7 @@ export async function createClass(
         const conflict = checkScheduleConflict(
           input.schedule_config,
           teacherIdToUse,
-          teacherClasses
+          teacherClasses as import('@/types').Class[]
         );
         if (conflict) {
           return {
@@ -275,7 +275,7 @@ export async function createClass(
         capacity: input.capacity,
         teacher_id: teacherIdToUse,
         status: 'draft',
-        schedule_config: input.schedule_config || null,
+        schedule_config: (input.schedule_config || null) as import('@/types/database').Json,
         // Populate new columns from config
         day: input.schedule_config?.day || null,
         block: input.schedule_config?.block || null,
@@ -297,7 +297,7 @@ export async function createClass(
 
     // Generate calendar events
     if (newClass.schedule_config) {
-        const events = generateClassEvents(newClass.id, newClass.schedule_config as ScheduleConfig, {
+        const events = generateClassEvents(newClass.id, newClass.schedule_config as unknown as ScheduleConfig, {
             location: newClass.location,
             description: newClass.description,
         });
@@ -407,7 +407,7 @@ export async function updateClass(
         const conflict = checkScheduleConflict(
           proposedSchedule,
           proposedTeacherId,
-          teacherClasses
+          teacherClasses as import('@/types').Class[]
         );
         if (conflict) {
           return {
@@ -453,7 +453,7 @@ export async function updateClass(
                 .single();
              
              if (updatedClass && updatedClass.schedule_config) {
-                 const events = generateClassEvents(classId, updatedClass.schedule_config as ScheduleConfig, {
+                 const events = generateClassEvents(classId, updatedClass.schedule_config as unknown as ScheduleConfig, {
                      location: updatedClass.location,
                      description: updatedClass.description,
                  });
@@ -499,8 +499,9 @@ export async function updateClass(
 
     // Check schedule (Day/Block)
     if (input.schedule_config) {
-        const oldSchedule = existingClass.schedule_config 
-            ? `${existingClass.schedule_config.day} ${existingClass.schedule_config.block}`
+        const oldConfig = existingClass.schedule_config as unknown as ScheduleConfig | null;
+        const oldSchedule = oldConfig
+            ? `${oldConfig.day} ${oldConfig.block}`
             : 'TBA';
         const newSchedule = `${input.schedule_config.day} ${input.schedule_config.block}`;
         
@@ -529,7 +530,7 @@ export async function updateClass(
             .from('enrollments')
             .select('*, student:family_members(*)')
             .eq('class_id', classId)
-            .in('status', ['confirmed', 'enrolled']); // Assuming 'confirmed' is the main status, checking 'enrolled' just in case
+            .in('status', ['confirmed', 'pending']);
 
         if (enrollments && enrollments.length > 0) {
            for (const enrollment of enrollments) {
@@ -1065,8 +1066,9 @@ export async function adminUpdateClass(
 
     // Check schedule (Day/Block)
     if (input.schedule_config) {
-        const oldSchedule = existingClass.schedule_config 
-            ? `${existingClass.schedule_config.day} ${existingClass.schedule_config.block}`
+        const oldConfig = existingClass.schedule_config as unknown as ScheduleConfig | null;
+        const oldSchedule = oldConfig
+            ? `${oldConfig.day} ${oldConfig.block}`
             : 'TBA';
         const newSchedule = `${input.schedule_config.day} ${input.schedule_config.block}`;
         
@@ -1095,7 +1097,7 @@ export async function adminUpdateClass(
             .from('enrollments')
             .select('*, student:family_members(*)')
             .eq('class_id', classId)
-            .in('status', ['confirmed', 'enrolled']); 
+            .in('status', ['confirmed', 'pending']);
 
         if (enrollments && enrollments.length > 0) {
            for (const enrollment of enrollments) {

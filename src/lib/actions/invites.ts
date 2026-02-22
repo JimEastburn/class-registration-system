@@ -20,7 +20,7 @@ async function logAuditEntry(
       action,
       target_type: 'student_link',
       target_id: targetId,
-      details: details || {},
+      details: (details || {}) as import('@/types/database').Json,
     });
   } catch (error) {
     console.error('Failed to log audit entry:', error);

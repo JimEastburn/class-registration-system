@@ -48,7 +48,7 @@ export default async function BrowsePage({ searchParams }: BrowsePageProps) {
             <Suspense fallback={<ClassGridSkeleton />}>
                 <ClassListWrapper 
                     search={params.search} 
-                    day={params.day ? parseInt(params.day) : undefined} 
+                    day={params.day} 
                 />
             </Suspense>
         </div>
@@ -60,7 +60,7 @@ async function ClassListWrapper({
     day,
 }: {
     search?: string;
-    day?: number;
+    day?: string;
 }) {
     const { data: classes, error } = await getPublishedClasses({
         search,

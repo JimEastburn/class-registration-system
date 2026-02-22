@@ -53,8 +53,8 @@ export interface Profile {
   id: string;
   email: string;
   role: UserRole;
-  first_name: string | null;
-  last_name: string | null;
+  first_name: string;
+  last_name: string;
   phone: string | null;
   avatar_url: string | null;
   bio: string | null;
@@ -63,6 +63,12 @@ export interface Profile {
   updated_at: string;
   code_of_conduct_agreed_at: string | null;
   is_parent: boolean;
+  address_line1: string | null;
+  address_line2: string | null;
+  city: string | null;
+  state: string | null;
+  zip: string | null;
+  country: string | null;
 }
 
 /**

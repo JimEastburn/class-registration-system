@@ -589,7 +589,7 @@ export async function adminForceEnroll(
         // Student (Family Member)
         const { data: student, error: studentError } = await supabase
             .from('family_members')
-            .select('*, parent:profiles(email, first_name, last_name)')
+            .select('*, parent:profiles!family_members_parent_id_fkey(email, first_name, last_name)')
             .eq('id', input.studentId)
             .single();
         
@@ -758,7 +758,7 @@ export async function adminCancelEnrollment(
                 .single();
             
             if (payment) {
-                const refundResult = await processRefund(payment.id);
+                const refundResult = await processRefund({ paymentId: payment.id });
                 if (!refundResult.success) {
                     return { success: false, error: `Refund failed: ${refundResult.error}` };
                 }

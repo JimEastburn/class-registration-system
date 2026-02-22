@@ -38,7 +38,7 @@ async function logAuditEntry(
       action,
       target_type: 'enrollment',
       target_id: targetId,
-      details: details || {},
+      details: (details || {}) as import('@/types/database').Json,
     });
   } catch (error) {
     console.error('Failed to log audit entry:', error);
@@ -82,12 +82,12 @@ export async function addToWaitlist(
     .from('enrollments')
     .select('id, status')
     .eq('class_id', classId)
-    .eq('family_member_id', familyMemberId)
-    .in('status', ['enrolled', 'waitlisted'])
+    .eq('student_id', familyMemberId)
+    .in('status', ['confirmed', 'waitlisted'])
     .single();
 
   if (existingEnrollment) {
-    const status = existingEnrollment.status === 'enrolled' ? 'enrolled' : 'already on the waitlist';
+    const status = existingEnrollment.status === 'confirmed' ? 'enrolled' : 'already on the waitlist';
     return { success: false, error: `This student is already ${status} for this class` };
   }
 
@@ -99,8 +99,7 @@ export async function addToWaitlist(
     .from('enrollments')
     .insert({
       class_id: classId,
-      family_member_id: familyMemberId,
-      parent_id: user.id,
+      student_id: familyMemberId,
       status: 'waitlisted',
       waitlist_position: position,
     })
@@ -147,7 +146,7 @@ export async function removeFromWaitlist(
   // Get the enrollment with ownership check
   const { data: enrollment, error: fetchError } = await supabase
     .from('enrollments')
-    .select('id, status, parent_id, class_id, waitlist_position')
+    .select('id, status, class_id, waitlist_position, student_id')
     .eq('id', enrollmentId)
     .single();
 
@@ -155,7 +154,15 @@ export async function removeFromWaitlist(
     return { success: false, error: 'Enrollment not found' };
   }
 
-  if (enrollment.parent_id !== user.id) {
+  // Verify ownership through family_members
+  const { data: familyMemberCheck } = await supabase
+    .from('family_members')
+    .select('id')
+    .eq('id', enrollment.student_id)
+    .eq('parent_id', user.id)
+    .single();
+
+  if (!familyMemberCheck) {
     return { success: false, error: 'You do not have permission to remove this enrollment' };
   }
 
@@ -247,7 +254,7 @@ export async function promoteFromWaitlist(
     .from('enrollments')
     .select('*', { count: 'exact', head: true })
     .eq('class_id', classId)
-    .eq('status', 'enrolled');
+    .eq('status', 'confirmed');
 
   if ((enrolledCount || 0) >= classData.capacity) {
     // No capacity - nothing to do
@@ -257,7 +264,7 @@ export async function promoteFromWaitlist(
   // Get the first person on the waitlist
   const { data: firstInLine, error: waitlistError } = await supabase
     .from('enrollments')
-    .select('id, family_member_id, parent_id')
+    .select('id, student_id')
     .eq('class_id', classId)
     .eq('status', 'waitlisted')
     .order('waitlist_position', { ascending: true })
@@ -273,7 +280,7 @@ export async function promoteFromWaitlist(
   const { error: updateError } = await supabase
     .from('enrollments')
     .update({
-      status: 'enrolled',
+      status: 'confirmed',
       waitlist_position: null,
     })
     .eq('id', firstInLine.id);
@@ -287,9 +294,9 @@ export async function promoteFromWaitlist(
   await reorderWaitlistPositions(classId, 1);
 
   // Log audit entry
-  await logAuditEntry(firstInLine.parent_id, 'waitlist.promoted', firstInLine.id, {
+  await logAuditEntry('system', 'waitlist.promoted', firstInLine.id, {
     class_id: classId,
-    family_member_id: firstInLine.family_member_id,
+    student_id: firstInLine.student_id,
   });
 
   revalidatePath('/parent/enrollments');
@@ -299,7 +306,7 @@ export async function promoteFromWaitlist(
     success: true,
     data: {
       enrollmentId: firstInLine.id,
-      familyMemberId: firstInLine.family_member_id,
+      familyMemberId: firstInLine.student_id,
     },
   };
 }
@@ -322,7 +329,7 @@ export async function getWaitlistPosition(
 
   const { data: enrollment, error } = await supabase
     .from('enrollments')
-    .select('id, class_id, waitlist_position, status, parent_id')
+    .select('id, class_id, waitlist_position, status, student_id')
     .eq('id', enrollmentId)
     .single();
 
@@ -362,8 +369,7 @@ export async function getClassWaitlist(
     .from('enrollments')
     .select(`
       *,
-      family_member:family_members(id, first_name, last_name),
-      parent:profiles!enrollments_parent_id_fkey(id, email, first_name, last_name)
+      student:family_members(id, first_name, last_name)
     `)
     .eq('class_id', classId)
     .eq('status', 'waitlisted')

@@ -66,7 +66,7 @@ export async function GET(request: Request) {
 
     // Generate invoice HTML
     const invoiceNumber = `INV-${payment.id.slice(0, 8).toUpperCase()}`;
-    const invoiceDate = new Date(payment.created_at).toLocaleDateString('en-US', {
+    const invoiceDate = new Date(payment.created_at || new Date()).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -94,7 +94,7 @@ interface InvoiceData {
         amount: number;
         status: string;
         stripe_payment_id: string | null;
-        created_at: string;
+        created_at: string | null;
     };
     enrollment: {
         student: { first_name: string; last_name: string };

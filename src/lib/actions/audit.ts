@@ -20,7 +20,7 @@ export async function logAuditAction(
             action,
             target_type: targetType,
             target_id: targetId,
-            details: details || {},
+            details: (details || {}) as import('@/types/database').Json,
         });
     } catch (error) {
         console.error('Failed to log audit entry:', error);
