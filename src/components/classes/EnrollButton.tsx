@@ -196,10 +196,10 @@ export function EnrollButton({
                             </div>
                         ) : members.length === 0 ? (
                             <div className="text-sm text-muted-foreground">
-                                <p>No family members found.</p>
+                                <p>No student family members found.</p>
                                 <Button variant="link" className="p-0 h-auto" asChild>
                                     <Link href="/parent/family">
-                                        Add a family member first
+                                        Add a student family member first
                                     </Link>
                                 </Button>
                             </div>

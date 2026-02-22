@@ -19,7 +19,7 @@ function SuccessContent() {
                         Thank you for your payment. Your enrollment has been confirmed.
                     </p>
                     <p className="text-sm text-muted-foreground">
-                        A receipt has been sent to your email.
+                        You can view your enrollment details in the dashboard.
                     </p>
                 </CardContent>
                 <CardFooter className="flex justify-center gap-4">
