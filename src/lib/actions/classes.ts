@@ -864,7 +864,6 @@ export async function getTeacherClasses(): Promise<ActionResult<ClassWithTeacher
       return { success: false, error: 'Not authenticated' };
     }
 
-    console.error('[DEBUG] getTeacherClasses: User ID:', user.id);
     const { data: classes, error } = await supabase
       .from('classes')
       .select(`
@@ -879,7 +878,7 @@ export async function getTeacherClasses(): Promise<ActionResult<ClassWithTeacher
       .eq('teacher_id', user.id)
       .order('created_at', { ascending: false });
 
-    console.error('[DEBUG] getTeacherClasses: Found classes:', classes?.length);
+
 
     if (error) {
       console.error('Error fetching teacher classes:', error);

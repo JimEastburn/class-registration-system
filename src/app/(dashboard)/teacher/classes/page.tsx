@@ -10,9 +10,7 @@ export const metadata = {
 };
 
 export default async function TeacherClassesPage() {
-  console.error('Rendering TeacherClassesPage...'); // Log to stderr to ensure visibility
   const result = await getTeacherClasses();
-  console.error('TeacherClassesPage result success:', result.success); // Log to stderr
 
   if (!result.success) {
     return (
