@@ -505,8 +505,11 @@ export async function getClassRoster(
             return { data: null, error: 'Access denied: You are not the teacher of this class or an administrator' };
         }
 
+        // Use admin client for data queries (authorization already verified above)
+        const adminClient = await createAdminClient();
+
         // Fetch enrollments with student and parent details
-        const { data, error } = await supabase
+        const { data, error } = await adminClient
             .from('enrollments')
             .select(`
                 *,
@@ -534,7 +537,7 @@ export async function getClassRoster(
         const blockedStudentIds = new Set<string>();
 
         if (studentIds.length > 0) {
-            const { data: blocks } = await supabase
+            const { data: blocks } = await adminClient
                 .from('class_blocks')
                 .select('student_id')
                 .eq('teacher_id', classData.teacher_id)
