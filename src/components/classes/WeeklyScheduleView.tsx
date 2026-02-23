@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks, startOfDay, endOfDay } from 'date-fns';
+import { useState, useEffect } from 'react';
+import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks, startOfDay, endOfDay, parseISO } from 'date-fns';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { getStudentSchedule, ScheduleEvent } from '@/lib/actions/student';
@@ -21,28 +22,34 @@ export function WeeklyScheduleView({ studentId }: WeeklyScheduleViewProps) {
 
   const BLOCKS = VALID_BLOCKS;
 
-  const fetchSchedule = useCallback(async () => {
-    setLoading(true);
-    let start: Date, end: Date;
-
-    if (view === 'week') {
-      start = startOfWeek(currentDate, { weekStartsOn: 0 }); // Sunday start
-      end = endOfWeek(currentDate, { weekStartsOn: 0 });
-    } else {
-      start = startOfDay(currentDate);
-      end = endOfDay(currentDate);
-    }
-
-    const { data, error } = await getStudentSchedule(studentId, start, end);
-    if (!error && data) {
-      setEvents(data);
-    }
-    setLoading(false);
-  }, [studentId, currentDate, view]);
-
   useEffect(() => {
+    let cancelled = false;
+
+    async function fetchSchedule() {
+      setLoading(true);
+      let start: Date, end: Date;
+
+      if (view === 'week') {
+        start = startOfWeek(currentDate, { weekStartsOn: 0 });
+        end = endOfWeek(currentDate, { weekStartsOn: 0 });
+      } else {
+        start = startOfDay(currentDate);
+        end = endOfDay(currentDate);
+      }
+
+      const { data, error } = await getStudentSchedule(studentId, start, end);
+      if (!cancelled && !error && data) {
+        setEvents(data);
+      }
+      if (!cancelled) {
+        setLoading(false);
+      }
+    }
+
     void fetchSchedule();
-  }, [fetchSchedule]);
+
+    return () => { cancelled = true; };
+  }, [studentId, currentDate, view]);
 
   const handlePrevious = () => {
     setCurrentDate((prev) => (view === 'week' ? subWeeks(prev, 1) : addDays(prev, -1)));
@@ -125,7 +132,7 @@ export function WeeklyScheduleView({ studentId }: WeeklyScheduleViewProps) {
                     {/* Day Cells */}
                     {days.map((day) => {
                         const dayEvents = events.filter(e => 
-                            isSameDay(new Date(e.date), day) && e.block === block
+                            isSameDay(parseISO(e.date), day) && e.block === block
                         );
 
                         return (
@@ -134,15 +141,16 @@ export function WeeklyScheduleView({ studentId }: WeeklyScheduleViewProps) {
                                 isSameDay(day, new Date()) && "bg-accent/5"
                             )}>
                                 {dayEvents.map(event => (
-                                    <div
+                                    <Link
                                         key={event.id}
-                                        className="rounded-md bg-primary/10 border-l-4 border-primary p-2 text-xs overflow-hidden hover:bg-primary/20 transition-colors cursor-pointer mb-2"
+                                        href={`/student/classes/${event.class_id}`}
+                                        className="block rounded-md bg-primary/10 border-l-4 border-primary p-2 text-xs overflow-hidden hover:bg-primary/20 transition-colors cursor-pointer mb-2"
                                         title={`${event.title} (${event.location})`}
                                     >
                                         <div className="font-semibold text-primary">{event.title}</div>
                                         <div className="text-muted-foreground line-clamp-1">{block}</div>
                                         {event.location && <div className="text-muted-foreground line-clamp-1 italic">{event.location}</div>}
-                                    </div>
+                                    </Link>
                                 ))}
                             </div>
                         );
