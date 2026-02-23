@@ -15,31 +15,33 @@ npx tsx scripts/seed.ts
 
 All seeded accounts use the password: **`SeedPass123!`**
 
-| Role        | Email                                           | Notes                                     |
-| ----------- | ----------------------------------------------- | ----------------------------------------- |
-| Super Admin | `superadmin@seed.local`                         | Full system access, all dashboards        |
-| Admin       | `admin1@seed.local`                             | Also has parent view (`is_parent = true`) |
-| Admin       | `admin2@seed.local`                             | Admin only                                |
-| Teacher     | `teacher1@seed.local`                           | Also has parent view (`is_parent = true`) |
-| Teacher     | `teacher2@seed.local`                           | Also has parent view (`is_parent = true`) |
-| Teacher     | `teacher3@seed.local`                           | Also has parent view (`is_parent = true`) |
-| Teacher     | `teacher4@seed.local` – `teacher10@seed.local`  | Teacher only                              |
-| Parent      | `parent1@seed.local` – `parent67@seed.local`    | 67 parent accounts                        |
-| Student     | `student1@seed.local` – `student110@seed.local` | 110 student accounts                      |
+| Role            | Email                                           | Notes                                     |
+| --------------- | ----------------------------------------------- | ----------------------------------------- |
+| Super Admin     | `superadmin@seed.local`                         | Full system access, all dashboards        |
+| Admin           | `admin1@seed.local`                             | Also has parent view (`is_parent = true`) |
+| Admin           | `admin2@seed.local`                             | Admin only                                |
+| Class Scheduler | `scheduler1@seed.local`                         | Class scheduling access                   |
+| Teacher         | `teacher1@seed.local`                           | Also has parent view (`is_parent = true`) |
+| Teacher         | `teacher2@seed.local`                           | Also has parent view (`is_parent = true`) |
+| Teacher         | `teacher3@seed.local`                           | Also has parent view (`is_parent = true`) |
+| Teacher         | `teacher4@seed.local` – `teacher10@seed.local`  | Teacher only                              |
+| Parent          | `parent1@seed.local` – `parent67@seed.local`    | 67 parent accounts                        |
+| Student         | `student1@seed.local` – `student110@seed.local` | 110 student accounts                      |
 
 ---
 
 ## What Gets Seeded
 
-### Users (190 total)
+### Users (191 total)
 
-| Role          | Count | Details                                                     |
-| ------------- | ----- | ----------------------------------------------------------- |
-| `super_admin` | 1     | Full access to all portals                                  |
-| `admin`       | 2     | 1 with `is_parent = true`                                   |
-| `teacher`     | 10    | 3 with `is_parent = true`, each has specializations and bio |
-| `parent`      | 67    | Default role                                                |
-| `student`     | 110   | Each has their own auth account                             |
+| Role              | Count | Details                                                     |
+| ----------------- | ----- | ----------------------------------------------------------- |
+| `super_admin`     | 1     | Full access to all portals                                  |
+| `admin`           | 2     | 1 with `is_parent = true`                                   |
+| `class_scheduler` | 1     | Class scheduling access                                     |
+| `teacher`         | 10    | 3 with `is_parent = true`, each has specializations and bio |
+| `parent`          | 67    | Default role                                                |
+| `student`         | 110   | Each has their own auth account                             |
 
 ### Classes (30 total)
 

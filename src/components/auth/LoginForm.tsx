@@ -141,7 +141,7 @@ export default function LoginForm() {
 
                     {process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production' && (
                         <a
-                            href="https://docs.google.com/document/d/1S3cZFvcQM8-ifrSRnZvrO-xAo1v8xTeL/edit?usp=sharing&ouid=107223564146613814103&rtpof=true&sd=true"
+                            href="https://docs.google.com/document/d/1DlULw5rPL5WPoT7-s8JNKV_6489f6DxR/edit"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-sm text-amber-400 hover:text-amber-300 transition-colors text-center"

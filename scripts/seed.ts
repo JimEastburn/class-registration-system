@@ -157,10 +157,6 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function pickUnique<T>(arr: T[], n: number): T[] {
-  const shuffled = [...arr].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, n);
-}
 
 function randomDob(minAge: number, maxAge: number): string {
   const now = new Date();
@@ -269,6 +265,10 @@ async function main() {
   // Admins (2)
   console.log("  Creating 2 admins...");
   for (let i = 1; i <= 2; i++) await createUser(`admin${i}@seed.local`, "admin");
+
+  // Class Schedulers (1)
+  console.log("  Creating 1 class scheduler...");
+  await createUser("scheduler1@seed.local", "class_scheduler");
 
   // Teachers (10)
   console.log("  Creating 10 teachers...");
@@ -633,6 +633,7 @@ async function main() {
   console.log("  ─────────────────────────────────────────");
   console.log(`  Super Admin:  superadmin@seed.local / ${PASSWORD}`);
   console.log(`  Admin:        admin1@seed.local / ${PASSWORD}`);
+  console.log(`  Scheduler:    scheduler1@seed.local / ${PASSWORD}`);
   console.log(`  Teacher:      teacher1@seed.local / ${PASSWORD}`);
   console.log(`  Parent:       parent1@seed.local / ${PASSWORD}`);
   console.log(`  Student:      student1@seed.local / ${PASSWORD}`);

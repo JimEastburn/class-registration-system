@@ -130,9 +130,9 @@ export default async function ParentDashboardPage() {
                             </p>
                         ) : (
                             <div className="space-y-3">
-                                {upcomingClasses.map((cls) => (
+                                {upcomingClasses.map((cls, index) => (
                                     <div
-                                        key={cls.id}
+                                        key={`${cls.id}-${index}`}
                                         className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                                     >
                                         <div>
