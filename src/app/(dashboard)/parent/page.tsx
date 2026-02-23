@@ -140,7 +140,7 @@ export default async function ParentDashboardPage() {
                                                 {cls.className}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
-                                                {cls.dayOfWeek} • {cls.startTime} - {cls.endTime}
+                                                {cls.dayOfWeek} • {cls.block}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
                                                 {cls.familyMemberName}

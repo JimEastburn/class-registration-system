@@ -101,10 +101,9 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
            <div className="space-y-6">
                 <ClassScheduleCard 
                     dayOfWeek={classDetails.day_of_week}
-                    startTime={classDetails.start_time}
-                    endTime={classDetails.end_time}
-                    startDate={classDetails.start_date}
-                    endDate={classDetails.end_date}
+                    block={(classDetails.schedule_config as { block?: string } | null)?.block ?? null}
+                    startDate={(classDetails.schedule_config as { startDate?: string } | null)?.startDate ?? null}
+                    endDate={(classDetails.schedule_config as { endDate?: string } | null)?.endDate ?? null}
                 />
 
                 <ClassLocationCard location={classDetails.location} />

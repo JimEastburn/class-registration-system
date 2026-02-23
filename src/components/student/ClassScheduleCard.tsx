@@ -4,13 +4,12 @@ import { format } from 'date-fns';
 
 interface ClassScheduleCardProps {
     dayOfWeek: string | null;
-    startTime: string | null;
-    endTime: string | null;
+    block: string | null;
     startDate: string | null;
     endDate: string | null;
 }
 
-export function ClassScheduleCard({ dayOfWeek, startTime, endTime, startDate, endDate }: ClassScheduleCardProps) {
+export function ClassScheduleCard({ dayOfWeek, block, startDate, endDate }: ClassScheduleCardProps) {
   return (
     <Card>
       <CardHeader>
@@ -22,7 +21,7 @@ export function ClassScheduleCard({ dayOfWeek, startTime, endTime, startDate, en
             <div>
                 <p className="font-medium">{dayOfWeek || 'TBA'}</p>
                 <p className="text-sm text-muted-foreground">
-                    {startTime && endTime ? `${startTime} - ${endTime}` : 'Time TBA'}
+                    {block || 'TBA'}
                 </p>
             </div>
          </div>

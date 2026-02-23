@@ -124,7 +124,7 @@ export default async function TeacherDashboardPage() {
                     <div>
                       <p className="font-medium text-sm">{cls.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {cls.endTime ? `${cls.startTime} - ${cls.endTime}` : cls.startTime}
+                        {cls.block}
                       </p>
                     </div>
                     <Badge variant={cls.enrolledCount >= cls.capacity ? 'default' : 'outline'}>

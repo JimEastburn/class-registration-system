@@ -99,9 +99,8 @@ export async function getParentDashboardStats(): Promise<{
 interface UpcomingClass {
     id: string;
     className: string;
-    startTime: string;
-    endTime: string;
     dayOfWeek: string;
+    block: string;
     teacherName: string;
     familyMemberName: string;
 }
@@ -145,9 +144,8 @@ export async function getUpcomingClassesForFamily(
                 classes(
                     id,
                     name,
-                    start_time,
-                    end_time,
-                    day_of_week,
+                    day,
+                    block,
                     profiles(first_name, last_name)
                 )
             `
@@ -167,17 +165,15 @@ export async function getUpcomingClassesForFamily(
             const classData = e.classes as unknown as {
                 id: string;
                 name: string;
-                start_time: string;
-                end_time: string;
-                day_of_week: string;
+                day: string | null;
+                block: string | null;
                 profiles: { first_name: string; last_name: string } | null;
             };
             return {
                 id: classData.id,
                 className: classData.name,
-                startTime: classData.start_time,
-                endTime: classData.end_time,
-                dayOfWeek: classData.day_of_week,
+                dayOfWeek: classData.day || 'TBA',
+                block: classData.block || 'TBA',
                 teacherName: classData.profiles
                     ? `${classData.profiles.first_name} ${classData.profiles.last_name}`
                     : 'TBD',
@@ -355,8 +351,7 @@ interface TeacherStats {
 interface TodayClass {
   id: string;
   name: string;
-  startTime: string;
-  endTime?: string;
+  block: string;
   enrolledCount: number;
   capacity: number;
 }
@@ -464,7 +459,7 @@ export async function getTeacherDashboardData(): Promise<{
     const todayClasses: TodayClass[] = classesTodayList.map(c => ({
       id: c.id,
       name: c.name,
-      startTime: c.block || (c.schedule_config as ScheduleConfig | null)?.block || 'TBA',
+      block: c.block || (c.schedule_config as ScheduleConfig | null)?.block || 'TBA',
       enrolledCount: enrollmentCounts.find(e => e.class_id === c.id)?.count || 0,
       capacity: c.capacity || 0,
     }));
