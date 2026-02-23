@@ -10,6 +10,7 @@
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 import path from "path";
+import { eachDayOfInterval, parseISO, format } from "date-fns";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
 
@@ -351,7 +352,7 @@ async function main() {
   const DRAFT_COUNT = 5; // last 5 classes will be draft
   const TOTAL_CLASSES = teachers.length * 3; // 30
 
-  interface ClassRecord { id: string; capacity: number; status: string; teacherEmail: string }
+  interface ClassRecord { id: string; capacity: number; status: string; teacherEmail: string; day: string; block: string; location: string; description: string; startDate: string; endDate: string }
   const createdClasses: ClassRecord[] = [];
 
   for (const teacher of teachers) {
@@ -393,12 +394,12 @@ async function main() {
           startDate,
           endDate,
         },
-      }).select("id, capacity, status").single();
+      }).select("id, capacity, status, location, description").single();
 
       if (error) {
         console.warn(`  ⚠️  Could not create class ${tmpl.name}: ${error.message}`);
       } else if (data) {
-        createdClasses.push({ id: data.id, capacity: data.capacity, status: data.status, teacherEmail: teacher.email });
+        createdClasses.push({ id: data.id, capacity: data.capacity, status: data.status, teacherEmail: teacher.email, day: slot.day, block: slot.block, location: data.location || '', description: data.description || '', startDate, endDate });
       }
       totalClassesCreated++;
     }
@@ -407,6 +408,48 @@ async function main() {
   const publishedClasses = createdClasses.filter(c => c.status === "published");
   const draftClasses = createdClasses.filter(c => c.status === "draft");
   console.log(`  ✓ Created ${createdClasses.length} classes (${publishedClasses.length} published, ${draftClasses.length} draft)\n`);
+
+  // ── Step 4b: Generate calendar_events for each class ────────────────────
+  console.log("📅 Generating calendar events...\n");
+
+  let totalEvents = 0;
+  for (const cls of createdClasses) {
+    const start = parseISO(cls.startDate);
+    const end = parseISO(cls.endDate);
+    if (start > end) continue;
+
+    const allDays = eachDayOfInterval({ start, end });
+    const events: { class_id: string; date: string; block: string; location: string | null; description: string | null }[] = [];
+
+    for (const day of allDays) {
+      const dayName = format(day, "EEEE");
+      if (cls.day.includes(dayName)) {
+        events.push({
+          class_id: cls.id,
+          date: format(day, "yyyy-MM-dd"),
+          block: cls.block,
+          location: cls.location || null,
+          description: cls.description || null,
+        });
+      }
+    }
+
+    if (events.length > 0) {
+      // Insert in batches of 100 to avoid payload limits
+      for (let i = 0; i < events.length; i += 100) {
+        const batch = events.slice(i, i + 100);
+        const { error: evtError } = await supabase.from("calendar_events").insert(batch);
+        if (evtError) {
+          console.warn(`  ⚠️  Could not insert calendar events for class ${cls.id}: ${evtError.message}`);
+          break;
+        }
+      }
+      totalEvents += events.length;
+    }
+  }
+
+  console.log(`  ✓ Generated ${totalEvents} calendar events\n`);
+
 
   // ── Step 5: Create family_members linking parents → students ────────────
   console.log("👨‍👩‍👧‍👦 Creating family member links...\n");
@@ -611,6 +654,12 @@ async function main() {
     for (const e of enrollmentCounts) ec[e.status] = (ec[e.status] || 0) + 1;
     console.log(`  Enrollments: ${JSON.stringify(ec)} (total: ${enrollmentCounts.length})`);
   }
+
+  // Verify calendar events
+  const { count: calendarEventCount } = await supabase
+    .from("calendar_events")
+    .select("*", { count: "exact", head: true });
+  console.log(`  Calendar events: ${calendarEventCount}`);
 
   // Check for schedule overlaps
   const { data: classes } = await supabase

@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { getStudentSchedule, ScheduleEvent } from '@/lib/actions/student';
 import { cn } from '@/lib/utils';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { VALID_BLOCKS } from '@/lib/logic/scheduling';
 
 interface WeeklyScheduleViewProps {
   studentId: string;
@@ -18,8 +19,7 @@ export function WeeklyScheduleView({ studentId }: WeeklyScheduleViewProps) {
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Define Blocks
-  const BLOCKS = ['Block 1', 'Block 2', 'Block 3', 'Block 4'];
+  const BLOCKS = VALID_BLOCKS;
 
   const fetchSchedule = useCallback(async () => {
     setLoading(true);
