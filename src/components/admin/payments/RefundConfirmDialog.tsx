@@ -13,7 +13,7 @@ interface RefundConfirmDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     paymentId: string;
-    amount: number; // in cents
+    amount: number; // in dollars (DB stores in dollars)
     currency: string;
 }
 
@@ -25,13 +25,14 @@ export function RefundConfirmDialog({
     currency
 }: RefundConfirmDialogProps) {
     const [isPending, startTransition] = useTransition();
-    // Default to full amount
-    const [refundAmount, setRefundAmount] = useState<string>((amount / 100).toFixed(2));
+    // Default to full amount (already in dollars)
+    const [refundAmount, setRefundAmount] = useState<string>(amount.toFixed(2));
 
     const handleRefund = () => {
-        const amountCents = Math.round(parseFloat(refundAmount) * 100);
+        const refundDollars = parseFloat(refundAmount);
+        const refundCents = Math.round(refundDollars * 100); // Stripe expects cents
         
-        if (isNaN(amountCents) || amountCents <= 0 || amountCents > amount) {
+        if (isNaN(refundDollars) || refundDollars <= 0 || refundDollars > amount) {
             toast.error('Invalid refund amount');
             return;
         }
@@ -39,7 +40,7 @@ export function RefundConfirmDialog({
         startTransition(async () => {
             const result = await processRefund({
                 paymentId,
-                amount: amountCents,
+                amount: refundCents, // Stripe expects cents
                 reason: 'requested_by_customer'
             });
 

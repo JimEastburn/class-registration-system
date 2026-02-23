@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 
 interface PaymentButtonProps {
     enrollmentId: string;
-    amount: number; // in cents
+    amount: number; // in dollars (DB stores in dollars)
     className?: string;
 }
 
@@ -57,7 +57,7 @@ export function PaymentButton({ enrollmentId, amount, className }: PaymentButton
             ) : (
                 <>
                     <CreditCard className="mr-2 h-4 w-4" />
-                    Pay ${(amount / 100).toFixed(2)}
+                    Pay ${amount.toFixed(2)}
                 </>
             )}
         </Button>

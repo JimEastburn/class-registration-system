@@ -85,7 +85,7 @@ export async function getParentDashboardStats(): Promise<{
             data: {
                 familyMemberCount: familyMemberCount || 0,
                 activeEnrollmentCount,
-                pendingPaymentTotal: pendingPaymentTotal / 100, // Convert cents to dollars
+                pendingPaymentTotal,
                 upcomingClassCount,
             },
             error: null,
@@ -252,7 +252,7 @@ export async function getRecentPayments(
 
         const recentPayments: RecentPayment[] = (payments || []).map((p) => ({
             id: p.id,
-            amount: (p.amount || 0) / 100, // Convert cents to dollars
+            amount: p.amount || 0,
             status: p.status,
             createdAt: p.created_at,
             description: 'Payment',
@@ -329,7 +329,7 @@ export async function getPendingEnrollments(): Promise<{
                 className: classData.name,
                 familyMemberName:
                     familyMemberMap.get(e.student_id) || 'Unknown',
-                amountDue: (classData.price || 0) / 100,
+                amountDue: classData.price || 0,
             };
         });
 

@@ -45,11 +45,11 @@ export function PaymentTable({ data }: PaymentTableProps) {
         });
     };
 
-    const formatCurrency = (amount: number) => {
+    const fmtCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'USD',
-        }).format(amount / 100);
+        }).format(amount); // DB stores amounts in dollars
     };
 
     return (
@@ -82,7 +82,7 @@ export function PaymentTable({ data }: PaymentTableProps) {
                                 {payment.enrollment?.class?.name}
                             </TableCell>
                             <TableCell>
-                                {formatCurrency(payment.amount)}
+                                {fmtCurrency(payment.amount)}
                             </TableCell>
                             <TableCell>
                                 <Badge variant={

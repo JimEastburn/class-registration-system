@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { updateUserRole, deleteUser } from '@/lib/actions/admin';
+import { updateUserRole, deleteUser, getSystemStats } from '@/lib/actions/admin';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
@@ -109,6 +109,59 @@ describe('Admin Actions', () => {
 
             const result = await deleteUser('user-456');
             expect(result.success).toBe(true);
+        });
+     });
+
+     describe('getSystemStats', () => {
+        it('should return totalRevenue in dollars without dividing by 100', async () => {
+            // Mock Admin Check
+            mockSupabase.from.mockReturnValueOnce({
+                select: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                        single: vi.fn().mockResolvedValue({ data: { role: 'admin' }, error: null })
+                    })
+                })
+            });
+
+            // Mock parallel queries: users, classes, enrollments, payments
+
+            // users count
+            mockSupabase.from.mockReturnValueOnce({
+                select: vi.fn().mockReturnValue({
+                    then: vi.fn((resolve: (v: { count: number; error: null }) => void) => resolve({ count: 10, error: null }))
+                })
+            });
+            // classes count
+            mockSupabase.from.mockReturnValueOnce({
+                select: vi.fn().mockReturnValue({
+                    then: vi.fn((resolve: (v: { count: number; error: null }) => void) => resolve({ count: 5, error: null }))
+                })
+            });
+            // enrollments count (confirmed)
+            mockSupabase.from.mockReturnValueOnce({
+                select: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                        then: vi.fn((resolve: (v: { count: number; error: null }) => void) => resolve({ count: 3, error: null }))
+                    })
+                })
+            });
+            // payments — DB stores amount in DOLLARS
+            mockSupabase.from.mockReturnValueOnce({
+                select: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockReturnValue({
+                        then: vi.fn((resolve: (v: { data: { amount: number }[]; error: null }) => void) => resolve({
+                            data: [{ amount: 30 }, { amount: 30 }],
+                            error: null
+                        }))
+                    })
+                })
+            });
+
+            const result = await getSystemStats();
+
+            expect(result.error).toBeNull();
+            expect(result.data?.totalRevenue).toBe(60); // $30 + $30 = $60, NOT $0.60
+            expect(result.data?.totalRevenue).not.toBe(0.6);
         });
      });
 });

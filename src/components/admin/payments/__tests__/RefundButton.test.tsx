@@ -21,7 +21,7 @@ vi.mock('sonner', () => ({
 describe('RefundButton', () => {
   const defaultProps = {
     paymentId: 'pay-123',
-    amount: 5000,
+    amount: 50, // in dollars (DB stores in dollars)
     currency: 'usd',
   };
 
@@ -42,7 +42,7 @@ describe('RefundButton', () => {
     
     // Check if dialog content appears
     expect(screen.getByRole('heading', { name: 'Confirm Refund' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Amount (USD)')).toHaveValue(50); // 5000 cents = 50.00
+    expect(screen.getByLabelText('Amount (USD)')).toHaveValue(50); // $50.00 in dollars
   });
 
   it('calls processRefund when confirmed', async () => {
@@ -59,7 +59,7 @@ describe('RefundButton', () => {
     await waitFor(() => {
         expect(processRefund).toHaveBeenCalledWith({
             paymentId: 'pay-123',
-            amount: 5000,
+            amount: 5000, // Component converts $50 to 5000 cents for Stripe
             reason: 'requested_by_customer'
         });
     });

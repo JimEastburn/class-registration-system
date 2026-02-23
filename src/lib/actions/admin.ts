@@ -47,11 +47,7 @@ export async function getSystemStats(): Promise<{ data: SystemStats | null; erro
             totalUsers: users.count || 0,
             totalClasses: classes.count || 0,
             totalEnrollments: enrollments.count || 0,
-            totalRevenue: totalRevenue / 100 // Convert cents to dollars if stored as cents. Type says number (decimal in DB?).
-             // Type says 'Stored as decimal in DB (in cents)' -> wait, line 103 says 'price: number... (in cents)'.
-             // line 139 'amount: number; // Stored as decimal in DB'.
-             // Usually Stripe amounts are cents. If DB is numeric, it might be dollars?
-             // I'll assume cents for now based on 'price' comment.
+            totalRevenue, // DB stores amounts in dollars
         },
         error: null
     };

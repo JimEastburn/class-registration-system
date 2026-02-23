@@ -44,7 +44,7 @@ export function PaymentDetailDialog({ payment, open, onOpenChange }: PaymentDeta
                         </div>
                         <div>
                             <p className="text-sm font-medium text-muted-foreground">Amount</p>
-                            <p className="text-sm font-semibold">${(payment.amount / 100).toFixed(2)}</p>
+                            <p className="text-sm font-semibold">${payment.amount.toFixed(2)}</p>
                         </div>
                         <div>
                             <p className="text-sm font-medium text-muted-foreground">Date</p>

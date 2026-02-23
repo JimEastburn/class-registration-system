@@ -646,7 +646,7 @@ export async function adminForceEnroll(
                      schedule: `${classData.day || 'TBD'} ${classData.block || ''}`.trim(),
                      location: classData.location || 'Main Studio',
                      startDate: classData.start_date || 'TBD',
-                     fee: (classData.price || 0) / 100 // Convert cents to dollars
+                     fee: classData.price || 0 // DB stores price in dollars
                  });
              }
 
@@ -686,7 +686,7 @@ export async function adminForceEnroll(
                 schedule: `${classData.day || 'TBD'} ${classData.block || ''}`.trim(),
                 location: classData.location || 'Main Studio',
                 startDate: classData.start_date || 'TBD',
-                fee: (classData.price || 0) / 100 // Convert cents to dollars
+                fee: classData.price || 0 // DB stores price in dollars
             });
         }
 
