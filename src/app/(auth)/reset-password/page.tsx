@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
 import ResetPasswordForm from '@/components/auth/ResetPasswordForm';
 
 export const metadata = {
@@ -15,18 +14,11 @@ export default async function ResetPasswordPage({
 }) {
     const { code, error, error_description } = await searchParams;
 
-    // If a code is present, exchange it for a session server-side
+    // If a code is present, redirect to the auth callback route handler
+    // which can properly exchange the code and set session cookies.
+    // Server Components cannot set cookies, so we delegate to the route handler.
     if (code) {
-        const supabase = await createClient();
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-
-        if (exchangeError) {
-            console.error('Reset password code exchange error:', exchangeError.message);
-            redirect('/reset-password?error=access_denied&error_description=Password+reset+link+is+invalid+or+has+expired');
-        }
-
-        // Redirect to the same page without the code to avoid re-exchange on refresh
-        redirect('/reset-password');
+        redirect(`/auth/callback?code=${encodeURIComponent(code)}&next=/reset-password`);
     }
 
     // Show error state if the link expired or was invalid
