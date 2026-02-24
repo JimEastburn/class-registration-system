@@ -163,7 +163,7 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
               <TableHead>Name</TableHead>
               <TableHead>Schedule</TableHead>
               <TableHead>Capacity</TableHead>
-              <TableHead>Price</TableHead>
+
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -187,7 +187,7 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
                   )}
                 </TableCell>
                 <TableCell>{cls.capacity}</TableCell>
-                <TableCell>$30.00</TableCell>
+
                 <TableCell>
                   <Badge variant={statusConfig[cls.status]?.variant || 'outline'}>
                     {statusConfig[cls.status]?.label || cls.status}
