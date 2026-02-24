@@ -147,8 +147,8 @@ export default function LoginForm() {
             Sign In
           </Button>
 
-          <p className="text-center text-sm text-slate-300">
-            Don&apos;t have an account?{' '}
+          <div className="flex flex-col items-center gap-1 text-sm text-slate-300">
+            <span>Don&apos;t have an account?</span>
             <Link
               href="/register"
               className="font-medium text-teal-400 transition-colors hover:text-teal-300"
@@ -156,7 +156,7 @@ export default function LoginForm() {
             >
               Create account
             </Link>
-          </p>
+          </div>
 
           {process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production' && (
             <a

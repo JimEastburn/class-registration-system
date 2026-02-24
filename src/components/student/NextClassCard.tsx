@@ -3,12 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, MapPin, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 
-interface ScheduleConfig {
-  day?: string;
-  block?: string;
-  startDate?: string;
-  endDate?: string;
-}
+import type { Tables } from '@/types/database';
+import type { Class, ScheduleConfig } from '@/types';
 
 export interface UpcomingClass {
   className: string;
@@ -17,18 +13,21 @@ export interface UpcomingClass {
   location: string;
 }
 
-/** Raw shape returned by the Supabase join query. */
-export interface CalendarEventRow {
-  date: string;
-  block?: string;
-  location?: string;
-  class?: {
-    name: string;
-    location?: string;
-    block?: string;
+/**
+ * Shape returned by the Supabase join query:
+ *   calendar_events + class:classes(name, location, block, schedule_config)
+ *
+ * Uses generated DB types for accurate nullability on event fields,
+ * and project-level Class type for the joined relation.
+ */
+export type CalendarEventRow = Pick<
+  Tables<'calendar_events'>,
+  'date' | 'block' | 'location'
+> & {
+  class?: Pick<Class, 'name' | 'location' | 'block'> & {
     schedule_config?: ScheduleConfig | null;
   };
-}
+};
 
 /**
  * Resolves the display block name by falling through:
@@ -49,7 +48,7 @@ export function resolveBlockName(event: CalendarEventRow): string {
 export function toUpcomingClass(event: CalendarEventRow): UpcomingClass {
   return {
     className: event.class?.name || 'Untitled Class',
-    date: new Date(event.date + 'T00:00:00'),
+    date: new Date((event.date ?? '') + 'T00:00:00'),
     block: resolveBlockName(event),
     location: event.location || event.class?.location || 'TBD',
   };
