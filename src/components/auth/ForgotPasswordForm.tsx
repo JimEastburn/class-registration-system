@@ -68,7 +68,7 @@ export default function ForgotPasswordForm() {
                 </CardContent>
                 <CardFooter className="flex justify-center">
                     <Link href="/login">
-                        <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
                             Back to Login
                         </Button>
                     </Link>
@@ -109,11 +109,11 @@ export default function ForgotPasswordForm() {
                         )}
                     </div>
                 </CardContent>
-                <CardFooter className="flex flex-col gap-4">
+                <CardFooter className="flex flex-col gap-4 pt-6">
                     <Button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full bg-gradient-to-r from-[#4c7c92] to-[#9BBFD3] hover:from-[#3a6073] hover:to-[#7aa9c2]"
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                         data-testid="forgot-submit-button"
                     >
                         {isLoading ? 'Sending...' : 'Send Reset Link'}

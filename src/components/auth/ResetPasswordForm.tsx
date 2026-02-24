@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -16,6 +17,8 @@ export default function ResetPasswordForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const {
         register,
@@ -85,14 +88,24 @@ export default function ResetPasswordForm() {
 
                     <div className="space-y-2">
                         <Label htmlFor="password" className="text-white">New Password</Label>
-                        <Input
-                            id="password"
-                            type="password"
-                            placeholder="••••••••"
-                            className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
-                            {...register('password')}
-                            data-testid="reset-password-input"
-                        />
+                        <div className="relative">
+                            <Input
+                                id="password"
+                                type={showPassword ? 'text' : 'password'}
+                                className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 pr-10"
+                                {...register('password')}
+                                data-testid="reset-password-input"
+                            />
+                            <button
+                                type="button"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                                onClick={() => setShowPassword(!showPassword)}
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                data-testid="toggle-password-visibility"
+                            >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                        </div>
                         {errors.password && (
                             <p className="text-red-400 text-sm">{errors.password.message}</p>
                         )}
@@ -103,24 +116,34 @@ export default function ResetPasswordForm() {
 
                     <div className="space-y-2">
                         <Label htmlFor="confirmPassword" className="text-white">Confirm Password</Label>
-                        <Input
-                            id="confirmPassword"
-                            type="password"
-                            placeholder="••••••••"
-                            className="bg-white/10 border-white/20 text-white placeholder:text-slate-400"
-                            {...register('confirmPassword')}
-                            data-testid="reset-confirm-input"
-                        />
+                        <div className="relative">
+                            <Input
+                                id="confirmPassword"
+                                type={showConfirmPassword ? 'text' : 'password'}
+                                className="bg-white/10 border-white/20 text-white placeholder:text-slate-400 pr-10"
+                                {...register('confirmPassword')}
+                                data-testid="reset-confirm-input"
+                            />
+                            <button
+                                type="button"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                                data-testid="toggle-confirm-password-visibility"
+                            >
+                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                        </div>
                         {errors.confirmPassword && (
                             <p className="text-red-400 text-sm">{errors.confirmPassword.message}</p>
                         )}
                     </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="pt-6">
                     <Button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full bg-gradient-to-r from-[#4c7c92] to-[#9BBFD3] hover:from-[#3a6073] hover:to-[#7aa9c2]"
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                         data-testid="reset-submit-button"
                     >
                         {isLoading ? 'Updating...' : 'Reset Password'}
