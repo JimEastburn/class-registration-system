@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { Clock, Users, Calendar, DollarSign, User } from 'lucide-react';
+import { Clock, Users, Calendar, DollarSign, User, Search, X } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -11,6 +12,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import type { Class } from '@/types';
 
 interface ClassWithTeacher extends Class {
@@ -23,17 +25,76 @@ interface ClassWithTeacher extends Class {
 
 interface ClassGridProps {
   classes: ClassWithTeacher[];
+  showSearch?: boolean;
 }
 
-export function ClassGrid({ classes }: ClassGridProps) {
+export function ClassGrid({ classes, showSearch = false }: ClassGridProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredClasses = searchQuery
+    ? classes.filter((cls) => {
+        const query = searchQuery.toLowerCase();
+        const teacherName = cls.teacher
+          ? `${cls.teacher.first_name || ''} ${cls.teacher.last_name || ''}`.trim().toLowerCase()
+          : '';
+        const day = cls.schedule_config?.day?.toLowerCase() || '';
+        const block = cls.schedule_config?.block?.toLowerCase() || '';
+        return (
+          cls.name.toLowerCase().includes(query) ||
+          (cls.description || '').toLowerCase().includes(query) ||
+          teacherName.includes(query) ||
+          day.includes(query) ||
+          block.includes(query)
+        );
+      })
+    : classes;
+
   return (
-    <div
-      className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
-      data-testid="class-grid"
-    >
-      {classes.map((cls) => (
-        <ClassCard key={cls.id} classItem={cls} />
-      ))}
+    <div className="space-y-4">
+      {showSearch && (
+        <div className="flex items-center gap-3">
+          <div className="relative max-w-md flex-1">
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+            <Input
+              type="text"
+              placeholder="Search by class name, teacher, day, etc."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-9"
+              data-testid="class-search-input"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <span className="text-muted-foreground shrink-0 text-sm">
+              {filteredClasses.length} {filteredClasses.length === 1 ? 'class matches' : 'classes match'} your search
+            </span>
+          )}
+        </div>
+      )}
+
+      {filteredClasses.length === 0 ? (
+        <p className="text-muted-foreground py-8 text-center text-sm">
+          No classes match &ldquo;{searchQuery}&rdquo;. Try a different search term.
+        </p>
+      ) : (
+        <div
+          className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+          data-testid="class-grid"
+        >
+          {filteredClasses.map((cls) => (
+            <ClassCard key={cls.id} classItem={cls} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -95,7 +95,7 @@ async function ClassListWrapper({
     );
   }
 
-  return <ClassGrid classes={classes} />;
+  return <ClassGrid classes={classes} showSearch />;
 }
 
 function ClassGridSkeleton() {
