@@ -21,14 +21,21 @@ interface AuditLogTableProps {
   limit: number;
 }
 
-export function AuditLogTable({ data, count, page, limit }: AuditLogTableProps) {
+export function AuditLogTable({
+  data,
+  count,
+  page,
+  limit,
+}: AuditLogTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // Local state for filters
   const [userId, setUserId] = useState(searchParams.get('userId') || '');
   const [action, setAction] = useState(searchParams.get('action') || '');
-  const [startDate, setStartDate] = useState(searchParams.get('startDate') || '');
+  const [startDate, setStartDate] = useState(
+    searchParams.get('startDate') || ''
+  );
   const [endDate, setEndDate] = useState(searchParams.get('endDate') || '');
 
   const totalPages = Math.ceil(count / limit);
@@ -43,7 +50,7 @@ export function AuditLogTable({ data, count, page, limit }: AuditLogTableProps) 
     const params = new URLSearchParams();
     // Reset to page 1 on filter change
     params.set('page', '1');
-    
+
     if (userId) params.set('userId', userId);
     if (action) params.set('action', action);
     if (startDate) params.set('startDate', startDate);
@@ -63,49 +70,59 @@ export function AuditLogTable({ data, count, page, limit }: AuditLogTableProps) 
   return (
     <div className="space-y-4">
       {/* Filter Bar */}
-      <div className="flex flex-wrap gap-4 p-4 border rounded-md bg-muted/20">
+      <div className="bg-muted/20 flex flex-wrap gap-4 rounded-md border p-4">
         <div className="flex flex-col gap-1.5">
-           <label htmlFor="userId" className="text-sm font-medium">User ID</label>
-           <Input 
-             id="userId"
-             placeholder="Search User ID..." 
-             value={userId} 
-             onChange={(e) => setUserId(e.target.value)}
-             className="w-[200px] bg-background"
-           />
+          <label htmlFor="userId" className="text-sm font-medium">
+            User ID
+          </label>
+          <Input
+            id="userId"
+            placeholder="Search User ID..."
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+            className="bg-background w-[200px]"
+          />
         </div>
         <div className="flex flex-col gap-1.5">
-           <label htmlFor="action" className="text-sm font-medium">Action</label>
-           <Input 
-             id="action"
-             placeholder="Search Action..." 
-             value={action} 
-             onChange={(e) => setAction(e.target.value)}
-             className="w-[200px] bg-background"
-           />
+          <label htmlFor="action" className="text-sm font-medium">
+            Action
+          </label>
+          <Input
+            id="action"
+            placeholder="Search Action..."
+            value={action}
+            onChange={(e) => setAction(e.target.value)}
+            className="bg-background w-[200px]"
+          />
         </div>
         <div className="flex flex-col gap-1.5">
-           <label htmlFor="startDate" className="text-sm font-medium">Start Date</label>
-           <Input 
-             id="startDate"
-             type="date" 
-             value={startDate} 
-             onChange={(e) => setStartDate(e.target.value)}
-             className="w-[160px] bg-background"
-           />
+          <label htmlFor="startDate" className="text-sm font-medium">
+            Start Date
+          </label>
+          <Input
+            id="startDate"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="bg-background w-[160px]"
+          />
         </div>
         <div className="flex flex-col gap-1.5">
-           <label htmlFor="endDate" className="text-sm font-medium">End Date</label>
-           <Input 
-             id="endDate"
-             type="date" 
-             value={endDate} 
-             onChange={(e) => setEndDate(e.target.value)}
-             className="w-[160px] bg-background"
-           />
+          <label htmlFor="endDate" className="text-sm font-medium">
+            End Date
+          </label>
+          <Input
+            id="endDate"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="bg-background w-[160px]"
+          />
         </div>
-        <div className="flex items-end gap-2 ml-auto">
-          <Button variant="outline" onClick={clearFilters}>Clear</Button>
+        <div className="ml-auto flex items-end gap-2">
+          <Button variant="outline" onClick={clearFilters}>
+            Clear
+          </Button>
           <Button onClick={applyFilters}>Apply Filters</Button>
         </div>
       </div>
@@ -125,7 +142,7 @@ export function AuditLogTable({ data, count, page, limit }: AuditLogTableProps) 
           <TableBody>
             {data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center h-24">
+                <TableCell colSpan={6} className="h-24 text-center">
                   No logs found.
                 </TableCell>
               </TableRow>
@@ -135,11 +152,18 @@ export function AuditLogTable({ data, count, page, limit }: AuditLogTableProps) 
                   <TableCell className="whitespace-nowrap">
                     {new Date(log.created_at).toLocaleString()}
                   </TableCell>
-                   <TableCell className="font-mono text-xs p-2">{log.user_id}</TableCell>
+                  <TableCell className="p-2 font-mono text-xs">
+                    {log.user_id}
+                  </TableCell>
                   <TableCell className="font-medium">{log.action}</TableCell>
                   <TableCell>{log.target_type}</TableCell>
-                  <TableCell className="font-mono text-xs">{log.target_id}</TableCell>
-                  <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground" title={JSON.stringify(log.details, null, 2)}>
+                  <TableCell className="font-mono text-xs">
+                    {log.target_id}
+                  </TableCell>
+                  <TableCell
+                    className="text-muted-foreground max-w-[200px] truncate text-xs"
+                    title={JSON.stringify(log.details, null, 2)}
+                  >
                     {log.details ? JSON.stringify(log.details) : '-'}
                   </TableCell>
                 </TableRow>
@@ -157,7 +181,7 @@ export function AuditLogTable({ data, count, page, limit }: AuditLogTableProps) 
         >
           Previous
         </Button>
-        <span className="text-sm text-muted-foreground">
+        <span className="text-muted-foreground text-sm">
           Page {page} of {totalPages || 1}
         </span>
         <Button

@@ -3,7 +3,7 @@ import { BasePage } from './BasePage';
 
 /**
  * Navigation Component Object
- * 
+ *
  * Handles sidebar and topbar navigation interactions.
  * Used as a composition in dashboard page objects.
  */
@@ -13,7 +13,7 @@ export class NavigationComponent extends BasePage {
   readonly userMenu: Locator;
   readonly signOutButton: Locator;
   readonly portalSwitcher: Locator;
-  
+
   constructor(page: Page) {
     super(page);
     this.sidebar = page.getByTestId('sidebar');
@@ -22,7 +22,7 @@ export class NavigationComponent extends BasePage {
     this.signOutButton = page.getByTestId('logout-button');
     this.portalSwitcher = page.getByTestId('portal-switcher');
   }
-  
+
   /**
    * Open user dropdown menu
    */
@@ -32,7 +32,7 @@ export class NavigationComponent extends BasePage {
     // Wait for dropdown content to appear (Radix animation)
     await this.signOutButton.waitFor({ state: 'visible', timeout: 5000 });
   }
-  
+
   /**
    * Sign out from the application
    */
@@ -40,22 +40,24 @@ export class NavigationComponent extends BasePage {
     await this.openUserMenu();
     await this.signOutButton.click();
   }
-  
+
   /**
    * Switch portal view
    */
-  async switchPortal(portal: 'parent' | 'teacher' | 'admin' | 'scheduler'): Promise<void> {
+  async switchPortal(
+    portal: 'parent' | 'teacher' | 'admin' | 'scheduler'
+  ): Promise<void> {
     await this.portalSwitcher.click();
     await this.page.getByTestId(`portal-option-${portal}`).click();
   }
-  
+
   /**
    * Navigate to a sidebar menu item
    */
   async navigateTo(menuItem: string): Promise<void> {
     await this.sidebar.getByRole('link', { name: menuItem }).click();
   }
-  
+
   /**
    * Check if portal switcher is visible
    */

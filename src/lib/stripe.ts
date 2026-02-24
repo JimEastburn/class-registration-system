@@ -1,20 +1,20 @@
 import Stripe from 'stripe';
 
 if (!process.env.STRIPE_SECRET_KEY) {
-    throw new Error('STRIPE_SECRET_KEY is not set');
+  throw new Error('STRIPE_SECRET_KEY is not set');
 }
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2026-01-28.clover',
-    typescript: true,
+  apiVersion: '2026-01-28.clover',
+  typescript: true,
 });
 
 // Class prices are stored in dollars in our DB; Stripe expects cents.
 export function formatAmountForStripe(amount: number): number {
-    return Math.round(amount * 100);
+  return Math.round(amount * 100);
 }
 
 // Helper to format amount from Stripe (convert cents to dollars)
 export function formatAmountFromStripe(amount: number): number {
-    return amount / 100;
+  return amount / 100;
 }

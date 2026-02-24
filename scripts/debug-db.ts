@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -31,11 +30,13 @@ async function inspectClasses() {
 
   console.log(`Found ${classes.length} classes.`);
   if (classes.length > 0) {
-      console.log('Most recent class:', JSON.stringify(classes[0], null, 2));
-      console.log('------------------------------------------------');
-      classes.forEach(c => {
-          console.log(`ID: ${c.id} | Name: ${c.name} | Status: ${c.status} | Teacher: ${c.teacher_id} | Created: ${c.created_at}`);
-      });
+    console.log('Most recent class:', JSON.stringify(classes[0], null, 2));
+    console.log('------------------------------------------------');
+    classes.forEach((c) => {
+      console.log(
+        `ID: ${c.id} | Name: ${c.name} | Status: ${c.status} | Teacher: ${c.teacher_id} | Created: ${c.created_at}`
+      );
+    });
   }
 
   console.log('Fetching last 10 profiles...');
@@ -44,11 +45,13 @@ async function inspectClasses() {
     .select('*')
     .order('created_at', { ascending: false })
     .limit(10);
-    
-    if (profiles) {
-        console.log(`Found ${profiles.length} profiles.`);
-        profiles.forEach(p => console.log(`ID: ${p.id} | Email: ${p.email} | Role: ${p.role}`));
-    }
+
+  if (profiles) {
+    console.log(`Found ${profiles.length} profiles.`);
+    profiles.forEach((p) =>
+      console.log(`ID: ${p.id} | Email: ${p.email} | Role: ${p.role}`)
+    );
+  }
 }
 
 inspectClasses();

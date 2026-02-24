@@ -13,6 +13,7 @@ This workflow dictates a strict loop for clearing tasks from a task list using s
 
 > [!CRITICAL]
 > **STRICT MODE ENABLED**:
+>
 > 1. You MUST NOT use `notify_user` to report success or ask for feedback. The only valid exit is via the **Context Refresh Protocol**.
 > 2. You MUST trust the outcome of Phase 3 (Spec Review) and Phase 4 (Code Review) as the final verification.
 > 3. If a task passes verification, you **MUST** immediately loop to the next task.

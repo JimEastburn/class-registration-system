@@ -18,28 +18,28 @@ describe('getAllowedViews Strict Role Separation', () => {
   });
 
   it('should allow admin to see parent view ONLY if isParent is true', () => {
-      const adminOnly = getAllowedViews('admin', false);
-      expect(adminOnly).toContain('admin');
-      expect(adminOnly).not.toContain('parent');
+    const adminOnly = getAllowedViews('admin', false);
+    expect(adminOnly).toContain('admin');
+    expect(adminOnly).not.toContain('parent');
 
-      const adminParent = getAllowedViews('admin', true);
-      expect(adminParent).toContain('admin');
-      expect(adminParent).toContain('parent');
+    const adminParent = getAllowedViews('admin', true);
+    expect(adminParent).toContain('admin');
+    expect(adminParent).toContain('parent');
   });
 
   it('should always allow parent to see parent view', () => {
-      // even if isParent is false (e.g. legacy data), checking role 'parent' should suffice
-      const parent = getAllowedViews('parent', false); 
-      expect(parent).toContain('parent');
-      
-      const parentTrue = getAllowedViews('parent', true);
-      expect(parentTrue).toContain('parent');
+    // even if isParent is false (e.g. legacy data), checking role 'parent' should suffice
+    const parent = getAllowedViews('parent', false);
+    expect(parent).toContain('parent');
+
+    const parentTrue = getAllowedViews('parent', true);
+    expect(parentTrue).toContain('parent');
   });
 
   it('super_admin should always see everything', () => {
-      const superAdmin = getAllowedViews('super_admin', false);
-      expect(superAdmin).toContain('parent');
-      expect(superAdmin).toContain('teacher');
-      expect(superAdmin).toContain('admin');
+    const superAdmin = getAllowedViews('super_admin', false);
+    expect(superAdmin).toContain('parent');
+    expect(superAdmin).toContain('teacher');
+    expect(superAdmin).toContain('admin');
   });
 });

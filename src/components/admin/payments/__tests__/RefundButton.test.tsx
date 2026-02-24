@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { RefundButton } from '../RefundButton';
@@ -36,32 +35,37 @@ describe('RefundButton', () => {
 
   it('opens dialog on click', () => {
     render(<RefundButton {...defaultProps} />);
-    
+
     // Click button
     fireEvent.click(screen.getByText('Refund'));
-    
+
     // Check if dialog content appears
-    expect(screen.getByRole('heading', { name: 'Confirm Refund' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Confirm Refund' })
+    ).toBeInTheDocument();
     expect(screen.getByLabelText('Amount (USD)')).toHaveValue(50); // $50.00 in dollars
   });
 
   it('calls processRefund when confirmed', async () => {
-    (processRefund as Mock).mockResolvedValue({ success: true, data: { refundId: '123' } });
+    (processRefund as Mock).mockResolvedValue({
+      success: true,
+      data: { refundId: '123' },
+    });
     render(<RefundButton {...defaultProps} />);
-    
+
     // Open Dialog
     fireEvent.click(screen.getByText('Refund'));
-    
+
     // Confirm
     const confirmBtn = screen.getByRole('button', { name: 'Confirm Refund' });
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-        expect(processRefund).toHaveBeenCalledWith({
-            paymentId: 'pay-123',
-            amount: 5000, // Component converts $50 to 5000 cents for Stripe
-            reason: 'requested_by_customer'
-        });
+      expect(processRefund).toHaveBeenCalledWith({
+        paymentId: 'pay-123',
+        amount: 5000, // Component converts $50 to 5000 cents for Stripe
+        reason: 'requested_by_customer',
+      });
     });
   });
 

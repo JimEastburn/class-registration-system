@@ -2,32 +2,34 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { ClassStatus, ClassWithTeacher, ScheduleConfig } from '@/types';
-import { checkScheduleConflict, validateScheduleConfig } from '@/lib/logic/scheduling';
+import {
+  checkScheduleConflict,
+  validateScheduleConfig,
+} from '@/lib/logic/scheduling';
 import { generateClassEvents } from '@/lib/logic/calendar';
 
 interface ClassFilters {
-    status?: ClassStatus;
-    teacherId?: string;
-    search?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    dayOfWeek?: string;
+  status?: ClassStatus;
+  teacherId?: string;
+  search?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  dayOfWeek?: string;
 }
-
-
 
 /**
  * Get all published classes for browsing
  */
 export async function getPublishedClasses(
-    filters?: ClassFilters
+  filters?: ClassFilters
 ): Promise<{ data: ClassWithTeacher[] | null; error: string | null }> {
-    try {
-        const supabase = await createClient();
+  try {
+    const supabase = await createClient();
 
-        let query = supabase
-            .from('classes')
-            .select(`
+    let query = supabase
+      .from('classes')
+      .select(
+        `
                 *,
                 teacher:profiles!teacher_id (
                     id,
@@ -35,59 +37,61 @@ export async function getPublishedClasses(
                     last_name,
                     email
                 )
-            `)
-            .eq('status', 'published')
-            .order('start_date', { ascending: true });
+            `
+      )
+      .eq('status', 'published')
+      .order('start_date', { ascending: true });
 
-        // Apply filters
-        if (filters?.teacherId) {
-            query = query.eq('teacher_id', filters.teacherId);
-        }
-
-        if (filters?.minPrice !== undefined) {
-            query = query.gte('price', filters.minPrice);
-        }
-
-        if (filters?.maxPrice !== undefined) {
-            query = query.lte('price', filters.maxPrice);
-        }
-
-        if (filters?.dayOfWeek !== undefined) {
-            query = query.eq('day_of_week', filters.dayOfWeek);
-        }
-
-        if (filters?.search) {
-            query = query.or(
-                `name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
-            );
-        }
-
-        const { data, error } = await query;
-
-        if (error) {
-            console.error('Error fetching published classes:', error);
-            return { data: null, error: error.message };
-        }
-
-        return { data: data as ClassWithTeacher[], error: null };
-    } catch (err) {
-        console.error('Unexpected error in getPublishedClasses:', err);
-        return { data: null, error: 'An unexpected error occurred' };
+    // Apply filters
+    if (filters?.teacherId) {
+      query = query.eq('teacher_id', filters.teacherId);
     }
+
+    if (filters?.minPrice !== undefined) {
+      query = query.gte('price', filters.minPrice);
+    }
+
+    if (filters?.maxPrice !== undefined) {
+      query = query.lte('price', filters.maxPrice);
+    }
+
+    if (filters?.dayOfWeek !== undefined) {
+      query = query.eq('day_of_week', filters.dayOfWeek);
+    }
+
+    if (filters?.search) {
+      query = query.or(
+        `name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
+      );
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching published classes:', error);
+      return { data: null, error: error.message };
+    }
+
+    return { data: data as ClassWithTeacher[], error: null };
+  } catch (err) {
+    console.error('Unexpected error in getPublishedClasses:', err);
+    return { data: null, error: 'An unexpected error occurred' };
+  }
 }
 
 /**
  * Get details of a single class
  */
 export async function getClassDetails(
-    classId: string
+  classId: string
 ): Promise<{ data: ClassWithTeacher | null; error: string | null }> {
-    try {
-        const supabase = await createClient();
+  try {
+    const supabase = await createClient();
 
-        const { data, error } = await supabase
-            .from('classes')
-            .select(`
+    const { data, error } = await supabase
+      .from('classes')
+      .select(
+        `
                 *,
                 teacher:profiles!teacher_id (
                     id,
@@ -95,87 +99,86 @@ export async function getClassDetails(
                     last_name,
                     email
                 )
-            `)
-            .eq('id', classId)
-            .single();
+            `
+      )
+      .eq('id', classId)
+      .single();
 
-        if (error) {
-            console.error('Error fetching class details:', error);
-            return { data: null, error: error.message };
-        }
-
-        return { data: data as ClassWithTeacher, error: null };
-    } catch (err) {
-        console.error('Unexpected error in getClassDetails:', err);
-        return { data: null, error: 'An unexpected error occurred' };
+    if (error) {
+      console.error('Error fetching class details:', error);
+      return { data: null, error: error.message };
     }
+
+    return { data: data as ClassWithTeacher, error: null };
+  } catch (err) {
+    console.error('Unexpected error in getClassDetails:', err);
+    return { data: null, error: 'An unexpected error occurred' };
+  }
 }
 
 /**
  * Get available spots for a class
  */
-export async function getClassAvailability(
-    classId: string
-): Promise<{
-    capacity: number;
-    enrolled: number;
-    available: number;
-    error: string | null;
+export async function getClassAvailability(classId: string): Promise<{
+  capacity: number;
+  enrolled: number;
+  available: number;
+  error: string | null;
 }> {
-    try {
-        const supabase = await createClient();
+  try {
+    const supabase = await createClient();
 
-        // Get class capacity
-        const { data: classData, error: classError } = await supabase
-            .from('classes')
-            .select('capacity')
-            .eq('id', classId)
-            .single();
+    // Get class capacity
+    const { data: classData, error: classError } = await supabase
+      .from('classes')
+      .select('capacity')
+      .eq('id', classId)
+      .single();
 
-        if (classError || !classData) {
-            return {
-                capacity: 0,
-                enrolled: 0,
-                available: 0,
-                error: 'Class not found',
-            };
-        }
-
-        // Count confirmed enrollments
-        const { count: enrolledCount, error: countError } = await supabase
-            .from('enrollments')
-            .select('*', { count: 'exact', head: true })
-            .eq('class_id', classId)
-            .eq('status', 'confirmed');
-
-        if (countError) {
-            console.error('Error counting enrollments:', countError);
-            return {
-                capacity: classData.capacity,
-                enrolled: 0,
-                available: classData.capacity,
-                error: countError.message,
-            };
-        }
-
-        const enrolled = enrolledCount || 0;
-        const available = Math.max(0, classData.capacity - enrolled);
-
-        return {
-            capacity: classData.capacity,
-            enrolled,
-            available,
-            error: null,
-        };
-    } catch (err) {
-        console.error('Unexpected error in getClassAvailability:', err);
-        return {
-            capacity: 0,
-            enrolled: 0,
-            available: 0,
-            error: 'An unexpected error occurred',
-        };
+    if (classError || !classData) {
+      return {
+        capacity: 0,
+        enrolled: 0,
+        available: 0,
+        error: 'Class not found',
+      };
     }
+
+    // Count confirmed enrollments
+    const { count: enrolledCount, error: countError } = await supabase
+      .from('enrollments')
+      .select('*', { count: 'exact', head: true })
+      .eq('class_id', classId)
+      .eq('status', 'confirmed');
+
+    if (countError) {
+      console.error('Error counting enrollments:', countError);
+      return {
+        capacity: classData.capacity,
+        enrolled: 0,
+        available: classData.capacity,
+        error: countError.message,
+      };
+    }
+
+    const enrolled = enrolledCount || 0;
+    const available = Math.max(0, classData.capacity - enrolled);
+
+    return {
+      capacity: classData.capacity,
+      enrolled,
+      available,
+      error: null,
+    };
+  } catch (err) {
+    console.error('Unexpected error in getClassAvailability:', err);
+    return {
+      capacity: 0,
+      enrolled: 0,
+      available: 0,
+      error: 'An unexpected error occurred',
+    };
+  }
 }
 
 // ============================================================================
@@ -185,8 +188,10 @@ export async function getClassAvailability(
 import type { ActionResult } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { logAuditAction } from '@/lib/actions/audit';
-import { sendClassCancellation, sendScheduleChangeNotification } from '@/lib/email';
-
+import {
+  sendClassCancellation,
+  sendScheduleChangeNotification,
+} from '@/lib/email';
 
 interface CreateClassInput {
   name: string;
@@ -196,14 +201,12 @@ interface CreateClassInput {
   schedule_config?: ScheduleConfig;
   status?: ClassStatus;
   teacherId?: string;
-  // Legacy/Linear fields for backward compat or direct access if needed, 
+  // Legacy/Linear fields for backward compat or direct access if needed,
   // but we prefer schedule_config object now.
   location?: string | null;
   ageMin?: number;
   ageMax?: number;
 }
-
-
 
 /**
  * Create a new class (teacher only)
@@ -214,7 +217,9 @@ export async function createClass(
 ): Promise<ActionResult<{ classId: string }>> {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -227,7 +232,12 @@ export async function createClass(
       .eq('id', user.id)
       .single();
 
-    if (!profile || (profile.role !== 'teacher' && profile.role !== 'admin' && profile.role !== 'super_admin')) {
+    if (
+      !profile ||
+      (profile.role !== 'teacher' &&
+        profile.role !== 'admin' &&
+        profile.role !== 'super_admin')
+    ) {
       return { success: false, error: 'Not authorized to create classes' };
     }
 
@@ -235,13 +245,18 @@ export async function createClass(
     if (input.schedule_config) {
       const validation = validateScheduleConfig(input.schedule_config);
       if (!validation.valid) {
-        return { success: false, error: validation.error || 'Invalid schedule configuration' };
+        return {
+          success: false,
+          error: validation.error || 'Invalid schedule configuration',
+        };
       }
     }
 
     // Insert the class with draft status
-    const teacherIdToUse = (input.teacherId && (profile.role === 'admin' || profile.role === 'super_admin')) 
-        ? input.teacherId 
+    const teacherIdToUse =
+      input.teacherId &&
+      (profile.role === 'admin' || profile.role === 'super_admin')
+        ? input.teacherId
         : user.id;
 
     if (input.schedule_config && teacherIdToUse) {
@@ -275,7 +290,8 @@ export async function createClass(
         capacity: input.capacity,
         teacher_id: teacherIdToUse,
         status: 'draft',
-        schedule_config: (input.schedule_config || null) as import('@/types/database').Json,
+        schedule_config: (input.schedule_config ||
+          null) as import('@/types/database').Json,
         // Populate new columns from config
         day: input.schedule_config?.day || null,
         block: input.schedule_config?.block || null,
@@ -293,28 +309,36 @@ export async function createClass(
       return { success: false, error: error.message };
     }
 
-    console.error(`[DEBUG] Created class ${newClass.id} for teacher ${teacherIdToUse}`);
+    console.error(
+      `[DEBUG] Created class ${newClass.id} for teacher ${teacherIdToUse}`
+    );
 
     // Generate calendar events
     if (newClass.schedule_config) {
-        const events = generateClassEvents(newClass.id, newClass.schedule_config as unknown as ScheduleConfig, {
-            location: newClass.location,
-            description: newClass.description,
-        });
-
-        if (events.length > 0) {
-            const { error: eventsError } = await supabase
-                .from('calendar_events')
-                .insert(events);
-
-            if (eventsError) {
-                console.error('Error creating calendar events:', eventsError);
-                // Non-fatal, but should be logged/alerted
-            }
+      const events = generateClassEvents(
+        newClass.id,
+        newClass.schedule_config as unknown as ScheduleConfig,
+        {
+          location: newClass.location,
+          description: newClass.description,
         }
+      );
+
+      if (events.length > 0) {
+        const { error: eventsError } = await supabase
+          .from('calendar_events')
+          .insert(events);
+
+        if (eventsError) {
+          console.error('Error creating calendar events:', eventsError);
+          // Non-fatal, but should be logged/alerted
+        }
+      }
     }
 
-    await logAuditAction(user.id, 'class.created', 'class', newClass.id, { name: input.name });
+    await logAuditAction(user.id, 'class.created', 'class', newClass.id, {
+      name: input.name,
+    });
     revalidatePath('/teacher/classes');
 
     return { success: true, data: { classId: newClass.id } };
@@ -333,7 +357,9 @@ export async function updateClass(
 ): Promise<ActionResult<void>> {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -342,7 +368,9 @@ export async function updateClass(
     // Verify ownership or admin access
     const { data: existingClass } = await supabase
       .from('classes')
-      .select('teacher_id, status, name, location, schedule_config, start_date, end_date')
+      .select(
+        'teacher_id, status, name, location, schedule_config, start_date, end_date'
+      )
       .eq('id', classId)
       .single();
 
@@ -358,7 +386,8 @@ export async function updateClass(
       .single();
 
     const isOwner = existingClass.teacher_id === user.id;
-    const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+    const isAdmin =
+      profile?.role === 'admin' || profile?.role === 'super_admin';
 
     if (!isOwner && !isAdmin) {
       return { success: false, error: 'Not authorized to update this class' };
@@ -367,33 +396,42 @@ export async function updateClass(
     // Build update object
     const updateData: Record<string, unknown> = {};
     if (input.name !== undefined) updateData.name = input.name;
-    if (input.description !== undefined) updateData.description = input.description;
+    if (input.description !== undefined)
+      updateData.description = input.description;
     updateData.price = 3000; // Fixed $30 for all classes
     if (input.capacity !== undefined) updateData.capacity = input.capacity;
-    
+
     if (input.schedule_config !== undefined) {
-        const validation = validateScheduleConfig(input.schedule_config);
-        if (!validation.valid) {
-          return { success: false, error: validation.error || 'Invalid schedule configuration' };
-        }
-        updateData.schedule_config = input.schedule_config;
-        updateData.day = input.schedule_config.day;
-        updateData.block = input.schedule_config.block;
-        updateData.start_date = input.schedule_config.startDate;
-        updateData.end_date = input.schedule_config.endDate;
+      const validation = validateScheduleConfig(input.schedule_config);
+      if (!validation.valid) {
+        return {
+          success: false,
+          error: validation.error || 'Invalid schedule configuration',
+        };
+      }
+      updateData.schedule_config = input.schedule_config;
+      updateData.day = input.schedule_config.day;
+      updateData.block = input.schedule_config.block;
+      updateData.start_date = input.schedule_config.startDate;
+      updateData.end_date = input.schedule_config.endDate;
     }
 
     if (input.location !== undefined) updateData.location = input.location;
     if (input.ageMin !== undefined) updateData.age_min = input.ageMin;
     if (input.ageMax !== undefined) updateData.age_max = input.ageMax;
-    if (input.teacherId !== undefined && isAdmin) updateData.teacher_id = input.teacherId;
+    if (input.teacherId !== undefined && isAdmin)
+      updateData.teacher_id = input.teacherId;
     if (input.status !== undefined && isAdmin) updateData.status = input.status; // Allow admin to force status
 
     // Teacher conflict check (if schedule or teacher changed)
     const proposedTeacherId =
-      (input.teacherId !== undefined && isAdmin ? input.teacherId : existingClass.teacher_id) || undefined;
+      (input.teacherId !== undefined && isAdmin
+        ? input.teacherId
+        : existingClass.teacher_id) || undefined;
     const proposedSchedule =
-      input.schedule_config ?? (existingClass.schedule_config as ScheduleConfig | null) ?? undefined;
+      input.schedule_config ??
+      (existingClass.schedule_config as ScheduleConfig | null) ??
+      undefined;
 
     if (proposedTeacherId && proposedSchedule) {
       const { data: teacherClasses } = await supabase
@@ -430,129 +468,146 @@ export async function updateClass(
 
     // Update calendar events if schedule or location changed
     if (input.schedule_config || input.location !== undefined) {
-        // 1. Delete future events (or all events? effectively rebuilding the calendar for this class)
-        // Keeping it simple: delete all future events for this class to avoid duplicates/orphans
-        // We might want to keep past events for history, but for now, full rebuild from start_date is safest for consistency
-        const today = new Date().toISOString().split('T')[0];
-        
-        const { error: deleteError } = await supabase
+      // 1. Delete future events (or all events? effectively rebuilding the calendar for this class)
+      // Keeping it simple: delete all future events for this class to avoid duplicates/orphans
+      // We might want to keep past events for history, but for now, full rebuild from start_date is safest for consistency
+      const today = new Date().toISOString().split('T')[0];
+
+      const { error: deleteError } = await supabase
+        .from('calendar_events')
+        .delete()
+        .eq('class_id', classId)
+        .gte('date', today);
+
+      if (deleteError) {
+        console.error('Error deleting old calendar events:', deleteError);
+      } else {
+        // 2. Generate new events
+        // Need full class details to generate events
+        const { data: updatedClass } = await supabase
+          .from('classes')
+          .select('*')
+          .eq('id', classId)
+          .single();
+
+        if (updatedClass && updatedClass.schedule_config) {
+          const events = generateClassEvents(
+            classId,
+            updatedClass.schedule_config as unknown as ScheduleConfig,
+            {
+              location: updatedClass.location,
+              description: updatedClass.description,
+            }
+          );
+
+          // Filter for future only if we only deleted future?
+          // Actually, generateClassEvents generates for the whole range.
+          // If we deleted only >= today, we should only insert >= today to avoid duplicates with past events we didn't delete.
+          // OR we delete ALL events and regenerate ALL.
+          // Decision: Regenerate ALL to ensure consistency (e.g. if start date changed to be earlier).
+          // Refining: Delete ALL events for this class.
+
+          await supabase
             .from('calendar_events')
             .delete()
-            .eq('class_id', classId)
-            .gte('date', today);
+            .eq('class_id', classId);
 
-        if (deleteError) {
-             console.error('Error deleting old calendar events:', deleteError);
-        } else {
-             // 2. Generate new events
-             // Need full class details to generate events
-             const { data: updatedClass } = await supabase
-                .from('classes')
-                .select('*')
-                .eq('id', classId)
-                .single();
-             
-             if (updatedClass && updatedClass.schedule_config) {
-                 const events = generateClassEvents(classId, updatedClass.schedule_config as unknown as ScheduleConfig, {
-                     location: updatedClass.location,
-                     description: updatedClass.description,
-                 });
+          if (events.length > 0) {
+            const { error: insertError } = await supabase
+              .from('calendar_events')
+              .insert(events);
 
-                 // Filter for future only if we only deleted future? 
-                 // Actually, generateClassEvents generates for the whole range.
-                 // If we deleted only >= today, we should only insert >= today to avoid duplicates with past events we didn't delete.
-                 // OR we delete ALL events and regenerate ALL.
-                 // Decision: Regenerate ALL to ensure consistency (e.g. if start date changed to be earlier).
-                 // Refining: Delete ALL events for this class.
-                 
-                 await supabase.from('calendar_events').delete().eq('class_id', classId);
-                 
-                 if (events.length > 0) {
-                     const { error: insertError } = await supabase
-                         .from('calendar_events')
-                         .insert(events);
-                     
-                     if (insertError) console.error('Error regenerating calendar events:', insertError);
-                 }
-             }
+            if (insertError)
+              console.error('Error regenerating calendar events:', insertError);
+          }
         }
+      }
     }
 
-    await logAuditAction(user.id, 'class.updated', 'class', classId, updateData);
+    await logAuditAction(
+      user.id,
+      'class.updated',
+      'class',
+      classId,
+      updateData
+    );
 
     // Check for schedule/location changes and notify parents
     const changes: {
-        schedule?: { old: string; new: string };
-        location?: { old: string; new: string };
-        dates?: { old: string; new: string };
+      schedule?: { old: string; new: string };
+      location?: { old: string; new: string };
+      dates?: { old: string; new: string };
     } = {};
     let shouldNotify = false;
 
     // Check location
     if (input.location && input.location !== existingClass.location) {
-        changes.location = { 
-            old: existingClass.location || 'TBA', 
-            new: input.location 
-        };
-        shouldNotify = true;
+      changes.location = {
+        old: existingClass.location || 'TBA',
+        new: input.location,
+      };
+      shouldNotify = true;
     }
 
     // Check schedule (Day/Block)
     if (input.schedule_config) {
-        const oldConfig = existingClass.schedule_config as unknown as ScheduleConfig | null;
-        const oldSchedule = oldConfig
-            ? `${oldConfig.day} ${oldConfig.block}`
-            : 'TBA';
-        const newSchedule = `${input.schedule_config.day} ${input.schedule_config.block}`;
-        
-        if (oldSchedule !== newSchedule) {
-            changes.schedule = { old: oldSchedule, new: newSchedule };
-            shouldNotify = true;
-        }
+      const oldConfig =
+        existingClass.schedule_config as unknown as ScheduleConfig | null;
+      const oldSchedule = oldConfig
+        ? `${oldConfig.day} ${oldConfig.block}`
+        : 'TBA';
+      const newSchedule = `${input.schedule_config.day} ${input.schedule_config.block}`;
 
-        // Check dates
-        const oldDates = existingClass.start_date && existingClass.end_date
-            ? `${existingClass.start_date} to ${existingClass.end_date}`
-            : 'TBA';
-        const newDates = input.schedule_config.startDate && input.schedule_config.endDate
-            ? `${input.schedule_config.startDate} to ${input.schedule_config.endDate}`
-            : 'TBA';
+      if (oldSchedule !== newSchedule) {
+        changes.schedule = { old: oldSchedule, new: newSchedule };
+        shouldNotify = true;
+      }
 
-        if (oldDates !== newDates) {
-            changes.dates = { old: oldDates, new: newDates };
-            shouldNotify = true;
-        }
+      // Check dates
+      const oldDates =
+        existingClass.start_date && existingClass.end_date
+          ? `${existingClass.start_date} to ${existingClass.end_date}`
+          : 'TBA';
+      const newDates =
+        input.schedule_config.startDate && input.schedule_config.endDate
+          ? `${input.schedule_config.startDate} to ${input.schedule_config.endDate}`
+          : 'TBA';
+
+      if (oldDates !== newDates) {
+        changes.dates = { old: oldDates, new: newDates };
+        shouldNotify = true;
+      }
     }
 
     if (shouldNotify) {
-        // Fetch enrollments
-        const { data: enrollments } = await supabase
-            .from('enrollments')
-            .select('*, student:family_members(*)')
-            .eq('class_id', classId)
-            .in('status', ['confirmed', 'pending']);
+      // Fetch enrollments
+      const { data: enrollments } = await supabase
+        .from('enrollments')
+        .select('*, student:family_members(*)')
+        .eq('class_id', classId)
+        .in('status', ['confirmed', 'pending']);
 
-        if (enrollments && enrollments.length > 0) {
-           for (const enrollment of enrollments) {
-               if (enrollment.student?.parent_id) {
-                   const { data: parent } = await supabase
-                       .from('profiles')
-                       .select('email, first_name, last_name')
-                       .eq('id', enrollment.student.parent_id)
-                       .single();
+      if (enrollments && enrollments.length > 0) {
+        for (const enrollment of enrollments) {
+          if (enrollment.student?.parent_id) {
+            const { data: parent } = await supabase
+              .from('profiles')
+              .select('email, first_name, last_name')
+              .eq('id', enrollment.student.parent_id)
+              .single();
 
-                   if (parent) {
-                       await sendScheduleChangeNotification({
-                           parentEmail: parent.email,
-                           parentName: `${parent.first_name} ${parent.last_name}`,
-                           studentName: `${enrollment.student.first_name} ${enrollment.student.last_name}`,
-                           className: existingClass.name, // Use original name or new name? Using original for now, usually name doesn't change with schedule often
-                           changes
-                       });
-                   }
-               }
-           }
+            if (parent) {
+              await sendScheduleChangeNotification({
+                parentEmail: parent.email,
+                parentName: `${parent.first_name} ${parent.last_name}`,
+                studentName: `${enrollment.student.first_name} ${enrollment.student.last_name}`,
+                className: existingClass.name, // Use original name or new name? Using original for now, usually name doesn't change with schedule often
+                changes,
+              });
+            }
+          }
         }
+      }
     }
 
     revalidatePath('/teacher/classes');
@@ -568,10 +623,14 @@ export async function updateClass(
 /**
  * Delete a class (drafts only, soft-delete for published)
  */
-export async function deleteClass(classId: string): Promise<ActionResult<void>> {
+export async function deleteClass(
+  classId: string
+): Promise<ActionResult<void>> {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -595,7 +654,8 @@ export async function deleteClass(classId: string): Promise<ActionResult<void>> 
       .single();
 
     const isOwner = existingClass.teacher_id === user.id;
-    const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+    const isAdmin =
+      profile?.role === 'admin' || profile?.role === 'super_admin';
 
     if (!isOwner && !isAdmin) {
       return { success: false, error: 'Not authorized to delete this class' };
@@ -623,11 +683,13 @@ export async function deleteClass(classId: string): Promise<ActionResult<void>> 
     }
 
     if (existingClass.status === 'draft') {
-        // Only log/revalidate if we did manual delete. 
-        // cancelClass handles its own logging/revalidation
-        await logAuditAction(user.id, 'class.deleted', 'class', classId, { name: existingClass.name });
-        revalidatePath('/teacher/classes');
-        revalidatePath('/admin/classes');
+      // Only log/revalidate if we did manual delete.
+      // cancelClass handles its own logging/revalidation
+      await logAuditAction(user.id, 'class.deleted', 'class', classId, {
+        name: existingClass.name,
+      });
+      revalidatePath('/teacher/classes');
+      revalidatePath('/admin/classes');
     }
 
     return { success: true, data: undefined };
@@ -640,10 +702,14 @@ export async function deleteClass(classId: string): Promise<ActionResult<void>> 
 /**
  * Publish a class (draft -> active/published)
  */
-export async function publishClass(classId: string): Promise<ActionResult<void>> {
+export async function publishClass(
+  classId: string
+): Promise<ActionResult<void>> {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -668,7 +734,10 @@ export async function publishClass(classId: string): Promise<ActionResult<void>>
         .single();
 
       if (profile?.role !== 'admin' && profile?.role !== 'super_admin') {
-        return { success: false, error: 'Not authorized to publish this class' };
+        return {
+          success: false,
+          error: 'Not authorized to publish this class',
+        };
       }
     }
 
@@ -686,7 +755,9 @@ export async function publishClass(classId: string): Promise<ActionResult<void>>
       return { success: false, error: error.message };
     }
 
-    await logAuditAction(user.id, 'class.published', 'class', classId, { name: existingClass.name });
+    await logAuditAction(user.id, 'class.published', 'class', classId, {
+      name: existingClass.name,
+    });
     revalidatePath('/teacher/classes');
     revalidatePath('/parent/browse');
 
@@ -700,10 +771,14 @@ export async function publishClass(classId: string): Promise<ActionResult<void>>
 /**
  * Cancel a class (with enrollment handling)
  */
-export async function cancelClass(classId: string): Promise<ActionResult<{ affectedEnrollments: number }>> {
+export async function cancelClass(
+  classId: string
+): Promise<ActionResult<{ affectedEnrollments: number }>> {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -741,31 +816,31 @@ export async function cancelClass(classId: string): Promise<ActionResult<{ affec
 
     // 2. Cancel all relevant enrollments (Update status)
     const { data: affectedEnrollments } = await supabase
-        .from('enrollments')
-        .update({ status: 'cancelled' })
-        .eq('class_id', classId)
-        .in('status', ['confirmed', 'pending', 'waitlisted'])
-        .select('id');
+      .from('enrollments')
+      .update({ status: 'cancelled' })
+      .eq('class_id', classId)
+      .in('status', ['confirmed', 'pending', 'waitlisted'])
+      .select('id');
 
     // Send Cancellation Emails
-    for (const enrollment of (enrollmentsToNotify || [])) {
-        if (enrollment.student?.parent_id) {
-            // Need to fetch parent email
-            const { data: parent } = await supabase
-                .from('profiles')
-                .select('email, first_name, last_name')
-                .eq('id', enrollment.student.parent_id)
-                .single();
-            
-            if (parent) {
-                await sendClassCancellation({
-                    parentEmail: parent.email,
-                    parentName: `${parent.first_name} ${parent.last_name}`,
-                    studentName: `${enrollment.student.first_name} ${enrollment.student.last_name}`,
-                    className: enrollment.class?.name || existingClass.name,
-                });
-            }
+    for (const enrollment of enrollmentsToNotify || []) {
+      if (enrollment.student?.parent_id) {
+        // Need to fetch parent email
+        const { data: parent } = await supabase
+          .from('profiles')
+          .select('email, first_name, last_name')
+          .eq('id', enrollment.student.parent_id)
+          .single();
+
+        if (parent) {
+          await sendClassCancellation({
+            parentEmail: parent.email,
+            parentName: `${parent.first_name} ${parent.last_name}`,
+            studentName: `${enrollment.student.first_name} ${enrollment.student.last_name}`,
+            className: enrollment.class?.name || existingClass.name,
+          });
         }
+      }
     }
 
     // Update class status
@@ -786,7 +861,10 @@ export async function cancelClass(classId: string): Promise<ActionResult<{ affec
     revalidatePath('/teacher/classes');
     revalidatePath('/parent/enrollments');
 
-    return { success: true, data: { affectedEnrollments: affectedEnrollments?.length || 0 } };
+    return {
+      success: true,
+      data: { affectedEnrollments: affectedEnrollments?.length || 0 },
+    };
   } catch (err) {
     console.error('Unexpected error in cancelClass:', err);
     return { success: false, error: 'An unexpected error occurred' };
@@ -796,10 +874,14 @@ export async function cancelClass(classId: string): Promise<ActionResult<{ affec
 /**
  * Complete a class (mark as finished)
  */
-export async function completeClass(classId: string): Promise<ActionResult<void>> {
+export async function completeClass(
+  classId: string
+): Promise<ActionResult<void>> {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -824,12 +906,18 @@ export async function completeClass(classId: string): Promise<ActionResult<void>
         .single();
 
       if (profile?.role !== 'admin' && profile?.role !== 'super_admin') {
-        return { success: false, error: 'Not authorized to complete this class' };
+        return {
+          success: false,
+          error: 'Not authorized to complete this class',
+        };
       }
     }
 
     if (existingClass.status !== 'published') {
-      return { success: false, error: 'Only published classes can be completed' };
+      return {
+        success: false,
+        error: 'Only published classes can be completed',
+      };
     }
 
     const { error } = await supabase
@@ -842,7 +930,9 @@ export async function completeClass(classId: string): Promise<ActionResult<void>
       return { success: false, error: error.message };
     }
 
-    await logAuditAction(user.id, 'class.completed', 'class', classId, { name: existingClass.name });
+    await logAuditAction(user.id, 'class.completed', 'class', classId, {
+      name: existingClass.name,
+    });
     revalidatePath('/teacher/classes');
 
     return { success: true, data: undefined };
@@ -855,10 +945,14 @@ export async function completeClass(classId: string): Promise<ActionResult<void>
 /**
  * Get all classes for the current teacher
  */
-export async function getTeacherClasses(): Promise<ActionResult<ClassWithTeacher[]>> {
+export async function getTeacherClasses(): Promise<
+  ActionResult<ClassWithTeacher[]>
+> {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -866,7 +960,8 @@ export async function getTeacherClasses(): Promise<ActionResult<ClassWithTeacher
 
     const { data: classes, error } = await supabase
       .from('classes')
-      .select(`
+      .select(
+        `
         *,
         teacher:profiles!teacher_id (
           id,
@@ -874,11 +969,10 @@ export async function getTeacherClasses(): Promise<ActionResult<ClassWithTeacher
           last_name,
           email
         )
-      `)
+      `
+      )
       .eq('teacher_id', user.id)
       .order('created_at', { ascending: false });
-
-
 
     if (error) {
       console.error('Error fetching teacher classes:', error);
@@ -901,7 +995,9 @@ export async function getAllClasses(
 ): Promise<ActionResult<{ classes: ClassWithTeacher[]; total: number }>> {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -919,9 +1015,8 @@ export async function getAllClasses(
       return { success: false, error: 'Not authorized to view all classes' };
     }
 
-    let query = supabase
-      .from('classes')
-      .select(`
+    let query = supabase.from('classes').select(
+      `
         *,
         teacher:profiles!teacher_id (
           id,
@@ -929,7 +1024,9 @@ export async function getAllClasses(
           last_name,
           email
         )
-      `, { count: 'exact' });
+      `,
+      { count: 'exact' }
+    );
 
     // Apply filters
     if (filters?.status) {
@@ -942,17 +1039,19 @@ export async function getAllClasses(
 
     if (filters?.search) {
       // Search by class name or description
-      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+      query = query.or(
+        `name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
+      );
     }
-    
+
     // Sort by created_at desc by default
     query = query.order('created_at', { ascending: false });
 
     // Pagination
     if (filters?.page && filters?.limit) {
-        const from = (filters.page - 1) * filters.limit;
-        const to = from + filters.limit - 1;
-        query = query.range(from, to);
+      const from = (filters.page - 1) * filters.limit;
+      const to = from + filters.limit - 1;
+      query = query.range(from, to);
     }
 
     const { data, count, error } = await query;
@@ -962,12 +1061,12 @@ export async function getAllClasses(
       return { success: false, error: error.message };
     }
 
-    return { 
-        success: true, 
-        data: { 
-            classes: data as ClassWithTeacher[], 
-            total: count || 0 
-        } 
+    return {
+      success: true,
+      data: {
+        classes: data as ClassWithTeacher[],
+        total: count || 0,
+      },
     };
   } catch (err) {
     console.error('Unexpected error in getAllClasses:', err);
@@ -985,7 +1084,9 @@ export async function adminUpdateClass(
 ): Promise<ActionResult<void>> {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -1010,22 +1111,23 @@ export async function adminUpdateClass(
       .single();
 
     if (!existingClass) {
-        return { success: false, error: 'Class not found' };
+      return { success: false, error: 'Class not found' };
     }
 
     // Update class
     const updateData: Record<string, unknown> = {};
     if (input.name !== undefined) updateData.name = input.name;
-    if (input.description !== undefined) updateData.description = input.description;
+    if (input.description !== undefined)
+      updateData.description = input.description;
     updateData.price = 3000; // Fixed $30 for all classes
     if (input.capacity !== undefined) updateData.capacity = input.capacity;
-    
+
     if (input.schedule_config !== undefined) {
-        updateData.schedule_config = input.schedule_config;
-        updateData.day = input.schedule_config.day;
-        updateData.block = input.schedule_config.block;
-        updateData.start_date = input.schedule_config.startDate;
-        updateData.end_date = input.schedule_config.endDate;
+      updateData.schedule_config = input.schedule_config;
+      updateData.day = input.schedule_config.day;
+      updateData.block = input.schedule_config.block;
+      updateData.start_date = input.schedule_config.startDate;
+      updateData.end_date = input.schedule_config.endDate;
     }
 
     if (input.location !== undefined) updateData.location = input.location;
@@ -1044,86 +1146,95 @@ export async function adminUpdateClass(
       return { success: false, error: error.message };
     }
 
-    await logAuditAction(user.id, 'admin.class.updated', 'class', classId, updateData);
+    await logAuditAction(
+      user.id,
+      'admin.class.updated',
+      'class',
+      classId,
+      updateData
+    );
 
     // Check for schedule/location changes and notify parents
     const changes: {
-        schedule?: { old: string; new: string };
-        location?: { old: string; new: string };
-        dates?: { old: string; new: string };
+      schedule?: { old: string; new: string };
+      location?: { old: string; new: string };
+      dates?: { old: string; new: string };
     } = {};
     let shouldNotify = false;
 
     // Check location
     if (input.location && input.location !== existingClass.location) {
-        changes.location = { 
-            old: existingClass.location || 'TBA', 
-            new: input.location 
-        };
-        shouldNotify = true;
+      changes.location = {
+        old: existingClass.location || 'TBA',
+        new: input.location,
+      };
+      shouldNotify = true;
     }
 
     // Check schedule (Day/Block)
     if (input.schedule_config) {
-        const oldConfig = existingClass.schedule_config as unknown as ScheduleConfig | null;
-        const oldSchedule = oldConfig
-            ? `${oldConfig.day} ${oldConfig.block}`
-            : 'TBA';
-        const newSchedule = `${input.schedule_config.day} ${input.schedule_config.block}`;
-        
-        if (oldSchedule !== newSchedule) {
-            changes.schedule = { old: oldSchedule, new: newSchedule };
-            shouldNotify = true;
-        }
+      const oldConfig =
+        existingClass.schedule_config as unknown as ScheduleConfig | null;
+      const oldSchedule = oldConfig
+        ? `${oldConfig.day} ${oldConfig.block}`
+        : 'TBA';
+      const newSchedule = `${input.schedule_config.day} ${input.schedule_config.block}`;
 
-        // Check dates
-        const oldDates = existingClass.start_date && existingClass.end_date
-            ? `${existingClass.start_date} to ${existingClass.end_date}`
-            : 'TBA';
-        const newDates = input.schedule_config.startDate && input.schedule_config.endDate
-            ? `${input.schedule_config.startDate} to ${input.schedule_config.endDate}`
-            : 'TBA';
+      if (oldSchedule !== newSchedule) {
+        changes.schedule = { old: oldSchedule, new: newSchedule };
+        shouldNotify = true;
+      }
 
-        if (oldDates !== newDates) {
-            changes.dates = { old: oldDates, new: newDates };
-            shouldNotify = true;
-        }
+      // Check dates
+      const oldDates =
+        existingClass.start_date && existingClass.end_date
+          ? `${existingClass.start_date} to ${existingClass.end_date}`
+          : 'TBA';
+      const newDates =
+        input.schedule_config.startDate && input.schedule_config.endDate
+          ? `${input.schedule_config.startDate} to ${input.schedule_config.endDate}`
+          : 'TBA';
+
+      if (oldDates !== newDates) {
+        changes.dates = { old: oldDates, new: newDates };
+        shouldNotify = true;
+      }
     }
 
     if (shouldNotify) {
-        // Fetch enrollments
-        const { data: enrollments } = await supabase
-            .from('enrollments')
-            .select('*, student:family_members(*)')
-            .eq('class_id', classId)
-            .in('status', ['confirmed', 'pending']);
+      // Fetch enrollments
+      const { data: enrollments } = await supabase
+        .from('enrollments')
+        .select('*, student:family_members(*)')
+        .eq('class_id', classId)
+        .in('status', ['confirmed', 'pending']);
 
-        if (enrollments && enrollments.length > 0) {
-           for (const enrollment of enrollments) {
-               if (enrollment.student?.parent_id) {
-                   const { data: parent } = await supabase
-                       .from('profiles')
-                       .select('email, first_name, last_name')
-                       .eq('id', enrollment.student.parent_id)
-                       .single();
+      if (enrollments && enrollments.length > 0) {
+        for (const enrollment of enrollments) {
+          if (enrollment.student?.parent_id) {
+            const { data: parent } = await supabase
+              .from('profiles')
+              .select('email, first_name, last_name')
+              .eq('id', enrollment.student.parent_id)
+              .single();
 
-                   if (parent) {
-                       await sendScheduleChangeNotification({
-                           parentEmail: parent.email,
-                           parentName: `${parent.first_name} ${parent.last_name}`,
-                           studentName: `${enrollment.student.first_name} ${enrollment.student.last_name}`,
-                           className: existingClass.name, 
-                           changes
-                       });
-                   }
-               }
-           }
+            if (parent) {
+              await sendScheduleChangeNotification({
+                parentEmail: parent.email,
+                parentName: `${parent.first_name} ${parent.last_name}`,
+                studentName: `${enrollment.student.first_name} ${enrollment.student.last_name}`,
+                className: existingClass.name,
+                changes,
+              });
+            }
+          }
         }
+      }
     }
 
     revalidatePath('/admin/classes');
     revalidatePath(`/admin/classes/${classId}`);
-    
+
     return { success: true, data: undefined };
   } catch (err) {
     console.error('Unexpected error in adminUpdateClass:', err);
@@ -1134,6 +1245,8 @@ export async function adminUpdateClass(
 /**
  * Admin Delete Class
  */
-export async function adminDeleteClass(classId: string): Promise<ActionResult<void>> {
+export async function adminDeleteClass(
+  classId: string
+): Promise<ActionResult<void>> {
   return deleteClass(classId);
 }

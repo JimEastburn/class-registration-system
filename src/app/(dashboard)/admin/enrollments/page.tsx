@@ -11,7 +11,12 @@ export const metadata = {
 export default async function AdminEnrollmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; search?: string; status?: string; classId?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    search?: string;
+    status?: string;
+    classId?: string;
+  }>;
 }) {
   const params = await searchParams;
   const page = Number(params.page) || 1;
@@ -21,25 +26,35 @@ export default async function AdminEnrollmentsPage({
   const limit = 20;
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
   const allowedRoles = ['admin', 'super_admin', 'class_scheduler'];
-  
+
   if (!profile || !allowedRoles.includes(profile.role)) {
-      redirect('/');
+    redirect('/');
   }
 
-  const { data: enrollments, count, error } = await getAllEnrollments(page, limit, { 
-      search, 
-      status: status as EnrollmentStatus | 'all', 
-      classId 
+  const {
+    data: enrollments,
+    count,
+    error,
+  } = await getAllEnrollments(page, limit, {
+    search,
+    status: status as EnrollmentStatus | 'all',
+    classId,
   });
 
   if (error) {
-      return <div>Error loading enrollments: {error}</div>;
+    return <div>Error loading enrollments: {error}</div>;
   }
 
   const totalPages = Math.ceil(count / limit);
@@ -47,11 +62,13 @@ export default async function AdminEnrollmentsPage({
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Enrollment Management</h2>
+        <h2 className="text-3xl font-bold tracking-tight">
+          Enrollment Management
+        </h2>
       </div>
-      
-      <EnrollmentManagementTable 
-        enrollments={enrollments || []} 
+
+      <EnrollmentManagementTable
+        enrollments={enrollments || []}
         totalCount={count}
         currentPage={page}
         totalPages={totalPages}

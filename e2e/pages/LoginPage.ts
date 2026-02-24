@@ -3,7 +3,7 @@ import { BasePage } from './BasePage';
 
 /**
  * Login Page Object
- * 
+ *
  * Handles login form interactions.
  */
 export class LoginPage extends BasePage {
@@ -12,7 +12,7 @@ export class LoginPage extends BasePage {
   readonly submitButton: Locator;
   readonly signUpLink: Locator;
   readonly forgotPasswordLink: Locator;
-  
+
   constructor(page: Page) {
     super(page);
     this.emailInput = page.locator('input[name="email"]');
@@ -21,7 +21,7 @@ export class LoginPage extends BasePage {
     this.signUpLink = page.getByTestId('signup-link');
     this.forgotPasswordLink = page.getByTestId('forgot-password-link');
   }
-  
+
   /**
    * Navigate to login page
    */
@@ -30,7 +30,7 @@ export class LoginPage extends BasePage {
     // Wait for the form to be ready
     await this.emailInput.waitFor({ state: 'visible', timeout: 10000 });
   }
-  
+
   /**
    * Fill login form
    */
@@ -38,14 +38,14 @@ export class LoginPage extends BasePage {
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
   }
-  
+
   /**
    * Submit login form
    */
   async submit(): Promise<void> {
     await this.submitButton.click();
   }
-  
+
   /**
    * Complete login process
    */
@@ -55,14 +55,14 @@ export class LoginPage extends BasePage {
     // Wait for initial navigation after submit
     await this.page.waitForLoadState('domcontentloaded');
   }
-  
+
   /**
    * Navigate to registration page
    */
   async goToSignUp(): Promise<void> {
     await this.signUpLink.click();
   }
-  
+
   /**
    * Navigate to forgot password page
    */

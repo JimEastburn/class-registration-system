@@ -2,113 +2,143 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-    const { searchParams } = new URL(request.url);
-    const paymentId = searchParams.get('id');
+  const { searchParams } = new URL(request.url);
+  const paymentId = searchParams.get('id');
 
-    if (!paymentId) {
-        return NextResponse.json({ error: 'Payment ID required' }, { status: 400 });
-    }
+  if (!paymentId) {
+    return NextResponse.json({ error: 'Payment ID required' }, { status: 400 });
+  }
 
-    // Get payment with related data
-    const { data: payment, error } = await supabase
-        .from('payments')
-        .select(`
+  // Get payment with related data
+  const { data: payment, error } = await supabase
+    .from('payments')
+    .select(
+      `
             *,
             enrollment:enrollments(
                 student:family_members(first_name, last_name),
                 class:classes(name, fee, schedule, location, start_date, end_date),
                 parent:profiles!enrollments_parent_id_fkey(first_name, last_name, email, phone)
             )
-        `)
-        .eq('id', paymentId)
-        .single();
+        `
+    )
+    .eq('id', paymentId)
+    .single();
 
-    if (error || !payment) {
-        return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
-    }
+  if (error || !payment) {
+    return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
+  }
 
-    // Verify the user has access to this payment
-    const isAdmin = user.user_metadata?.role === 'admin';
-    const enrollment = payment.enrollment as unknown as {
-        student: { first_name: string; last_name: string };
-        class: { name: string; fee: number; schedule: string; location: string; start_date: string; end_date: string };
-        parent: { first_name: string; last_name: string; email: string; phone: string };
+  // Verify the user has access to this payment
+  const isAdmin = user.user_metadata?.role === 'admin';
+  const enrollment = payment.enrollment as unknown as {
+    student: { first_name: string; last_name: string };
+    class: {
+      name: string;
+      fee: number;
+      schedule: string;
+      location: string;
+      start_date: string;
+      end_date: string;
     };
+    parent: {
+      first_name: string;
+      last_name: string;
+      email: string;
+      phone: string;
+    };
+  };
 
-    // Check if user is the parent of this enrollment or an admin
-    if (!isAdmin) {
-        // Get family members for this user
-        const { data: familyMembers } = await supabase
-            .from('family_members')
-            .select('id')
-            .eq('parent_id', user.id);
+  // Check if user is the parent of this enrollment or an admin
+  if (!isAdmin) {
+    // Get family members for this user
+    const { data: familyMembers } = await supabase
+      .from('family_members')
+      .select('id')
+      .eq('parent_id', user.id);
 
-        const familyMemberIds = familyMembers?.map(fm => fm.id) || [];
+    const familyMemberIds = familyMembers?.map((fm) => fm.id) || [];
 
-        const { data: userEnrollments } = await supabase
-            .from('enrollments')
-            .select('id')
-            .in('student_id', familyMemberIds);
+    const { data: userEnrollments } = await supabase
+      .from('enrollments')
+      .select('id')
+      .in('student_id', familyMemberIds);
 
-        const enrollmentIds = userEnrollments?.map(e => e.id) || [];
+    const enrollmentIds = userEnrollments?.map((e) => e.id) || [];
 
-        if (!enrollmentIds.includes(payment.enrollment_id)) {
-            return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-        }
+    if (!enrollmentIds.includes(payment.enrollment_id)) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
+  }
 
-    // Generate invoice HTML
-    const invoiceNumber = `INV-${payment.id.slice(0, 8).toUpperCase()}`;
-    const invoiceDate = new Date(payment.created_at || new Date()).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
+  // Generate invoice HTML
+  const invoiceNumber = `INV-${payment.id.slice(0, 8).toUpperCase()}`;
+  const invoiceDate = new Date(
+    payment.created_at || new Date()
+  ).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
-    const html = generateInvoiceHTML({
-        invoiceNumber,
-        invoiceDate,
-        payment,
-        enrollment,
-    });
+  const html = generateInvoiceHTML({
+    invoiceNumber,
+    invoiceDate,
+    payment,
+    enrollment,
+  });
 
-    return new NextResponse(html, {
-        headers: {
-            'Content-Type': 'text/html',
-        },
-    });
+  return new NextResponse(html, {
+    headers: {
+      'Content-Type': 'text/html',
+    },
+  });
 }
 
 interface InvoiceData {
-    invoiceNumber: string;
-    invoiceDate: string;
-    payment: {
-        id: string;
-        amount: number;
-        status: string;
-        stripe_payment_id: string | null;
-        created_at: string | null;
+  invoiceNumber: string;
+  invoiceDate: string;
+  payment: {
+    id: string;
+    amount: number;
+    status: string;
+    stripe_payment_id: string | null;
+    created_at: string | null;
+  };
+  enrollment: {
+    student: { first_name: string; last_name: string };
+    class: {
+      name: string;
+      fee: number;
+      schedule: string;
+      location: string;
+      start_date: string;
+      end_date: string;
     };
-    enrollment: {
-        student: { first_name: string; last_name: string };
-        class: { name: string; fee: number; schedule: string; location: string; start_date: string; end_date: string };
-        parent: { first_name: string; last_name: string; email: string; phone: string };
+    parent: {
+      first_name: string;
+      last_name: string;
+      email: string;
+      phone: string;
     };
+  };
 }
 
 function generateInvoiceHTML(data: InvoiceData): string {
-    const { invoiceNumber, invoiceDate, payment, enrollment } = data;
-    const isPaid = payment.status === 'completed';
-    const isRefunded = payment.status === 'refunded';
+  const { invoiceNumber, invoiceDate, payment, enrollment } = data;
+  const isPaid = payment.status === 'completed';
+  const isRefunded = payment.status === 'refunded';
 
-    return `
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -343,21 +373,29 @@ function generateInvoiceHTML(data: InvoiceData): string {
                     <span>Total</span>
                     <span ${isRefunded ? 'style="text-decoration: line-through;"' : ''}>$${payment.amount.toFixed(2)}</span>
                 </div>
-                ${isRefunded ? `
+                ${
+                  isRefunded
+                    ? `
                 <div class="total-row" style="color: #7c3aed;">
                     <span>Refunded</span>
                     <span>-$${payment.amount.toFixed(2)}</span>
                 </div>
-                ` : ''}
+                `
+                    : ''
+                }
             </div>
         </div>
 
         <div class="footer">
             <p>Thank you for enrolling with us!</p>
             <p style="margin-top: 8px;">Questions? Contact us at support@classreg.com</p>
-            ${payment.stripe_payment_id ? `
+            ${
+              payment.stripe_payment_id
+                ? `
             <p class="transaction-id">Transaction ID: ${payment.stripe_payment_id}</p>
-            ` : ''}
+            `
+                : ''
+            }
         </div>
 
         <div class="no-print" style="text-align: center; margin-top: 40px;">

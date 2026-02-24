@@ -23,9 +23,7 @@ export function WaitlistPositionBadge({
 }: WaitlistPositionBadgeProps) {
   const getPositionLabel = (pos: number) => {
     const suffix =
-      pos === 1 ? 'st' :
-      pos === 2 ? 'nd' :
-      pos === 3 ? 'rd' : 'th';
+      pos === 1 ? 'st' : pos === 2 ? 'nd' : pos === 3 ? 'rd' : 'th';
     return `${pos}${suffix}`;
   };
 
@@ -34,12 +32,11 @@ export function WaitlistPositionBadge({
       <Badge
         variant="outline"
         className={cn(
-          'gap-1 bg-amber-50 text-amber-700 border-amber-200',
+          'gap-1 border-amber-200 bg-amber-50 text-amber-700',
           className
         )}
       >
-        <Clock className="h-3 w-3" />
-        #{position}
+        <Clock className="h-3 w-3" />#{position}
       </Badge>
     );
   }
@@ -48,14 +45,14 @@ export function WaitlistPositionBadge({
     <div className={cn('flex items-center gap-2', className)}>
       <Badge
         variant="outline"
-        className="gap-1.5 bg-amber-50 text-amber-700 border-amber-200 px-3 py-1"
+        className="gap-1.5 border-amber-200 bg-amber-50 px-3 py-1 text-amber-700"
       >
         <Clock className="h-4 w-4" />
         <span className="font-semibold">{getPositionLabel(position)}</span>
         <span className="text-amber-600">on waitlist</span>
       </Badge>
       {totalWaitlisted !== undefined && totalWaitlisted > 1 && (
-        <span className="text-sm text-muted-foreground flex items-center gap-1">
+        <span className="text-muted-foreground flex items-center gap-1 text-sm">
           <Users className="h-3.5 w-3.5" />
           {totalWaitlisted} waiting
         </span>

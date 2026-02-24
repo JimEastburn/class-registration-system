@@ -42,7 +42,10 @@ export function isViewAllowed(
 /**
  * Get the allowed portal views for a user role
  */
-export function getAllowedViews(role: UserRole, isParent: boolean): PortalView[] {
+export function getAllowedViews(
+  role: UserRole,
+  isParent: boolean
+): PortalView[] {
   if (role === 'super_admin') {
     return ['admin', 'class_scheduler', 'teacher', 'parent'];
   }

@@ -417,7 +417,7 @@ Style queries allow querying CSS custom property values. Currently limited suppo
 // Tailwind v3.2+ supports container queries
 // tailwind.config.js
 module.exports = {
-  plugins: [require("@tailwindcss/container-queries")],
+  plugins: [require('@tailwindcss/container-queries')],
 };
 
 // Component usage
@@ -429,13 +429,13 @@ function Card({ title, image, description }) {
         <img
           src={image}
           alt=""
-          className="w-full @md:w-48 @lg:w-64 aspect-video @md:aspect-square object-cover rounded-lg"
+          className="aspect-video w-full rounded-lg object-cover @md:aspect-square @md:w-48 @lg:w-64"
         />
         <div className="p-4 @md:p-0">
-          <h2 className="text-lg @md:text-xl @lg:text-2xl font-semibold">
+          <h2 className="text-lg font-semibold @md:text-xl @lg:text-2xl">
             {title}
           </h2>
-          <p className="mt-2 text-muted-foreground @lg:text-lg">
+          <p className="text-muted-foreground mt-2 @lg:text-lg">
             {description}
           </p>
         </div>
@@ -544,16 +544,16 @@ function Dashboard() {
 
 ```javascript
 // Test container query support
-const supportsContainerQueries = CSS.supports("container-type", "inline-size");
+const supportsContainerQueries = CSS.supports('container-type', 'inline-size');
 
 // Resize observer for testing
 const observer = new ResizeObserver((entries) => {
   for (const entry of entries) {
-    console.log("Container width:", entry.contentRect.width);
+    console.log('Container width:', entry.contentRect.width);
   }
 });
 
-observer.observe(document.querySelector(".container"));
+observer.observe(document.querySelector('.container'));
 ```
 
 ## Resources

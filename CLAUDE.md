@@ -36,12 +36,14 @@ The system has **five roles** with specific permissions:
 - `class_scheduler` - Can set class schedules (restricted to parents/admins only)
 
 **Key constraints:**
+
 - Teachers **cannot** set class schedules (forced to "To Be Announced")
 - Only class_schedulers and admins can set schedules
 - Admin, teacher, and class_scheduler users can switch to parent view
 - Roles stored in `profiles.role` (database) and synced to `auth.users.user_metadata.role`
 
 **Authorization layers:**
+
 1. Database RLS (Row-Level Security) using `SECURITY DEFINER` functions
 2. Application-level checks in server actions via `user.user_metadata?.role`
 3. UI conditional rendering (not security boundary)
@@ -71,6 +73,7 @@ Return ActionResult type
 ### Database Architecture
 
 **Core relationships:**
+
 ```
 auth.users (1:1) → profiles (1:N parent_id) → family_members (1:N student_id) → enrollments (1:1) → payments
                                                                                 ↑
@@ -78,17 +81,20 @@ auth.users (1:1) → profiles (1:N parent_id) → family_members (1:N student_id
 ```
 
 **Capacity management:**
+
 - `classes.current_enrollment` automatically maintained by database trigger
 - Trigger: `update_enrollment_count()` increments/decrements on enrollment status changes
 - Only 'confirmed' enrollments count toward capacity
 - Application checks capacity before enrollment: `current_enrollment >= max_students`
 
 **Waitlist system:**
+
 - Separate `waitlist` table with position tracking
 - Manual promotion (no automatic processing to avoid race conditions)
 - UNIQUE constraint on (class_id, student_id) prevents duplicates
 
 **Class blocks:**
+
 - Teachers can block specific students from their classes
 - Trigger automatically cancels enrollments when block is added
 - Checked before new enrollments are created
@@ -98,11 +104,13 @@ auth.users (1:1) → profiles (1:N parent_id) → family_members (1:N student_id
 **Three-phase flow:**
 
 **Phase 1 - Checkout (`/api/checkout/route.ts`):**
+
 1. Verify enrollment exists with status 'pending'
 2. Create Stripe checkout session
 3. Store pending payment with `transaction_id = session.id`
 
 **Phase 2 - Webhook (`/api/webhooks/stripe/route.ts`):**
+
 1. Verify webhook signature
 2. **Idempotency check** - skip if payment already processed
 3. Update payment status to 'completed'
@@ -111,6 +119,7 @@ auth.users (1:1) → profiles (1:N parent_id) → family_members (1:N student_id
 6. Send receipt email
 
 **Phase 3 - Zoho Sync (`src/lib/zoho.ts`):**
+
 - Asynchronous, failures don't affect enrollment
 - Sync status tracked: pending → synced/failed
 - Failed syncs can be retried via admin panel
@@ -130,15 +139,18 @@ Three client configurations for different contexts:
 ### Authentication Flow
 
 **Registration:**
+
 - Standard flow sends confirmation email
 - Test users (`test.*` or `test+*` emails) bypass confirmation via admin API
 - Profile creation handled by database trigger (`on_auth_user_created`)
 
 **Self-healing login:**
+
 - If profile is missing during login, it's created on-the-fly using auth metadata
 - Prevents system breakage from auth/database sync issues
 
 **Middleware:**
+
 - Refreshes session on every request
 - Protects routes: `/parent`, `/teacher`, `/student`, `/admin`
 - Redirects authenticated users away from `/login`, `/register`
@@ -168,6 +180,7 @@ Three client configurations for different contexts:
 **Mocking:** Supabase, Stripe, and Next.js navigation are globally mocked in `vitest.setup.ts`
 
 **Key test patterns:**
+
 - Test both success and error paths
 - Verify authorization checks in server actions
 - Use `beforeEach` to reset mocks
@@ -187,6 +200,7 @@ Migrations located in `supabase/migrations/`. Key migrations:
 **Full schema:** `supabase/full_schema.sql` contains complete unified schema.
 
 To apply migrations:
+
 ```bash
 supabase db push
 ```
@@ -213,6 +227,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ## Key Files & Directories
 
 **Server Actions:** `src/lib/actions/`
+
 - `admin.ts` - Role management, user administration
 - `auth.ts` - Registration, login, self-healing profiles
 - `classes.ts` - Class CRUD, schedule restrictions
@@ -221,14 +236,17 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - `waitlist.ts` - Waitlist management, position tracking
 
 **Database:** `supabase/`
+
 - `migrations/` - Incremental schema changes
 - `full_schema.sql` - Complete database schema
 
 **API Routes:** `src/app/api/`
+
 - `checkout/route.ts` - Stripe checkout session creation
 - `webhooks/stripe/route.ts` - Webhook processing with idempotency
 
 **Documentation:** `docs/`
+
 - `TESTING.md` - Testing strategy and frameworks
 - `DEPLOYMENT.md` - Vercel deployment guide
 - `architecture_decision_document.md` - Architectural decisions

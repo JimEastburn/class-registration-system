@@ -18,19 +18,28 @@ export default async function AdminUsersPage({
   const limit = 20;
 
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
-      redirect('/');
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (
+    !profile ||
+    (profile.role !== 'admin' && profile.role !== 'super_admin')
+  ) {
+    redirect('/');
   }
 
   const { data: users, count, error } = await getAllUsers(page, limit, search);
 
   if (error) {
-      return <div>Error loading users: {error}</div>;
+    return <div>Error loading users: {error}</div>;
   }
 
   const totalPages = Math.ceil(count / limit);
@@ -40,9 +49,9 @@ export default async function AdminUsersPage({
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
       </div>
-      
-      <UserManagementTable 
-        users={users || []} 
+
+      <UserManagementTable
+        users={users || []}
         totalCount={count}
         currentPage={page}
         totalPages={totalPages}

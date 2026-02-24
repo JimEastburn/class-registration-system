@@ -257,7 +257,9 @@ export interface ProfileAddress {
 /**
  * Get the current user's billing address from their profile
  */
-export async function getProfileAddress(): Promise<ActionResult<ProfileAddress>> {
+export async function getProfileAddress(): Promise<
+  ActionResult<ProfileAddress>
+> {
   const supabase = await createClient();
 
   const {
@@ -305,7 +307,10 @@ export async function updateProfileAddress(data: {
   const parsed = profileAddressSchema.safeParse(data);
 
   if (!parsed.success) {
-    return { success: false, error: parsed.error.issues[0]?.message || 'Invalid address' };
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message || 'Invalid address',
+    };
   }
 
   const supabase = await createClient();

@@ -1,4 +1,3 @@
-
 import { updateProfile } from './profile';
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
@@ -15,11 +14,11 @@ vi.mock('next/cache', () => ({
 
 describe('updateProfile', () => {
   let mockSupabase: {
-      auth: {
-          getUser: ReturnType<typeof vi.fn>;
-          updateUser: ReturnType<typeof vi.fn>;
-      };
-      from: ReturnType<typeof vi.fn>;
+    auth: {
+      getUser: ReturnType<typeof vi.fn>;
+      updateUser: ReturnType<typeof vi.fn>;
+    };
+    from: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -30,7 +29,9 @@ describe('updateProfile', () => {
       },
       from: vi.fn(),
     };
-    (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(mockSupabase);
+    (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      mockSupabase
+    );
     vi.clearAllMocks();
   });
 
@@ -46,7 +47,7 @@ describe('updateProfile', () => {
   it('should update profile successfully', async () => {
     const mockUser = { id: 'user-123' };
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser } });
-    
+
     // Mock profile update
     const mockUpdateOption = { eq: vi.fn().mockResolvedValue({ error: null }) };
     const mockFrom = { update: vi.fn().mockReturnValue(mockUpdateOption) };
@@ -67,20 +68,22 @@ describe('updateProfile', () => {
 
     expect(result).toEqual({ success: true, data: undefined });
     expect(mockSupabase.from).toHaveBeenCalledWith('profiles');
-    expect(mockFrom.update).toHaveBeenCalledWith(expect.objectContaining({
-      first_name: 'John',
-      last_name: 'Doe',
-      phone: '555-5555',
-      bio: 'Hello world',
-      specializations: ['Math', 'Science'],
-    }));
+    expect(mockFrom.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        first_name: 'John',
+        last_name: 'Doe',
+        phone: '555-5555',
+        bio: 'Hello world',
+        specializations: ['Math', 'Science'],
+      })
+    );
     expect(mockUpdateOption.eq).toHaveBeenCalledWith('id', 'user-123');
     expect(mockSupabase.auth.updateUser).toHaveBeenCalledWith({
-        data: {
-            first_name: 'John',
-            last_name: 'Doe',
-            phone: '555-5555',
-        }
+      data: {
+        first_name: 'John',
+        last_name: 'Doe',
+        phone: '555-5555',
+      },
     });
     expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
   });
@@ -88,9 +91,11 @@ describe('updateProfile', () => {
   it('should return error if profile update fails', async () => {
     const mockUser = { id: 'user-123' };
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser } });
-    
+
     // Mock profile update failure
-    const mockUpdateOption = { eq: vi.fn().mockResolvedValue({ error: { message: 'DB Error' } }) };
+    const mockUpdateOption = {
+      eq: vi.fn().mockResolvedValue({ error: { message: 'DB Error' } }),
+    };
     const mockFrom = { update: vi.fn().mockReturnValue(mockUpdateOption) };
     mockSupabase.from.mockReturnValue(mockFrom);
 
@@ -99,6 +104,9 @@ describe('updateProfile', () => {
 
     const result = await updateProfile(formData);
 
-    expect(result).toEqual({ success: false, error: 'Failed to update profile' });
+    expect(result).toEqual({
+      success: false,
+      error: 'Failed to update profile',
+    });
   });
 });

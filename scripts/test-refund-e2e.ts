@@ -32,14 +32,16 @@ async function main() {
   console.log(`📋  Step 1: Fetching payment ${PAYMENT_ID} from Supabase...`);
   const { data: payment, error } = await supabase
     .from('payments')
-    .select(`
+    .select(
+      `
       id, amount, status, transaction_id, sync_status,
       enrollment:enrollments(
         id,
         student:family_members(first_name, last_name),
         class:classes(name)
       )
-    `)
+    `
+    )
     .eq('id', PAYMENT_ID)
     .single();
 
@@ -54,14 +56,20 @@ async function main() {
     class: { name: string };
   };
 
-  console.log(`   ✅ Found: ${enrollment.student.first_name} ${enrollment.student.last_name}`);
+  console.log(
+    `   ✅ Found: ${enrollment.student.first_name} ${enrollment.student.last_name}`
+  );
   console.log(`      Class: ${enrollment.class.name}`);
   console.log(`      Amount: $${Number(payment.amount).toFixed(2)}`);
   console.log(`      Stripe PI: ${payment.transaction_id}`);
-  console.log(`      Status: ${payment.status} | Sync: ${payment.sync_status}\n`);
+  console.log(
+    `      Status: ${payment.status} | Sync: ${payment.sync_status}\n`
+  );
 
   if (payment.status === 'refunded') {
-    console.log('⚠️  Payment is already refunded — skipping Stripe refund, going to Zoho sync.\n');
+    console.log(
+      '⚠️  Payment is already refunded — skipping Stripe refund, going to Zoho sync.\n'
+    );
   } else {
     // 2. Issue Stripe refund
     console.log('💸  Step 2: Issuing Stripe refund...');
@@ -74,12 +82,17 @@ async function main() {
       console.log(`      Amount: $${(refund.amount / 100).toFixed(2)}`);
       console.log(`      Status: ${refund.status}\n`);
     } catch (err) {
-      console.error('❌ Stripe refund failed:', err instanceof Error ? err.message : err);
+      console.error(
+        '❌ Stripe refund failed:',
+        err instanceof Error ? err.message : err
+      );
       process.exit(1);
     }
 
     // 3. Update Supabase (mimics what the webhook does)
-    console.log('🔄  Step 3: Updating Supabase payment status to "refunded"...');
+    console.log(
+      '🔄  Step 3: Updating Supabase payment status to "refunded"...'
+    );
     const { error: updateError } = await supabase
       .from('payments')
       .update({
@@ -96,7 +109,9 @@ async function main() {
   }
 
   // 4. Call syncRefundToZoho
-  console.log('📨  Step 4: Syncing refund to Zoho Books (credit note + refund)...');
+  console.log(
+    '📨  Step 4: Syncing refund to Zoho Books (credit note + refund)...'
+  );
   try {
     // Dynamic import to pick up the .env config
     const { syncRefundToZoho } = await import('../src/lib/zoho');
@@ -110,7 +125,10 @@ async function main() {
       process.exit(1);
     }
   } catch (err) {
-    console.error('❌ syncRefundToZoho threw:', err instanceof Error ? err.message : err);
+    console.error(
+      '❌ syncRefundToZoho threw:',
+      err instanceof Error ? err.message : err
+    );
     process.exit(1);
   }
 

@@ -25,7 +25,11 @@ interface AddressModalProps {
  * Modal dialog that collects a billing address before proceeding to checkout.
  * Shown only when the user's profile is missing address fields.
  */
-export function AddressModal({ open, onComplete, onCancel }: AddressModalProps) {
+export function AddressModal({
+  open,
+  onComplete,
+  onCancel,
+}: AddressModalProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -57,7 +61,7 @@ export function AddressModal({ open, onComplete, onCancel }: AddressModalProps) 
       <DialogContent showCloseButton={false} className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <MapPin className="size-5 text-primary" />
+            <MapPin className="text-primary size-5" />
             <DialogTitle>Billing Address</DialogTitle>
           </div>
           <DialogDescription>
@@ -89,12 +93,7 @@ export function AddressModal({ open, onComplete, onCancel }: AddressModalProps) 
           <div className="grid grid-cols-6 gap-3">
             <div className="col-span-3 space-y-2">
               <Label htmlFor="city">City *</Label>
-              <Input
-                id="city"
-                name="city"
-                placeholder="Austin"
-                required
-              />
+              <Input id="city" name="city" placeholder="Austin" required />
             </div>
             <div className="col-span-1 space-y-2">
               <Label htmlFor="state">State *</Label>
@@ -108,21 +107,19 @@ export function AddressModal({ open, onComplete, onCancel }: AddressModalProps) 
             </div>
             <div className="col-span-2 space-y-2">
               <Label htmlFor="zip">ZIP *</Label>
-              <Input
-                id="zip"
-                name="zip"
-                placeholder="78701"
-                required
-              />
+              <Input id="zip" name="zip" placeholder="78701" required />
             </div>
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
+          {error && <p className="text-destructive text-sm">{error}</p>}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isPending}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isPending}>

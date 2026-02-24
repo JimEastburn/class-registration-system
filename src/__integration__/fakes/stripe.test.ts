@@ -1,4 +1,3 @@
-
 import { describe, it, expect } from 'vitest';
 import { stripeFake } from './stripe';
 
@@ -11,7 +10,7 @@ describe('stripeFake', () => {
         line_items: [{ price: 'price_123', quantity: 1 }],
         mode: 'payment',
       });
-      
+
       expect(session.id).toBeDefined();
       expect(session.id).toMatch(/^cs_test_/);
       expect(session.url).toBeDefined();
@@ -20,7 +19,8 @@ describe('stripeFake', () => {
     });
 
     it('should retrieve a session', async () => {
-      const session = await stripeFake.checkout.sessions.retrieve('cs_test_123');
+      const session =
+        await stripeFake.checkout.sessions.retrieve('cs_test_123');
       expect(session.id).toBe('cs_test_123');
       expect(session.payment_status).toBe('paid');
       expect(session.status).toBe('complete');
@@ -63,21 +63,21 @@ describe('stripeFake', () => {
   });
 
   describe('customers', () => {
-      it('should create a customer', async () => {
-          const customer = await stripeFake.customers.create({
-              email: 'test@example.com',
-              name: 'Test User'
-          });
-          expect(customer.id).toMatch(/^cus_test_/);
-          expect(customer.email).toBe('test@example.com');
+    it('should create a customer', async () => {
+      const customer = await stripeFake.customers.create({
+        email: 'test@example.com',
+        name: 'Test User',
       });
+      expect(customer.id).toMatch(/^cus_test_/);
+      expect(customer.email).toBe('test@example.com');
+    });
 
-      it('should search customers', async () => {
-          const result = await stripeFake.customers.search({
-              query: 'email:\'test@example.com\''
-          });
-          expect(result.data).toBeDefined();
-          expect(Array.isArray(result.data)).toBe(true);
+    it('should search customers', async () => {
+      const result = await stripeFake.customers.search({
+        query: "email:'test@example.com'",
       });
+      expect(result.data).toBeDefined();
+      expect(Array.isArray(result.data)).toBe(true);
+    });
   });
 });

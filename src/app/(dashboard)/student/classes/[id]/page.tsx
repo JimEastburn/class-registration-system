@@ -9,22 +9,28 @@ import { ClassMaterialsList } from '@/components/classes/ClassMaterialsList';
 import { ClassScheduleCard } from '@/components/student/ClassScheduleCard';
 import { resolveStudentFamilyMember } from '@/lib/logic/student-link';
 
-export default async function ClassDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ClassDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
-  
+
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   if (!user) redirect('/login');
 
   const familyMember = await resolveStudentFamilyMember(supabase, user);
 
   if (!familyMember) {
-      return (
-          <div className="p-8 text-center">
-            <h1 className="text-xl font-bold">Account Not Linked</h1>
-          </div>
-      );
+    return (
+      <div className="p-8 text-center">
+        <h1 className="text-xl font-bold">Account Not Linked</h1>
+      </div>
+    );
   }
 
   // Check enrollment
@@ -36,24 +42,26 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
     .single();
 
   if (!enrollment || enrollment.status !== 'confirmed') {
-      return (
-          <div className="p-8 text-center space-y-4">
-              <h1 className="text-xl font-bold text-destructive">Access Denied</h1>
-              <p>You are not enrolled in this class.</p>
-              <Link href="/student/schedule">
-                <Button variant="outline">Back to Schedule</Button>
-              </Link>
-          </div>
-      );
+    return (
+      <div className="space-y-4 p-8 text-center">
+        <h1 className="text-destructive text-xl font-bold">Access Denied</h1>
+        <p>You are not enrolled in this class.</p>
+        <Link href="/student/schedule">
+          <Button variant="outline">Back to Schedule</Button>
+        </Link>
+      </div>
+    );
   }
 
   // Fetch Class Details — separate teacher join to avoid RLS on profiles causing total failure
   const { data: classDetails, error: classError } = await supabase
     .from('classes')
-    .select(`
+    .select(
+      `
         *,
         materials:class_materials(*)
-    `)
+    `
+    )
     .eq('id', id)
     .single();
 
@@ -64,7 +72,11 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
   if (!classDetails) notFound();
 
   // Fetch teacher profile separately — may be blocked by RLS for students
-  let teacher: { first_name: string | null; last_name: string | null; email: string | null } | null = null;
+  let teacher: {
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+  } | null = null;
   if (classDetails.teacher_id) {
     const { data: teacherData } = await supabase
       .from('profiles')
@@ -76,39 +88,52 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="space-y-6">
-       <div className="flex items-center gap-4">
-           <Link href="/student/schedule">
-                <Button variant="ghost" size="icon">
-                    <ChevronLeft className="h-4 w-4" />
-                </Button>
-           </Link>
-           <div>
-                <h1 className="text-3xl font-bold tracking-tight">{classDetails.name}</h1>
-                <p className="text-muted-foreground">{classDetails.day} • {classDetails.block}</p>
-           </div>
-       </div>
+      <div className="flex items-center gap-4">
+        <Link href="/student/schedule">
+          <Button variant="ghost" size="icon">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        </Link>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {classDetails.name}
+          </h1>
+          <p className="text-muted-foreground">
+            {classDetails.day} • {classDetails.block}
+          </p>
+        </div>
+      </div>
 
-       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-           <div className="space-y-6 lg:col-span-2">
-                <ClassDetailCard 
-                    description={classDetails.description} 
-                    teacher={teacher}
-                />
-                
-                <ClassMaterialsList materials={classDetails.materials} />
-           </div>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <ClassDetailCard
+            description={classDetails.description}
+            teacher={teacher}
+          />
 
-           <div className="space-y-6">
-                <ClassScheduleCard 
-                    dayOfWeek={classDetails.day_of_week}
-                    block={(classDetails.schedule_config as { block?: string } | null)?.block ?? null}
-                    startDate={(classDetails.schedule_config as { startDate?: string } | null)?.startDate ?? null}
-                    endDate={(classDetails.schedule_config as { endDate?: string } | null)?.endDate ?? null}
-                />
+          <ClassMaterialsList materials={classDetails.materials} />
+        </div>
 
-                <ClassLocationCard location={classDetails.location} />
-           </div>
-       </div>
+        <div className="space-y-6">
+          <ClassScheduleCard
+            dayOfWeek={classDetails.day_of_week}
+            block={
+              (classDetails.schedule_config as { block?: string } | null)
+                ?.block ?? null
+            }
+            startDate={
+              (classDetails.schedule_config as { startDate?: string } | null)
+                ?.startDate ?? null
+            }
+            endDate={
+              (classDetails.schedule_config as { endDate?: string } | null)
+                ?.endDate ?? null
+            }
+          />
+
+          <ClassLocationCard location={classDetails.location} />
+        </div>
+      </div>
     </div>
   );
 }

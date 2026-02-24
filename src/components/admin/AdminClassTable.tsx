@@ -25,11 +25,11 @@ interface AdminClassTableProps {
   limit: number;
 }
 
-export default function AdminClassTable({ 
-  initialClasses, 
-  total, 
-  currentPage, 
-  limit 
+export default function AdminClassTable({
+  initialClasses,
+  total,
+  currentPage,
+  limit,
 }: AdminClassTableProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -68,7 +68,10 @@ export default function AdminClassTable({
         <TableBody>
           {initialClasses.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+              <TableCell
+                colSpan={6}
+                className="text-muted-foreground h-24 text-center"
+              >
                 No classes found.
               </TableCell>
             </TableRow>
@@ -80,11 +83,17 @@ export default function AdminClassTable({
                   {cls.teacher?.first_name} {cls.teacher?.last_name}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={
-                    cls.status === 'published' ? 'default' :
-                    cls.status === 'draft' ? 'secondary' :
-                    cls.status === 'completed' ? 'outline' : 'destructive'
-                  }>
+                  <Badge
+                    variant={
+                      cls.status === 'published'
+                        ? 'default'
+                        : cls.status === 'draft'
+                          ? 'secondary'
+                          : cls.status === 'completed'
+                            ? 'outline'
+                            : 'destructive'
+                    }
+                  >
                     {cls.status}
                   </Badge>
                 </TableCell>
@@ -102,13 +111,13 @@ export default function AdminClassTable({
                         <Edit className="h-4 w-4" />
                       </Link>
                     </Button>
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleDelete(cls.id)}
-                        disabled={isPending}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(cls.id)}
+                      disabled={isPending}
                     >
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                      <Trash2 className="text-destructive h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>
@@ -117,10 +126,10 @@ export default function AdminClassTable({
           )}
         </TableBody>
       </Table>
-      
+
       {showPagination && (
-        <div className="flex items-center justify-between p-4 border-t">
-          <div className="text-sm text-muted-foreground">
+        <div className="flex items-center justify-between border-t p-4">
+          <div className="text-muted-foreground text-sm">
             Total Classes: {total}
           </div>
           <div className="flex items-center space-x-2">
@@ -130,7 +139,7 @@ export default function AdminClassTable({
               onClick={() => router.push(`?page=${currentPage - 1}`)}
               disabled={currentPage <= 1}
             >
-              <ChevronLeft className="h-4 w-4 mr-2" />
+              <ChevronLeft className="mr-2 h-4 w-4" />
               Previous
             </Button>
             <div className="text-sm font-medium">
@@ -143,15 +152,15 @@ export default function AdminClassTable({
               disabled={currentPage >= totalPages}
             >
               Next
-              <ChevronRight className="h-4 w-4 ml-2" />
+              <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         </div>
       )}
       {!showPagination && (
-         <div className="p-4 text-sm text-muted-foreground text-center">
-            Total Classes: {total}
-         </div>
+        <div className="text-muted-foreground p-4 text-center text-sm">
+          Total Classes: {total}
+        </div>
       )}
     </div>
   );

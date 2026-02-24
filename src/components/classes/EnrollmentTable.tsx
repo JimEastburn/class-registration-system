@@ -3,144 +3,146 @@
 import Link from 'next/link';
 import { MoreHorizontal, ExternalLink, XCircle } from 'lucide-react';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { EnrollmentStatusBadge } from './EnrollmentStatusBadge';
 import PayButton from '@/components/payments/PayButton';
 import type { Enrollment } from '@/types';
 
-
 interface EnrollmentWithDetails extends Enrollment {
-    class: {
-        id: string;
-        name: string;
-        price: number;
-    } | null;
-    student?: {
-        id: string;
-        first_name: string;
-        last_name: string;
-    } | null;
+  class: {
+    id: string;
+    name: string;
+    price: number;
+  } | null;
+  student?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+  } | null;
 }
 
 interface EnrollmentTableProps {
-    enrollments: EnrollmentWithDetails[];
-    onCancel?: (enrollmentId: string) => void;
-    showStudent?: boolean;
+  enrollments: EnrollmentWithDetails[];
+  onCancel?: (enrollmentId: string) => void;
+  showStudent?: boolean;
 }
 
 export function EnrollmentTable({
-    enrollments,
-    onCancel,
-    showStudent = false,
+  enrollments,
+  onCancel,
+  showStudent = false,
 }: EnrollmentTableProps) {
-    if (enrollments.length === 0) {
-        return (
-            <div className="text-center py-8 text-muted-foreground">
-                No enrollments found
-            </div>
-        );
-    }
-
+  if (enrollments.length === 0) {
     return (
-        <Table data-testid="enrollment-table">
-            <TableHeader>
-                <TableRow>
-                    <TableHead>Class</TableHead>
-                    {showStudent && <TableHead>Student</TableHead>}
-                    <TableHead>Status</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Enrolled</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {enrollments.map((enrollment) => (
-                    <TableRow key={enrollment.id} data-testid={`enrollment-row-${enrollment.id}`}>
-                        <TableCell className="font-medium">
-                            {enrollment.class?.name || 'Unknown Class'}
-                        </TableCell>
-                        {showStudent && (
-                            <TableCell>
-                                {enrollment.student
-                                    ? `${enrollment.student.first_name} ${enrollment.student.last_name}`
-                                    : '-'}
-                            </TableCell>
-                        )}
-                        <TableCell>
-                            <div className="flex items-center gap-2">
-                                <EnrollmentStatusBadge
-                                    status={enrollment.status}
-                                    waitlistPosition={enrollment.waitlist_position}
-                                />
-                                {enrollment.status === 'pending' && enrollment.class && (
-                                     <PayButton
-                                        enrollmentId={enrollment.id}
-                                        amount={30}
-                                        compact={true}
-                                    />
-                                )}
-                            </div>
-                        </TableCell>
-                        <TableCell>
-                            $30.00
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                            {new Date(enrollment.created_at).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                            })}
-                        </TableCell>
-                        <TableCell>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" data-testid="enrollment-actions-trigger">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                        <span className="sr-only">Actions</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    {enrollment.class && (
-                                        <DropdownMenuItem asChild>
-                                            <Link
-                                                href={`/parent/browse/${enrollment.class.id}`}
-                                            >
-                                                <ExternalLink className="mr-2 h-4 w-4" />
-                                                View Class
-                                            </Link>
-                                        </DropdownMenuItem>
-                                    )}
-                                    {onCancel &&
-                                        (enrollment.status === 'pending' ||
-                                            enrollment.status === 'waitlisted') && (
-                                            <DropdownMenuItem
-                                                onClick={() => onCancel(enrollment.id)}
-                                                className="text-destructive"
-                                                data-testid="cancel-enrollment-button"
-                                            >
-                                                <XCircle className="mr-2 h-4 w-4" />
-                                                Cancel Enrollment
-                                            </DropdownMenuItem>
-                                        )}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </TableCell>
-                    </TableRow>
-                ))}
-            </TableBody>
-        </Table>
+      <div className="text-muted-foreground py-8 text-center">
+        No enrollments found
+      </div>
     );
+  }
+
+  return (
+    <Table data-testid="enrollment-table">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Class</TableHead>
+          {showStudent && <TableHead>Student</TableHead>}
+          <TableHead>Status</TableHead>
+          <TableHead>Price</TableHead>
+          <TableHead>Enrolled</TableHead>
+          <TableHead className="w-[50px]"></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {enrollments.map((enrollment) => (
+          <TableRow
+            key={enrollment.id}
+            data-testid={`enrollment-row-${enrollment.id}`}
+          >
+            <TableCell className="font-medium">
+              {enrollment.class?.name || 'Unknown Class'}
+            </TableCell>
+            {showStudent && (
+              <TableCell>
+                {enrollment.student
+                  ? `${enrollment.student.first_name} ${enrollment.student.last_name}`
+                  : '-'}
+              </TableCell>
+            )}
+            <TableCell>
+              <div className="flex items-center gap-2">
+                <EnrollmentStatusBadge
+                  status={enrollment.status}
+                  waitlistPosition={enrollment.waitlist_position}
+                />
+                {enrollment.status === 'pending' && enrollment.class && (
+                  <PayButton
+                    enrollmentId={enrollment.id}
+                    amount={30}
+                    compact={true}
+                  />
+                )}
+              </div>
+            </TableCell>
+            <TableCell>$30.00</TableCell>
+            <TableCell className="text-muted-foreground">
+              {new Date(enrollment.created_at).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </TableCell>
+            <TableCell>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    data-testid="enrollment-actions-trigger"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                    <span className="sr-only">Actions</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {enrollment.class && (
+                    <DropdownMenuItem asChild>
+                      <Link href={`/parent/browse/${enrollment.class.id}`}>
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        View Class
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  {onCancel &&
+                    (enrollment.status === 'pending' ||
+                      enrollment.status === 'waitlisted') && (
+                      <DropdownMenuItem
+                        onClick={() => onCancel(enrollment.id)}
+                        className="text-destructive"
+                        data-testid="cancel-enrollment-button"
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Cancel Enrollment
+                      </DropdownMenuItem>
+                    )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
 }

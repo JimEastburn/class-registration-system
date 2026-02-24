@@ -1,42 +1,40 @@
 import Image from 'next/image';
 
 export default function AuthLayout({
-    children,
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-    return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-            <div className="flex flex-col lg:flex-row items-start justify-center gap-16 w-full max-w-7xl">
-                {/* Left Decorative Image */}
-                <div className="hidden lg:block flex-shrink-0 w-[165px] lg:sticky lg:top-[33vh]">
-                    <Image
-                        src="/AAC_FINAL.webp"
-                        alt="Austin AAC"
-                        width={165}
-                        height={152}
-                        className="object-contain"
-                        priority
-                    />
-                </div>
-
-                {/* Center Content */}
-                <div className="flex flex-col w-full max-w-md gap-6">
-                    {children}
-                </div>
-
-                {/* Right Decorative Image */}
-                <div className="hidden lg:block flex-shrink-0 w-[165px] lg:sticky lg:top-[33vh]">
-                    <Image
-                        src="/AAC_FINAL.webp"
-                        alt="Austin AAC"
-                        width={165}
-                        height={152}
-                        className="object-contain"
-                        priority
-                    />
-                </div>
-            </div>
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-900 p-4">
+      <div className="flex w-full max-w-7xl flex-col items-start justify-center gap-16 lg:flex-row">
+        {/* Left Decorative Image */}
+        <div className="hidden w-[165px] flex-shrink-0 lg:sticky lg:top-[33vh] lg:block">
+          <Image
+            src="/AAC_FINAL.webp"
+            alt="Austin AAC"
+            width={165}
+            height={152}
+            className="object-contain"
+            priority
+          />
         </div>
-    );
+
+        {/* Center Content */}
+        <div className="flex w-full max-w-md flex-col gap-6">{children}</div>
+
+        {/* Right Decorative Image */}
+        <div className="hidden w-[165px] flex-shrink-0 lg:sticky lg:top-[33vh] lg:block">
+          <Image
+            src="/AAC_FINAL.webp"
+            alt="Austin AAC"
+            width={165}
+            height={152}
+            className="object-contain"
+            priority
+          />
+        </div>
+      </div>
+    </div>
+  );
 }

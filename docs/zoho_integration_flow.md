@@ -34,11 +34,11 @@ sequenceDiagram
 
 ## Data Mapping
 
-| Local Entity | Zoho Entity | Key Fields |
-| :--- | :--- | :--- |
-| **Profile (Parent)** | **Contact** | email, first_name, last_name, phone |
-| **Class** | **Item** | name, fee (as rate) |
-| **Enrollment** | **Invoice** | invoice_number (Local ID), contact_id |
+| Local Entity         | Zoho Entity          | Key Fields                                 |
+| :------------------- | :------------------- | :----------------------------------------- |
+| **Profile (Parent)** | **Contact**          | email, first_name, last_name, phone        |
+| **Class**            | **Item**             | name, fee (as rate)                        |
+| **Enrollment**       | **Invoice**          | invoice_number (Local ID), contact_id      |
 | **Payment (Stripe)** | **Customer Payment** | amount, date, reference_number (Stripe ID) |
 
 ## Implementation Strategy

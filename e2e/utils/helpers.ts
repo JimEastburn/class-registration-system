@@ -1,4 +1,3 @@
-
 import { supabaseAdmin } from './supabase';
 import { UserRole } from '../../src/types';
 
@@ -15,16 +14,17 @@ export const createTestUser = async (role: UserRole = 'parent') => {
   console.log(`Creating test user: ${email} as ${role}`);
 
   // Create auth user
-  const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: {
-      first_name: firstName,
-      last_name: lastName,
-      role: role // Note: Trigger defaults to 'parent', we might need to update
-    }
-  });
+  const { data: userData, error: createError } =
+    await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        first_name: firstName,
+        last_name: lastName,
+        role: role, // Note: Trigger defaults to 'parent', we might need to update
+      },
+    });
 
   if (createError) {
     console.error('Error creating auth user:', createError);
@@ -36,18 +36,16 @@ export const createTestUser = async (role: UserRole = 'parent') => {
   // The trigger 'handle_new_user' should have created the profile as 'parent'
   // But due to occasional flakiness or desired role, we explicitly update the profile
   // using supabaseAdmin (which bypasses RLS).
-  
+
   // We upsert just to be sure it exists and has correct info
-  const { error: profileError } = await supabaseAdmin
-    .from('profiles')
-    .upsert({
-      id: userId,
-      email: email,
-      role: role,
-      first_name: firstName,
-      last_name: lastName,
-      code_of_conduct_agreed_at: new Date().toISOString()
-    });
+  const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
+    id: userId,
+    email: email,
+    role: role,
+    first_name: firstName,
+    last_name: lastName,
+    code_of_conduct_agreed_at: new Date().toISOString(),
+  });
 
   if (profileError) {
     console.error('Error updating profile:', profileError);
@@ -60,7 +58,7 @@ export const createTestUser = async (role: UserRole = 'parent') => {
     email,
     password,
     userId,
-    user: userData.user
+    user: userData.user,
   };
 };
 

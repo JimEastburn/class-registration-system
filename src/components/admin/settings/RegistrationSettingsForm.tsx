@@ -2,21 +2,40 @@
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { registrationSettingsSchema, RegistrationSettingsFormData } from '@/lib/validations';
+import {
+  registrationSettingsSchema,
+  RegistrationSettingsFormData,
+} from '@/lib/validations';
 import { updateSetting } from '@/lib/actions/settings';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 
 interface RegistrationSettingsFormProps {
   initialData: RegistrationSettingsFormData;
 }
 
-export function RegistrationSettingsForm({ initialData }: RegistrationSettingsFormProps) {
+export function RegistrationSettingsForm({
+  initialData,
+}: RegistrationSettingsFormProps) {
   const [loading, setLoading] = useState(false);
 
   const form = useForm<RegistrationSettingsFormData>({
@@ -27,7 +46,10 @@ export function RegistrationSettingsForm({ initialData }: RegistrationSettingsFo
   async function onSubmit(data: RegistrationSettingsFormData) {
     setLoading(true);
     try {
-      const res = await updateSetting('registration_settings', data as unknown as Record<string, unknown>);
+      const res = await updateSetting(
+        'registration_settings',
+        data as unknown as Record<string, unknown>
+      );
       if (!res.success) {
         toast.error(res.error || 'Failed to update settings');
         return;
@@ -45,7 +67,9 @@ export function RegistrationSettingsForm({ initialData }: RegistrationSettingsFo
     <Card>
       <CardHeader>
         <CardTitle>Registration & Semesters</CardTitle>
-        <CardDescription>Manage registration access and semester timelines.</CardDescription>
+        <CardDescription>
+          Manage registration access and semester timelines.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -56,7 +80,9 @@ export function RegistrationSettingsForm({ initialData }: RegistrationSettingsFo
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
-                    <FormLabel className="text-base">Registration Open</FormLabel>
+                    <FormLabel className="text-base">
+                      Registration Open
+                    </FormLabel>
                     <FormDescription>
                       Allow parents to enroll students in classes.
                     </FormDescription>
@@ -71,8 +97,8 @@ export function RegistrationSettingsForm({ initialData }: RegistrationSettingsFo
               )}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <FormField
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormField
                 control={form.control}
                 name="semesterStart"
                 render={({ field }) => (
@@ -86,7 +112,7 @@ export function RegistrationSettingsForm({ initialData }: RegistrationSettingsFo
                   </FormItem>
                 )}
               />
-               <FormField
+              <FormField
                 control={form.control}
                 name="semesterEnd"
                 render={({ field }) => (

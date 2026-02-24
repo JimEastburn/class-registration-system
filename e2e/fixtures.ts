@@ -1,7 +1,12 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 // Note: ESLint incorrectly treats Playwright's `use` function as a React hook
 
-import { test as base, expect, type BrowserContext, type Page } from '@playwright/test';
+import {
+  test as base,
+  expect,
+  type BrowserContext,
+  type Page,
+} from '@playwright/test';
 import { supabaseAdmin } from './utils/supabase';
 import type { UserRole } from '../src/types';
 import * as path from 'path';
@@ -32,25 +37,25 @@ function isAuthStateValid(role: UserRole): boolean {
   if (!fs.existsSync(statePath)) {
     return false;
   }
-  
+
   try {
     const state = JSON.parse(fs.readFileSync(statePath, 'utf-8'));
     // Check if there are any cookies (basic validity check)
     if (!state.cookies || state.cookies.length === 0) {
       return false;
     }
-    
+
     // Check if any auth cookie exists and isn't expired
-    const authCookie = state.cookies.find((c: { name: string }) => 
+    const authCookie = state.cookies.find((c: { name: string }) =>
       c.name.includes('auth-token')
     );
-    
+
     if (authCookie && authCookie.expires) {
       // Check if cookie expires in the future (with 5 min buffer)
       const expiresAt = authCookie.expires * 1000;
-      return expiresAt > Date.now() + (5 * 60 * 1000);
+      return expiresAt > Date.now() + 5 * 60 * 1000;
     }
-    
+
     return false;
   } catch {
     return false;
@@ -86,16 +91,17 @@ export async function createTestUser(role: UserRole): Promise<TestUser> {
   const lastName = role.charAt(0).toUpperCase() + role.slice(1);
 
   // Create auth user
-  const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: {
-      first_name: firstName,
-      last_name: lastName,
-      role: role
-    }
-  });
+  const { data: userData, error: createError } =
+    await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        first_name: firstName,
+        last_name: lastName,
+        role: role,
+      },
+    });
 
   if (createError) {
     throw new Error(`Failed to create auth user: ${createError.message}`);
@@ -104,16 +110,14 @@ export async function createTestUser(role: UserRole): Promise<TestUser> {
   const userId = userData.user.id;
 
   // Upsert profile with correct role
-  const { error: profileError } = await supabaseAdmin
-    .from('profiles')
-    .upsert({
-      id: userId,
-      email: email,
-      role: role,
-      first_name: firstName,
-      last_name: lastName,
-      code_of_conduct_agreed_at: new Date().toISOString()
-    });
+  const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
+    id: userId,
+    email: email,
+    role: role,
+    first_name: firstName,
+    last_name: lastName,
+    code_of_conduct_agreed_at: new Date().toISOString(),
+  });
 
   if (profileError) {
     // Cleanup on failure
@@ -125,7 +129,7 @@ export async function createTestUser(role: UserRole): Promise<TestUser> {
     email,
     password,
     userId,
-    role
+    role,
   };
 }
 
@@ -149,14 +153,14 @@ async function loginAndSaveState(
 ): Promise<void> {
   // Navigate to login
   await page.goto('/login');
-  
+
   // Fill login form
   await page.fill('input[name="email"]', user.email);
   await page.fill('input[name="password"]', user.password);
-  
+
   // Submit
   await page.getByTestId('login-submit-button').click();
-  
+
   // Wait for redirect based on role
   const roleRedirects: Record<UserRole, string> = {
     parent: '/parent',
@@ -164,12 +168,12 @@ async function loginAndSaveState(
     student: '/student',
     admin: '/admin',
     class_scheduler: '/class-scheduler',
-    super_admin: '/admin'
+    super_admin: '/admin',
   };
-  
+
   const expectedPath = roleRedirects[user.role] || '/parent';
   await page.waitForURL(`**${expectedPath}**`, { timeout: 15000 });
-  
+
   // Save storage state
   await context.storageState({ path: getAuthStatePath(user.role) });
 }
@@ -188,10 +192,10 @@ export async function ensureAuthState(
       email: `existing-${role}@test.com`,
       password: 'Password123!',
       userId: 'existing',
-      role
+      role,
     };
   }
-  
+
   // Create new user and login
   const user = await createTestUser(role);
   await loginAndSaveState(page, context, user);
@@ -209,7 +213,6 @@ type AuthFixtures = {
   superAdminPage: Page;
   testUser: TestUser;
 };
-
 
 /**
  * Extended test with auth fixtures
@@ -289,7 +292,9 @@ export const test = base.extend<AuthFixtures>({
       await use(page);
       await context.close();
     } else {
-      throw new Error('Super Admin auth state not found. Run auth setup first.');
+      throw new Error(
+        'Super Admin auth state not found. Run auth setup first.'
+      );
     }
   },
 
@@ -299,7 +304,7 @@ export const test = base.extend<AuthFixtures>({
     await use(user);
     // Cleanup after test
     await deleteTestUser(user.userId);
-  }
+  },
 });
 
 export { expect };

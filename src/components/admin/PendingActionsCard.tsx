@@ -11,22 +11,24 @@ export function PendingActionsCard() {
       <CardContent className="space-y-4">
         {/* Placeholder logic for now, hardcoded 0 until we have specific queries */}
         <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Pending Enrollments</span>
-            <span className="text-sm text-muted-foreground">0</span>
+          <span className="text-sm font-medium">Pending Enrollments</span>
+          <span className="text-muted-foreground text-sm">0</span>
         </div>
         <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Failed Payments</span>
-            <span className="text-sm text-muted-foreground">0</span>
+          <span className="text-sm font-medium">Failed Payments</span>
+          <span className="text-muted-foreground text-sm">0</span>
         </div>
-         <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Unresolved Blocks</span>
-            <span className="text-sm text-muted-foreground">0</span>
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">Unresolved Blocks</span>
+          <span className="text-muted-foreground text-sm">0</span>
         </div>
-        
+
         <div className="pt-4">
-             <Link href="/admin/users">
-                <Button className="w-full" size="sm" variant="outline">Manage Users</Button>
-            </Link>
+          <Link href="/admin/users">
+            <Button className="w-full" size="sm" variant="outline">
+              Manage Users
+            </Button>
+          </Link>
         </div>
       </CardContent>
     </Card>

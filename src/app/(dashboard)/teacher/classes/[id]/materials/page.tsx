@@ -16,7 +16,9 @@ export default async function ClassMaterialsPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     redirect('/login');
@@ -45,8 +47,8 @@ export default async function ClassMaterialsPage({ params }: PageProps) {
   if (!isOwner && !isAdmin) {
     return (
       <div className="p-8 text-center">
-        <h1 className="text-2xl font-bold text-destructive">Unauthorized</h1>
-        <p className="mt-2 text-muted-foreground">
+        <h1 className="text-destructive text-2xl font-bold">Unauthorized</h1>
+        <p className="text-muted-foreground mt-2">
           You do not have permission to manage materials for this class.
         </p>
       </div>
@@ -61,14 +63,16 @@ export default async function ClassMaterialsPage({ params }: PageProps) {
       <div className="flex items-center justify-between space-y-2">
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm" asChild className="-ml-3 mb-1">
+            <Button variant="ghost" size="sm" asChild className="mb-1 -ml-3">
               <Link href={`/teacher/classes/${id}`}>
                 <ChevronLeft className="mr-1 h-4 w-4" />
                 Back to Class
               </Link>
             </Button>
           </div>
-          <h2 className="text-3xl font-bold tracking-tight">{classData.name} Materials</h2>
+          <h2 className="text-3xl font-bold tracking-tight">
+            {classData.name} Materials
+          </h2>
           <p className="text-muted-foreground">
             Manage resources, files, and links for this class.
           </p>

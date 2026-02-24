@@ -74,7 +74,10 @@ export async function addToWaitlist(
   }
 
   if (familyMember.parent_id !== user.id) {
-    return { success: false, error: 'You do not have permission for this family member' };
+    return {
+      success: false,
+      error: 'You do not have permission for this family member',
+    };
   }
 
   // Check if already enrolled or waitlisted
@@ -87,8 +90,14 @@ export async function addToWaitlist(
     .single();
 
   if (existingEnrollment) {
-    const status = existingEnrollment.status === 'confirmed' ? 'enrolled' : 'already on the waitlist';
-    return { success: false, error: `This student is already ${status} for this class` };
+    const status =
+      existingEnrollment.status === 'confirmed'
+        ? 'enrolled'
+        : 'already on the waitlist';
+    return {
+      success: false,
+      error: `This student is already ${status} for this class`,
+    };
   }
 
   // Get the next waitlist position
@@ -163,7 +172,10 @@ export async function removeFromWaitlist(
     .single();
 
   if (!familyMemberCheck) {
-    return { success: false, error: 'You do not have permission to remove this enrollment' };
+    return {
+      success: false,
+      error: 'You do not have permission to remove this enrollment',
+    };
   }
 
   if (enrollment.status !== 'waitlisted') {
@@ -235,7 +247,9 @@ async function reorderWaitlistPositions(
  */
 export async function promoteFromWaitlist(
   classId: string
-): Promise<ActionResult<{ enrollmentId: string; familyMemberId: string } | null>> {
+): Promise<
+  ActionResult<{ enrollmentId: string; familyMemberId: string } | null>
+> {
   const supabase = await createClient();
 
   // Check if there's capacity (in case this was called manually)
@@ -367,10 +381,12 @@ export async function getClassWaitlist(
 
   const { data, error } = await supabase
     .from('enrollments')
-    .select(`
+    .select(
+      `
       *,
       student:family_members(id, first_name, last_name)
-    `)
+    `
+    )
     .eq('class_id', classId)
     .eq('status', 'waitlisted')
     .order('waitlist_position', { ascending: true });

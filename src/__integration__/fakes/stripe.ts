@@ -1,4 +1,3 @@
-
 import { vi } from 'vitest';
 
 /**
@@ -14,7 +13,7 @@ export const stripeFake = {
           url: `https://checkout.stripe.com/test/${crypto.randomUUID()}`,
           payment_status: 'unpaid',
           status: 'open',
-          ...params
+          ...params,
         };
       }),
       retrieve: vi.fn().mockImplementation(async (id) => ({
@@ -54,11 +53,11 @@ export const stripeFake = {
   },
   customers: {
     create: vi.fn().mockImplementation(async (params) => ({
-        id: `cus_test_${crypto.randomUUID()}`,
-        ...params
+      id: `cus_test_${crypto.randomUUID()}`,
+      ...params,
     })),
     search: vi.fn().mockImplementation(async () => ({
-        data: []
-    }))
-  }
+      data: [],
+    })),
+  },
 };

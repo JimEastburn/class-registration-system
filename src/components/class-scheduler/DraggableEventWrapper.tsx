@@ -12,11 +12,17 @@ interface DraggableEventWrapperProps {
   data?: Record<string, unknown>;
 }
 
-export function DraggableEventWrapper({ id, children, className, data }: DraggableEventWrapperProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id,
-    data,
-  });
+export function DraggableEventWrapper({
+  id,
+  children,
+  className,
+  data,
+}: DraggableEventWrapperProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id,
+      data,
+    });
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -28,7 +34,7 @@ export function DraggableEventWrapper({ id, children, className, data }: Draggab
       style={style}
       {...listeners}
       {...attributes}
-      className={cn(className, isDragging && "opacity-50")}
+      className={cn(className, isDragging && 'opacity-50')}
     >
       {children}
     </div>

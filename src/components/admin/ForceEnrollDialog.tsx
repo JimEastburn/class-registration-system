@@ -25,26 +25,26 @@ export function ForceEnrollDialog({ trigger }: { trigger?: React.ReactNode }) {
   const router = useRouter();
 
   const handleEnroll = async () => {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
 
-      const result = await adminForceEnroll({
-          studentId,
-          classId,
-          bypassCapacity: true,
-          bypassBlocks: true,
-          adminId: 'current-user-inferred-on-server' // Action handles auth
-      });
+    const result = await adminForceEnroll({
+      studentId,
+      classId,
+      bypassCapacity: true,
+      bypassBlocks: true,
+      adminId: 'current-user-inferred-on-server', // Action handles auth
+    });
 
-      if (result.error) {
-          setError(result.error);
-      } else {
-          setOpen(false);
-          setStudentId('');
-          setClassId('');
-          router.refresh();
-      }
-      setLoading(false);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setOpen(false);
+      setStudentId('');
+      setClassId('');
+      router.refresh();
+    }
+    setLoading(false);
   };
 
   return (

@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { getSchedulerStats, getUnscheduledClasses } from '../scheduler';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
@@ -11,7 +10,7 @@ vi.mock('@/lib/supabase/server', () => ({
 
 // Mock scheduling logic (used by getConflictAlerts internally)
 vi.mock('@/lib/logic/scheduling', () => ({
-    checkScheduleConflict: vi.fn().mockReturnValue(null),
+  checkScheduleConflict: vi.fn().mockReturnValue(null),
 }));
 
 describe('Scheduler Actions', () => {
@@ -31,7 +30,12 @@ describe('Scheduler Actions', () => {
 
       const mockUserClient = {
         auth: {
-          getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'scheduler-123' } }, error: null }),
+          getUser: vi
+            .fn()
+            .mockResolvedValue({
+              data: { user: { id: 'scheduler-123' } },
+              error: null,
+            }),
         },
         from: vi.fn().mockReturnValue({
           select: vi.fn().mockReturnValue({
@@ -47,8 +51,8 @@ describe('Scheduler Actions', () => {
 
       // createClient will be called twice (once by getSchedulerStats, once by getConflictAlerts)
       (createClient as Mock)
-        .mockResolvedValueOnce(mockUserClient)  // getSchedulerStats auth
-        .mockResolvedValueOnce(mockUserClient);  // getConflictAlerts auth
+        .mockResolvedValueOnce(mockUserClient) // getSchedulerStats auth
+        .mockResolvedValueOnce(mockUserClient); // getConflictAlerts auth
 
       const adminFromCallCount = { n: 0 };
       const mockAdminClient = {
@@ -83,8 +87,8 @@ describe('Scheduler Actions', () => {
       };
 
       (createAdminClient as Mock)
-        .mockResolvedValueOnce(mockAdminClient)  // getSchedulerStats admin
-        .mockResolvedValueOnce(mockAdminClient);  // getConflictAlerts admin
+        .mockResolvedValueOnce(mockAdminClient) // getSchedulerStats admin
+        .mockResolvedValueOnce(mockAdminClient); // getConflictAlerts admin
 
       const result = await getSchedulerStats();
 
@@ -97,79 +101,91 @@ describe('Scheduler Actions', () => {
     });
 
     it('should return unauthorized for parent', async () => {
-        const mockUserClient = {
-          auth: {
-            getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'parent-123' } }, error: null }),
-          },
-          from: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: { role: 'parent' },
-                  error: null,
-                }),
+      const mockUserClient = {
+        auth: {
+          getUser: vi
+            .fn()
+            .mockResolvedValue({
+              data: { user: { id: 'parent-123' } },
+              error: null,
+            }),
+        },
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { role: 'parent' },
+                error: null,
               }),
             }),
           }),
-        };
+        }),
+      };
 
-        (createClient as Mock).mockResolvedValue(mockUserClient);
-  
-        const result = await getSchedulerStats();
-  
-        expect(result.success).toBe(false);
-        if (!result.success) {
-            expect(result.error).toBe('Unauthorized');
-        }
-      });
+      (createClient as Mock).mockResolvedValue(mockUserClient);
+
+      const result = await getSchedulerStats();
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toBe('Unauthorized');
+      }
+    });
   });
 
   describe('getUnscheduledClasses', () => {
     it('should return list of draft classes', async () => {
-        // getUnscheduledClasses flow:
-        // 1. createClient() -> auth + role='class_scheduler'
-        // 2. createAdminClient() -> fetch classes eq('status','draft').order().limit()
+      // getUnscheduledClasses flow:
+      // 1. createClient() -> auth + role='class_scheduler'
+      // 2. createAdminClient() -> fetch classes eq('status','draft').order().limit()
 
-        const mockUserClient = {
-          auth: {
-            getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'scheduler-123' } }, error: null }),
-          },
-          from: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: { role: 'class_scheduler' },
-                  error: null,
-                }),
+      const mockUserClient = {
+        auth: {
+          getUser: vi
+            .fn()
+            .mockResolvedValue({
+              data: { user: { id: 'scheduler-123' } },
+              error: null,
+            }),
+        },
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: { role: 'class_scheduler' },
+                error: null,
               }),
             }),
           }),
-        };
+        }),
+      };
 
-        const mockClasses = [{ id: '1', name: 'Draft Class', status: 'draft' }];
+      const mockClasses = [{ id: '1', name: 'Draft Class', status: 'draft' }];
 
-        const mockAdminClient = {
-          from: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                order: vi.fn().mockReturnValue({
-                  limit: vi.fn().mockResolvedValue({ data: mockClasses, error: null }),
-                }),
+      const mockAdminClient = {
+        from: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              order: vi.fn().mockReturnValue({
+                limit: vi
+                  .fn()
+                  .mockResolvedValue({ data: mockClasses, error: null }),
               }),
             }),
           }),
-        };
+        }),
+      };
 
-        (createClient as Mock).mockResolvedValue(mockUserClient);
-        (createAdminClient as Mock).mockResolvedValue(mockAdminClient);
+      (createClient as Mock).mockResolvedValue(mockUserClient);
+      (createAdminClient as Mock).mockResolvedValue(mockAdminClient);
 
-        const result = await getUnscheduledClasses(5);
+      const result = await getUnscheduledClasses(5);
 
-        expect(result.success).toBe(true);
-        if (result.success) {
-            expect(result.data).toHaveLength(1);
-            expect(result.data[0].name).toBe('Draft Class');
-        }
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toHaveLength(1);
+        expect(result.data[0].name).toBe('Draft Class');
+      }
     });
   });
 });

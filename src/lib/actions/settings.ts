@@ -8,10 +8,14 @@ import { revalidatePath } from 'next/cache';
  * Retrieve a system setting by key.
  * Accessible to authenticated users (RLS permitting).
  */
-export async function getSetting(key: string): Promise<ActionResult<SystemSetting | null>> {
+export async function getSetting(
+  key: string
+): Promise<ActionResult<SystemSetting | null>> {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -37,14 +41,13 @@ export async function getSetting(key: string): Promise<ActionResult<SystemSettin
     if (error) {
       // PGRST116: JSON object requested, multiple (or no) rows returned
       if (error.code === 'PGRST116') {
-         return { success: true, data: null };
+        return { success: true, data: null };
       }
       console.error('Error fetching setting:', error);
       return { success: false, error: 'Failed to fetch setting' };
     }
-    
-    return { success: true, data: data as SystemSetting };
 
+    return { success: true, data: data as SystemSetting };
   } catch (error) {
     console.error('Error in getSetting:', error);
     return { success: false, error: 'Internal server error' };
@@ -55,12 +58,17 @@ export async function getSetting(key: string): Promise<ActionResult<SystemSettin
  * Update or create a system setting.
  * Restricted to Admins only.
  */
-export async function updateSetting(key: string, value: Record<string, unknown>): Promise<ActionResult> {
+export async function updateSetting(
+  key: string,
+  value: Record<string, unknown>
+): Promise<ActionResult> {
   try {
     const supabase = await createClient();
-    
+
     // 1. Auth Check
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return { success: false, error: 'Not authenticated' };
     }
@@ -80,11 +88,11 @@ export async function updateSetting(key: string, value: Record<string, unknown>)
     const adminClient = await createAdminClient();
     const { error } = await adminClient
       .from('system_settings')
-      .upsert({ 
-        key, 
+      .upsert({
+        key,
         value: value as import('@/types/database').Json,
         // updated_at is handled by trigger 2.5.4, but passing it explicitly ensures freshness
-        updated_at: new Date().toISOString() 
+        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -95,11 +103,12 @@ export async function updateSetting(key: string, value: Record<string, unknown>)
     }
 
     // 4. Audit Log
-    await logAdminAction(user.id, 'update_setting', 'system_setting', key, { value });
+    await logAdminAction(user.id, 'update_setting', 'system_setting', key, {
+      value,
+    });
 
     revalidatePath('/admin/settings');
     return { success: true, data: undefined };
-
   } catch (error) {
     console.error('Error in updateSetting:', error);
     return { success: false, error: 'Internal server error' };
@@ -109,18 +118,24 @@ export async function updateSetting(key: string, value: Record<string, unknown>)
 /**
  * Internal helper to log admin actions
  */
-async function logAdminAction(userId: string, action: string, targetType: string, targetId: string, details: Record<string, unknown> | null = null) {
-    const supabase = await createClient();
-    try {
-        await supabase.from('audit_logs').insert({
-            user_id: userId,
-            action,
-            target_type: targetType,
-            target_id: targetId,
-            details: details as import('@/types/database').Json
-        });
-    } catch (error) {
-        console.error('Failed to write audit log:', error);
-        // Don't fail the main action if audit logging fails, but warn
-    }
+async function logAdminAction(
+  userId: string,
+  action: string,
+  targetType: string,
+  targetId: string,
+  details: Record<string, unknown> | null = null
+) {
+  const supabase = await createClient();
+  try {
+    await supabase.from('audit_logs').insert({
+      user_id: userId,
+      action,
+      target_type: targetType,
+      target_id: targetId,
+      details: details as import('@/types/database').Json,
+    });
+  } catch (error) {
+    console.error('Failed to write audit log:', error);
+    // Don't fail the main action if audit logging fails, but warn
+  }
 }

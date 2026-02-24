@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
@@ -16,6 +15,6 @@ if (!supabaseUrl || !serviceKey) {
 export const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 });

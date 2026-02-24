@@ -2,7 +2,7 @@
 /**
  * Create a test user with a specified role and output credentials as JSON
  * Usage: npx tsx scripts/browser-tests/create-test-user.ts <role>
- * 
+ *
  * Roles: parent, student, teacher, admin, class_scheduler, super_admin
  */
 
@@ -24,13 +24,26 @@ if (!supabaseUrl || !serviceKey) {
 const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 });
 
-type UserRole = 'parent' | 'student' | 'teacher' | 'admin' | 'class_scheduler' | 'super_admin';
+type UserRole =
+  | 'parent'
+  | 'student'
+  | 'teacher'
+  | 'admin'
+  | 'class_scheduler'
+  | 'super_admin';
 
-const VALID_ROLES: UserRole[] = ['parent', 'student', 'teacher', 'admin', 'class_scheduler', 'super_admin'];
+const VALID_ROLES: UserRole[] = [
+  'parent',
+  'student',
+  'teacher',
+  'admin',
+  'class_scheduler',
+  'super_admin',
+];
 
 const ROLE_NAMES: Record<UserRole, { firstName: string; lastName: string }> = {
   parent: { firstName: 'Test', lastName: 'Parent' },
@@ -38,7 +51,7 @@ const ROLE_NAMES: Record<UserRole, { firstName: string; lastName: string }> = {
   teacher: { firstName: 'Test', lastName: 'Teacher' },
   admin: { firstName: 'Test', lastName: 'Admin' },
   class_scheduler: { firstName: 'Test', lastName: 'Scheduler' },
-  super_admin: { firstName: 'Test', lastName: 'SuperAdmin' }
+  super_admin: { firstName: 'Test', lastName: 'SuperAdmin' },
 };
 
 async function createTestUser(role: UserRole) {
@@ -48,16 +61,17 @@ async function createTestUser(role: UserRole) {
   const password = 'Password123!';
 
   // Create auth user
-  const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: {
-      first_name: firstName,
-      last_name: lastName,
-      role
-    }
-  });
+  const { data: userData, error: createError } =
+    await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        first_name: firstName,
+        last_name: lastName,
+        role,
+      },
+    });
 
   if (createError) {
     console.error(JSON.stringify({ error: createError.message }));
@@ -67,16 +81,14 @@ async function createTestUser(role: UserRole) {
   const userId = userData.user.id;
 
   // Update profile with the specified role
-  const { error: profileError } = await supabaseAdmin
-    .from('profiles')
-    .upsert({
-      id: userId,
-      email: email,
-      role,
-      first_name: firstName,
-      last_name: lastName,
-      code_of_conduct_agreed_at: new Date().toISOString()
-    });
+  const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
+    id: userId,
+    email: email,
+    role,
+    first_name: firstName,
+    last_name: lastName,
+    code_of_conduct_agreed_at: new Date().toISOString(),
+  });
 
   if (profileError) {
     // Cleanup on failure
@@ -86,21 +98,25 @@ async function createTestUser(role: UserRole) {
   }
 
   // Output credentials as JSON
-  console.log(JSON.stringify({
-    email,
-    password,
-    userId,
-    role
-  }));
+  console.log(
+    JSON.stringify({
+      email,
+      password,
+      userId,
+      role,
+    })
+  );
 }
 
 // Parse command line arguments
 const role = process.argv[2] as UserRole;
 
 if (!role || !VALID_ROLES.includes(role)) {
-  console.error(JSON.stringify({ 
-    error: `Invalid role. Valid roles: ${VALID_ROLES.join(', ')}`
-  }));
+  console.error(
+    JSON.stringify({
+      error: `Invalid role. Valid roles: ${VALID_ROLES.join(', ')}`,
+    })
+  );
   process.exit(1);
 }
 

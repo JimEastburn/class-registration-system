@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { signUp, signIn } from '@/lib/actions/auth';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
@@ -36,7 +35,9 @@ describe('Auth Actions', () => {
       upsert: vi.fn().mockResolvedValue({ error: null }),
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: { role: 'parent' }, error: null }),
+      single: vi
+        .fn()
+        .mockResolvedValue({ data: { role: 'parent' }, error: null }),
       insert: vi.fn().mockResolvedValue({ error: null }),
     });
   });
@@ -59,7 +60,7 @@ describe('Auth Actions', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-          expect(result.data.userId).toBe('user-123');
+        expect(result.data.userId).toBe('user-123');
       }
       expect(mockSupabase.auth.signUp).toHaveBeenCalled();
     });
@@ -81,7 +82,7 @@ describe('Auth Actions', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-          expect(result.error).toBe('Email already registered');
+        expect(result.error).toBe('Email already registered');
       }
     });
   });

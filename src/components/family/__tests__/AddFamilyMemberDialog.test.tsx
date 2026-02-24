@@ -1,4 +1,3 @@
-
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AddFamilyMemberDialog } from '../AddFamilyMemberDialog';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
@@ -68,16 +67,22 @@ describe('AddFamilyMemberDialog', () => {
     fireEvent.click(screen.getByText('Open Dialog'));
 
     // Fill form
-    fireEvent.change(screen.getByLabelText('First Name'), { target: { value: 'John' } });
-    fireEvent.change(screen.getByLabelText('Last Name'), { target: { value: 'Doe' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'john@example.com' } });
-    
+    fireEvent.change(screen.getByLabelText('First Name'), {
+      target: { value: 'John' },
+    });
+    fireEvent.change(screen.getByLabelText('Last Name'), {
+      target: { value: 'Doe' },
+    });
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'john@example.com' },
+    });
+
     // Select Relationship (Radix UI Select is tricky in tests, often need to find hidden input or use user-event)
-    // For simplicity with Radix Select in RTL without heavy setup, we might skip full interaction 
+    // For simplicity with Radix Select in RTL without heavy setup, we might skip full interaction
     // or use a more robust helper. But let's try basic pointer interactions if feasible.
-    // However, since we just want to verify EMAIL field existence primarily, we can mock the submission 
+    // However, since we just want to verify EMAIL field existence primarily, we can mock the submission
     // or just verify the fields are there.
-    
+
     // To properly test submission, we need to interact with Select.
     // Radix Select renders options in a portal.
   });

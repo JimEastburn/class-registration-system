@@ -3,7 +3,7 @@ import { LoginPage } from '../pages';
 
 /**
  * Test: Session persists on refresh
- * 
+ *
  * Verifies that authenticated sessions survive page refreshes
  * and navigation, maintaining the user's login state.
  */
@@ -11,7 +11,7 @@ import { LoginPage } from '../pages';
 test.describe('Session Persistence', () => {
   test('should maintain session after page refresh', async ({ page }) => {
     const user = await createTestUser('parent');
-    
+
     try {
       const loginPage = new LoginPage(page);
       await loginPage.goto();
@@ -38,9 +38,11 @@ test.describe('Session Persistence', () => {
     }
   });
 
-  test('should maintain session when navigating between pages', async ({ page }) => {
+  test('should maintain session when navigating between pages', async ({
+    page,
+  }) => {
     const user = await createTestUser('parent');
-    
+
     try {
       const loginPage = new LoginPage(page);
       await loginPage.goto();
@@ -63,9 +65,11 @@ test.describe('Session Persistence', () => {
     }
   });
 
-  test('should maintain session after navigating away and back', async ({ page }) => {
+  test('should maintain session after navigating away and back', async ({
+    page,
+  }) => {
     const user = await createTestUser('parent');
-    
+
     try {
       const loginPage = new LoginPage(page);
       await loginPage.goto();

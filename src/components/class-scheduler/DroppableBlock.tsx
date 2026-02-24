@@ -11,7 +11,12 @@ interface DroppableBlockProps {
   data?: Record<string, unknown>;
 }
 
-export function DroppableBlock({ id, children, className, data }: DroppableBlockProps) {
+export function DroppableBlock({
+  id,
+  children,
+  className,
+  data,
+}: DroppableBlockProps) {
   const { isOver, setNodeRef } = useDroppable({
     id,
     data,
@@ -20,10 +25,7 @@ export function DroppableBlock({ id, children, className, data }: DroppableBlock
   return (
     <div
       ref={setNodeRef}
-      className={cn(
-        className,
-        isOver && "bg-accent/20 ring-2 ring-primary/20"
-      )}
+      className={cn(className, isOver && 'bg-accent/20 ring-primary/20 ring-2')}
     >
       {children}
     </div>

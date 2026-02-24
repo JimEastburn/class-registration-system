@@ -13,13 +13,22 @@ export const metadata = {
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-  if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
-      redirect('/'); // or 403
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (
+    !profile ||
+    (profile.role !== 'admin' && profile.role !== 'super_admin')
+  ) {
+    redirect('/'); // or 403
   }
 
   // Fetch data
@@ -34,14 +43,14 @@ export default async function AdminDashboardPage() {
           <ExportButton />
         </div>
       </div>
-      
+
       {/* Stats */}
       {stats && <SystemStatsCards stats={stats} />}
 
       {/* Main Content */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-         {activity && <RecentActivityFeed logs={activity} />}
-         <PendingActionsCard />
+        {activity && <RecentActivityFeed logs={activity} />}
+        <PendingActionsCard />
       </div>
     </div>
   );

@@ -22,8 +22,8 @@ if (!supabaseUrl || !serviceKey) {
 const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 });
 
 async function createTestTeacher() {
@@ -33,16 +33,17 @@ async function createTestTeacher() {
   const lastName = 'Teacher';
 
   // Create auth user
-  const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: {
-      first_name: firstName,
-      last_name: lastName,
-      role: 'teacher'
-    }
-  });
+  const { data: userData, error: createError } =
+    await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        first_name: firstName,
+        last_name: lastName,
+        role: 'teacher',
+      },
+    });
 
   if (createError) {
     console.error(JSON.stringify({ error: createError.message }));
@@ -52,16 +53,14 @@ async function createTestTeacher() {
   const userId = userData.user.id;
 
   // Update profile to teacher role
-  const { error: profileError } = await supabaseAdmin
-    .from('profiles')
-    .upsert({
-      id: userId,
-      email: email,
-      role: 'teacher',
-      first_name: firstName,
-      last_name: lastName,
-      code_of_conduct_agreed_at: new Date().toISOString()
-    });
+  const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
+    id: userId,
+    email: email,
+    role: 'teacher',
+    first_name: firstName,
+    last_name: lastName,
+    code_of_conduct_agreed_at: new Date().toISOString(),
+  });
 
   if (profileError) {
     // Cleanup on failure
@@ -71,11 +70,13 @@ async function createTestTeacher() {
   }
 
   // Output credentials as JSON
-  console.log(JSON.stringify({
-    email,
-    password,
-    userId
-  }));
+  console.log(
+    JSON.stringify({
+      email,
+      password,
+      userId,
+    })
+  );
 }
 
 createTestTeacher();

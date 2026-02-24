@@ -3,10 +3,10 @@ import { LoginPage } from '../pages';
 
 /**
  * Test: Sign in (Teacher) → /teacher
- * 
+ *
  * Corresponds to Gherkin Scenario: "Functionally Correct Sign In (Teacher)"
  * from tests/features/auth.feature
- * 
+ *
  * Given I have a registered account with role "teacher"
  * When I submit the login form with valid credentials
  * Then I should be successfully authenticated
@@ -17,10 +17,10 @@ test.describe('Teacher Login', () => {
   test('should redirect teacher to /teacher after login', async ({ page }) => {
     // Create a teacher user for this test
     const teacherUser = await createTestUser('teacher');
-    
+
     try {
       const loginPage = new LoginPage(page);
-      
+
       await loginPage.goto();
       await loginPage.login(teacherUser.email, teacherUser.password);
 
@@ -35,10 +35,10 @@ test.describe('Teacher Login', () => {
 
   test('teacher should see teacher-specific navigation', async ({ page }) => {
     const teacherUser = await createTestUser('teacher');
-    
+
     try {
       const loginPage = new LoginPage(page);
-      
+
       await loginPage.goto();
       await loginPage.login(teacherUser.email, teacherUser.password);
 
@@ -48,7 +48,9 @@ test.describe('Teacher Login', () => {
       // Teacher dashboard should show teacher-specific content
       // Use locator-based assertion instead of fragile content.includes()
       await expect(
-        page.getByRole('heading', { level: 1 }).or(page.getByRole('heading', { level: 2 }))
+        page
+          .getByRole('heading', { level: 1 })
+          .or(page.getByRole('heading', { level: 2 }))
       ).toBeVisible({ timeout: 5000 });
     } finally {
       await deleteTestUser(teacherUser.userId);

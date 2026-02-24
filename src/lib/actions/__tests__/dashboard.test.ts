@@ -103,7 +103,10 @@ describe('Dashboard Actions', () => {
       // Verify the enrollment query used 'confirmed' status
       expect(mockBuilder.eq).toHaveBeenCalledWith('status', 'confirmed');
       // Verify the enrollment query used the correct column name 'student_id'
-      expect(mockBuilder.in).toHaveBeenCalledWith('student_id', ['fm-1', 'fm-2']);
+      expect(mockBuilder.in).toHaveBeenCalledWith('student_id', [
+        'fm-1',
+        'fm-2',
+      ]);
     });
 
     it('should return stats with correct values — amounts in dollars, not cents', async () => {
@@ -329,7 +332,12 @@ describe('Dashboard Actions', () => {
       mockBuilder.then.mockImplementationOnce((resolve: any) =>
         resolve({
           data: [
-            { id: 'pay-1', amount: 30, status: 'completed', created_at: '2024-01-01' },
+            {
+              id: 'pay-1',
+              amount: 30,
+              status: 'completed',
+              created_at: '2024-01-01',
+            },
           ],
           error: null,
         })
@@ -488,7 +496,15 @@ describe('Dashboard Actions', () => {
       mockBuilder.single.mockResolvedValue({ data: { role: 'teacher' } });
 
       // Use today's day name so the class matches the "today" filter
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const dayNames = [
+        'Sunday',
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+      ];
       const todayDay = dayNames[new Date().getDay()];
 
       // Classes query — class scheduled for today with block
@@ -502,7 +518,11 @@ describe('Dashboard Actions', () => {
               capacity: 20,
               day: todayDay,
               block: 'Block 3',
-              schedule_config: { day: todayDay, block: 'Block 3', recurring: true },
+              schedule_config: {
+                day: todayDay,
+                block: 'Block 3',
+                recurring: true,
+              },
             },
           ],
           error: null,
@@ -541,7 +561,15 @@ describe('Dashboard Actions', () => {
       });
       mockBuilder.single.mockResolvedValue({ data: { role: 'teacher' } });
 
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const dayNames = [
+        'Sunday',
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+      ];
       const todayDay = dayNames[new Date().getDay()];
 
       // Class with no block set

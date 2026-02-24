@@ -3,7 +3,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { ActionResult } from '@/types';
 
-
 type ExportType = 'classes' | 'enrollments' | 'users';
 
 /**
@@ -50,7 +49,10 @@ export async function exportData(
       .eq('id', user.id)
       .single();
 
-    if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
+    if (
+      !profile ||
+      (profile.role !== 'admin' && profile.role !== 'super_admin')
+    ) {
       return { success: false, error: 'Not authorized' };
     }
 
@@ -60,9 +62,7 @@ export async function exportData(
 
     if (exportType === 'classes') {
       filename = `classes_export_${dateStr}.csv`;
-      const { data: classes, error } = await supabase
-        .from('classes')
-        .select(`
+      const { data: classes, error } = await supabase.from('classes').select(`
           id, name, description, capacity, 
           status, price, 
           teacher:profiles(first_name, last_name),
@@ -71,27 +71,36 @@ export async function exportData(
 
       if (error) throw error;
 
-      const headers = ['ID', 'Name', 'Description', 'Capacity', 'Status', 'Price', 'Teacher', 'Location'];
-      const rows = (classes || []).map(c => [
+      const headers = [
+        'ID',
+        'Name',
+        'Description',
+        'Capacity',
+        'Status',
+        'Price',
+        'Teacher',
+        'Location',
+      ];
+      const rows = (classes || []).map((c) => [
         c.id,
         c.name,
         c.description,
         c.capacity,
         c.status,
         c.price,
-        c.teacher ? `${c.teacher.first_name} ${c.teacher.last_name}` : 'Unassigned',
-        c.location
+        c.teacher
+          ? `${c.teacher.first_name} ${c.teacher.last_name}`
+          : 'Unassigned',
+        c.location,
       ]);
 
       csvContent = [
         headers.join(','),
-        ...rows.map(row => row.map(escapeCsvField).join(','))
+        ...rows.map((row) => row.map(escapeCsvField).join(',')),
       ].join('\n');
-
     } else if (exportType === 'enrollments') {
       filename = `enrollments_export_${dateStr}.csv`;
-      const { data: enrollments, error } = await supabase
-        .from('enrollments')
+      const { data: enrollments, error } = await supabase.from('enrollments')
         .select(`
           id, status, created_at,
           class:classes(name),
@@ -100,25 +109,42 @@ export async function exportData(
 
       if (error) throw error;
 
-      const headers = ['ID', 'Status', 'Enrollment Date', 'Class Name', 'Student Name', 'Parent Name', 'Parent Email'];
-      const rows = (enrollments || []).map(e => {
-        const parent = (e.student as unknown as { parent: { email: string; first_name: string; last_name: string } | null })?.parent;
+      const headers = [
+        'ID',
+        'Status',
+        'Enrollment Date',
+        'Class Name',
+        'Student Name',
+        'Parent Name',
+        'Parent Email',
+      ];
+      const rows = (enrollments || []).map((e) => {
+        const parent = (
+          e.student as unknown as {
+            parent: {
+              email: string;
+              first_name: string;
+              last_name: string;
+            } | null;
+          }
+        )?.parent;
         return [
           e.id,
           e.status,
           e.created_at,
           e.class?.name || 'Unknown',
-          e.student ? `${e.student.first_name} ${e.student.last_name}` : 'Unknown',
+          e.student
+            ? `${e.student.first_name} ${e.student.last_name}`
+            : 'Unknown',
           parent ? `${parent.first_name} ${parent.last_name}` : 'Unknown',
-          parent?.email || 'Unknown'
+          parent?.email || 'Unknown',
         ];
       });
 
       csvContent = [
         headers.join(','),
-        ...rows.map(row => row.map(escapeCsvField).join(','))
+        ...rows.map((row) => row.map(escapeCsvField).join(',')),
       ].join('\n');
-
     } else if (exportType === 'users') {
       filename = `users_export_${dateStr}.csv`;
       const { data: profiles, error } = await supabase
@@ -127,25 +153,32 @@ export async function exportData(
 
       if (error) throw error;
 
-      const headers = ['ID', 'Email', 'First Name', 'Last Name', 'Role', 'Phone', 'Joined Date'];
-      const rows = (profiles || []).map(p => [
+      const headers = [
+        'ID',
+        'Email',
+        'First Name',
+        'Last Name',
+        'Role',
+        'Phone',
+        'Joined Date',
+      ];
+      const rows = (profiles || []).map((p) => [
         p.id,
         p.email,
         p.first_name,
         p.last_name,
         p.role,
         p.phone,
-        p.created_at
+        p.created_at,
       ]);
 
       csvContent = [
         headers.join(','),
-        ...rows.map(row => row.map(escapeCsvField).join(','))
+        ...rows.map((row) => row.map(escapeCsvField).join(',')),
       ].join('\n');
     }
 
     return { success: true, data: { csv: csvContent, filename } };
-
   } catch (error) {
     console.error('Export error:', error);
     return { success: false, error: 'Failed to export data' };

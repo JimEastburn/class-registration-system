@@ -8,22 +8,22 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mocks
 vi.mock('@/lib/actions/enrollments', () => ({
-    enrollStudent: vi.fn(),
+  enrollStudent: vi.fn(),
 }));
 
 vi.mock('@/lib/actions/family', () => ({
-    getFamilyMembers: vi.fn(),
+  getFamilyMembers: vi.fn(),
 }));
 
 vi.mock('@/lib/actions/profile', () => ({
-    hasCompleteAddress: vi.fn(),
+  hasCompleteAddress: vi.fn(),
 }));
 
 vi.mock('sonner', () => ({
-    toast: {
-        success: vi.fn(),
-        error: vi.fn(),
-    },
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 // Mock fetch
@@ -33,221 +33,246 @@ global.fetch = fetchMock;
 // Mock window.location
 const locationMock = { href: '' };
 Object.defineProperty(window, 'location', {
-    writable: true,
-    value: locationMock,
+  writable: true,
+  value: locationMock,
 });
 
 describe('EnrollButton', () => {
-    const mockClassId = 'class-123';
-    const mockEnrollmentId = 'enroll-456';
-    const mockMembers = [
-        { id: 'member-1', first_name: 'John', last_name: 'Doe', relationship: 'Student' },
-        { id: 'member-2', first_name: 'Jane', last_name: 'Doe', relationship: 'Student' },
-    ];
+  const mockClassId = 'class-123';
+  const mockEnrollmentId = 'enroll-456';
+  const mockMembers = [
+    {
+      id: 'member-1',
+      first_name: 'John',
+      last_name: 'Doe',
+      relationship: 'Student',
+    },
+    {
+      id: 'member-2',
+      first_name: 'Jane',
+      last_name: 'Doe',
+      relationship: 'Student',
+    },
+  ];
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        locationMock.href = '';
-        (getFamilyMembers as any).mockResolvedValue({ data: mockMembers, error: null });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    locationMock.href = '';
+    (getFamilyMembers as any).mockResolvedValue({
+      data: mockMembers,
+      error: null,
+    });
+  });
+
+  it('renders enroll button and opens dialog with family members', async () => {
+    render(
+      <EnrollButton
+        classId={mockClassId}
+        className="Test Class"
+        available={5}
+      />
+    );
+
+    const enrollBtn = screen.getByText('Enroll Now');
+    fireEvent.click(enrollBtn);
+
+    expect(screen.getByText('Enroll in Test Class')).toBeInTheDocument();
+
+    // Wait for loading to finish
+    await waitFor(() => {
+      expect(
+        screen.queryByText('Loading family members...')
+      ).not.toBeInTheDocument();
+    });
+    expect(getFamilyMembers).toHaveBeenCalledWith({ relationship: 'Student' });
+
+    // Trigger Select to see options
+    const trigger = screen.getByRole('combobox');
+    fireEvent.click(trigger);
+
+    await waitFor(() => {
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.getByText('Jane Doe')).toBeInTheDocument();
+    });
+  });
+
+  it('handles waitlist flow correctly', async () => {
+    (enrollStudent as any).mockResolvedValue({
+      data: null,
+      status: 'waitlisted',
+      error: null,
     });
 
-    it('renders enroll button and opens dialog with family members', async () => {
-        render(
-            <EnrollButton
-                classId={mockClassId}
-                className="Test Class"
-                available={5}
-            />
-        );
+    render(
+      <EnrollButton
+        classId={mockClassId}
+        className="Test Class"
+        available={5}
+      />
+    );
 
-        const enrollBtn = screen.getByText('Enroll Now');
-        fireEvent.click(enrollBtn);
+    fireEvent.click(screen.getByText('Enroll Now'));
 
-        expect(screen.getByText('Enroll in Test Class')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.queryByText('Loading family members...')
+      ).not.toBeInTheDocument();
+    });
+    expect(getFamilyMembers).toHaveBeenCalledWith({ relationship: 'Student' });
 
-        // Wait for loading to finish
-        await waitFor(() => {
-            expect(screen.queryByText('Loading family members...')).not.toBeInTheDocument();
-        });
-        expect(getFamilyMembers).toHaveBeenCalledWith({ relationship: 'Student' });
+    // Open select
+    fireEvent.click(screen.getByRole('combobox'));
+    // Select John
+    const option = await screen.findByText('John Doe');
+    fireEvent.click(option);
 
-        // Trigger Select to see options
-        const trigger = screen.getByRole('combobox');
-        fireEvent.click(trigger);
+    // Submit
+    const proceedBtn = await screen.findByText('Proceed to Payment');
+    fireEvent.click(proceedBtn);
 
-        await waitFor(() => {
-             expect(screen.getByText('John Doe')).toBeInTheDocument();
-             expect(screen.getByText('Jane Doe')).toBeInTheDocument();
-        });
+    await waitFor(() => {
+      expect(enrollStudent).toHaveBeenCalledWith({
+        classId: mockClassId,
+        familyMemberId: 'member-1',
+      });
+      expect(toast.success).toHaveBeenCalledWith(
+        'Successfully joined waitlist'
+      );
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
+  it('handles payment flow (POST to checkout) correctly', async () => {
+    (enrollStudent as any).mockResolvedValue({
+      data: { id: mockEnrollmentId },
+      status: 'pending',
+      error: null,
     });
 
-    it('handles waitlist flow correctly', async () => {
-        (enrollStudent as any).mockResolvedValue({
-            data: null,
-            status: 'waitlisted',
-            error: null,
-        });
+    (hasCompleteAddress as any).mockResolvedValue(true);
 
-        render(
-            <EnrollButton
-                classId={mockClassId}
-                className="Test Class"
-                available={5}
-            />
-        );
-
-        fireEvent.click(screen.getByText('Enroll Now'));
-        
-        await waitFor(() => {
-            expect(screen.queryByText('Loading family members...')).not.toBeInTheDocument();
-        });
-        expect(getFamilyMembers).toHaveBeenCalledWith({ relationship: 'Student' });
-
-        // Open select
-        fireEvent.click(screen.getByRole('combobox'));
-        // Select John
-        const option = await screen.findByText('John Doe');
-        fireEvent.click(option);
-
-        // Submit
-        const proceedBtn = await screen.findByText('Proceed to Payment');
-        fireEvent.click(proceedBtn);
-
-        await waitFor(() => {
-            expect(enrollStudent).toHaveBeenCalledWith({
-                classId: mockClassId,
-                familyMemberId: 'member-1',
-            });
-            expect(toast.success).toHaveBeenCalledWith('Successfully joined waitlist');
-            expect(fetchMock).not.toHaveBeenCalled();
-        });
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ url: 'https://checkout.stripe.com/test' }),
     });
 
-    it('handles payment flow (POST to checkout) correctly', async () => {
-        (enrollStudent as any).mockResolvedValue({
-            data: { id: mockEnrollmentId },
-            status: 'pending',
-            error: null,
-        });
+    render(
+      <EnrollButton
+        classId={mockClassId}
+        className="Test Class"
+        available={5}
+      />
+    );
 
-        (hasCompleteAddress as any).mockResolvedValue(true);
+    fireEvent.click(screen.getByText('Enroll Now'));
 
-        fetchMock.mockResolvedValue({
-            ok: true,
-            json: async () => ({ url: 'https://checkout.stripe.com/test' }),
-        });
+    await waitFor(() => {
+      expect(
+        screen.queryByText('Loading family members...')
+      ).not.toBeInTheDocument();
+    });
+    expect(getFamilyMembers).toHaveBeenCalledWith({ relationship: 'Student' });
 
-        render(
-            <EnrollButton
-                classId={mockClassId}
-                className="Test Class"
-                available={5}
-            />
-        );
+    // Open select
+    fireEvent.click(screen.getByRole('combobox'));
+    // Select Jane
+    const option = await screen.findByText('Jane Doe');
+    fireEvent.click(option);
 
-        fireEvent.click(screen.getByText('Enroll Now'));
-        
-        await waitFor(() => {
-            expect(screen.queryByText('Loading family members...')).not.toBeInTheDocument();
-        });
-        expect(getFamilyMembers).toHaveBeenCalledWith({ relationship: 'Student' });
-        
-        // Open select
-        fireEvent.click(screen.getByRole('combobox'));
-        // Select Jane
-        const option = await screen.findByText('Jane Doe');
-        fireEvent.click(option);
+    // Submit
+    const proceedBtn = await screen.findByText('Proceed to Payment');
+    fireEvent.click(proceedBtn);
 
-        // Submit
-        const proceedBtn = await screen.findByText('Proceed to Payment');
-        fireEvent.click(proceedBtn);
-
-        await waitFor(() => {
-            expect(enrollStudent).toHaveBeenCalledWith({
-                classId: mockClassId,
-                familyMemberId: 'member-2',
-            });
-        });
-
-        await waitFor(() => {
-             expect(fetchMock).toHaveBeenCalledWith('/api/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ enrollmentId: mockEnrollmentId }),
-            });
-            expect(locationMock.href).toBe('https://checkout.stripe.com/test');
-        });
+    await waitFor(() => {
+      expect(enrollStudent).toHaveBeenCalledWith({
+        classId: mockClassId,
+        familyMemberId: 'member-2',
+      });
     });
 
-    it('handles API errors gracefully', async () => {
-         (enrollStudent as any).mockResolvedValue({
-            data: null,
-            status: null,
-            error: 'Database error',
-        });
-
-        render(
-            <EnrollButton
-                classId={mockClassId}
-                className="Test Class"
-                available={5}
-            />
-        );
-
-        fireEvent.click(screen.getByText('Enroll Now'));
-        
-        await waitFor(() => {
-            expect(screen.queryByText('Loading family members...')).not.toBeInTheDocument();
-        });
-        expect(getFamilyMembers).toHaveBeenCalledWith({ relationship: 'Student' });
-
-        fireEvent.click(screen.getByRole('combobox'));
-        const option = await screen.findByText('John Doe');
-        fireEvent.click(option);
-        
-        const proceedBtn = await screen.findByText('Proceed to Payment');
-        fireEvent.click(proceedBtn);
-
-        await waitFor(() => {
-            expect(toast.error).toHaveBeenCalledWith('Database error');
-        });
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enrollmentId: mockEnrollmentId }),
+      });
+      expect(locationMock.href).toBe('https://checkout.stripe.com/test');
     });
-    it('handles confirmed flow (no payment needed) correctly', async () => {
-        (enrollStudent as any).mockResolvedValue({
-            data: { id: mockEnrollmentId },
-            status: 'confirmed',
-            error: null,
-        });
+  });
 
-        render(
-            <EnrollButton
-                classId={mockClassId}
-                className="Test Class"
-                available={5}
-            />
-        );
-
-        fireEvent.click(screen.getByText('Enroll Now'));
-        
-        await waitFor(() => {
-            expect(screen.queryByText('Loading family members...')).not.toBeInTheDocument();
-        });
-        expect(getFamilyMembers).toHaveBeenCalledWith({ relationship: 'Student' });
-
-        fireEvent.click(screen.getByRole('combobox'));
-        const option = await screen.findByText('John Doe');
-        fireEvent.click(option);
-
-        const proceedBtn = await screen.findByText('Proceed to Payment');
-        fireEvent.click(proceedBtn);
-
-        await waitFor(() => {
-            expect(enrollStudent).toHaveBeenCalledWith({
-                classId: mockClassId,
-                familyMemberId: 'member-1',
-            });
-            expect(toast.success).toHaveBeenCalledWith('Enrollment confirmed');
-            expect(fetchMock).not.toHaveBeenCalled();
-        });
+  it('handles API errors gracefully', async () => {
+    (enrollStudent as any).mockResolvedValue({
+      data: null,
+      status: null,
+      error: 'Database error',
     });
+
+    render(
+      <EnrollButton
+        classId={mockClassId}
+        className="Test Class"
+        available={5}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Enroll Now'));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('Loading family members...')
+      ).not.toBeInTheDocument();
+    });
+    expect(getFamilyMembers).toHaveBeenCalledWith({ relationship: 'Student' });
+
+    fireEvent.click(screen.getByRole('combobox'));
+    const option = await screen.findByText('John Doe');
+    fireEvent.click(option);
+
+    const proceedBtn = await screen.findByText('Proceed to Payment');
+    fireEvent.click(proceedBtn);
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Database error');
+    });
+  });
+  it('handles confirmed flow (no payment needed) correctly', async () => {
+    (enrollStudent as any).mockResolvedValue({
+      data: { id: mockEnrollmentId },
+      status: 'confirmed',
+      error: null,
+    });
+
+    render(
+      <EnrollButton
+        classId={mockClassId}
+        className="Test Class"
+        available={5}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Enroll Now'));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('Loading family members...')
+      ).not.toBeInTheDocument();
+    });
+    expect(getFamilyMembers).toHaveBeenCalledWith({ relationship: 'Student' });
+
+    fireEvent.click(screen.getByRole('combobox'));
+    const option = await screen.findByText('John Doe');
+    fireEvent.click(option);
+
+    const proceedBtn = await screen.findByText('Proceed to Payment');
+    fireEvent.click(proceedBtn);
+
+    await waitFor(() => {
+      expect(enrollStudent).toHaveBeenCalledWith({
+        classId: mockClassId,
+        familyMemberId: 'member-1',
+      });
+      expect(toast.success).toHaveBeenCalledWith('Enrollment confirmed');
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
 });

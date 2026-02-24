@@ -3,10 +3,10 @@ import { LoginPage } from '../pages';
 
 /**
  * Test: Sign in (Parent) → /parent
- * 
+ *
  * Corresponds to Gherkin Scenario: "Functionally Correct Sign In (Parent)"
  * from tests/features/auth.feature
- * 
+ *
  * Given I have a registered account with role "parent"
  * When I submit the login form with valid credentials
  * Then I should be successfully authenticated
@@ -14,10 +14,13 @@ import { LoginPage } from '../pages';
  */
 
 test.describe('Parent Login', () => {
-  test('should redirect parent to /parent after login', async ({ testUser, page }) => {
+  test('should redirect parent to /parent after login', async ({
+    testUser,
+    page,
+  }) => {
     // testUser fixture creates a parent user automatically
     const loginPage = new LoginPage(page);
-    
+
     await loginPage.goto();
     await loginPage.login(testUser.email, testUser.password);
 

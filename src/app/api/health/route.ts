@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
-import { NextResponse } from "next/server";
+import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
 
 /**
  * Health-check endpoint that keeps the Supabase free-tier database
@@ -13,11 +13,11 @@ export async function GET() {
   );
 
   const { count, error } = await supabase
-    .from("profiles")
-    .select("*", { count: "exact", head: true });
+    .from('profiles')
+    .select('*', { count: 'exact', head: true });
 
   return NextResponse.json({
-    status: error ? "error" : "ok",
+    status: error ? 'error' : 'ok',
     profiles: count,
     timestamp: new Date().toISOString(),
   });

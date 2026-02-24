@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -8,12 +7,29 @@ import { z } from 'zod';
 import { Class } from '@/types'; // ClassStatus needed?
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { getTeachersForScheduler, schedulerUpdateClass, schedulerCreateClass } from '@/lib/actions/scheduler';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  getTeachersForScheduler,
+  schedulerUpdateClass,
+  schedulerCreateClass,
+} from '@/lib/actions/scheduler';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { upsertSyllabusLink } from '@/lib/actions/materials';
 
@@ -29,7 +45,9 @@ const formSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   syllabusUrl: z.string().url('Enter a valid URL').optional().or(z.literal('')),
-  status: z.enum(['draft', 'published', 'completed', 'cancelled']).default('draft'),
+  status: z
+    .enum(['draft', 'published', 'completed', 'cancelled'])
+    .default('draft'),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -56,21 +74,24 @@ export function SchedulerClassForm({
 }: SchedulerClassFormProps) {
   const router = useRouter();
   const [teacherOptions, setTeacherOptions] = useState<TeacherOption[]>([]);
-  
-  const defaultValues = useMemo<FormValues>(() => ({
-    name: initialData?.name || '',
-    description: initialData?.description || '',
-    capacity: initialData?.capacity || 20,
 
-    location: initialData?.location || '',
-    teacher_id: initialData?.teacher_id || '',
-    status: (initialData?.status as FormValues['status']) || 'draft',
-    day: initialData?.schedule_config?.day || '',
-    block: initialData?.schedule_config?.block || '',
-    startDate: initialData?.schedule_config?.startDate || '',
-    endDate: initialData?.schedule_config?.endDate || '',
-    syllabusUrl: initialSyllabusUrl || '',
-  }), [initialData, initialSyllabusUrl]);
+  const defaultValues = useMemo<FormValues>(
+    () => ({
+      name: initialData?.name || '',
+      description: initialData?.description || '',
+      capacity: initialData?.capacity || 20,
+
+      location: initialData?.location || '',
+      teacher_id: initialData?.teacher_id || '',
+      status: (initialData?.status as FormValues['status']) || 'draft',
+      day: initialData?.schedule_config?.day || '',
+      block: initialData?.schedule_config?.block || '',
+      startDate: initialData?.schedule_config?.startDate || '',
+      endDate: initialData?.schedule_config?.endDate || '',
+      syllabusUrl: initialSyllabusUrl || '',
+    }),
+    [initialData, initialSyllabusUrl]
+  );
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as any,
@@ -93,7 +114,8 @@ export function SchedulerClassForm({
 
   const teacherSelectItems = useMemo(() => {
     return teacherOptions.map((teacher) => {
-      const name = `${teacher.first_name ?? ''} ${teacher.last_name ?? ''}`.trim();
+      const name =
+        `${teacher.first_name ?? ''} ${teacher.last_name ?? ''}`.trim();
       const label = name ? `${name} (${teacher.email})` : teacher.email;
       return { id: teacher.id, label };
     });
@@ -101,63 +123,74 @@ export function SchedulerClassForm({
 
   async function onSubmit(values: FormValues) {
     try {
-        let res;
-        const payload = { 
-            name: values.name,
-            description: values.description,
-            capacity: values.capacity,
-            location: values.location,
-            teacher_id: values.teacher_id,
+      let res;
+      const payload = {
+        name: values.name,
+        description: values.description,
+        capacity: values.capacity,
+        location: values.location,
+        teacher_id: values.teacher_id,
 
-            schedule_config: {
-                day: values.day,
-                block: values.block,
-                recurring: true,
-                startDate: values.startDate || undefined,
-                endDate: values.endDate || undefined,
-            },
-            status: values.status as Class['status'] 
-        };
+        schedule_config: {
+          day: values.day,
+          block: values.block,
+          recurring: true,
+          startDate: values.startDate || undefined,
+          endDate: values.endDate || undefined,
+        },
+        status: values.status as Class['status'],
+      };
 
-        if (isEdit && initialData?.id) {
-            res = await schedulerUpdateClass(initialData.id, payload);
-        } else {
-            res = await schedulerCreateClass(payload);
-        }
+      if (isEdit && initialData?.id) {
+        res = await schedulerUpdateClass(initialData.id, payload);
+      } else {
+        res = await schedulerCreateClass(payload);
+      }
 
-        if (!res.success) {
-            toast.error(res.error || 'Operation failed');
-            return;
-        }
+      if (!res.success) {
+        toast.error(res.error || 'Operation failed');
+        return;
+      }
 
-        const classId = isEdit ? initialData?.id : res.data?.classId;
+      const classId = isEdit ? initialData?.id : res.data?.classId;
 
-        if (classId && values.syllabusUrl && values.syllabusUrl.trim().length > 0) {
-          const syllabusRes = await upsertSyllabusLink(classId, values.syllabusUrl.trim());
-          if (!syllabusRes.success) {
-            toast.error(syllabusRes.error || 'Failed to save syllabus URL');
-            return;
-          }
-        }
-
-        toast.success(isEdit ? 'Class updated' : 'Class created');
-
-        if (onSuccess) {
-          onSuccess();
+      if (
+        classId &&
+        values.syllabusUrl &&
+        values.syllabusUrl.trim().length > 0
+      ) {
+        const syllabusRes = await upsertSyllabusLink(
+          classId,
+          values.syllabusUrl.trim()
+        );
+        if (!syllabusRes.success) {
+          toast.error(syllabusRes.error || 'Failed to save syllabus URL');
           return;
         }
+      }
 
-        router.push('/class-scheduler/classes');
-        router.refresh();
-    } catch(err) {
-        console.error(err);
-        toast.error('Something went wrong');
+      toast.success(isEdit ? 'Class updated' : 'Class created');
+
+      if (onSuccess) {
+        onSuccess();
+        return;
+      }
+
+      router.push('/class-scheduler/classes');
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+      toast.error('Something went wrong');
     }
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-2xl" data-testid="scheduler-class-form">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="max-w-2xl space-y-6"
+        data-testid="scheduler-class-form"
+      >
         <FormField
           control={form.control}
           name="name"
@@ -165,7 +198,11 @@ export function SchedulerClassForm({
             <FormItem>
               <FormLabel>Class Name</FormLabel>
               <FormControl>
-                <Input placeholder="Math 101" {...field} data-testid="class-name-input" />
+                <Input
+                  placeholder="Math 101"
+                  {...field}
+                  data-testid="class-name-input"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -185,14 +222,17 @@ export function SchedulerClassForm({
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="teacher_id"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Assigned Teacher</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value || ''}>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value || ''}
+              >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select teacher" />
@@ -224,59 +264,73 @@ export function SchedulerClassForm({
             </FormItem>
           )}
         />
-        
+
         <div className="grid grid-cols-2 gap-4">
-             <FormField
-                control={form.control}
-                name="day"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Day</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Day" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {[
-                              { value: 'Tuesday/Thursday', label: 'Tuesday/Thursday' },
-                              { value: 'Tuesday', label: 'Tuesday only' },
-                              { value: 'Wednesday', label: 'Wednesday only' },
-                              { value: 'Thursday', label: 'Thursday only' },
-                            ].map((day) => (
-                              <SelectItem key={day.value} value={day.value}>
-                                {day.label}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
-                name="block"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Block</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Block" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {['Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5'].map(block => (
-                                <SelectItem key={block} value={block}>{block}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
+          <FormField
+            control={form.control}
+            name="day"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Day</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Day" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {[
+                      { value: 'Tuesday/Thursday', label: 'Tuesday/Thursday' },
+                      { value: 'Tuesday', label: 'Tuesday only' },
+                      { value: 'Wednesday', label: 'Wednesday only' },
+                      { value: 'Thursday', label: 'Thursday only' },
+                    ].map((day) => (
+                      <SelectItem key={day.value} value={day.value}>
+                        {day.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="block"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Block</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Block" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {[
+                      'Block 1',
+                      'Block 2',
+                      'Block 3',
+                      'Block 4',
+                      'Block 5',
+                    ].map((block) => (
+                      <SelectItem key={block} value={block}>
+                        {block}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -316,14 +370,16 @@ export function SchedulerClassForm({
               <FormItem>
                 <FormLabel>Max Student Class Size</FormLabel>
                 <FormControl>
-                  <Input type="number" {...field} data-testid="capacity-input" />
+                  <Input
+                    type="number"
+                    {...field}
+                    data-testid="capacity-input"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-
-
         </div>
 
         <FormField
@@ -340,7 +396,9 @@ export function SchedulerClassForm({
           )}
         />
 
-        <Button type="submit" data-testid="scheduler-submit-button">{isEdit ? 'Update Class' : 'Create Class'}</Button>
+        <Button type="submit" data-testid="scheduler-submit-button">
+          {isEdit ? 'Update Class' : 'Create Class'}
+        </Button>
       </form>
     </Form>
   );

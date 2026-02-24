@@ -3,10 +3,10 @@ import { LoginPage, NavigationComponent } from '../pages';
 
 /**
  * Test: Sign out → /login
- * 
+ *
  * Corresponds to Gherkin Scenario: "Sign Out"
  * from tests/features/auth.feature
- * 
+ *
  * Given I am currently logged in
  * When I click the "Sign Out" button
  * Then my session should be invalidated
@@ -17,22 +17,26 @@ test.describe('Logout', () => {
   // Run tests serially since they all create/destroy users and the
   // Supabase auth rate limits can cause flakiness when run in parallel.
   test.describe.configure({ mode: 'serial', retries: 1 });
-  
+
   // Sign-out involves Supabase auth + Next.js middleware redirect chain
   test.setTimeout(60000);
 
   /**
    * Helper: Login and wait for dashboard to be fully ready
    */
-  async function loginAndWaitForDashboard(page: import('@playwright/test').Page, email: string, password: string) {
+  async function loginAndWaitForDashboard(
+    page: import('@playwright/test').Page,
+    email: string,
+    password: string
+  ) {
     const loginPage = new LoginPage(page);
     await loginPage.goto();
     await loginPage.login(email, password);
-    
-    // Wait for redirect to dashboard  
+
+    // Wait for redirect to dashboard
     await page.waitForLoadState('domcontentloaded');
     await expect(page).toHaveURL(/\/parent/, { timeout: 30000 });
-    
+
     // Give the page time to finish any compilation/hydration
     // This is necessary because the Next.js dev server may still be compiling
     await page.waitForTimeout(2000);
@@ -40,7 +44,7 @@ test.describe('Logout', () => {
 
   test('should redirect to /login after sign out', async ({ page }) => {
     const user = await createTestUser('parent');
-    
+
     try {
       await loginAndWaitForDashboard(page, user.email, user.password);
 
@@ -57,7 +61,7 @@ test.describe('Logout', () => {
 
   test('should invalidate session after logout', async ({ page }) => {
     const user = await createTestUser('parent');
-    
+
     try {
       await loginAndWaitForDashboard(page, user.email, user.password);
 
@@ -80,7 +84,7 @@ test.describe('Logout', () => {
 
   test('sign out button should be accessible', async ({ page }) => {
     const user = await createTestUser('parent');
-    
+
     try {
       await loginAndWaitForDashboard(page, user.email, user.password);
 

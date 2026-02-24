@@ -1,6 +1,19 @@
 import Link from 'next/link';
-import { BookOpen, Users, Calendar, CalendarClock, ArrowRight, Plus } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  BookOpen,
+  Users,
+  Calendar,
+  CalendarClock,
+  ArrowRight,
+  Plus,
+} from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getTeacherDashboardData } from '@/lib/actions/dashboard';
@@ -15,7 +28,7 @@ export default async function TeacherDashboardPage() {
 
   if (!result.success || !result.data) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <p className="text-muted-foreground">Unable to load dashboard data.</p>
       </div>
     );
@@ -27,32 +40,36 @@ export default async function TeacherDashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Teacher Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Teacher Dashboard
+          </h1>
           <p className="text-muted-foreground">
             Manage your classes and view student enrollments.
           </p>
         </div>
-            <Button asChild>
-              <Link href="/teacher/classes/new">
-                <span className="flex items-center">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Class
-                </span>
-              </Link>
-            </Button>
+        <Button asChild>
+          <Link href="/teacher/classes/new">
+            <span className="flex items-center">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Class
+            </span>
+          </Link>
+        </Button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Link href="/teacher/classes" className="block">
-          <Card className="transition-colors hover:border-primary/50 hover:shadow-sm cursor-pointer">
+          <Card className="hover:border-primary/50 cursor-pointer transition-colors hover:shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Classes</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">
+                Total Classes
+              </CardTitle>
+              <BookOpen className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalClasses}</div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 {stats.activeClasses} published
               </p>
             </CardContent>
@@ -60,14 +77,16 @@ export default async function TeacherDashboardPage() {
         </Link>
 
         <Link href="/teacher/classes" className="block">
-          <Card className="transition-colors hover:border-primary/50 hover:shadow-sm cursor-pointer">
+          <Card className="hover:border-primary/50 cursor-pointer transition-colors hover:shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">
+                Total Students
+              </CardTitle>
+              <Users className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalStudents}</div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 enrolled across classes
               </p>
             </CardContent>
@@ -75,27 +94,31 @@ export default async function TeacherDashboardPage() {
         </Link>
 
         <Link href="/teacher/classes" className="block">
-          <Card className="transition-colors hover:border-primary/50 hover:shadow-sm cursor-pointer">
+          <Card className="hover:border-primary/50 cursor-pointer transition-colors hover:shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Classes Today</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">
+                Classes Today
+              </CardTitle>
+              <Calendar className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.classesToday}</div>
-              <p className="text-xs text-muted-foreground">scheduled sessions</p>
+              <p className="text-muted-foreground text-xs">
+                scheduled sessions
+              </p>
             </CardContent>
           </Card>
         </Link>
 
         <Link href="/teacher/classes" className="block">
-          <Card className="transition-colors hover:border-primary/50 hover:shadow-sm cursor-pointer">
+          <Card className="hover:border-primary/50 cursor-pointer transition-colors hover:shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Upcoming</CardTitle>
-              <CalendarClock className="h-4 w-4 text-muted-foreground" />
+              <CalendarClock className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.upcomingClasses}</div>
-              <p className="text-xs text-muted-foreground">classes this week</p>
+              <p className="text-muted-foreground text-xs">classes this week</p>
             </CardContent>
           </Card>
         </Link>
@@ -111,7 +134,7 @@ export default async function TeacherDashboardPage() {
           </CardHeader>
           <CardContent>
             {todayClasses.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 No classes scheduled today.
               </p>
             ) : (
@@ -119,22 +142,28 @@ export default async function TeacherDashboardPage() {
                 {todayClasses.map((cls) => (
                   <div
                     key={cls.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                    className="bg-muted/50 flex items-center justify-between rounded-lg p-3"
                   >
                     <div>
-                      <p className="font-medium text-sm">{cls.name}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm font-medium">{cls.name}</p>
+                      <p className="text-muted-foreground text-xs">
                         {cls.block}
                       </p>
                     </div>
-                    <Badge variant={cls.enrolledCount >= cls.capacity ? 'default' : 'outline'}>
+                    <Badge
+                      variant={
+                        cls.enrolledCount >= cls.capacity
+                          ? 'default'
+                          : 'outline'
+                      }
+                    >
                       {cls.enrolledCount}/{cls.capacity}
                     </Badge>
                   </div>
                 ))}
               </div>
             )}
-            <Button variant="ghost" className="w-full mt-4" asChild>
+            <Button variant="ghost" className="mt-4 w-full" asChild>
               <Link href="/teacher/classes">
                 <span className="flex items-center">
                   View All Classes
@@ -149,11 +178,13 @@ export default async function TeacherDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Recent Enrollments</CardTitle>
-            <CardDescription>Latest students enrolled in your classes</CardDescription>
+            <CardDescription>
+              Latest students enrolled in your classes
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {recentEnrollments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 No recent enrollments.
               </p>
             ) : (
@@ -161,24 +192,22 @@ export default async function TeacherDashboardPage() {
                 {recentEnrollments.map((enrollment) => (
                   <div
                     key={enrollment.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                    className="bg-muted/50 flex items-center justify-between rounded-lg p-3"
                   >
                     <div>
-                      <p className="font-medium text-sm">
+                      <p className="text-sm font-medium">
                         {enrollment.studentName}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-muted-foreground text-xs">
                         {enrollment.className}
                       </p>
                     </div>
-                    <Badge variant="secondary">
-                      {enrollment.enrolledAgo}
-                    </Badge>
+                    <Badge variant="secondary">{enrollment.enrolledAgo}</Badge>
                   </div>
                 ))}
               </div>
             )}
-            <Button variant="ghost" className="w-full mt-4" asChild>
+            <Button variant="ghost" className="mt-4 w-full" asChild>
               <Link href="/teacher/classes">
                 <span className="flex items-center">
                   Manage Classes
@@ -194,7 +223,9 @@ export default async function TeacherDashboardPage() {
       <Card>
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common tasks for managing your classes</CardDescription>
+          <CardDescription>
+            Common tasks for managing your classes
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">

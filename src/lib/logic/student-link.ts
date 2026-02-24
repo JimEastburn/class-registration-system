@@ -20,14 +20,27 @@ export async function resolveStudentFamilyMember(
 ): Promise<FamilyMemberLink | null> {
   const selectColumns = 'id, first_name, last_name, student_user_id';
   type LinkedLookupQuery = {
-    eq: (column: string, value: string) => {
-      limit: (count: number) => Promise<{ data: FamilyMemberLink[] | null; error: unknown }>;
+    eq: (
+      column: string,
+      value: string
+    ) => {
+      limit: (
+        count: number
+      ) => Promise<{ data: FamilyMemberLink[] | null; error: unknown }>;
     };
   };
   type EmailLookupQuery = {
-    eq: (column: string, value: string) => {
-      ilike: (column: string, pattern: string) => {
-        limit: (count: number) => Promise<{ data: FamilyMemberLink[] | null; error: unknown }>;
+    eq: (
+      column: string,
+      value: string
+    ) => {
+      ilike: (
+        column: string,
+        pattern: string
+      ) => {
+        limit: (
+          count: number
+        ) => Promise<{ data: FamilyMemberLink[] | null; error: unknown }>;
       };
     };
   };
@@ -69,8 +82,7 @@ export async function resolveStudentFamilyMember(
     const relinkUpdate = supabase
       .from('family_members')
       .update({ student_user_id: user.id }) as UpdateQuery;
-    const { error: relinkError } = await relinkUpdate
-      .eq('id', emailMatch.id);
+    const { error: relinkError } = await relinkUpdate.eq('id', emailMatch.id);
 
     if (!relinkError) {
       return { ...emailMatch, student_user_id: user.id };

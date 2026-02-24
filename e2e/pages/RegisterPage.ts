@@ -4,7 +4,7 @@ import type { UserRole } from '../../src/types';
 
 /**
  * Registration Page Object
- * 
+ *
  * Handles user registration form interactions.
  */
 export class RegisterPage extends BasePage {
@@ -18,7 +18,7 @@ export class RegisterPage extends BasePage {
   readonly codeOfConductCheckbox: Locator;
   readonly submitButton: Locator;
   readonly signInLink: Locator;
-  
+
   constructor(page: Page) {
     super(page);
     this.firstNameInput = page.locator('input[name="firstName"]');
@@ -32,14 +32,14 @@ export class RegisterPage extends BasePage {
     this.submitButton = page.getByTestId('register-submit-button');
     this.signInLink = page.getByTestId('signin-link');
   }
-  
+
   /**
    * Navigate to registration page
    */
   async goto(): Promise<void> {
     await this.page.goto('/register');
   }
-  
+
   /**
    * Select a role from the dropdown
    */
@@ -47,7 +47,7 @@ export class RegisterPage extends BasePage {
     await this.roleSelectTrigger.click();
     await this.page.getByTestId(`role-option-${role}`).click();
   }
-  
+
   /**
    * Fill registration form
    */
@@ -62,33 +62,33 @@ export class RegisterPage extends BasePage {
     await this.firstNameInput.fill(data.firstName);
     await this.lastNameInput.fill(data.lastName);
     await this.emailInput.fill(data.email);
-    
+
     if (data.role) {
       await this.selectRole(data.role);
     }
-    
+
     if (data.phone) {
       await this.phoneInput.fill(data.phone);
     }
-    
+
     await this.passwordInput.fill(data.password);
     await this.confirmPasswordInput.fill(data.password);
   }
-  
+
   /**
    * Accept code of conduct
    */
   async acceptCodeOfConduct(): Promise<void> {
     await this.codeOfConductCheckbox.click();
   }
-  
+
   /**
    * Submit registration form
    */
   async submit(): Promise<void> {
     await this.submitButton.click();
   }
-  
+
   /**
    * Complete registration process
    */
@@ -104,7 +104,7 @@ export class RegisterPage extends BasePage {
     await this.acceptCodeOfConduct();
     await this.submit();
   }
-  
+
   /**
    * Navigate to login page
    */

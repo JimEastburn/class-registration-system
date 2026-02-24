@@ -18,20 +18,27 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createClass, updateClass } from '@/lib/actions/classes';
 import type { Class, ScheduleConfig } from '@/types';
-
 
 // Define Zod Schema for the flat form structure
 const classFormSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
   description: z.string().optional(),
 
-  capacity: z.string().refine((val) => !isNaN(parseInt(val, 10)) && parseInt(val, 10) >= 1, {
-    message: 'Capacity must be at least 1',
-  }),
+  capacity: z
+    .string()
+    .refine((val) => !isNaN(parseInt(val, 10)) && parseInt(val, 10) >= 1, {
+      message: 'Capacity must be at least 1',
+    }),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   location: z.string().optional(),
@@ -52,7 +59,9 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
   // Helper to safely access schedule config
-  const scheduleConfig = existingClass?.schedule_config as ScheduleConfig | undefined;
+  const scheduleConfig = existingClass?.schedule_config as
+    | ScheduleConfig
+    | undefined;
 
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classFormSchema),
@@ -64,14 +73,15 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
       startDate: scheduleConfig?.startDate || '',
       endDate: scheduleConfig?.endDate || '',
       location: existingClass?.location || '',
-      ageMin: existingClass?.age_min != null ? String(existingClass.age_min) : '',
-      ageMax: existingClass?.age_max != null ? String(existingClass.age_max) : '',
+      ageMin:
+        existingClass?.age_min != null ? String(existingClass.age_min) : '',
+      ageMax:
+        existingClass?.age_max != null ? String(existingClass.age_max) : '',
     },
   });
 
   const onSubmit = (values: ClassFormValues) => {
     setServerError(null);
-
 
     const capacityNum = parseInt(values.capacity, 10);
 
@@ -83,11 +93,11 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
         capacity: capacityNum,
         // Preserve existing day/block from schedule_config (teachers cannot change these)
         schedule_config: {
-            day: scheduleConfig?.day || '',
-            block: scheduleConfig?.block || '',
-            recurring: true, // Default to recurring for now
-            startDate: values.startDate || undefined,
-            endDate: values.endDate || undefined,
+          day: scheduleConfig?.day || '',
+          block: scheduleConfig?.block || '',
+          recurring: true, // Default to recurring for now
+          startDate: values.startDate || undefined,
+          endDate: values.endDate || undefined,
         },
         location: values.location || undefined,
         ageMin: values.ageMin ? parseInt(values.ageMin, 10) : undefined,
@@ -120,8 +130,11 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" data-testid="class-form">
-        
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-6"
+        data-testid="class-form"
+      >
         {/* Main Server Error */}
         {serverError && (
           <Alert variant="destructive">
@@ -132,7 +145,9 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
         <Card>
           <CardHeader>
             <CardTitle>Basic Information</CardTitle>
-            <CardDescription>Essential details about your class</CardDescription>
+            <CardDescription>
+              Essential details about your class
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <FormField
@@ -142,7 +157,11 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
                 <FormItem>
                   <FormLabel>Class Name *</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Beginner Guitar" {...field} data-testid="class-name-input" />
+                    <Input
+                      placeholder="e.g., Beginner Guitar"
+                      {...field}
+                      data-testid="class-name-input"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -169,8 +188,6 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
             />
 
             <div className="grid gap-4 md:grid-cols-2">
-
-
               <FormField
                 control={form.control}
                 name="capacity"
@@ -178,7 +195,12 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
                   <FormItem>
                     <FormLabel>Capacity *</FormLabel>
                     <FormControl>
-                      <Input type="number" min="1" {...field} data-testid="class-capacity-input" />
+                      <Input
+                        type="number"
+                        min="1"
+                        {...field}
+                        data-testid="class-capacity-input"
+                      />
                     </FormControl>
                     <FormDescription>Maximum students</FormDescription>
                     <FormMessage />
@@ -233,8 +255,6 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
             <CardDescription>Optional class information</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-
-
             <div className="grid gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
@@ -269,20 +289,30 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
 
         {/* Validation Errors Summary */}
         {formErrors.length > 0 && (
-            <Alert variant="destructive" className="mb-4" data-testid="class-form-error-summary">
-                <AlertDescription>
-                    <p className="font-semibold mb-2">Please correct the following errors:</p>
-                    <ul className="list-disc pl-4">
-                        {formErrors.map((error, index) => (
-                            <li key={index}>{error.message}</li>
-                        ))}
-                    </ul>
-                </AlertDescription>
-            </Alert>
+          <Alert
+            variant="destructive"
+            className="mb-4"
+            data-testid="class-form-error-summary"
+          >
+            <AlertDescription>
+              <p className="mb-2 font-semibold">
+                Please correct the following errors:
+              </p>
+              <ul className="list-disc pl-4">
+                {formErrors.map((error, index) => (
+                  <li key={index}>{error.message}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
         )}
 
         <div className="flex gap-4">
-          <Button type="submit" disabled={isPending} data-testid="class-submit-button">
+          <Button
+            type="submit"
+            disabled={isPending}
+            data-testid="class-submit-button"
+          >
             {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {mode === 'create' ? 'Create Class' : 'Save Changes'}
           </Button>

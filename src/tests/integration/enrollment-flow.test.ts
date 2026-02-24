@@ -1,4 +1,3 @@
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createFamilyMember } from '@/lib/actions/family';
 import { enrollStudent } from '@/lib/actions/enrollments';
@@ -25,203 +24,260 @@ vi.mock('@/lib/email', () => ({
 }));
 
 // Simple types for mock DB
-type MockProfile = { id: string; role: string; email: string; first_name: string; last_name: string };
-type MockFamilyMember = { id: string; first_name: string; last_name: string; parent_id?: string; relationship?: 'Student' | 'Parent/Guardian' };
-type MockClass = { id: string; name: string; capacity: number; price: number; status: string; teacher_id: string };
-type MockEnrollment = { id: string; student_id: string; class_id: string; status: string };
+type MockProfile = {
+  id: string;
+  role: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+};
+type MockFamilyMember = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  parent_id?: string;
+  relationship?: 'Student' | 'Parent/Guardian';
+};
+type MockClass = {
+  id: string;
+  name: string;
+  capacity: number;
+  price: number;
+  status: string;
+  teacher_id: string;
+};
+type MockEnrollment = {
+  id: string;
+  student_id: string;
+  class_id: string;
+  status: string;
+};
 
 describe('Integration Flow: Family Creation -> Enrollment', () => {
-    const mockUserId = 'parent-123';
-    const mockClassId = 'class-math-101';
-    
-    // Mutable "Database"
-    let dbProfiles: MockProfile[] = [];
-    let dbFamilyMembers: MockFamilyMember[] = [];
-    let dbClasses: MockClass[] = [];
-    let dbEnrollments: MockEnrollment[] = [];
-    let dbClassBlocks: unknown[] = [];
+  const mockUserId = 'parent-123';
+  const mockClassId = 'class-math-101';
 
-    const mockSupabase = {
-        auth: {
-            getUser: vi.fn(),
+  // Mutable "Database"
+  let dbProfiles: MockProfile[] = [];
+  let dbFamilyMembers: MockFamilyMember[] = [];
+  let dbClasses: MockClass[] = [];
+  let dbEnrollments: MockEnrollment[] = [];
+  let dbClassBlocks: unknown[] = [];
+
+  const mockSupabase = {
+    auth: {
+      getUser: vi.fn(),
+    },
+    from: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Reset "DB"
+    dbProfiles = [
+      {
+        id: mockUserId,
+        role: 'parent',
+        email: 'parent@test.com',
+        first_name: 'Parent',
+        last_name: 'User',
+      },
+    ];
+    dbFamilyMembers = [];
+    dbClasses = [
+      {
+        id: mockClassId,
+        name: 'Math 101',
+        capacity: 20,
+        price: 10000,
+        status: 'published',
+        teacher_id: 'teacher-1',
+      },
+    ];
+    dbEnrollments = [];
+    dbClassBlocks = [];
+
+    (
+      createClient as unknown as { mockResolvedValue: (val: unknown) => void }
+    ).mockResolvedValue(mockSupabase);
+
+    // Mock admin client for system_settings check in enrollStudent
+    const mockAdminSupabase = {
+      from: vi.fn().mockImplementation((table: string) => {
+        if (table === 'system_settings') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                maybeSingle: vi
+                  .fn()
+                  .mockResolvedValue({ data: null, error: null }),
+              }),
+            }),
+          };
+        }
+        return {};
+      }),
+    };
+    (
+      createAdminClient as unknown as {
+        mockResolvedValue: (val: unknown) => void;
+      }
+    ).mockResolvedValue(mockAdminSupabase);
+
+    // Mock Auth
+    mockSupabase.auth.getUser.mockResolvedValue({
+      data: { user: { id: mockUserId } },
+      error: null,
+    });
+
+    // Robust Mock Builder
+    mockSupabase.from.mockImplementation((table: string) => {
+      const queryState: {
+        filters: Record<string, unknown>;
+        data: unknown;
+        method: string;
+      } = {
+        filters: {},
+        data: null,
+        method: 'select',
+      };
+
+      const builder = {
+        select: vi.fn().mockReturnThis(),
+        insert: vi.fn().mockImplementation((newData) => {
+          queryState.method = 'insert';
+          queryState.data = newData;
+          return builder;
+        }),
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockImplementation((col, val) => {
+          queryState.filters[col] = val;
+          return builder;
+        }),
+        single: vi.fn().mockImplementation(async () => {
+          return executeQuery(table, queryState, 'single');
+        }),
+        in: vi.fn().mockImplementation((col: string, vals: unknown[]) => {
+          queryState.filters[`_in_${col}`] = vals;
+          return builder;
+        }),
+        limit: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockImplementation(async () => {
+          return executeQuery(table, queryState, 'maybeSingle');
+        }),
+      };
+
+      // To make the builder awaitable:
+      Object.assign(builder, {
+        then: (resolve: (value: unknown) => void) => {
+          resolve(executeQuery(table, queryState, 'all'));
         },
-        from: vi.fn(),
+      });
+
+      return builder;
+    });
+  });
+
+  const executeQuery = (
+    table: string,
+    state: { filters: Record<string, unknown>; data: unknown; method: string },
+    mode: 'single' | 'maybeSingle' | 'all'
+  ) => {
+    let result: any[] = []; // Keep explicit any for flexible generic result handling in mock
+
+    if (state.method === 'insert') {
+      const dataObj = state.data as Record<string, unknown>;
+      if (table === 'family_members') {
+        const newId = `student-${dbFamilyMembers.length + 1}`;
+        const record = { ...dataObj, id: newId } as MockFamilyMember;
+        dbFamilyMembers.push(record);
+        return { data: record, error: null };
+      }
+      if (table === 'enrollments') {
+        const newId = `enr-${dbEnrollments.length + 1}`;
+        const record = { ...dataObj, id: newId } as MockEnrollment;
+        dbEnrollments.push(record);
+        return { data: record, error: null };
+      }
+    }
+
+    // Select Logic
+    if (table === 'profiles') result = dbProfiles;
+    if (table === 'family_members') result = dbFamilyMembers;
+    if (table === 'classes') result = dbClasses;
+    if (table === 'enrollments') result = dbEnrollments;
+    if (table === 'class_blocks') result = dbClassBlocks as any[];
+
+    // Apply Filters
+    result = result.filter((item) => {
+      for (const [key, val] of Object.entries(state.filters)) {
+        if ((item as any)[key] !== val) return false;
+      }
+      return true;
+    });
+
+    if (mode === 'single') {
+      if (result.length === 0)
+        return {
+          data: null,
+          error: { message: 'Not found', code: 'PGRST116' },
+        };
+      return { data: result[0], error: null };
+    }
+
+    if (mode === 'maybeSingle') {
+      if (result.length === 0) return { data: null, error: null };
+      return { data: result[0], error: null };
+    }
+
+    // Mode 'all' (Array or Count)
+    return { data: result, count: result.length, error: null };
+  };
+
+  it('successfully creates a student and enrolls them in a class', async () => {
+    // Step 1: Create Family Member
+    const studentData = {
+      firstName: 'Timmy',
+      lastName: 'Tester',
+      email: 'timmy.tester@example.com',
+      relationship: 'Student' as const,
+      dob: '2015-01-01',
+      grade: '5th',
     };
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        
-        // Reset "DB"
-        dbProfiles = [{ id: mockUserId, role: 'parent', email: 'parent@test.com', first_name: 'Parent', last_name: 'User' }];
-        dbFamilyMembers = [];
-        dbClasses = [{ 
-            id: mockClassId, 
-            name: 'Math 101', 
-            capacity: 20, 
-            price: 10000,
-            status: 'published',
-            teacher_id: 'teacher-1'
-        }];
-        dbEnrollments = [];
-        dbClassBlocks = [];
+    const createResult = await createFamilyMember(studentData);
+    expect(createResult.error).toBeNull();
+    expect(createResult.data).toBeDefined();
+    const newStudentId = createResult.data!.id;
 
-        (createClient as unknown as { mockResolvedValue: (val: unknown) => void }).mockResolvedValue(mockSupabase);
+    // Verify "Database" State
+    expect(dbFamilyMembers).toHaveLength(1);
+    expect(dbFamilyMembers[0].first_name).toBe('Timmy');
 
-        // Mock admin client for system_settings check in enrollStudent
-        const mockAdminSupabase = {
-            from: vi.fn().mockImplementation((table: string) => {
-                if (table === 'system_settings') {
-                    return {
-                        select: vi.fn().mockReturnValue({
-                            eq: vi.fn().mockReturnValue({
-                                maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null })
-                            })
-                        })
-                    };
-                }
-                return {};
-            })
-        };
-        (createAdminClient as unknown as { mockResolvedValue: (val: unknown) => void }).mockResolvedValue(mockAdminSupabase);
-        
-        // Mock Auth
-        mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: mockUserId } }, error: null });
-
-        // Robust Mock Builder
-        mockSupabase.from.mockImplementation((table: string) => {
-            const queryState: { filters: Record<string, unknown>, data: unknown, method: string } = {
-                filters: {},
-                data: null,
-                method: 'select'
-            };
-
-            const builder = {
-                select: vi.fn().mockReturnThis(),
-                insert: vi.fn().mockImplementation((newData) => {
-                    queryState.method = 'insert';
-                    queryState.data = newData;
-                    return builder;
-                }),
-                update: vi.fn().mockReturnThis(), 
-                eq: vi.fn().mockImplementation((col, val) => {
-                    queryState.filters[col] = val;
-                    return builder;
-                }),
-                single: vi.fn().mockImplementation(async () => {
-                    return executeQuery(table, queryState, 'single');
-                }),
-                in: vi.fn().mockImplementation((col: string, vals: unknown[]) => {
-                    queryState.filters[`_in_${col}`] = vals;
-                    return builder;
-                }),
-                limit: vi.fn().mockReturnThis(),
-                maybeSingle: vi.fn().mockImplementation(async () => {
-                    return executeQuery(table, queryState, 'maybeSingle');
-                }),
-            };
-            
-            // To make the builder awaitable:
-            Object.assign(builder, {
-                then: (resolve: (value: unknown) => void) => {
-                    resolve(executeQuery(table, queryState, 'all'));
-                }
-            });
-
-            return builder;
-        });
+    // Step 2: Enroll Student
+    const enrollResult = await enrollStudent({
+      classId: mockClassId,
+      familyMemberId: newStudentId,
     });
 
-    const executeQuery = (table: string, state: { filters: Record<string, unknown>, data: unknown, method: string }, mode: 'single' | 'maybeSingle' | 'all') => {
-        let result: any[] = []; // Keep explicit any for flexible generic result handling in mock
-        
-        if (state.method === 'insert') {
-            const dataObj = state.data as Record<string, unknown>;
-            if (table === 'family_members') {
-                const newId = `student-${dbFamilyMembers.length + 1}`;
-                const record = { ...dataObj, id: newId } as MockFamilyMember;
-                dbFamilyMembers.push(record);
-                return { data: record, error: null };
-            }
-            if (table === 'enrollments') {
-                const newId = `enr-${dbEnrollments.length + 1}`;
-                const record = { ...dataObj, id: newId } as MockEnrollment;
-                dbEnrollments.push(record);
-                return { data: record, error: null };
-            }
-        }
+    expect(enrollResult.error).toBeNull();
+    expect(enrollResult.status).toBe('pending');
+    expect(enrollResult.data).toBeDefined();
 
-        // Select Logic
-        if (table === 'profiles') result = dbProfiles;
-        if (table === 'family_members') result = dbFamilyMembers;
-        if (table === 'classes') result = dbClasses;
-        if (table === 'enrollments') result = dbEnrollments;
-        if (table === 'class_blocks') result = dbClassBlocks as any[];
+    // Verify Enrollment in "Database"
+    expect(dbEnrollments).toHaveLength(1);
+    expect(dbEnrollments[0].student_id).toBe(newStudentId);
+    expect(dbEnrollments[0].class_id).toBe(mockClassId);
+  });
 
-        // Apply Filters
-        result = result.filter(item => {
-            for (const [key, val] of Object.entries(state.filters)) {
-                if ((item as any)[key] !== val) return false;
-            }
-            return true;
-        });
-
-        if (mode === 'single') {
-            if (result.length === 0) return { data: null, error: { message: 'Not found', code: 'PGRST116' } };
-            return { data: result[0], error: null };
-        }
-        
-        if (mode === 'maybeSingle') {
-             if (result.length === 0) return { data: null, error: null };
-             return { data: result[0], error: null };
-        }
-
-        // Mode 'all' (Array or Count)
-        return { data: result, count: result.length, error: null };
-    };
-
-    it('successfully creates a student and enrolls them in a class', async () => {
-        // Step 1: Create Family Member
-        const studentData = {
-            firstName: 'Timmy',
-            lastName: 'Tester',
-            email: 'timmy.tester@example.com',
-            relationship: 'Student' as const,
-            dob: '2015-01-01',
-            grade: '5th'
-        };
-
-        const createResult = await createFamilyMember(studentData);
-        expect(createResult.error).toBeNull();
-        expect(createResult.data).toBeDefined();
-        const newStudentId = createResult.data!.id;
-
-        // Verify "Database" State
-        expect(dbFamilyMembers).toHaveLength(1);
-        expect(dbFamilyMembers[0].first_name).toBe('Timmy');
-
-        // Step 2: Enroll Student
-        const enrollResult = await enrollStudent({
-            classId: mockClassId,
-            familyMemberId: newStudentId
-        });
-        
-        expect(enrollResult.error).toBeNull();
-        expect(enrollResult.status).toBe('pending');
-        expect(enrollResult.data).toBeDefined();
-        
-        // Verify Enrollment in "Database"
-        expect(dbEnrollments).toHaveLength(1);
-        expect(dbEnrollments[0].student_id).toBe(newStudentId);
-        expect(dbEnrollments[0].class_id).toBe(mockClassId);
+  it('prevents enrollment if student creation failed (simulated invalid input)', async () => {
+    // Flow where we start with an invalid student ID that wasn't created
+    const enrollResult = await enrollStudent({
+      classId: mockClassId,
+      familyMemberId: 'invalid-id',
     });
 
-    it('prevents enrollment if student creation failed (simulated invalid input)', async () => {
-         // Flow where we start with an invalid student ID that wasn't created
-        const enrollResult = await enrollStudent({
-            classId: mockClassId,
-            familyMemberId: 'invalid-id'
-        });
-        
-        expect(enrollResult.error).toBeTruthy(); // "Family member not found"
-    });
+    expect(enrollResult.error).toBeTruthy(); // "Family member not found"
+  });
 });

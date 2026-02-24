@@ -117,28 +117,29 @@ export type ProfileAddressFormData = z.infer<typeof profileAddressSchema>;
 /**
  * Family member form schema
  */
-export const familyMemberSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Please enter a valid email address'),
-  relationship: z.enum(['Student', 'Parent/Guardian'], {
-    message: 'Please select a relationship',
-  }),
-  grade: z.enum([
-    'elementary',
-    'middle school',
-    'high school'
-  ]).optional(),
-  dob: z.string().optional(), // ISO date string
-}).refine((data) => {
-  if (data.relationship === 'Student') {
-    return !!data.grade;
-  }
-  return true;
-}, {
-  message: 'Grade is required for students',
-  path: ['grade'],
-});
+export const familyMemberSchema = z
+  .object({
+    firstName: z.string().min(1, 'First name is required'),
+    lastName: z.string().min(1, 'Last name is required'),
+    email: z.string().email('Please enter a valid email address'),
+    relationship: z.enum(['Student', 'Parent/Guardian'], {
+      message: 'Please select a relationship',
+    }),
+    grade: z.enum(['elementary', 'middle school', 'high school']).optional(),
+    dob: z.string().optional(), // ISO date string
+  })
+  .refine(
+    (data) => {
+      if (data.relationship === 'Student') {
+        return !!data.grade;
+      }
+      return true;
+    },
+    {
+      message: 'Grade is required for students',
+      path: ['grade'],
+    }
+  );
 
 export type FamilyMemberFormData = z.infer<typeof familyMemberSchema>;
 
@@ -151,7 +152,8 @@ export type FamilyMemberFormData = z.infer<typeof familyMemberSchema>;
  */
 export const scheduleConfigSchema = z.object({
   day: z.enum(['Tuesday/Thursday', 'Tuesday', 'Wednesday', 'Thursday'], {
-    message: 'Classes can only be scheduled on Tuesday/Thursday, Tuesday only, Wednesday only, or Thursday only',
+    message:
+      'Classes can only be scheduled on Tuesday/Thursday, Tuesday only, Wednesday only, or Thursday only',
   }),
   block: z.enum(['Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5'], {
     message: 'Classes can only be scheduled in Blocks 1-5',
@@ -206,7 +208,9 @@ export type EnrollmentFormData = z.infer<typeof enrollmentSchema>;
  */
 export const calendarEventSchema = z.object({
   classId: z.string().uuid('Invalid class ID'),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)'),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)'),
   block: z.string().min(1, 'Block is required'),
   location: z.string().optional(),
   description: z.string().max(500).optional(),
@@ -221,10 +225,12 @@ export type CalendarEventFormData = z.infer<typeof calendarEventSchema>;
 export const registrationSettingsSchema = z.object({
   registrationOpen: z.boolean(),
   semesterStart: z.string().optional(), // ISO date
-  semesterEnd: z.string().optional(),   // ISO date
+  semesterEnd: z.string().optional(), // ISO date
 });
 
-export type RegistrationSettingsFormData = z.infer<typeof registrationSettingsSchema>;
+export type RegistrationSettingsFormData = z.infer<
+  typeof registrationSettingsSchema
+>;
 
 export const classDefaultsSchema = z.object({
   defaultCapacity: z.number().min(1, 'Must be at least 1'),

@@ -25,29 +25,30 @@ interface CalendarEventCardProps {
   isConflict?: boolean;
 }
 
-export function CalendarEventCard({ 
-  event, 
-  style, 
-  onClick, 
+export function CalendarEventCard({
+  event,
+  style,
+  onClick,
   className,
   isMonthView = false,
-  isConflict = false
+  isConflict = false,
 }: CalendarEventCardProps) {
-  
   if (isMonthView) {
     return (
-      <div 
+      <div
         onClick={onClick}
         className={cn(
-          "text-xs truncate rounded px-1.5 py-0.5 border-l-2 cursor-pointer transition-colors",
-          (isConflict || event.isConflict)
-            ? "bg-red-100 text-red-800 border-red-500 hover:bg-red-200" 
-            : "bg-blue-100 text-blue-800 border-blue-500 hover:bg-blue-200",
+          'cursor-pointer truncate rounded border-l-2 px-1.5 py-0.5 text-xs transition-colors',
+          isConflict || event.isConflict
+            ? 'border-red-500 bg-red-100 text-red-800 hover:bg-red-200'
+            : 'border-blue-500 bg-blue-100 text-blue-800 hover:bg-blue-200',
           className
         )}
         title={`${event.title} - ${event.teacherName}${isConflict || event.isConflict ? ' (CONFLICT)' : ''}`}
       >
-        <span className="font-medium mr-1">{event.block || (event.start ? format(event.start, 'h:mm a') : '')}</span>
+        <span className="mr-1 font-medium">
+          {event.block || (event.start ? format(event.start, 'h:mm a') : '')}
+        </span>
         {event.title}
       </div>
     );
@@ -57,20 +58,43 @@ export function CalendarEventCard({
     <div
       onClick={onClick}
       className={cn(
-        "absolute left-1 right-1 rounded-md border-l-4 p-2 text-xs overflow-hidden transition-colors cursor-pointer group z-10 flex flex-col",
-        (isConflict || event.isConflict)
-          ? "bg-red-100 border-red-500 hover:bg-red-200"
-          : "bg-blue-100 border-blue-500 hover:bg-blue-200",
+        'group absolute right-1 left-1 z-10 flex cursor-pointer flex-col overflow-hidden rounded-md border-l-4 p-2 text-xs transition-colors',
+        isConflict || event.isConflict
+          ? 'border-red-500 bg-red-100 hover:bg-red-200'
+          : 'border-blue-500 bg-blue-100 hover:bg-blue-200',
         className
       )}
       style={style}
       title={`${event.title} - ${event.teacherName}${isConflict || event.isConflict ? ' (CONFLICT)' : ''}`}
     >
-      <div className={cn("font-semibold truncate", (isConflict || event.isConflict) ? "text-red-700" : "text-blue-700")}>{event.title}</div>
-      <div className={cn("truncate", (isConflict || event.isConflict) ? "text-red-600" : "text-blue-600")}>{event.teacherName}</div>
-      <div className={cn("line-clamp-1 flex justify-between mt-1", (isConflict || event.isConflict) ? "text-red-500" : "text-blue-500")}>
-        <span>{event.block || (event.start ? format(event.start, 'h:mm a') : '')}</span>
-        {event.location && <span className="italic truncate ml-1">{event.location}</span>}
+      <div
+        className={cn(
+          'truncate font-semibold',
+          isConflict || event.isConflict ? 'text-red-700' : 'text-blue-700'
+        )}
+      >
+        {event.title}
+      </div>
+      <div
+        className={cn(
+          'truncate',
+          isConflict || event.isConflict ? 'text-red-600' : 'text-blue-600'
+        )}
+      >
+        {event.teacherName}
+      </div>
+      <div
+        className={cn(
+          'mt-1 line-clamp-1 flex justify-between',
+          isConflict || event.isConflict ? 'text-red-500' : 'text-blue-500'
+        )}
+      >
+        <span>
+          {event.block || (event.start ? format(event.start, 'h:mm a') : '')}
+        </span>
+        {event.location && (
+          <span className="ml-1 truncate italic">{event.location}</span>
+        )}
       </div>
     </div>
   );

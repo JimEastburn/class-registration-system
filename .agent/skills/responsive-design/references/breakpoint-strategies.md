@@ -159,7 +159,7 @@ function findBreakpoints(selector) {
 
     // Check for overflow, wrapping, or layout issues
     if (element.scrollWidth > element.clientWidth) {
-      breakpoints.push({ width, issue: "overflow" });
+      breakpoints.push({ width, issue: 'overflow' });
     }
   }
 
@@ -205,7 +205,7 @@ export const breakpoints = {
   md: 768,
   lg: 1024,
   xl: 1280,
-  "2xl": 1536,
+  '2xl': 1536,
 } as const;
 
 // Media query hook
@@ -217,8 +217,8 @@ function useMediaQuery(query: string): boolean {
     setMatches(media.matches);
 
     const listener = () => setMatches(media.matches);
-    media.addEventListener("change", listener);
-    return () => media.removeEventListener("change", listener);
+    media.addEventListener('change', listener);
+    return () => media.removeEventListener('change', listener);
   }, [query]);
 
   return matches;
@@ -236,14 +236,14 @@ function useBreakpoint() {
     isTablet: isSmall && !isLarge,
     isDesktop: isLarge,
     current: isXLarge
-      ? "xl"
+      ? 'xl'
       : isLarge
-        ? "lg"
+        ? 'lg'
         : isMedium
-          ? "md"
+          ? 'md'
           : isSmall
-            ? "sm"
-            : "base",
+            ? 'sm'
+            : 'base',
   };
 }
 ```
@@ -490,8 +490,8 @@ function useBreakpoint() {
   }
 
   /* Show URLs for links */
-  a[href^="http"]::after {
-    content: " (" attr(href) ")";
+  a[href^='http']::after {
+    content: ' (' attr(href) ')';
     font-size: 0.8em;
   }
 }
@@ -564,7 +564,7 @@ async function testBreakpoints(page, breakpoints) {
 
     // Check for elements going off-screen
     const offscreenElements = await page.evaluate(() => {
-      const elements = document.querySelectorAll("*");
+      const elements = document.querySelectorAll('*');
       return Array.from(elements).filter((el) => {
         const rect = el.getBoundingClientRect();
         return rect.right > window.innerWidth || rect.left < 0;

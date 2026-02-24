@@ -33,18 +33,18 @@ export function BlockStudentDialog({
   open,
   onOpenChange,
   onSuccess,
-  path
+  path,
 }: BlockStudentDialogProps) {
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleBlock = async () => {
     if (!studentId) return;
-    
+
     setLoading(true);
     try {
       const result = await blockStudent(studentId, reason, path);
-      
+
       if (result.success) {
         toast.success(`Blocked ${studentName}`);
         onOpenChange(false);
@@ -66,7 +66,8 @@ export function BlockStudentDialog({
         <DialogHeader>
           <DialogTitle>Block Student</DialogTitle>
           <DialogDescription>
-            Are you sure you want to block <strong>{studentName}</strong>? This will prevent them from enrolling in any of your future classes.
+            Are you sure you want to block <strong>{studentName}</strong>? This
+            will prevent them from enrolling in any of your future classes.
           </DialogDescription>
         </DialogHeader>
 
@@ -83,10 +84,18 @@ export function BlockStudentDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
             Cancel
           </Button>
-          <Button variant="destructive" onClick={handleBlock} disabled={loading}>
+          <Button
+            variant="destructive"
+            onClick={handleBlock}
+            disabled={loading}
+          >
             {loading ? 'Blocking...' : 'Block Student'}
           </Button>
         </DialogFooter>

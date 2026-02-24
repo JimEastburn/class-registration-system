@@ -3,10 +3,10 @@ import { LoginPage } from '../pages';
 
 /**
  * Test: Password reset request
- * 
+ *
  * Corresponds to Gherkin Scenario: "Forgotten Password"
  * from tests/features/auth.feature
- * 
+ *
  * Given I am on the login page
  * When I click "Forgot Password"
  * And I enter my registered email
@@ -14,7 +14,9 @@ import { LoginPage } from '../pages';
  */
 
 test.describe('Password Reset Request', () => {
-  test('should show password reset form when clicking forgot password', async ({ page }) => {
+  test('should show password reset form when clicking forgot password', async ({
+    page,
+  }) => {
     const loginPage = new LoginPage(page);
     await loginPage.goto();
 
@@ -25,7 +27,7 @@ test.describe('Password Reset Request', () => {
     await expect(async () => {
       const url = page.url();
       const content = await page.content();
-      const isOnResetPage = 
+      const isOnResetPage =
         url.includes('reset') ||
         url.includes('forgot') ||
         content.includes('Reset') ||
@@ -36,7 +38,7 @@ test.describe('Password Reset Request', () => {
 
   test('should accept email for password reset', async ({ page }) => {
     const user = await createTestUser('parent');
-    
+
     try {
       const loginPage = new LoginPage(page);
       await loginPage.goto();
@@ -47,13 +49,15 @@ test.describe('Password Reset Request', () => {
       await emailInput.fill(user.email);
 
       // Submit the form
-      const submitButton = page.getByRole('button', { name: /reset|send|submit/i });
+      const submitButton = page.getByRole('button', {
+        name: /reset|send|submit/i,
+      });
       await submitButton.click();
 
       // Should show success message or confirmation
       await expect(async () => {
         const content = await page.content();
-        const hasSuccess = 
+        const hasSuccess =
           content.includes('sent') ||
           content.includes('check your email') ||
           content.includes('Reset link') ||
@@ -76,7 +80,9 @@ test.describe('Password Reset Request', () => {
     await emailInput.fill(`nonexistent-${Date.now()}@example.com`);
 
     // Submit
-    const submitButton = page.getByRole('button', { name: /reset|send|submit/i });
+    const submitButton = page.getByRole('button', {
+      name: /reset|send|submit/i,
+    });
     await submitButton.click();
 
     // Should either show success (for security, don't reveal if email exists)
@@ -84,7 +90,7 @@ test.describe('Password Reset Request', () => {
     await expect(async () => {
       const content = await page.content();
       // For security, most systems show success even for non-existent emails
-      const hasResponse = 
+      const hasResponse =
         content.includes('sent') ||
         content.includes('check your email') ||
         content.includes('not found') ||

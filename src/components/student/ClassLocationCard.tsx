@@ -9,13 +9,15 @@ export function ClassLocationCard({ location }: { location: string | null }) {
       </CardHeader>
       <CardContent>
         <div className="flex items-start gap-3">
-            <MapPin className="h-5 w-5 text-primary mt-0.5" />
-            <div>
-                <p className="font-medium">{location || 'TBA'}</p>
-                {location && (
-                    <p className="text-xs text-muted-foreground mt-1">Check building directory for room number unless specified.</p>
-                )}
-            </div>
+          <MapPin className="text-primary mt-0.5 h-5 w-5" />
+          <div>
+            <p className="font-medium">{location || 'TBA'}</p>
+            {location && (
+              <p className="text-muted-foreground mt-1 text-xs">
+                Check building directory for room number unless specified.
+              </p>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

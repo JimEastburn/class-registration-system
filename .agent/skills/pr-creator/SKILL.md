@@ -46,9 +46,11 @@ Follow these steps to create a Pull Request:
 
 5.  **Preflight Check**: Before creating the PR, run the workspace preflight
     script to ensure all build, lint, and test checks pass.
+
     ```bash
     npm run preflight
     ```
+
     If any checks fail, address the issues before proceeding to create the PR.
 
 6.  **Create PR**: Use the `gh` CLI to create the PR. To avoid shell escaping
@@ -61,6 +63,7 @@ Follow these steps to create a Pull Request:
     # 3. Remove the temporary file
     rm <temp_file_path>
     ```
+
     - **Title**: Ensure the title follows the
       [Conventional Commits](https://www.conventionalcommits.org/) format if the
       repository uses it (e.g., `feat(ui): add new button`,

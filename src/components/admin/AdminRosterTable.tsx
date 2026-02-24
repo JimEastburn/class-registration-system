@@ -21,7 +21,9 @@ interface AdminRosterTableProps {
   enrollments: RosterEnrollment[];
 }
 
-export default function AdminRosterTable({ enrollments }: AdminRosterTableProps) {
+export default function AdminRosterTable({
+  enrollments,
+}: AdminRosterTableProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -55,7 +57,10 @@ export default function AdminRosterTable({ enrollments }: AdminRosterTableProps)
         <TableBody>
           {enrollments.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+              <TableCell
+                colSpan={6}
+                className="text-muted-foreground h-24 text-center"
+              >
                 No students enrolled.
               </TableCell>
             </TableRow>
@@ -64,41 +69,48 @@ export default function AdminRosterTable({ enrollments }: AdminRosterTableProps)
               <TableRow key={enrollment.id}>
                 <TableCell className="font-medium">
                   {enrollment.student.first_name} {enrollment.student.last_name}
-                  {enrollment.isBlocked && <span className="text-destructive ml-2">(Blocked)</span>}
+                  {enrollment.isBlocked && (
+                    <span className="text-destructive ml-2">(Blocked)</span>
+                  )}
                 </TableCell>
                 <TableCell>
-                  {enrollment.student.parent 
+                  {enrollment.student.parent
                     ? `${enrollment.student.parent.first_name} ${enrollment.student.parent.last_name}`
                     : 'Unknown'}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col text-sm">
-                     <span>{enrollment.student.parent?.email}</span>
-                     <span className="text-muted-foreground">{enrollment.student.parent?.phone}</span>
+                    <span>{enrollment.student.parent?.email}</span>
+                    <span className="text-muted-foreground">
+                      {enrollment.student.parent?.phone}
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <EnrollmentStatusBadge status={enrollment.status} waitlistPosition={null} />
+                  <EnrollmentStatusBadge
+                    status={enrollment.status}
+                    waitlistPosition={null}
+                  />
                 </TableCell>
                 <TableCell>{enrollment.waitlist_position || '-'}</TableCell>
                 <TableCell className="text-right">
-                   <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleCancel(enrollment.id)}
-                      disabled={isPending}
-                      title="Cancel Enrollment"
-                   >
-                     <Trash2 className="h-4 w-4 text-destructive" />
-                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleCancel(enrollment.id)}
+                    disabled={isPending}
+                    title="Cancel Enrollment"
+                  >
+                    <Trash2 className="text-destructive h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))
           )}
         </TableBody>
       </Table>
-       <div className="p-4 text-sm text-muted-foreground">
-          Total: {enrollments.length}
+      <div className="text-muted-foreground p-4 text-sm">
+        Total: {enrollments.length}
       </div>
     </div>
   );

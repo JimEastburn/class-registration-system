@@ -1,8 +1,8 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 /**
@@ -17,7 +17,10 @@ export function centsToDollars(cents: number): number {
  * @param amount - Amount in dollars (or cents if fromCents is true)
  * @param fromCents - If true, converts from cents to dollars before formatting
  */
-export function formatCurrency(amount: number, fromCents: boolean = false): string {
+export function formatCurrency(
+  amount: number,
+  fromCents: boolean = false
+): string {
   const dollars = fromCents ? centsToDollars(amount) : amount;
   return `$${dollars.toFixed(2)}`;
 }
@@ -78,14 +81,20 @@ export function validateGradeLevel(grade: string): boolean {
 /**
  * Calculate spots left in a class
  */
-export function calculateSpotsLeft(maxStudents: number, currentEnrollment: number): number {
+export function calculateSpotsLeft(
+  maxStudents: number,
+  currentEnrollment: number
+): number {
   return Math.max(0, maxStudents - currentEnrollment);
 }
 
 /**
  * Check if class is full
  */
-export function isClassFull(maxStudents: number, currentEnrollment: number): boolean {
+export function isClassFull(
+  maxStudents: number,
+  currentEnrollment: number
+): boolean {
   return currentEnrollment >= maxStudents;
 }
 
@@ -111,9 +120,7 @@ export function formatPhoneNumber(phone: string): string {
  * Get next waitlist position
  */
 export function getNextWaitlistPosition(currentPositions: number[]): number {
-  return currentPositions.length > 0
-    ? Math.max(...currentPositions) + 1
-    : 1;
+  return currentPositions.length > 0 ? Math.max(...currentPositions) + 1 : 1;
 }
 
 /**
@@ -131,7 +138,7 @@ export function calculateTotalByStatus(
   status: string
 ): number {
   return payments
-    .filter(p => p.status === status)
+    .filter((p) => p.status === status)
     .reduce((sum, p) => sum + p.amount, 0);
 }
 
@@ -178,7 +185,7 @@ export function generateScheduleText(
   let text = '';
 
   if (days.length > 0) {
-    const dayLabels = days.map(d => d.charAt(0).toUpperCase() + d.slice(1));
+    const dayLabels = days.map((d) => d.charAt(0).toUpperCase() + d.slice(1));
     text = dayLabels.join(', ');
   } else {
     text = pattern.charAt(0).toUpperCase() + pattern.slice(1);

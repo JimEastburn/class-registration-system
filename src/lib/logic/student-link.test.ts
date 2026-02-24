@@ -60,8 +60,18 @@ describe('resolveStudentFamilyMember', () => {
     const { supabase } = createSupabaseMock({
       linkedLookupResult: {
         data: [
-          { id: 'fm-1', first_name: 'Jim', last_name: 'Student', student_user_id: 'user-1' },
-          { id: 'fm-2', first_name: 'Jim', last_name: 'Duplicate', student_user_id: 'user-1' },
+          {
+            id: 'fm-1',
+            first_name: 'Jim',
+            last_name: 'Student',
+            student_user_id: 'user-1',
+          },
+          {
+            id: 'fm-2',
+            first_name: 'Jim',
+            last_name: 'Duplicate',
+            student_user_id: 'user-1',
+          },
         ],
         error: null,
       },
@@ -85,7 +95,14 @@ describe('resolveStudentFamilyMember', () => {
     const { supabase, updates } = createSupabaseMock({
       linkedLookupResult: { data: [], error: null },
       emailLookupResult: {
-        data: [{ id: 'fm-3', first_name: 'Jim', last_name: 'Student', student_user_id: null }],
+        data: [
+          {
+            id: 'fm-3',
+            first_name: 'Jim',
+            last_name: 'Student',
+            student_user_id: null,
+          },
+        ],
         error: null,
       },
     });

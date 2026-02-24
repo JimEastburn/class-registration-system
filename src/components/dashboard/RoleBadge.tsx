@@ -1,7 +1,13 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
-import { Shield, GraduationCap, Users, CalendarClock, Sparkles } from 'lucide-react';
+import {
+  Shield,
+  GraduationCap,
+  Users,
+  CalendarClock,
+  Sparkles,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type PortalView } from '@/lib/logic/profile';
 import type { UserRole } from '@/types';
@@ -30,31 +36,36 @@ const BADGE_CONFIG: Record<
     label: 'Parent',
     icon: Users,
     variant: 'secondary',
-    className: 'bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30',
+    className:
+      'bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30',
   },
   teacher: {
     label: 'Teacher',
     icon: GraduationCap,
     variant: 'secondary',
-    className: 'bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30',
+    className:
+      'bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30',
   },
   student: {
     label: 'Student',
     icon: Users,
     variant: 'secondary',
-    className: 'bg-purple-500/20 text-purple-400 border-purple-500/30 hover:bg-purple-500/30',
+    className:
+      'bg-purple-500/20 text-purple-400 border-purple-500/30 hover:bg-purple-500/30',
   },
   admin: {
     label: 'Admin',
     icon: Shield,
     variant: 'secondary',
-    className: 'bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30',
+    className:
+      'bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30',
   },
   class_scheduler: {
     label: 'Scheduler',
     icon: CalendarClock,
     variant: 'secondary',
-    className: 'bg-orange-500/20 text-orange-400 border-orange-500/30 hover:bg-orange-500/30',
+    className:
+      'bg-orange-500/20 text-orange-400 border-orange-500/30 hover:bg-orange-500/30',
   },
 };
 
@@ -96,14 +107,18 @@ export function RoleBadge({
     <Badge
       variant={config.variant}
       className={cn(
-        'gap-1 font-medium border',
+        'gap-1 border font-medium',
         config.className,
         sizeConfig.badge,
         className
       )}
     >
       {showIcon && <Icon className={sizeConfig.icon} aria-hidden />}
-      <span>{isSuperAdmin && view !== 'parent' ? `${config.label} (God Mode)` : config.label}</span>
+      <span>
+        {isSuperAdmin && view !== 'parent'
+          ? `${config.label} (God Mode)`
+          : config.label}
+      </span>
     </Badge>
   );
 }
@@ -136,7 +151,9 @@ export function RoleIndicator({
         aria-hidden
       />
       {showLabel && (
-        <span className="text-xs font-medium text-slate-400">{config.label}</span>
+        <span className="text-xs font-medium text-slate-400">
+          {config.label}
+        </span>
       )}
     </div>
   );

@@ -3,6 +3,7 @@
 > **🤖 AI AGENT:** Use workflow `/browser-tests` to run tests with auto-approval.
 
 **Documentation Sources:**
+
 - `docs/REGISTRATION_SYSTEM_DESCRIPTION.md` - System overview
 - `docs/MANUAL_TESTING.md` - 60+ manual test cases
 - `docs/api_planning_document.md` - API endpoints
@@ -15,6 +16,7 @@
 ## ⚡ Best Practices for Efficient Tests
 
 ### 1. Auth State Reuse (CRITICAL)
+
 ```bash
 # ❌ SLOW: Login in every test
 agent-browser fill @e1 "$EMAIL"
@@ -27,6 +29,7 @@ agent-browser open $APP_URL/teacher/classes
 ```
 
 ### 2. Scoped Snapshots
+
 ```bash
 # ✅ Fast: Scope to specific form/section
 agent-browser snapshot -i -s "form.class-form"
@@ -36,6 +39,7 @@ agent-browser snapshot -i
 ```
 
 ### 3. Re-snapshot Only When DOM Changes
+
 ```bash
 # Fill fields (NO re-snapshot between fills)
 agent-browser fill @e1 "Math 101"
@@ -49,6 +53,7 @@ agent-browser snapshot -i  # Required
 ```
 
 ### 4. Smart Waits
+
 ```bash
 # ✅ Wait for specific element (faster)
 agent-browser wait @e5
@@ -61,6 +66,7 @@ agent-browser wait 5000
 ```
 
 ### 5. Semantic Locators (Fallback)
+
 ```bash
 # When refs are unreliable, use semantic locators
 agent-browser find text "Save Class" click
@@ -69,6 +75,7 @@ agent-browser find testid "class-form-submit" click
 ```
 
 ### 6. Test Script Template
+
 ```bash
 #!/bin/bash
 set -e
@@ -102,100 +109,105 @@ agent-browser screenshot "$SCRIPT_DIR/screenshots/test-name.png"
 ## Test Suites by Portal
 
 ### 🔐 Authentication
-| Test | Priority | Source | Script |
-|------|----------|--------|--------|
-| Sign up (Parent) with all fields | High | Gherkin | `test-signup-parent.sh` |
-| Password validation (weak password) | High | Gherkin | `test-password-validation.sh` |
-| Code of Conduct required | Medium | Gherkin | `test-coc-required.sh` |
-| Sign in (Parent) → redirect to /parent | High | Gherkin | `test-login-parent.sh` |
-| Sign in (Teacher) → redirect to /teacher | High | Gherkin | `test-login-teacher.sh` |
-| Login with wrong password | High | Manual | `test-login-failure.sh` |
-| Sign out → redirect to /login | Medium | Gherkin | `test-logout.sh` |
-| Session persistence (refresh page) | Medium | Manual | `test-session-persistence.sh` |
-| Password reset request | Medium | Gherkin | `test-password-reset.sh` |
-| Password update via reset link | Medium | Gherkin | `test-password-update.sh` |
+
+| Test                                     | Priority | Source  | Script                        |
+| ---------------------------------------- | -------- | ------- | ----------------------------- |
+| Sign up (Parent) with all fields         | High     | Gherkin | `test-signup-parent.sh`       |
+| Password validation (weak password)      | High     | Gherkin | `test-password-validation.sh` |
+| Code of Conduct required                 | Medium   | Gherkin | `test-coc-required.sh`        |
+| Sign in (Parent) → redirect to /parent   | High     | Gherkin | `test-login-parent.sh`        |
+| Sign in (Teacher) → redirect to /teacher | High     | Gherkin | `test-login-teacher.sh`       |
+| Login with wrong password                | High     | Manual  | `test-login-failure.sh`       |
+| Sign out → redirect to /login            | Medium   | Gherkin | `test-logout.sh`              |
+| Session persistence (refresh page)       | Medium   | Manual  | `test-session-persistence.sh` |
+| Password reset request                   | Medium   | Gherkin | `test-password-reset.sh`      |
+| Password update via reset link           | Medium   | Gherkin | `test-password-update.sh`     |
 
 ---
 
 ### 👨‍👩‍👧 Parent Portal (`/parent`)
-| Test | Priority | Source | Script |
-|------|----------|--------|--------|
-| View dashboard | High | Manual | `test-parent-dashboard.sh` |
-| Update profile (phone number) | Medium | Gherkin | `test-parent-update-profile.sh` |
-| Add child to family (student) | High | Gherkin | `test-add-child.sh` |
-| Add family member (parent/guardian) | Medium | Manual | `test-add-guardian.sh` |
-| Update child details (grade level) | Medium | Gherkin | `test-update-child.sh` |
-| Delete child profile | Medium | Gherkin | `test-delete-child.sh` |
-| Link student via email | Medium | Gherkin | `test-link-student.sh` |
-| Browse available classes | High | Manual | `test-browse-classes.sh` |
-| View class details | Medium | Manual | `test-view-class-details.sh` |
-| Enroll child in open class | High | Gherkin | `test-enrollment.sh` |
-| Enroll in full class (rejected) | High | Gherkin | `test-enrollment-full.sh` |
-| Duplicate enrollment (rejected) | High | Gherkin | `test-enrollment-duplicate.sh` |
-| Enroll blocked student (rejected) | Medium | Gherkin | `test-enrollment-blocked.sh` |
-| Cancel pending enrollment | Medium | Gherkin | `test-cancel-enrollment.sh` |
-| View enrollments | High | Manual | `test-view-enrollments.sh` |
-| Stripe payment checkout | High | Gherkin | `test-payment.sh` |
-| Cancel on Stripe page | Medium | Manual | `test-payment-cancel.sh` |
-| View payment history | Medium | Manual | `test-payment-history.sh` |
+
+| Test                                | Priority | Source  | Script                          |
+| ----------------------------------- | -------- | ------- | ------------------------------- |
+| View dashboard                      | High     | Manual  | `test-parent-dashboard.sh`      |
+| Update profile (phone number)       | Medium   | Gherkin | `test-parent-update-profile.sh` |
+| Add child to family (student)       | High     | Gherkin | `test-add-child.sh`             |
+| Add family member (parent/guardian) | Medium   | Manual  | `test-add-guardian.sh`          |
+| Update child details (grade level)  | Medium   | Gherkin | `test-update-child.sh`          |
+| Delete child profile                | Medium   | Gherkin | `test-delete-child.sh`          |
+| Link student via email              | Medium   | Gherkin | `test-link-student.sh`          |
+| Browse available classes            | High     | Manual  | `test-browse-classes.sh`        |
+| View class details                  | Medium   | Manual  | `test-view-class-details.sh`    |
+| Enroll child in open class          | High     | Gherkin | `test-enrollment.sh`            |
+| Enroll in full class (rejected)     | High     | Gherkin | `test-enrollment-full.sh`       |
+| Duplicate enrollment (rejected)     | High     | Gherkin | `test-enrollment-duplicate.sh`  |
+| Enroll blocked student (rejected)   | Medium   | Gherkin | `test-enrollment-blocked.sh`    |
+| Cancel pending enrollment           | Medium   | Gherkin | `test-cancel-enrollment.sh`     |
+| View enrollments                    | High     | Manual  | `test-view-enrollments.sh`      |
+| Stripe payment checkout             | High     | Gherkin | `test-payment.sh`               |
+| Cancel on Stripe page               | Medium   | Manual  | `test-payment-cancel.sh`        |
+| View payment history                | Medium   | Manual  | `test-payment-history.sh`       |
 
 ---
 
 ### 👩‍🏫 Teacher Portal (`/teacher`)
-| Test | Priority | Source | Script |
-|------|----------|--------|--------|
-| View dashboard | High | Manual | `test-teacher-dashboard.sh` |
-| Create class (draft) | High | Gherkin | ✅ `test-class-creation.sh` |
-| Update class details | High | Gherkin | `test-edit-class.sh` |
-| Publish class (draft → active) | High | Gherkin | `test-publish-class.sh` |
-| Cancel class | Medium | Manual | `test-cancel-class.sh` |
-| Delete draft class | Medium | Gherkin | `test-delete-draft-class.sh` |
-| Cannot delete active class | Medium | Gherkin | `test-delete-active-class.sh` |
-| Validate dates (end before start) | Medium | Gherkin | `test-invalid-dates.sh` |
-| View student roster | High | Manual | `test-student-roster.sh` |
-| Block a student | Medium | Gherkin | `test-block-student.sh` |
-| Upload class materials | Medium | Manual | `test-upload-materials.sh` |
-| Delete class materials | Low | Manual | `test-delete-materials.sh` |
-| Teacher cannot create schedule | Medium | Gherkin | `test-teacher-no-schedule.sh` |
-| Switch to Parent view | Medium | Gherkin | `test-teacher-to-parent.sh` |
+
+| Test                              | Priority | Source  | Script                        |
+| --------------------------------- | -------- | ------- | ----------------------------- |
+| View dashboard                    | High     | Manual  | `test-teacher-dashboard.sh`   |
+| Create class (draft)              | High     | Gherkin | ✅ `test-class-creation.sh`   |
+| Update class details              | High     | Gherkin | `test-edit-class.sh`          |
+| Publish class (draft → active)    | High     | Gherkin | `test-publish-class.sh`       |
+| Cancel class                      | Medium   | Manual  | `test-cancel-class.sh`        |
+| Delete draft class                | Medium   | Gherkin | `test-delete-draft-class.sh`  |
+| Cannot delete active class        | Medium   | Gherkin | `test-delete-active-class.sh` |
+| Validate dates (end before start) | Medium   | Gherkin | `test-invalid-dates.sh`       |
+| View student roster               | High     | Manual  | `test-student-roster.sh`      |
+| Block a student                   | Medium   | Gherkin | `test-block-student.sh`       |
+| Upload class materials            | Medium   | Manual  | `test-upload-materials.sh`    |
+| Delete class materials            | Low      | Manual  | `test-delete-materials.sh`    |
+| Teacher cannot create schedule    | Medium   | Gherkin | `test-teacher-no-schedule.sh` |
+| Switch to Parent view             | Medium   | Gherkin | `test-teacher-to-parent.sh`   |
 
 ---
 
 ### 🎓 Student Portal (`/student`)
-| Test | Priority | Source | Script |
-|------|----------|--------|--------|
-| View linked dashboard | High | Gherkin | `test-student-dashboard.sh` |
-| View weekly schedule | High | Manual | `test-student-schedule.sh` |
-| View class details | Medium | Manual | `test-class-details.sh` |
-| View class materials | Medium | Gherkin | `test-student-materials.sh` |
+
+| Test                  | Priority | Source  | Script                      |
+| --------------------- | -------- | ------- | --------------------------- |
+| View linked dashboard | High     | Gherkin | `test-student-dashboard.sh` |
+| View weekly schedule  | High     | Manual  | `test-student-schedule.sh`  |
+| View class details    | Medium   | Manual  | `test-class-details.sh`     |
+| View class materials  | Medium   | Gherkin | `test-student-materials.sh` |
 
 ---
 
 ### ⚙️ Admin Portal (`/admin`)
-| Test | Priority | Source | Script |
-|------|----------|--------|--------|
-| View dashboard | High | Manual | `test-admin-dashboard.sh` |
-| List all users | High | Manual | `test-user-list.sh` |
-| Promote user role | High | Gherkin | `test-promote-role.sh` |
-| Demote user role | Medium | Gherkin | `test-demote-role.sh` |
-| Delete user account | Medium | Gherkin | `test-delete-user.sh` |
-| Singleton scheduler enforcement | Medium | Gherkin | `test-scheduler-singleton.sh` |
-| Teacher cannot be scheduler | Medium | Gherkin | `test-teacher-not-scheduler.sh` |
-| Student cannot be scheduler | Medium | Gherkin | `test-student-not-scheduler.sh` |
-| View all classes | Medium | Manual | `test-admin-classes.sh` |
-| Edit any class (override) | Medium | Gherkin | `test-admin-edit-class.sh` |
-| View all enrollments | Medium | Manual | `test-admin-enrollments.sh` |
-| Override enrollment status | Medium | Manual | `test-override-enrollment.sh` |
-| Force cancel enrollment | Medium | Gherkin | `test-force-cancel.sh` |
-| View all payments | Medium | Manual | `test-admin-payments.sh` |
-| Process full refund | Medium | Gherkin | `test-refund.sh` |
-| Prevent invalid refund | Medium | Gherkin | `test-invalid-refund.sh` |
-| CSV export (users) | Low | Manual | `test-export-users.sh` |
-| CSV export (classes) | Low | Manual | `test-export-classes.sh` |
-| CSV export (enrollments) | Low | Manual | `test-export-enrollments.sh` |
-| CSV export (payments) | Low | Manual | `test-export-payments.sh` |
-| Update global settings | Low | Gherkin | `test-system-settings.sh` |
-| Switch to Parent view | Medium | Gherkin | `test-admin-to-parent.sh` |
+
+| Test                            | Priority | Source  | Script                          |
+| ------------------------------- | -------- | ------- | ------------------------------- |
+| View dashboard                  | High     | Manual  | `test-admin-dashboard.sh`       |
+| List all users                  | High     | Manual  | `test-user-list.sh`             |
+| Promote user role               | High     | Gherkin | `test-promote-role.sh`          |
+| Demote user role                | Medium   | Gherkin | `test-demote-role.sh`           |
+| Delete user account             | Medium   | Gherkin | `test-delete-user.sh`           |
+| Singleton scheduler enforcement | Medium   | Gherkin | `test-scheduler-singleton.sh`   |
+| Teacher cannot be scheduler     | Medium   | Gherkin | `test-teacher-not-scheduler.sh` |
+| Student cannot be scheduler     | Medium   | Gherkin | `test-student-not-scheduler.sh` |
+| View all classes                | Medium   | Manual  | `test-admin-classes.sh`         |
+| Edit any class (override)       | Medium   | Gherkin | `test-admin-edit-class.sh`      |
+| View all enrollments            | Medium   | Manual  | `test-admin-enrollments.sh`     |
+| Override enrollment status      | Medium   | Manual  | `test-override-enrollment.sh`   |
+| Force cancel enrollment         | Medium   | Gherkin | `test-force-cancel.sh`          |
+| View all payments               | Medium   | Manual  | `test-admin-payments.sh`        |
+| Process full refund             | Medium   | Gherkin | `test-refund.sh`                |
+| Prevent invalid refund          | Medium   | Gherkin | `test-invalid-refund.sh`        |
+| CSV export (users)              | Low      | Manual  | `test-export-users.sh`          |
+| CSV export (classes)            | Low      | Manual  | `test-export-classes.sh`        |
+| CSV export (enrollments)        | Low      | Manual  | `test-export-enrollments.sh`    |
+| CSV export (payments)           | Low      | Manual  | `test-export-payments.sh`       |
+| Update global settings          | Low      | Gherkin | `test-system-settings.sh`       |
+| Switch to Parent view           | Medium   | Gherkin | `test-admin-to-parent.sh`       |
 
 ---
 
@@ -254,20 +266,22 @@ agent-browser screenshot "$SCRIPT_DIR/screenshots/test-name.png"
 ---
 
 ### 👑 Super Admin
-| Test | Priority | Source | Script |
-|------|----------|--------|--------|
-| Global view switcher | High | Gherkin | `test-super-admin-switch.sh` |
-| Access all portals | Medium | Gherkin | `test-super-admin-access.sh` |
-| Bypass RLS (view draft classes) | Low | Manual | `test-rls-bypass.sh` |
+
+| Test                            | Priority | Source  | Script                       |
+| ------------------------------- | -------- | ------- | ---------------------------- |
+| Global view switcher            | High     | Gherkin | `test-super-admin-switch.sh` |
+| Access all portals              | Medium   | Gherkin | `test-super-admin-access.sh` |
+| Bypass RLS (view draft classes) | Low      | Manual  | `test-rls-bypass.sh`         |
 
 ---
 
 ### 🔗 Student Linking (`tests/features/student_linking.feature`)
-| Test | Priority | Source | Script |
-|------|----------|--------|--------|
-| Parent links student by email | Medium | Gherkin | `test-link-student.sh` |
-| Student registers → auto-link | Medium | Gherkin | `test-student-auto-link.sh` |
-| Prevent double linking | Medium | Gherkin | `test-double-link.sh` |
+
+| Test                          | Priority | Source  | Script                      |
+| ----------------------------- | -------- | ------- | --------------------------- |
+| Parent links student by email | Medium   | Gherkin | `test-link-student.sh`      |
+| Student registers → auto-link | Medium   | Gherkin | `test-student-auto-link.sh` |
+| Prevent double linking        | Medium   | Gherkin | `test-double-link.sh`       |
 
 ---
 
@@ -309,67 +323,74 @@ agent-browser screenshot "$SCRIPT_DIR/screenshots/test-name.png"
 ---
 
 ### 📦 Enrollment Logic (`tests/features/enrollment_logic.feature`)
-| Test | Priority | Source | Script |
-|------|----------|--------|--------|
-| Enroll with available seats | High | Gherkin | `test-enroll-available.sh` |
-| Reject when full | High | Gherkin | `test-enroll-full.sh` |
-| Join waitlist when full | Medium | Gherkin | `test-waitlist-join.sh` |
-| Prevent waitlist if spots open | Low | Gherkin | `test-waitlist-prevented.sh` |
-| Prevent double booking | High | Gherkin | `test-double-booking.sh` |
-| Enforce block list | Medium | Gherkin | `test-block-list.sh` |
+
+| Test                           | Priority | Source  | Script                       |
+| ------------------------------ | -------- | ------- | ---------------------------- |
+| Enroll with available seats    | High     | Gherkin | `test-enroll-available.sh`   |
+| Reject when full               | High     | Gherkin | `test-enroll-full.sh`        |
+| Join waitlist when full        | Medium   | Gherkin | `test-waitlist-join.sh`      |
+| Prevent waitlist if spots open | Low      | Gherkin | `test-waitlist-prevented.sh` |
+| Prevent double booking         | High     | Gherkin | `test-double-booking.sh`     |
+| Enforce block list             | Medium   | Gherkin | `test-block-list.sh`         |
 
 ---
 
 ### ⚠️ Edge Cases & Error Handling
-| Test | Priority | Source | Script |
-|------|----------|--------|--------|
-| Submit form with missing fields | Medium | Manual | `test-form-validation.sh` |
-| Invalid date range | Medium | Manual | `test-invalid-dates.sh` |
-| Unauthorized route access | High | Manual | `test-unauthorized-access.sh` |
-| Delete class with enrollments | Medium | Manual | `test-delete-enrolled-class.sh` |
+
+| Test                            | Priority | Source | Script                          |
+| ------------------------------- | -------- | ------ | ------------------------------- |
+| Submit form with missing fields | Medium   | Manual | `test-form-validation.sh`       |
+| Invalid date range              | Medium   | Manual | `test-invalid-dates.sh`         |
+| Unauthorized route access       | High     | Manual | `test-unauthorized-access.sh`   |
+| Delete class with enrollments   | Medium   | Manual | `test-delete-enrolled-class.sh` |
 
 ---
 
 ### 🔄 Cross-Role Integration Flows
-| Flow | Description | Script |
-|------|-------------|--------|
+
+| Flow                 | Description                                                    | Script                         |
+| -------------------- | -------------------------------------------------------------- | ------------------------------ |
 | Full enrollment loop | Teacher creates → Parent enrolls → Payment → Roster → Schedule | `test-full-enrollment-flow.sh` |
-| Waitlist flow | Full class → Waitlist → Spot opens → Notify | `test-waitlist-flow.sh` |
-| Refund flow | Admin refunds → Enrollment reverts → Payment updated | `test-refund-flow.sh` |
+| Waitlist flow        | Full class → Waitlist → Spot opens → Notify                    | `test-waitlist-flow.sh`        |
+| Refund flow          | Admin refunds → Enrollment reverts → Payment updated           | `test-refund-flow.sh`          |
 
 ---
 
 ## Auth State Files Needed
 
-| Role | File |
-|------|------|
-| Parent | `auth-state-parent.json` |
-| Teacher | ✅ `auth-state.json` (exists) |
-| Student | `auth-state-student.json` |
-| Admin | `auth-state-admin.json` |
-| Class Scheduler | `auth-state-scheduler.json` |
-| Super Admin | `auth-state-superadmin.json` |
+| Role            | File                          |
+| --------------- | ----------------------------- |
+| Parent          | `auth-state-parent.json`      |
+| Teacher         | ✅ `auth-state.json` (exists) |
+| Student         | `auth-state-student.json`     |
+| Admin           | `auth-state-admin.json`       |
+| Class Scheduler | `auth-state-scheduler.json`   |
+| Super Admin     | `auth-state-superadmin.json`  |
 
 ---
 
 ## Implementation Phases
 
 ### Phase 1: Core Flows ✅
+
 1. ✅ Teacher: Class creation
 
 ### Phase 2: Parent Portal
+
 2. Add child to family
 3. Browse classes
 4. Enrollment flow
 5. Payment flow
 
 ### Phase 3: Validation & Edge Cases
+
 6. Duplicate enrollment prevention
 7. Full class rejection
 8. Blocked student rejection
 9. Form validation
 
 ### Phase 4: Admin & Roles
+
 10. Dashboard & user management
 11. Role promotion/demotion
 12. View switching
@@ -377,6 +398,7 @@ agent-browser screenshot "$SCRIPT_DIR/screenshots/test-name.png"
 14. CSV exports
 
 ### Phase 5: Advanced
+
 15. Schedule conflict detection
 16. Waitlist logic
 17. Student linking

@@ -4,182 +4,198 @@ import { createClient } from '@/lib/supabase/server';
 
 // Mock the dependencies
 vi.mock('@/lib/supabase/server', () => ({
-    createClient: vi.fn(),
+  createClient: vi.fn(),
 }));
 
 describe('Invoice API Route', () => {
-    interface FakeUser {
-        id: string;
-        user_metadata?: { role?: string };
-    }
-    type FakeRow = Record<string, unknown>;
+  interface FakeUser {
+    id: string;
+    user_metadata?: { role?: string };
+  }
+  type FakeRow = Record<string, unknown>;
 
-    class FakeQueryBuilder {
-        private filters: Array<(row: FakeRow) => boolean> = [];
-        private shouldSingle = false;
+  class FakeQueryBuilder {
+    private filters: Array<(row: FakeRow) => boolean> = [];
+    private shouldSingle = false;
 
-        constructor(private rows: FakeRow[]) {}
+    constructor(private rows: FakeRow[]) {}
 
-        select() {
-            return this;
-        }
-
-        eq(column: string, value: unknown) {
-            this.filters.push((row) => row[column] === value);
-            return this;
-        }
-
-        in(column: string, values: unknown[]) {
-            this.filters.push((row) => values.includes(row[column]));
-            return this;
-        }
-
-        single() {
-            this.shouldSingle = true;
-            return this;
-        }
-
-        private execute() {
-            let result = [...this.rows];
-            for (const filter of this.filters) {
-                result = result.filter(filter);
-            }
-
-            if (this.shouldSingle) {
-                return { data: result[0] ?? null, error: null };
-            }
-
-            return { data: result, error: null };
-        }
-
-        then<TResult1 = { data: FakeRow[] | null; error: null }>(
-            onfulfilled?: ((value: { data: FakeRow[] | null; error: null }) => TResult1 | PromiseLike<TResult1>) | null
-        ): Promise<TResult1> {
-            return Promise.resolve(this.execute() as { data: FakeRow[] | null; error: null }).then(onfulfilled || undefined);
-        }
+    select() {
+      return this;
     }
 
-    class FakeSupabase {
-        constructor(
-            private user: FakeUser | null,
-            private tables: Record<string, FakeRow[]>
-        ) {}
-
-        auth = {
-            getUser: async () => ({ data: { user: this.user }, error: null }),
-        };
-
-        from(table: string) {
-            return new FakeQueryBuilder(this.tables[table] || []);
-        }
+    eq(column: string, value: unknown) {
+      this.filters.push((row) => row[column] === value);
+      return this;
     }
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        (createClient as Mock).mockResolvedValue(new FakeSupabase(null, {}));
-    });
+    in(column: string, values: unknown[]) {
+      this.filters.push((row) => values.includes(row[column]));
+      return this;
+    }
 
-    it('should return 401 if not authenticated', async () => {
-        (createClient as Mock).mockResolvedValue(new FakeSupabase(null, {}));
+    single() {
+      this.shouldSingle = true;
+      return this;
+    }
 
-        const request = new Request('http://localhost:3000/api/invoice?id=pay123');
+    private execute() {
+      let result = [...this.rows];
+      for (const filter of this.filters) {
+        result = result.filter(filter);
+      }
 
-        const response = await GET(request);
-        const data = await response.json();
+      if (this.shouldSingle) {
+        return { data: result[0] ?? null, error: null };
+      }
 
-        expect(response.status).toBe(401);
-        expect(data.error).toBe('Unauthorized');
-    });
+      return { data: result, error: null };
+    }
 
-    it('should return 400 if id is missing', async () => {
-        (createClient as Mock).mockResolvedValue(
-            new FakeSupabase({ id: 'parent123' }, {})
-        );
+    then<TResult1 = { data: FakeRow[] | null; error: null }>(
+      onfulfilled?:
+        | ((value: {
+            data: FakeRow[] | null;
+            error: null;
+          }) => TResult1 | PromiseLike<TResult1>)
+        | null
+    ): Promise<TResult1> {
+      return Promise.resolve(
+        this.execute() as { data: FakeRow[] | null; error: null }
+      ).then(onfulfilled || undefined);
+    }
+  }
 
-        const request = new Request('http://localhost:3000/api/invoice');
+  class FakeSupabase {
+    constructor(
+      private user: FakeUser | null,
+      private tables: Record<string, FakeRow[]>
+    ) {}
 
-        const response = await GET(request);
-        const data = await response.json();
+    auth = {
+      getUser: async () => ({ data: { user: this.user }, error: null }),
+    };
 
-        expect(response.status).toBe(400);
-        expect(data.error).toBe('Payment ID required');
-    });
+    from(table: string) {
+      return new FakeQueryBuilder(this.tables[table] || []);
+    }
+  }
 
-    it('should return 403 if user not authorized to view invoice', async () => {
-        (createClient as Mock).mockResolvedValue(
-            new FakeSupabase(
-                { id: 'parent123', user_metadata: { role: 'parent' } },
-                {
-                    payments: [
-                        {
-                            id: 'pay123',
-                            enrollment_id: 'enroll123',
-                            amount: 100,
-                            status: 'completed',
-                            created_at: '2024-01-01',
-                            enrollment: {
-                                student: { first_name: 'Jane', last_name: 'Smith' },
-                                class: { name: 'Art 101', fee: 100 },
-                                parent: { first_name: 'John', last_name: 'Smith', email: 'john@example.com' },
-                            },
-                        },
-                    ],
-                    family_members: [],
-                    enrollments: [],
-                }
-            )
-        );
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (createClient as Mock).mockResolvedValue(new FakeSupabase(null, {}));
+  });
 
-        const request = new Request('http://localhost:3000/api/invoice?id=pay123');
+  it('should return 401 if not authenticated', async () => {
+    (createClient as Mock).mockResolvedValue(new FakeSupabase(null, {}));
 
-        const response = await GET(request);
-        const data = await response.json();
+    const request = new Request('http://localhost:3000/api/invoice?id=pay123');
 
-        expect(response.status).toBe(403);
-        expect(data.error).toBe('Access denied');
-    });
+    const response = await GET(request);
+    const data = await response.json();
 
-    it('should return HTML invoice for authorized user', async () => {
-        (createClient as Mock).mockResolvedValue(
-            new FakeSupabase(
-                { id: 'parent123', user_metadata: { role: 'parent' } },
-                {
-                    payments: [
-                        {
-                            id: 'pay123',
-                            enrollment_id: 'enroll123',
-                            amount: 100,
-                            status: 'completed',
-                            created_at: '2024-01-01',
-                            enrollment: {
-                                student: { first_name: 'Jane', last_name: 'Smith' },
-                                class: {
-                                    name: 'Art 101',
-                                    fee: 100,
-                                    schedule: 'Mon 10am',
-                                    location: 'Studio A',
-                                    start_date: '2024-01-01',
-                                    end_date: '2024-03-01',
-                                },
-                                parent: { first_name: 'John', last_name: 'Smith', email: 'john@example.com', phone: '123' },
-                            },
-                        },
-                    ],
-                    family_members: [{ id: 'student123', parent_id: 'parent123' }],
-                    enrollments: [{ id: 'enroll123', student_id: 'student123' }],
-                }
-            )
-        );
+    expect(response.status).toBe(401);
+    expect(data.error).toBe('Unauthorized');
+  });
 
-        const request = new Request('http://localhost:3000/api/invoice?id=pay123');
+  it('should return 400 if id is missing', async () => {
+    (createClient as Mock).mockResolvedValue(
+      new FakeSupabase({ id: 'parent123' }, {})
+    );
 
-        const response = await GET(request);
-        const html = await response.text();
+    const request = new Request('http://localhost:3000/api/invoice');
 
-        expect(response.status).toBe(200);
-        expect(response.headers.get('Content-Type')).toBe('text/html');
-        expect(html).toContain('Invoice');
-        expect(html).toContain('INV-PAY123');
-        expect(html).toContain('Art 101');
-    });
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toBe('Payment ID required');
+  });
+
+  it('should return 403 if user not authorized to view invoice', async () => {
+    (createClient as Mock).mockResolvedValue(
+      new FakeSupabase(
+        { id: 'parent123', user_metadata: { role: 'parent' } },
+        {
+          payments: [
+            {
+              id: 'pay123',
+              enrollment_id: 'enroll123',
+              amount: 100,
+              status: 'completed',
+              created_at: '2024-01-01',
+              enrollment: {
+                student: { first_name: 'Jane', last_name: 'Smith' },
+                class: { name: 'Art 101', fee: 100 },
+                parent: {
+                  first_name: 'John',
+                  last_name: 'Smith',
+                  email: 'john@example.com',
+                },
+              },
+            },
+          ],
+          family_members: [],
+          enrollments: [],
+        }
+      )
+    );
+
+    const request = new Request('http://localhost:3000/api/invoice?id=pay123');
+
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(data.error).toBe('Access denied');
+  });
+
+  it('should return HTML invoice for authorized user', async () => {
+    (createClient as Mock).mockResolvedValue(
+      new FakeSupabase(
+        { id: 'parent123', user_metadata: { role: 'parent' } },
+        {
+          payments: [
+            {
+              id: 'pay123',
+              enrollment_id: 'enroll123',
+              amount: 100,
+              status: 'completed',
+              created_at: '2024-01-01',
+              enrollment: {
+                student: { first_name: 'Jane', last_name: 'Smith' },
+                class: {
+                  name: 'Art 101',
+                  fee: 100,
+                  schedule: 'Mon 10am',
+                  location: 'Studio A',
+                  start_date: '2024-01-01',
+                  end_date: '2024-03-01',
+                },
+                parent: {
+                  first_name: 'John',
+                  last_name: 'Smith',
+                  email: 'john@example.com',
+                  phone: '123',
+                },
+              },
+            },
+          ],
+          family_members: [{ id: 'student123', parent_id: 'parent123' }],
+          enrollments: [{ id: 'enroll123', student_id: 'student123' }],
+        }
+      )
+    );
+
+    const request = new Request('http://localhost:3000/api/invoice?id=pay123');
+
+    const response = await GET(request);
+    const html = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Type')).toBe('text/html');
+    expect(html).toContain('Invoice');
+    expect(html).toContain('INV-PAY123');
+    expect(html).toContain('Art 101');
+  });
 });

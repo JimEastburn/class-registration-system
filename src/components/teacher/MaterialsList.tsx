@@ -11,13 +11,13 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  FileText, 
-  Link as LinkIcon, 
-  Video, 
-  MoreHorizontal, 
+import {
+  FileText,
+  Link as LinkIcon,
+  Video,
+  MoreHorizontal,
   Trash2,
-  ExternalLink 
+  ExternalLink,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -64,12 +64,12 @@ export function MaterialsList({ materials }: MaterialsListProps) {
 
   if (materials.length === 0) {
     return (
-      <div className="flex min-h-[150px] flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center animate-in fade-in-50">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-          <FileText className="h-6 w-6 text-muted-foreground" />
+      <div className="animate-in fade-in-50 flex min-h-[150px] flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+        <div className="bg-muted mx-auto flex h-12 w-12 items-center justify-center rounded-full">
+          <FileText className="text-muted-foreground h-6 w-6" />
         </div>
         <h3 className="mt-4 text-lg font-semibold">No materials yet</h3>
-        <p className="mb-4 text-sm text-muted-foreground">
+        <p className="text-muted-foreground mb-4 text-sm">
           Add files or links to share with your students.
         </p>
       </div>
@@ -79,10 +79,13 @@ export function MaterialsList({ materials }: MaterialsListProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {materials.map((material) => (
-        <Card key={material.id} className="overflow-hidden transition-all hover:shadow-md">
+        <Card
+          key={material.id}
+          className="overflow-hidden transition-all hover:shadow-md"
+        >
           <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
             <div className="flex items-center space-x-2">
-              <div className="rounded-md bg-muted p-2">
+              <div className="bg-muted rounded-md p-2">
                 {getIcon(material.type)}
               </div>
               <div className="space-y-1">
@@ -114,11 +117,7 @@ export function MaterialsList({ materials }: MaterialsListProps) {
             </DropdownMenu>
           </CardHeader>
           <CardContent>
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              asChild
-            >
+            <Button variant="outline" className="w-full justify-start" asChild>
               <a
                 href={material.file_url}
                 target="_blank"

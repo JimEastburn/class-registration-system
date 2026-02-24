@@ -8,7 +8,6 @@ import { Loader2 } from 'lucide-react';
 import {
   Form,
   FormControl,
-
   FormField,
   FormItem,
   FormLabel,
@@ -16,12 +15,17 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Class } from '@/types';
 import { createClass, updateClass } from '@/lib/actions/classes';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-
 
 const classFormSchema = z.object({
   name: z.string().min(2, {
@@ -39,219 +43,242 @@ const classFormSchema = z.object({
 type ClassFormValues = z.infer<typeof classFormSchema>;
 
 interface AdminClassFormProps {
-    initialData?: Class;
-    teachers: { id: string; first_name: string; last_name: string }[];
+  initialData?: Class;
+  teachers: { id: string; first_name: string; last_name: string }[];
 }
 
 export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
-    const router = useRouter();
+  const router = useRouter();
 
-    const form = useForm<ClassFormValues>({
-        resolver: zodResolver(classFormSchema) as any,
-        defaultValues: {
-            name: initialData?.name || '',
-            description: initialData?.description || '',
-            capacity: initialData?.capacity || 10,
+  const form = useForm<ClassFormValues>({
+    resolver: zodResolver(classFormSchema) as any,
+    defaultValues: {
+      name: initialData?.name || '',
+      description: initialData?.description || '',
+      capacity: initialData?.capacity || 10,
 
-            day: initialData?.schedule_config?.day || '',
-            block: initialData?.schedule_config?.block || '',
-            status: (['draft', 'published', 'completed', 'cancelled'].includes(initialData?.status as string) 
-                ? (initialData?.status as "draft" | "published" | "completed" | "cancelled") 
-                : 'draft'),
-            teacher_id: initialData?.teacher_id || '',
-        },
-    });
+      day: initialData?.schedule_config?.day || '',
+      block: initialData?.schedule_config?.block || '',
+      status: ['draft', 'published', 'completed', 'cancelled'].includes(
+        initialData?.status as string
+      )
+        ? (initialData?.status as
+            | 'draft'
+            | 'published'
+            | 'completed'
+            | 'cancelled')
+        : 'draft',
+      teacher_id: initialData?.teacher_id || '',
+    },
+  });
 
-    async function onSubmit(data: ClassFormValues) {
-        const payload = {
-            name: data.name,
-            description: data.description,
-            capacity: data.capacity,
+  async function onSubmit(data: ClassFormValues) {
+    const payload = {
+      name: data.name,
+      description: data.description,
+      capacity: data.capacity,
 
-            schedule_config: {
-              day: data.day,
-              block: data.block,
-              recurring: true
-            },
-            teacherId: data.teacher_id,
-            status: data.status,
-            // Add other fields mapping if needed
-        };
+      schedule_config: {
+        day: data.day,
+        block: data.block,
+        recurring: true,
+      },
+      teacherId: data.teacher_id,
+      status: data.status,
+      // Add other fields mapping if needed
+    };
 
-        let result;
-        if (initialData) {
-            result = await updateClass(initialData.id, payload);
-        } else {
-            result = await createClass(payload);
-        }
-
-        if (result.success) {
-            toast.success(initialData ? 'Class updated' : 'Class created');
-            router.push('/admin/classes');
-            router.refresh();
-        } else {
-            toast.error(result.error || 'Operation failed');
-        }
+    let result;
+    if (initialData) {
+      result = await updateClass(initialData.id, payload);
+    } else {
+      result = await createClass(payload);
     }
 
-    return (
-        <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-2xl">
-            <FormField
+    if (result.success) {
+      toast.success(initialData ? 'Class updated' : 'Class created');
+      router.push('/admin/classes');
+      router.refresh();
+    } else {
+      toast.error(result.error || 'Operation failed');
+    }
+  }
+
+  return (
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="max-w-2xl space-y-8"
+      >
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Class Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Introduction to Piano" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Course details..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
             control={form.control}
-            name="name"
+            name="capacity"
             render={({ field }) => (
-                <FormItem>
-                <FormLabel>Class Name</FormLabel>
+              <FormItem>
+                <FormLabel>Capacity</FormLabel>
                 <FormControl>
-                    <Input placeholder="Introduction to Piano" {...field} />
+                  <Input type="number" {...field} />
                 </FormControl>
                 <FormMessage />
-                </FormItem>
+              </FormItem>
             )}
-            />
-            
-            <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Description</FormLabel>
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="teacher_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Assigned Teacher</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                    <Textarea placeholder="Course details..." {...field} />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                control={form.control}
-                name="capacity"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Capacity</FormLabel>
-                    <FormControl>
-                        <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-
-            </div>
-
-            <FormField
-            control={form.control}
-            name="teacher_id"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Assigned Teacher</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                    <SelectTrigger>
+                  <SelectTrigger>
                     <SelectValue placeholder="Select a teacher" />
-                    </SelectTrigger>
+                  </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-
-                    {teachers.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                            {t.first_name} {t.last_name}
-                        </SelectItem>
-                    ))}
+                  {teachers.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.first_name} {t.last_name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Schedule Fields */}
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="day"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Day</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Day" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {[
+                      { value: 'Tuesday/Thursday', label: 'Tuesday/Thursday' },
+                      { value: 'Tuesday', label: 'Tuesday only' },
+                      { value: 'Wednesday', label: 'Wednesday only' },
+                      { value: 'Thursday', label: 'Thursday only' },
+                    ].map((day) => (
+                      <SelectItem key={day.value} value={day.value}>
+                        {day.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
                 <FormMessage />
-                </FormItem>
+              </FormItem>
             )}
-            />
+          />
+          <FormField
+            control={form.control}
+            name="block"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Block</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Block" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {[
+                      'Block 1',
+                      'Block 2',
+                      'Block 3',
+                      'Block 4',
+                      'Block 5',
+                    ].map((block) => (
+                      <SelectItem key={block} value={block}>
+                        {block}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-            {/* Schedule Fields */}
-            <div className="grid grid-cols-2 gap-4">
-                 <FormField
-                    control={form.control}
-                    name="day"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Day</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Day" />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            {[
-                              { value: 'Tuesday/Thursday', label: 'Tuesday/Thursday' },
-                              { value: 'Tuesday', label: 'Tuesday only' },
-                              { value: 'Wednesday', label: 'Wednesday only' },
-                              { value: 'Thursday', label: 'Thursday only' },
-                            ].map((day) => (
-                              <SelectItem key={day.value} value={day.value}>
-                                {day.label}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="block"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Block</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Block" />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {['Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5'].map(block => (
-                                    <SelectItem key={block} value={block}>{block}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            </div>
+        <FormField
+          control={form.control}
+          name="status"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Status</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            <SelectItem value="draft">Draft</SelectItem>
-                            <SelectItem value="published">Published</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                            <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
-
-            <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save Class
-            </Button>
-        </form>
-        </Form>
-    );
+        <Button type="submit" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting && (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          )}
+          Save Class
+        </Button>
+      </form>
+    </Form>
+  );
 }

@@ -3,7 +3,7 @@ import { LoginPage } from '../pages';
 
 /**
  * Test: Wrong password rejected
- * 
+ *
  * Tests that login fails with an incorrect password
  * and appropriate error message is displayed.
  */
@@ -12,7 +12,7 @@ test.describe('Login Failure', () => {
   test('should reject login with wrong password', async ({ page }) => {
     // Create a valid user to attempt login
     const user = await createTestUser('parent');
-    
+
     try {
       const loginPage = new LoginPage(page);
       await loginPage.goto();
@@ -21,7 +21,9 @@ test.describe('Login Failure', () => {
       await loginPage.login(user.email, 'WrongPassword123!');
 
       // Should show error message via data-testid
-      await expect(page.getByTestId('login-error-message')).toBeVisible({ timeout: 10000 });
+      await expect(page.getByTestId('login-error-message')).toBeVisible({
+        timeout: 10000,
+      });
 
       // Should still be on login page
       expect(page.url()).toContain('/login');
@@ -39,7 +41,9 @@ test.describe('Login Failure', () => {
     await loginPage.login(fakeEmail, 'Password123!');
 
     // Should show error message via data-testid
-    await expect(page.getByTestId('login-error-message')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('login-error-message')).toBeVisible({
+      timeout: 10000,
+    });
 
     // Should still be on login page
     expect(page.url()).toContain('/login');

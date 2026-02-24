@@ -1,4 +1,3 @@
-
 import { format, parseISO, eachDayOfInterval } from 'date-fns';
 import { ScheduleConfig } from '@/types';
 
@@ -26,7 +25,7 @@ export function generateClassEvents(
 
   const start = parseISO(config.startDate);
   const end = parseISO(config.endDate);
-  
+
   if (start > end) return events;
 
   const allDays = eachDayOfInterval({ start, end });
@@ -34,17 +33,17 @@ export function generateClassEvents(
 
   for (const day of allDays) {
     const dayName = format(day, 'EEEE');
-    
+
     // Check if the current day matches the configured day(s)
     // Supports "Monday", "Tuesday", etc. AND "Tuesday/Thursday" type strings
     if (targetDay.includes(dayName)) {
-       events.push({
-         class_id: classId,
-         date: format(day, 'yyyy-MM-dd'),
-         block: config.block,
-         location: details?.location || null,
-         description: details?.description || null,
-       });
+      events.push({
+        class_id: classId,
+        date: format(day, 'yyyy-MM-dd'),
+        block: config.block,
+        location: details?.location || null,
+        description: details?.description || null,
+      });
     }
   }
 

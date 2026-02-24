@@ -29,7 +29,7 @@ async function logAuditEntry(
 
 /**
  * Search for a student by email and link them to a family member
- * 
+ *
  * Flow:
  * 1. Search for a user with 'student' role and matching email
  * 2. If found, link them to the family member (set student_user_id)
@@ -41,7 +41,12 @@ export async function linkStudentByEmail(
 ): Promise<
   ActionResult<{
     linked: boolean;
-    studentProfile?: { id: string; email: string; first_name: string | null; last_name: string | null };
+    studentProfile?: {
+      id: string;
+      email: string;
+      first_name: string | null;
+      last_name: string | null;
+    };
   }>
 > {
   const supabase = await createClient();
@@ -67,12 +72,18 @@ export async function linkStudentByEmail(
   }
 
   if (familyMember.parent_id !== user.id) {
-    return { success: false, error: 'You do not have permission to link this family member' };
+    return {
+      success: false,
+      error: 'You do not have permission to link this family member',
+    };
   }
 
   // Check if already linked
   if (familyMember.student_user_id) {
-    return { success: false, error: 'This family member is already linked to a student account' };
+    return {
+      success: false,
+      error: 'This family member is already linked to a student account',
+    };
   }
 
   // Search for a student profile with the given email
@@ -111,7 +122,8 @@ export async function linkStudentByEmail(
     } else {
       return {
         success: false,
-        error: 'This student is already linked to another family member in your account',
+        error:
+          'This student is already linked to another family member in your account',
       };
     }
   }
@@ -179,11 +191,17 @@ export async function createPendingLink(
   }
 
   if (familyMember.parent_id !== user.id) {
-    return { success: false, error: 'You do not have permission to modify this family member' };
+    return {
+      success: false,
+      error: 'You do not have permission to modify this family member',
+    };
   }
 
   if (familyMember.student_user_id) {
-    return { success: false, error: 'This family member is already linked to a student account' };
+    return {
+      success: false,
+      error: 'This family member is already linked to a student account',
+    };
   }
 
   // Check if a user with this email already exists
@@ -198,14 +216,15 @@ export async function createPendingLink(
   if (existingUser) {
     return {
       success: false,
-      error: 'A user with this email already exists. Use "Link by Email" instead.',
+      error:
+        'A user with this email already exists. Use "Link by Email" instead.',
     };
   }
 
   // Store the pending link email in the system_settings table
   // Using a pattern: pending_links -> { [email]: { familyMemberId, parentId, createdAt } }
   const pendingKey = `pending_link:${studentEmail.toLowerCase().trim()}`;
-  
+
   await adminClient.from('system_settings').upsert(
     {
       key: pendingKey,
@@ -277,10 +296,15 @@ export async function completePendingLink(
   await supabase.from('system_settings').delete().eq('key', pendingKey);
 
   // Log audit entry (using the parent_id as the user who initiated)
-  await logAuditEntry(linkData.parent_id, 'student.pending_link_completed', linkData.family_member_id, {
-    student_id: studentUserId,
-    student_email: studentEmail,
-  });
+  await logAuditEntry(
+    linkData.parent_id,
+    'student.pending_link_completed',
+    linkData.family_member_id,
+    {
+      student_id: studentUserId,
+      student_email: studentEmail,
+    }
+  );
 
   return {
     success: true,
@@ -316,11 +340,17 @@ export async function unlinkStudent(
   }
 
   if (familyMember.parent_id !== user.id) {
-    return { success: false, error: 'You do not have permission to unlink this student' };
+    return {
+      success: false,
+      error: 'You do not have permission to unlink this student',
+    };
   }
 
   if (!familyMember.student_user_id) {
-    return { success: false, error: 'This family member is not linked to a student account' };
+    return {
+      success: false,
+      error: 'This family member is not linked to a student account',
+    };
   }
 
   const previousStudentId = familyMember.student_user_id;

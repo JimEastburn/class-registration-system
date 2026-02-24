@@ -1,28 +1,48 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Edit, Users, Calendar, MapPin, FileText } from 'lucide-react';
+import {
+  ArrowLeft,
+  Edit,
+  Users,
+  Calendar,
+  MapPin,
+  FileText,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { getClassDetails, getClassAvailability } from '@/lib/actions/classes';
 import { getClassRoster } from '@/lib/actions/enrollments';
 import { StudentRosterTable } from '@/components/teacher/StudentRosterTable';
-
 
 interface ClassDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+const statusConfig: Record<
+  string,
+  {
+    label: string;
+    variant: 'default' | 'secondary' | 'outline' | 'destructive';
+  }
+> = {
   draft: { label: 'Draft', variant: 'secondary' },
   published: { label: 'Published', variant: 'default' },
   cancelled: { label: 'Cancelled', variant: 'destructive' },
   completed: { label: 'Completed', variant: 'outline' },
 };
 
-export default async function ClassDetailPage({ params }: ClassDetailPageProps) {
+export default async function ClassDetailPage({
+  params,
+}: ClassDetailPageProps) {
   const { id } = await params;
-  
+
   const [classResult, availabilityResult, rosterResult] = await Promise.all([
     getClassDetails(id),
     getClassAvailability(id),
@@ -47,8 +67,12 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
           </Button>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-3xl font-bold tracking-tight">{classData.name}</h1>
-              <Badge variant={statusConfig[classData.status]?.variant || 'outline'}>
+              <h1 className="text-3xl font-bold tracking-tight">
+                {classData.name}
+              </h1>
+              <Badge
+                variant={statusConfig[classData.status]?.variant || 'outline'}
+              >
                 {statusConfig[classData.status]?.label || classData.status}
               </Badge>
             </div>
@@ -78,13 +102,13 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Enrollment</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {availability.enrolled}/{availability.capacity}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {availability.available} spots available
             </p>
           </CardContent>
@@ -93,13 +117,11 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Schedule</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {classData.day || 'TBA'}
-            </div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold">{classData.day || 'TBA'}</div>
+            <p className="text-muted-foreground text-xs">
               {classData.block || 'TBA'}
             </p>
           </CardContent>
@@ -108,15 +130,13 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Location</CardTitle>
-            <MapPin className="h-4 w-4 text-muted-foreground" />
+            <MapPin className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold truncate">
+            <div className="truncate text-2xl font-bold">
               {classData.location || 'TBA'}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Class location
-            </p>
+            <p className="text-muted-foreground text-xs">Class location</p>
           </CardContent>
         </Card>
       </div>
@@ -126,7 +146,9 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
         <Card>
           <CardHeader>
             <CardTitle>Class Details</CardTitle>
-            <CardDescription>Additional information about this class</CardDescription>
+            <CardDescription>
+              Additional information about this class
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
@@ -165,7 +187,10 @@ export default async function ClassDetailPage({ params }: ClassDetailPageProps) 
         </Card>
 
         {/* Student Roster */}
-        <StudentRosterTable enrollments={rosterResult.data || []} classId={id} />
+        <StudentRosterTable
+          enrollments={rosterResult.data || []}
+          classId={id}
+        />
       </div>
     </div>
   );

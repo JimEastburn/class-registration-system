@@ -25,7 +25,7 @@ export function ExportButton() {
         }
 
         const { csv, filename } = result.data;
-        
+
         // Trigger download
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = window.URL.createObjectURL(blob);
@@ -36,7 +36,7 @@ export function ExportButton() {
         link.click();
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
-        
+
         toast.success(`Exported ${type} successfully`);
       } catch (error) {
         console.error('Export error:', error);

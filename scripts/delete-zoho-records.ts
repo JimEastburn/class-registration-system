@@ -116,14 +116,19 @@ async function voidInvoice(invoiceId: string, token: string): Promise<boolean> {
   });
   const data = await res.json();
   if (data.code !== 0) {
-    console.error(`   ⚠️  Failed to void invoice ${invoiceId}: ${data.message}`);
+    console.error(
+      `   ⚠️  Failed to void invoice ${invoiceId}: ${data.message}`
+    );
     return false;
   }
   return true;
 }
 
 // ── Void credit notes before deleting ───────────────────────────────────────────
-async function voidCreditNote(creditNoteId: string, token: string): Promise<boolean> {
+async function voidCreditNote(
+  creditNoteId: string,
+  token: string
+): Promise<boolean> {
   const url = `${ZOHO_BASE_URL}/creditnotes/${creditNoteId}/void?organization_id=${ZOHO_ORGANIZATION_ID}`;
   const res = await fetch(url, {
     method: 'POST',
@@ -131,7 +136,9 @@ async function voidCreditNote(creditNoteId: string, token: string): Promise<bool
   });
   const data = await res.json();
   if (data.code !== 0) {
-    console.error(`   ⚠️  Failed to void credit note ${creditNoteId}: ${data.message}`);
+    console.error(
+      `   ⚠️  Failed to void credit note ${creditNoteId}: ${data.message}`
+    );
     return false;
   }
   return true;
@@ -150,11 +157,11 @@ async function main() {
 
   // ── 1. Delete Customer Payments ─────────────────────────────────────────────
   log('📋', 'Fetching customer payments...');
-  const payments = await fetchAllPages<{ payment_id: string; reference_number: string; amount: number }>(
-    'customerpayments',
-    'customerpayments',
-    token
-  );
+  const payments = await fetchAllPages<{
+    payment_id: string;
+    reference_number: string;
+    amount: number;
+  }>('customerpayments', 'customerpayments', token);
   log('📊', `Found ${payments.length} customer payment(s)`);
 
   if (!dryRun) {
@@ -166,7 +173,10 @@ async function main() {
     log('✅', `Deleted ${deleted}/${payments.length} customer payments`);
   } else {
     for (const p of payments) {
-      log('  ', `  Payment ${p.payment_id} — $${p.amount} (ref: ${p.reference_number || 'N/A'})`);
+      log(
+        '  ',
+        `  Payment ${p.payment_id} — $${p.amount} (ref: ${p.reference_number || 'N/A'})`
+      );
     }
   }
 
@@ -174,11 +184,12 @@ async function main() {
 
   // ── 2. Delete Credit Notes ──────────────────────────────────────────────────
   log('📋', 'Fetching credit notes...');
-  const creditNotes = await fetchAllPages<{ creditnote_id: string; creditnote_number: string; status: string; total: number }>(
-    'creditnotes',
-    'creditnotes',
-    token
-  );
+  const creditNotes = await fetchAllPages<{
+    creditnote_id: string;
+    creditnote_number: string;
+    status: string;
+    total: number;
+  }>('creditnotes', 'creditnotes', token);
   log('📊', `Found ${creditNotes.length} credit note(s)`);
 
   if (!dryRun) {
@@ -194,7 +205,10 @@ async function main() {
     log('✅', `Deleted ${deleted}/${creditNotes.length} credit notes`);
   } else {
     for (const cn of creditNotes) {
-      log('  ', `  Credit Note ${cn.creditnote_number} — $${cn.total} (${cn.status})`);
+      log(
+        '  ',
+        `  Credit Note ${cn.creditnote_number} — $${cn.total} (${cn.status})`
+      );
     }
   }
 
@@ -202,11 +216,12 @@ async function main() {
 
   // ── 3. Delete Invoices ──────────────────────────────────────────────────────
   log('📋', 'Fetching invoices...');
-  const invoices = await fetchAllPages<{ invoice_id: string; invoice_number: string; status: string; total: number }>(
-    'invoices',
-    'invoices',
-    token
-  );
+  const invoices = await fetchAllPages<{
+    invoice_id: string;
+    invoice_number: string;
+    status: string;
+    total: number;
+  }>('invoices', 'invoices', token);
   log('📊', `Found ${invoices.length} invoice(s)`);
 
   if (!dryRun) {
@@ -222,7 +237,10 @@ async function main() {
     log('✅', `Deleted ${deleted}/${invoices.length} invoices`);
   } else {
     for (const inv of invoices) {
-      log('  ', `  Invoice ${inv.invoice_number} — $${inv.total} (${inv.status})`);
+      log(
+        '  ',
+        `  Invoice ${inv.invoice_number} — $${inv.total} (${inv.status})`
+      );
     }
   }
 
@@ -230,11 +248,11 @@ async function main() {
 
   // ── 4. Delete Contacts ──────────────────────────────────────────────────────
   log('📋', 'Fetching contacts...');
-  const contacts = await fetchAllPages<{ contact_id: string; contact_name: string; email: string }>(
-    'contacts',
-    'contacts',
-    token
-  );
+  const contacts = await fetchAllPages<{
+    contact_id: string;
+    contact_name: string;
+    email: string;
+  }>('contacts', 'contacts', token);
   log('📊', `Found ${contacts.length} contact(s)`);
 
   if (!dryRun) {
@@ -251,7 +269,12 @@ async function main() {
   }
 
   console.log('');
-  log('🎉', dryRun ? 'Dry run complete — no records were deleted.' : 'All Zoho Books records deleted!');
+  log(
+    '🎉',
+    dryRun
+      ? 'Dry run complete — no records were deleted.'
+      : 'All Zoho Books records deleted!'
+  );
   console.log('');
 }
 

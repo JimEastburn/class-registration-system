@@ -3,47 +3,45 @@ import { redirect } from 'next/navigation';
 import LoginForm from '@/components/auth/LoginForm';
 
 export const metadata = {
-    title: 'Login | Class Registration System',
-    description: 'Sign in to your account',
+  title: 'Login | Class Registration System',
+  description: 'Sign in to your account',
 };
 
 export default async function LoginPage() {
-    // Check if user is already logged in
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+  // Check if user is already logged in
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (user) {
-        const role = user.user_metadata?.role || 'parent';
-        redirect(`/${role}`);
-    }
+  if (user) {
+    const role = user.user_metadata?.role || 'parent';
+    redirect(`/${role}`);
+  }
 
-    return (
-        <>
-            {/* Form Container */}
-            <div className="w-full bg-slate-800/50 p-8 rounded-2xl border border-slate-700 shadow-xl backdrop-blur-sm">
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-white mb-2">
-                        Welcome Back
-                    </h1>
-                    <p className="text-gray-300">
-                        Sign in to access your dashboard
-                    </p>
-                </div>
-                <LoginForm />
-            </div>
+  return (
+    <>
+      {/* Form Container */}
+      <div className="w-full rounded-2xl border border-slate-700 bg-slate-800/50 p-8 shadow-xl backdrop-blur-sm">
+        <div className="mb-8 text-center">
+          <h1 className="mb-2 text-3xl font-bold text-white">Welcome Back</h1>
+          <p className="text-gray-300">Sign in to access your dashboard</p>
+        </div>
+        <LoginForm />
+      </div>
 
-            {/* Support Info Card */}
-            <div className="w-full bg-slate-800/50 backdrop-blur-md rounded-xl p-4 border border-slate-700 shadow-lg text-center">
-                <p className="text-slate-300 text-sm">
-                    For help, please text Jim Eastburn{' '}
-                    <a
-                        href="sms:+15126896860"
-                        className="text-teal-400 font-medium hover:text-teal-300 transition-colors"
-                    >
-                        (512) 689-6860
-                    </a>
-                </p>
-            </div>
-        </>
-    );
+      {/* Support Info Card */}
+      <div className="w-full rounded-xl border border-slate-700 bg-slate-800/50 p-4 text-center shadow-lg backdrop-blur-md">
+        <p className="text-sm text-slate-300">
+          For help, please text Jim Eastburn{' '}
+          <a
+            href="sms:+15126896860"
+            className="font-medium text-teal-400 transition-colors hover:text-teal-300"
+          >
+            (512) 689-6860
+          </a>
+        </p>
+      </div>
+    </>
+  );
 }

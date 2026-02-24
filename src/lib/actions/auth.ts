@@ -19,9 +19,7 @@ export async function signUp(
   const role = formData.get('role') as 'parent' | 'teacher' | 'student';
   const phone = (formData.get('phone') as string) || null;
 
-
   const supabase = await createClient();
-
 
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
@@ -36,7 +34,6 @@ export async function signUp(
       },
     },
   });
-
 
   if (authError) {
     console.error('Auth Error', authError);
@@ -66,7 +63,6 @@ export async function signUp(
     },
     { onConflict: 'id' }
   );
-
 
   if (profileError) {
     console.error('Profile creation error:', profileError);
@@ -99,10 +95,7 @@ export async function signUp(
       }
 
       // Remove the pending link record
-      await adminClient
-        .from('system_settings')
-        .delete()
-        .eq('key', pendingKey);
+      await adminClient.from('system_settings').delete().eq('key', pendingKey);
     }
   }
 
@@ -204,8 +197,8 @@ export async function resetPassword(
   // Send the custom email
   if (data?.properties?.action_link) {
     await sendPasswordReset({
-        email,
-        resetLink: data.properties.action_link
+      email,
+      resetLink: data.properties.action_link,
     });
   }
 

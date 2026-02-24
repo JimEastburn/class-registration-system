@@ -21,7 +21,10 @@ export async function addMaterial(
   const supabase = await createClient();
 
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       return { success: false, error: 'Unauthorized' };
     }
@@ -61,7 +64,10 @@ export async function addMaterial(
       classData.teacher_id === user.id;
 
     if (!canEdit) {
-      return { success: false, error: 'Not authorized to manage materials for this class' };
+      return {
+        success: false,
+        error: 'Not authorized to manage materials for this class',
+      };
     }
 
     const { data: material, error: insertError } = await supabase
@@ -94,7 +100,10 @@ export async function getMaterialsForClass(
   const supabase = await createClient();
 
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       return { success: false, error: 'Unauthorized' };
     }
@@ -117,27 +126,28 @@ export async function getMaterialsForClass(
       .single();
 
     const isTeacher = classData.teacher_id === user.id;
-    const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+    const isAdmin =
+      profile?.role === 'admin' || profile?.role === 'super_admin';
     const isScheduler = profile?.role === 'class_scheduler';
 
     if (!isTeacher && !isAdmin && !isScheduler) {
       // Check for enrollment (either as student or parent of student)
       // 1. Check if user is a student in family_members linked to this class
       // 2. Check if user is a parent of a student enrolled in this class
-      
+
       // Simplest check: Get family_member ids for this user (if they are a parent or student themselves linked to auth)
       // Actually, we need to know if the user (auth.uid) is linked to an enrollment.
-      
+
       // Scenario A: User is Parent
       const { data: familyMembers } = await supabase
         .from('family_members')
         .select('id')
         .or(`parent_id.eq.${user.id},student_user_id.eq.${user.id}`);
-      
-      const familyMemberIds = familyMembers?.map(fm => fm.id) || [];
-      
+
+      const familyMemberIds = familyMembers?.map((fm) => fm.id) || [];
+
       if (familyMemberIds.length === 0) {
-         return { success: false, error: 'Not authorized' };
+        return { success: false, error: 'Not authorized' };
       }
 
       const { data: enrollment } = await supabase
@@ -177,7 +187,10 @@ export async function getSyllabusLink(
   const supabase = await createClient();
 
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       return { success: false, error: 'Unauthorized' };
     }
@@ -188,7 +201,10 @@ export async function getSyllabusLink(
       .eq('id', user.id)
       .single();
 
-    if (!profile || !['admin', 'super_admin', 'class_scheduler'].includes(profile.role)) {
+    if (
+      !profile ||
+      !['admin', 'super_admin', 'class_scheduler'].includes(profile.role)
+    ) {
       return { success: false, error: 'Unauthorized' };
     }
 
@@ -219,7 +235,10 @@ export async function updateMaterial(
   const supabase = await createClient();
 
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       return { success: false, error: 'Unauthorized' };
     }
@@ -242,7 +261,10 @@ export async function updateMaterial(
 
     // Supabase returns nested data as: { class_id: ..., classes: { teacher_id: ... } }
     // We need to type cast or handle it.
-    const materialWithClass = material as unknown as { class_id: string; classes: { teacher_id: string } };
+    const materialWithClass = material as unknown as {
+      class_id: string;
+      classes: { teacher_id: string };
+    };
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -286,12 +308,15 @@ export async function deleteMaterial(
   const supabase = await createClient();
 
   try {
-     const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       return { success: false, error: 'Unauthorized' };
     }
 
-     // Check ownership
+    // Check ownership
     const { data: material, error: fetchError } = await supabase
       .from('class_materials')
       .select('class_id, classes!inner(teacher_id)')
@@ -301,11 +326,14 @@ export async function deleteMaterial(
     if (fetchError || !material) {
       return { success: false, error: 'Material not found' };
     }
-    
-    // Type cast
-    const materialWithClass = material as unknown as { class_id: string; classes: { teacher_id: string } };
 
-     const { data: profile } = await supabase
+    // Type cast
+    const materialWithClass = material as unknown as {
+      class_id: string;
+      classes: { teacher_id: string };
+    };
+
+    const { data: profile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -334,7 +362,6 @@ export async function deleteMaterial(
     revalidatePath(`/parent/browse/${materialWithClass.class_id}`);
 
     return { success: true, data: undefined };
-
   } catch {
     return { success: false, error: 'Internal server error' };
   }
@@ -347,7 +374,10 @@ export async function upsertSyllabusLink(
   const supabase = await createClient();
 
   try {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       return { success: false, error: 'Unauthorized' };
     }

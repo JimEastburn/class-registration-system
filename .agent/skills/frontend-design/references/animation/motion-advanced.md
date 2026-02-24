@@ -26,7 +26,7 @@ const opacity = useTransform(scrollYProgress, [0, 1], [1, 0]);
 ```tsx
 const { scrollYProgress } = useScroll({
   target: ref,
-  offset: ['start end', 'end start']
+  offset: ['start end', 'end start'],
 });
 
 const y = useTransform(scrollYProgress, [0, 1], [100, -100]);
@@ -60,10 +60,10 @@ const container = {
     transition: {
       delayChildren: 0.3,
       staggerChildren: 0.1,
-      staggerDirection: -1,  // reverse
-      when: 'beforeChildren'  // or 'afterChildren'
-    }
-  }
+      staggerDirection: -1, // reverse
+      when: 'beforeChildren', // or 'afterChildren'
+    },
+  },
 };
 ```
 
@@ -74,12 +74,12 @@ import type { Variants, Transition, MotionProps } from 'motion/react';
 
 const variants: Variants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1 }
+  visible: { opacity: 1 },
 };
 
 const transition: Transition = {
   type: 'spring',
-  stiffness: 300
+  stiffness: 300,
 };
 
 interface Props extends MotionProps {
@@ -107,9 +107,7 @@ import { useInView } from 'motion/react';
 const ref = useRef(null);
 const isInView = useInView(ref, { once: true });
 
-<div ref={ref}>
-  {isInView && <motion.div animate={{ opacity: 1 }} />}
-</div>
+<div ref={ref}>{isInView && <motion.div animate={{ opacity: 1 }} />}</div>;
 ```
 
 ## Reorder (Drag to Reorder)
@@ -120,17 +118,18 @@ import { Reorder } from 'motion/react';
 const [items, setItems] = useState([1, 2, 3]);
 
 <Reorder.Group values={items} onReorder={setItems}>
-  {items.map(item => (
+  {items.map((item) => (
     <Reorder.Item key={item} value={item}>
       {item}
     </Reorder.Item>
   ))}
-</Reorder.Group>
+</Reorder.Group>;
 ```
 
 ## Performance
 
 ### Use transform properties
+
 ```tsx
 // Good - GPU accelerated
 animate={{ x: 100, scale: 1.1, rotate: 45, opacity: 0.5 }}
@@ -140,17 +139,17 @@ animate={{ width: 200, left: 100, marginTop: 20 }}
 ```
 
 ### Reduce motion
+
 ```tsx
 import { useReducedMotion } from 'motion/react';
 
 const prefersReduced = useReducedMotion();
 
-<motion.div
-  animate={prefersReduced ? {} : { scale: 1.1 }}
-/>
+<motion.div animate={prefersReduced ? {} : { scale: 1.1 }} />;
 ```
 
 ### Layout animation performance
+
 ```tsx
 // Add layoutId for better performance on shared layouts
 <motion.div layoutId="card" />
@@ -162,6 +161,7 @@ const prefersReduced = useReducedMotion();
 ## Common Patterns
 
 ### Fade in on scroll
+
 ```tsx
 <motion.div
   initial={{ opacity: 0, y: 50 }}
@@ -172,6 +172,7 @@ const prefersReduced = useReducedMotion();
 ```
 
 ### Page transitions
+
 ```tsx
 <AnimatePresence mode="wait">
   <motion.main
@@ -186,6 +187,7 @@ const prefersReduced = useReducedMotion();
 ```
 
 ### Expandable card
+
 ```tsx
 <motion.div layout onClick={() => setExpanded(!expanded)}>
   <motion.h2 layout="position">Title</motion.h2>
@@ -206,6 +208,7 @@ const prefersReduced = useReducedMotion();
 ## When to Use anime.js Instead
 
 anime.js v4 still appropriate for:
+
 - Complex SVG morphing (`svg.morphTo`)
 - SVG line drawing (`svg.createDrawable`)
 - Timeline-heavy sequences in vanilla JS

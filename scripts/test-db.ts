@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
@@ -20,7 +19,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function main() {
   console.log('Testing connection...');
-  const { data, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('count', { count: 'exact', head: true });
   if (error) {
     console.error('Error connecting:', error);
   } else {

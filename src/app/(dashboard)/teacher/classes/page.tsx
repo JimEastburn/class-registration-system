@@ -14,7 +14,7 @@ export default async function TeacherClassesPage() {
 
   if (!result.success) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <p className="text-muted-foreground">Unable to load classes.</p>
       </div>
     );

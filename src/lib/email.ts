@@ -2,46 +2,46 @@ import { Resend } from 'resend';
 
 // Initialize Resend client if API key is available
 const resend = process.env.RESEND_API_KEY
-    ? new Resend(process.env.RESEND_API_KEY)
-    : null;
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@classregistration.com';
 const APP_NAME = 'Class Registration System';
 
 export interface EnrollmentEmailData {
-    parentEmail: string;
-    parentName: string;
-    studentName: string;
-    className: string;
-    teacherName: string;
-    schedule: string;
-    location: string;
-    startDate: string;
-    fee: number;
+  parentEmail: string;
+  parentName: string;
+  studentName: string;
+  className: string;
+  teacherName: string;
+  schedule: string;
+  location: string;
+  startDate: string;
+  fee: number;
 }
 
 export interface PaymentEmailData {
-    parentEmail: string;
-    parentName: string;
-    studentName: string;
-    className: string;
-    amount: number;
-    paymentDate: string;
-    transactionId: string;
+  parentEmail: string;
+  parentName: string;
+  studentName: string;
+  className: string;
+  amount: number;
+  paymentDate: string;
+  transactionId: string;
 }
 
 export async function sendEnrollmentConfirmation(data: EnrollmentEmailData) {
-    if (!resend) {
-        console.log('Email not configured - skipping enrollment confirmation');
-        return { success: false, error: 'Email not configured' };
-    }
+  if (!resend) {
+    console.log('Email not configured - skipping enrollment confirmation');
+    return { success: false, error: 'Email not configured' };
+  }
 
-    try {
-        const result = await resend.emails.send({
-            from: `${APP_NAME} <${FROM_EMAIL}>`,
-            to: data.parentEmail,
-            subject: `Enrollment Confirmed: ${data.studentName} in ${data.className}`,
-            html: `
+  try {
+    const result = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: data.parentEmail,
+      subject: `Enrollment Confirmed: ${data.studentName} in ${data.className}`,
+      html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -114,27 +114,27 @@ export async function sendEnrollmentConfirmation(data: EnrollmentEmailData) {
         </body>
         </html>
       `,
-        });
+    });
 
-        return { success: true, data: result };
-    } catch (error) {
-        console.error('Failed to send enrollment email:', error);
-        return { success: false, error };
-    }
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Failed to send enrollment email:', error);
+    return { success: false, error };
+  }
 }
 
 export async function sendPaymentReceipt(data: PaymentEmailData) {
-    if (!resend) {
-        console.log('Email not configured - skipping payment receipt');
-        return { success: false, error: 'Email not configured' };
-    }
+  if (!resend) {
+    console.log('Email not configured - skipping payment receipt');
+    return { success: false, error: 'Email not configured' };
+  }
 
-    try {
-        const result = await resend.emails.send({
-            from: `${APP_NAME} <${FROM_EMAIL}>`,
-            to: data.parentEmail,
-            subject: `Payment Receipt: ${data.className}`,
-            html: `
+  try {
+    const result = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: data.parentEmail,
+      subject: `Payment Receipt: ${data.className}`,
+      html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -202,36 +202,36 @@ export async function sendPaymentReceipt(data: PaymentEmailData) {
         </body>
         </html>
       `,
-        });
+    });
 
-        return { success: true, data: result };
-    } catch (error) {
-        console.error('Failed to send payment receipt:', error);
-        return { success: false, error };
-    }
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Failed to send payment receipt:', error);
+    return { success: false, error };
+  }
 }
 
 export interface WaitlistEmailData {
-    parentEmail: string;
-    parentName: string;
-    studentName: string;
-    className: string;
-    schedule: string;
-    startDate: string;
+  parentEmail: string;
+  parentName: string;
+  studentName: string;
+  className: string;
+  schedule: string;
+  startDate: string;
 }
 
 export async function sendWaitlistNotification(data: WaitlistEmailData) {
-    if (!resend) {
-        console.log('Email not configured - skipping waitlist notification');
-        return { success: false, error: 'Email not configured' };
-    }
+  if (!resend) {
+    console.log('Email not configured - skipping waitlist notification');
+    return { success: false, error: 'Email not configured' };
+  }
 
-    try {
-        const result = await resend.emails.send({
-            from: `${APP_NAME} <${FROM_EMAIL}>`,
-            to: data.parentEmail,
-            subject: `Waitlist Opening: ${data.studentName} is now enrolled in ${data.className}`,
-            html: `
+  try {
+    const result = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: data.parentEmail,
+      subject: `Waitlist Opening: ${data.studentName} is now enrolled in ${data.className}`,
+      html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -293,34 +293,34 @@ export async function sendWaitlistNotification(data: WaitlistEmailData) {
         </body>
         </html>
       `,
-        });
+    });
 
-        return { success: true, data: result };
-    } catch (error) {
-        console.error('Failed to send waitlist notification:', error);
-        return { success: false, error };
-    }
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Failed to send waitlist notification:', error);
+    return { success: false, error };
+  }
 }
 
 export interface CancellationEmailData {
-    parentEmail: string;
-    parentName: string;
-    studentName: string;
-    className: string;
+  parentEmail: string;
+  parentName: string;
+  studentName: string;
+  className: string;
 }
 
 export async function sendClassCancellation(data: CancellationEmailData) {
-    if (!resend) {
-        console.log('Email not configured - skipping cancellation email');
-        return { success: false, error: 'Email not configured' };
-    }
+  if (!resend) {
+    console.log('Email not configured - skipping cancellation email');
+    return { success: false, error: 'Email not configured' };
+  }
 
-    try {
-        const result = await resend.emails.send({
-            from: `${APP_NAME} <${FROM_EMAIL}>`,
-            to: data.parentEmail,
-            subject: `Important: Class Cancellation - ${data.className}`,
-            html: `
+  try {
+    const result = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: data.parentEmail,
+      subject: `Important: Class Cancellation - ${data.className}`,
+      html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -359,32 +359,32 @@ export async function sendClassCancellation(data: CancellationEmailData) {
         </body>
         </html>
       `,
-        });
+    });
 
-        return { success: true, data: result };
-    } catch (error) {
-        console.error('Failed to send class cancellation email:', error);
-        return { success: false, error };
-    }
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Failed to send class cancellation email:', error);
+    return { success: false, error };
+  }
 }
 
 export interface PasswordResetEmailData {
-    email: string;
-    resetLink: string;
+  email: string;
+  resetLink: string;
 }
 
 export async function sendPasswordReset(data: PasswordResetEmailData) {
-    if (!resend) {
-        console.log('Email not configured - skipping password reset email');
-        return { success: false, error: 'Email not configured' };
-    }
+  if (!resend) {
+    console.log('Email not configured - skipping password reset email');
+    return { success: false, error: 'Email not configured' };
+  }
 
-    try {
-        const result = await resend.emails.send({
-            from: `${APP_NAME} <${FROM_EMAIL}>`,
-            to: data.email,
-            subject: 'Reset your password',
-            html: `
+  try {
+    const result = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: data.email,
+      subject: 'Reset your password',
+      html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -423,50 +423,58 @@ export async function sendPasswordReset(data: PasswordResetEmailData) {
         </body>
         </html>
       `,
-        });
+    });
 
-        return { success: true, data: result };
-    } catch (error) {
-        console.error('Failed to send password reset email:', error);
-        return { success: false, error };
-    }
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Failed to send password reset email:', error);
+    return { success: false, error };
+  }
 }
 
 export interface ScheduleChangeEmailData {
-    parentEmail: string;
-    parentName: string;
-    studentName: string;
-    className: string;
-    changes: {
-        schedule?: { old: string; new: string };
-        location?: { old: string; new: string };
-        dates?: { old: string; new: string };
-    };
+  parentEmail: string;
+  parentName: string;
+  studentName: string;
+  className: string;
+  changes: {
+    schedule?: { old: string; new: string };
+    location?: { old: string; new: string };
+    dates?: { old: string; new: string };
+  };
 }
 
-export async function sendScheduleChangeNotification(data: ScheduleChangeEmailData) {
-    if (!resend) {
-        console.log('Email not configured - skipping schedule change notification');
-        return { success: false, error: 'Email not configured' };
+export async function sendScheduleChangeNotification(
+  data: ScheduleChangeEmailData
+) {
+  if (!resend) {
+    console.log('Email not configured - skipping schedule change notification');
+    return { success: false, error: 'Email not configured' };
+  }
+
+  try {
+    const changeList = [];
+    if (data.changes.schedule) {
+      changeList.push(
+        `<li><strong>Schedule:</strong> Changed from "${data.changes.schedule.old}" to "${data.changes.schedule.new}"</li>`
+      );
+    }
+    if (data.changes.location) {
+      changeList.push(
+        `<li><strong>Location:</strong> Changed from "${data.changes.location.old}" to "${data.changes.location.new}"</li>`
+      );
+    }
+    if (data.changes.dates) {
+      changeList.push(
+        `<li><strong>Dates:</strong> Changed from "${data.changes.dates.old}" to "${data.changes.dates.new}"</li>`
+      );
     }
 
-    try {
-        const changeList = [];
-        if (data.changes.schedule) {
-            changeList.push(`<li><strong>Schedule:</strong> Changed from "${data.changes.schedule.old}" to "${data.changes.schedule.new}"</li>`);
-        }
-        if (data.changes.location) {
-            changeList.push(`<li><strong>Location:</strong> Changed from "${data.changes.location.old}" to "${data.changes.location.new}"</li>`);
-        }
-        if (data.changes.dates) {
-            changeList.push(`<li><strong>Dates:</strong> Changed from "${data.changes.dates.old}" to "${data.changes.dates.new}"</li>`);
-        }
-
-        const result = await resend.emails.send({
-            from: `${APP_NAME} <${FROM_EMAIL}>`,
-            to: data.parentEmail,
-            subject: `Schedule Change: ${data.className}`,
-            html: `
+    const result = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: data.parentEmail,
+      subject: `Schedule Change: ${data.className}`,
+      html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -516,11 +524,11 @@ export async function sendScheduleChangeNotification(data: ScheduleChangeEmailDa
         </body>
         </html>
       `,
-        });
+    });
 
-        return { success: true, data: result };
-    } catch (error) {
-        console.error('Failed to send schedule change email:', error);
-        return { success: false, error };
-    }
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Failed to send schedule change email:', error);
+    return { success: false, error };
+  }
 }

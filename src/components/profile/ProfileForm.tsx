@@ -134,9 +134,7 @@ export function ProfileForm({ initialData }: ProfileFormProps) {
                   {...field}
                 />
               </FormControl>
-              <FormDescription>
-                This will be visible to others.
-              </FormDescription>
+              <FormDescription>This will be visible to others.</FormDescription>
               <FormMessage />
             </FormItem>
           )}

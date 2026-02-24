@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getBlockedStudents, unblockStudent, type BlockWithDetails } from '@/lib/actions/blocking';
+import {
+  getBlockedStudents,
+  unblockStudent,
+  type BlockWithDetails,
+} from '@/lib/actions/blocking';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -11,7 +15,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Loader2, Ban, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,9 +35,9 @@ export default function BlockedStudentsPage() {
       setLoading(true);
       const result = await getBlockedStudents();
       if (result.error) {
-         toast.error(result.error);
+        toast.error(result.error);
       } else {
-         setBlocks(result.data || []);
+        setBlocks(result.data || []);
       }
       setLoading(false);
     };
@@ -36,16 +46,16 @@ export default function BlockedStudentsPage() {
   }, []);
 
   const handleUnblock = async (blockId: string) => {
-      setProcessing(blockId);
-      const result = await unblockStudent(blockId, '/teacher/blocked');
-      if (result.success) {
-          toast.success('Unblocked student');
-          // Optimistic update
-          setBlocks(prev => prev.filter(b => b.id !== blockId));
-      } else {
-          toast.error(result.error || 'Failed to unblock');
-      }
-      setProcessing(null);
+    setProcessing(blockId);
+    const result = await unblockStudent(blockId, '/teacher/blocked');
+    if (result.success) {
+      toast.success('Unblocked student');
+      // Optimistic update
+      setBlocks((prev) => prev.filter((b) => b.id !== blockId));
+    } else {
+      toast.error(result.error || 'Failed to unblock');
+    }
+    setProcessing(null);
   };
 
   return (
@@ -66,14 +76,14 @@ export default function BlockedStudentsPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-             <div className="flex justify-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-             </div>
+            <div className="flex justify-center p-8">
+              <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
+            </div>
           ) : blocks.length === 0 ? (
-             <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
-                <Ban className="mb-2 h-10 w-10 opacity-20" />
-                <p>No blocked students found.</p>
-             </div>
+            <div className="text-muted-foreground flex flex-col items-center justify-center p-8 text-center">
+              <Ban className="mb-2 h-10 w-10 opacity-20" />
+              <p>No blocked students found.</p>
+            </div>
           ) : (
             <Table>
               <TableHeader>
@@ -93,39 +103,48 @@ export default function BlockedStudentsPage() {
                     </TableCell>
                     <TableCell>
                       {block.student.parent ? (
-                          <div className="flex flex-col">
-                             <span>{block.student.parent.first_name} {block.student.parent.last_name}</span>
-                             <span className="text-xs text-muted-foreground">{block.student.parent.email}</span>
-                          </div>
+                        <div className="flex flex-col">
+                          <span>
+                            {block.student.parent.first_name}{' '}
+                            {block.student.parent.last_name}
+                          </span>
+                          <span className="text-muted-foreground text-xs">
+                            {block.student.parent.email}
+                          </span>
+                        </div>
                       ) : (
-                          <span className="text-muted-foreground italic">Unknown</span>
+                        <span className="text-muted-foreground italic">
+                          Unknown
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>
                       {block.reason ? (
                         <span className="text-sm">{block.reason}</span>
                       ) : (
-                        <span className="text-sm text-muted-foreground italic">No reason provided</span>
+                        <span className="text-muted-foreground text-sm italic">
+                          No reason provided
+                        </span>
                       )}
                     </TableCell>
                     <TableCell>
-                        {new Date(block.created_at).toLocaleDateString()}
+                      {new Date(block.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
-                       <Button 
-                         variant="outline" 
-                         size="sm"
-                         onClick={() => handleUnblock(block.id)}
-                         disabled={processing === block.id}
-                       >
-                         {processing === block.id ? (
-                             <Loader2 className="h-4 w-4 animate-spin" />
-                         ) : (
-                             <>
-                               <Unlock className="mr-2 h-4 w-4" /> Unblock
-                             </>
-                         )}
-                       </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUnblock(block.id)}
+                        disabled={processing === block.id}
+                      >
+                        {processing === block.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Unlock className="mr-2 h-4 w-4" /> Unblock
+                          </>
+                        )}
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

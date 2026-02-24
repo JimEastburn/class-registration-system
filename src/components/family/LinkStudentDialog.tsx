@@ -2,7 +2,14 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mail, Link, Loader2, UserCheck, AlertCircle, Clock } from 'lucide-react';
+import {
+  Mail,
+  Link,
+  Loader2,
+  UserCheck,
+  AlertCircle,
+  Clock,
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -81,7 +88,10 @@ export function LinkStudentDialog({
         router.refresh();
       } else {
         // Student doesn't exist yet - create a pending link
-        const pendingResult = await createPendingLink(familyMemberId, email.trim());
+        const pendingResult = await createPendingLink(
+          familyMemberId,
+          email.trim()
+        );
 
         if (!pendingResult.success) {
           setStatus('error');
@@ -120,14 +130,14 @@ export function LinkStudentDialog({
             Link Student Account
           </DialogTitle>
           <DialogDescription>
-            Link <span className="font-semibold">{familyMemberName}</span> to their student account
-            by entering their email address.
+            Link <span className="font-semibold">{familyMemberName}</span> to
+            their student account by entering their email address.
           </DialogDescription>
         </DialogHeader>
 
         {status === 'linked' && (
           <div className="py-4">
-            <Alert className="bg-green-50 border-green-200">
+            <Alert className="border-green-200 bg-green-50">
               <UserCheck className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-700">
                 Successfully linked to student account{' '}
@@ -142,11 +152,12 @@ export function LinkStudentDialog({
 
         {status === 'pending' && (
           <div className="py-4">
-            <Alert className="bg-amber-50 border-amber-200">
+            <Alert className="border-amber-200 bg-amber-50">
               <Clock className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-700">
-                <span className="font-semibold">{linkedEmail}</span> is not registered yet. 
-                When they register with this email, they will be automatically linked to {familyMemberName}.
+                <span className="font-semibold">{linkedEmail}</span> is not
+                registered yet. When they register with this email, they will be
+                automatically linked to {familyMemberName}.
               </AlertDescription>
             </Alert>
             <DialogFooter className="mt-4">
@@ -176,8 +187,9 @@ export function LinkStudentDialog({
                   disabled={isPending}
                   autoComplete="off"
                 />
-                <p className="text-sm text-muted-foreground">
-                  If the student hasn&apos;t registered yet, we&apos;ll automatically link them when they do.
+                <p className="text-muted-foreground text-sm">
+                  If the student hasn&apos;t registered yet, we&apos;ll
+                  automatically link them when they do.
                 </p>
               </div>
             </div>

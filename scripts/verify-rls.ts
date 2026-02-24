@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -10,7 +9,9 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('❌ Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  console.error(
+    '❌ Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY'
+  );
   process.exit(1);
 }
 
@@ -52,19 +53,22 @@ async function verifyRLS() {
 
       if (table.shouldBeEmpty) {
         if (count > 0) {
-          console.error(`❌ [${table.name}] FAILURE: Returned ${count} rows (Expected 0)`);
+          console.error(
+            `❌ [${table.name}] FAILURE: Returned ${count} rows (Expected 0)`
+          );
           console.error('   Sensitive data leakage detected!');
           failures++;
         } else {
-            console.log(`✅ [${table.name}] Verified (0 rows returned)`);
+          console.log(`✅ [${table.name}] Verified (0 rows returned)`);
         }
       } else {
-         console.log(`ℹ️ [${table.name}] Public access allowed (${count} rows returned) - Verified as intentional`);
+        console.log(
+          `ℹ️ [${table.name}] Public access allowed (${count} rows returned) - Verified as intentional`
+        );
       }
-
     } catch (err) {
       console.error(`❌ [${table.name}] Unexpected error:`, err);
-       // failures++; // Don't fail on unexpected connection errors, but log
+      // failures++; // Don't fail on unexpected connection errors, but log
     }
   }
 

@@ -159,7 +159,12 @@ export async function updateSession(request: NextRequest) {
     }
 
     // Parent portal access requires is_parent unless they are super_admin
-    if (routePrefix === '/parent' && userRole !== 'parent' && userRole !== 'super_admin' && !isParent) {
+    if (
+      routePrefix === '/parent' &&
+      userRole !== 'parent' &&
+      userRole !== 'super_admin' &&
+      !isParent
+    ) {
       const url = request.nextUrl.clone();
       url.pathname = getDefaultPathForRole(userRole);
       return NextResponse.redirect(url);

@@ -259,7 +259,7 @@ function Tooltip({ content, children }) {
         <div
           role="tooltip"
           // Dismissible: user can close without moving pointer
-          onKeyDown={(e) => e.key === "Escape" && setIsVisible(false)}
+          onKeyDown={(e) => e.key === 'Escape' && setIsVisible(false)}
           // Hoverable: content stays visible when pointer moves to it
           onMouseEnter={() => setIsVisible(true)}
           onMouseLeave={() => setIsVisible(false)}
@@ -292,7 +292,7 @@ function CustomButton({ onClick, children }) {
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
+        if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           onClick();
         }
@@ -331,10 +331,10 @@ function Modal({ isOpen, onClose, children }) {
   // Allow Escape to close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === 'Escape') onClose();
     };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
   return (
@@ -581,7 +581,7 @@ function CustomCheckbox({ checked, onChange, label }) {
       aria-label={label}
       onClick={() => onChange(!checked)}
     >
-      {checked ? "✓" : "○"} {label}
+      {checked ? '✓' : '○'} {label}
     </button>
   );
 }
@@ -597,8 +597,8 @@ function CustomSlider({ value, min, max, label, onChange }) {
       aria-label={label}
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === "ArrowRight") onChange(Math.min(value + 1, max));
-        if (e.key === "ArrowLeft") onChange(Math.max(value - 1, min));
+        if (e.key === 'ArrowRight') onChange(Math.min(value + 1, max));
+        if (e.key === 'ArrowLeft') onChange(Math.max(value - 1, min));
       }}
     >
       <div style={{ width: `${((value - min) / (max - min)) * 100}%` }} />

@@ -43,7 +43,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Class } from '@/types';
-import { deleteClass, publishClass, cancelClass, completeClass } from '@/lib/actions/classes';
+import {
+  deleteClass,
+  publishClass,
+  cancelClass,
+  completeClass,
+} from '@/lib/actions/classes';
 
 interface ClassWithTeacher extends Class {
   teacher: {
@@ -57,7 +62,13 @@ interface ClassManagementTableProps {
   classes: ClassWithTeacher[];
 }
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+const statusConfig: Record<
+  string,
+  {
+    label: string;
+    variant: 'default' | 'secondary' | 'outline' | 'destructive';
+  }
+> = {
   draft: { label: 'Draft', variant: 'secondary' },
   published: { label: 'Published', variant: 'default' },
   cancelled: { label: 'Cancelled', variant: 'destructive' },
@@ -68,8 +79,12 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedClass, setSelectedClass] = useState<ClassWithTeacher | null>(null);
-  const [actionType, setActionType] = useState<'delete' | 'publish' | 'cancel' | 'complete' | null>(null);
+  const [selectedClass, setSelectedClass] = useState<ClassWithTeacher | null>(
+    null
+  );
+  const [actionType, setActionType] = useState<
+    'delete' | 'publish' | 'cancel' | 'complete' | null
+  >(null);
 
   const handleAction = async () => {
     if (!selectedClass || !actionType) return;
@@ -100,7 +115,10 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
     });
   };
 
-  const openConfirmDialog = (cls: ClassWithTeacher, action: typeof actionType) => {
+  const openConfirmDialog = (
+    cls: ClassWithTeacher,
+    action: typeof actionType
+  ) => {
     setSelectedClass(cls);
     setActionType(action);
     setDeleteDialogOpen(true);
@@ -113,9 +131,10 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
       case 'delete':
         return {
           title: 'Delete Class',
-          description: selectedClass.status === 'draft'
-            ? `Are you sure you want to permanently delete "${selectedClass.name}"? This action cannot be undone.`
-            : `"${selectedClass.name}" will be cancelled. This action cannot be undone.`,
+          description:
+            selectedClass.status === 'draft'
+              ? `Are you sure you want to permanently delete "${selectedClass.name}"? This action cannot be undone.`
+              : `"${selectedClass.name}" will be cancelled. This action cannot be undone.`,
         };
       case 'publish':
         return {
@@ -170,9 +189,9 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
           </TableHeader>
           <TableBody>
             {classes.map((cls) => (
-              <TableRow 
+              <TableRow
                 key={cls.id}
-                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                className="hover:bg-muted/50 cursor-pointer transition-colors"
                 onClick={() => router.push(`/teacher/classes/${cls.id}`)}
                 data-testid={`class-row-${cls.id}`}
               >
@@ -183,20 +202,32 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
                       {cls.day} • {cls.block || 'TBD'}
                     </span>
                   ) : (
-                    <span className="text-muted-foreground">To Be Announced</span>
+                    <span className="text-muted-foreground">
+                      To Be Announced
+                    </span>
                   )}
                 </TableCell>
                 <TableCell>{cls.capacity}</TableCell>
 
                 <TableCell>
-                  <Badge variant={statusConfig[cls.status]?.variant || 'outline'}>
+                  <Badge
+                    variant={statusConfig[cls.status]?.variant || 'outline'}
+                  >
                     {statusConfig[cls.status]?.label || cls.status}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                <TableCell
+                  className="text-right"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" disabled={isPending} data-testid="class-actions-trigger">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={isPending}
+                        data-testid="class-actions-trigger"
+                      >
                         <MoreHorizontal className="h-4 w-4" />
                         <span className="sr-only">Actions</span>
                       </Button>
@@ -275,14 +306,20 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{dialogContent.title}</AlertDialogTitle>
-            <AlertDialogDescription>{dialogContent.description}</AlertDialogDescription>
+            <AlertDialogDescription>
+              {dialogContent.description}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleAction}
               disabled={isPending}
-              className={actionType === 'delete' || actionType === 'cancel' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}
+              className={
+                actionType === 'delete' || actionType === 'cancel'
+                  ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                  : ''
+              }
             >
               {isPending ? 'Processing...' : 'Confirm'}
             </AlertDialogAction>

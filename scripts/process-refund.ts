@@ -74,7 +74,9 @@ if (!paymentIdArg && !stripePiArg) {
 
 const validReasons = ['duplicate', 'fraudulent', 'requested_by_customer'];
 if (reasonArg && !validReasons.includes(reasonArg)) {
-  console.error(`❌ Invalid reason "${reasonArg}". Must be one of: ${validReasons.join(', ')}`);
+  console.error(
+    `❌ Invalid reason "${reasonArg}". Must be one of: ${validReasons.join(', ')}`
+  );
   process.exit(1);
 }
 
@@ -109,13 +111,15 @@ async function main() {
 
     const { data: payment, error } = await supabase
       .from('payments')
-      .select(`
+      .select(
+        `
         id, amount, status, transaction_id, paid_at,
         enrollment:enrollments(
           student:family_members(first_name, last_name),
           class:classes(name)
         )
-      `)
+      `
+      )
       .eq('id', paymentIdArg!)
       .single();
 
@@ -130,7 +134,9 @@ async function main() {
     }
 
     if (payment.status !== 'completed') {
-      console.error(`❌ Payment status is "${payment.status}" — only completed payments can be refunded.`);
+      console.error(
+        `❌ Payment status is "${payment.status}" — only completed payments can be refunded.`
+      );
       process.exit(1);
     }
 
@@ -163,12 +169,17 @@ async function main() {
   try {
     pi = await stripe.paymentIntents.retrieve(paymentIntentId);
   } catch (err) {
-    console.error('❌ Could not retrieve PaymentIntent:', err instanceof Error ? err.message : err);
+    console.error(
+      '❌ Could not retrieve PaymentIntent:',
+      err instanceof Error ? err.message : err
+    );
     process.exit(1);
   }
 
   if (pi.status !== 'succeeded') {
-    console.error(`❌ PaymentIntent status is "${pi.status}" — can only refund succeeded intents.`);
+    console.error(
+      `❌ PaymentIntent status is "${pi.status}" — can only refund succeeded intents.`
+    );
     process.exit(1);
   }
 
@@ -181,7 +192,9 @@ async function main() {
       process.exit(1);
     }
     if (refundAmount > totalPaid) {
-      console.error(`❌ Refund amount (${formatAmount(refundAmount / 100)}) exceeds payment (${formatAmount(totalPaid / 100)})`);
+      console.error(
+        `❌ Refund amount (${formatAmount(refundAmount / 100)}) exceeds payment (${formatAmount(totalPaid / 100)})`
+      );
       process.exit(1);
     }
   }
@@ -190,7 +203,10 @@ async function main() {
   log('📋', '── Refund Summary ──');
   log('  ', `PaymentIntent: ${pi.id}`);
   log('  ', `Total paid:    ${formatAmount(totalPaid / 100)}`);
-  log('  ', `Refund amount: ${refundAmount ? formatAmount(refundAmount / 100) + ' (partial)' : formatAmount(totalPaid / 100) + ' (full)'}`);
+  log(
+    '  ',
+    `Refund amount: ${refundAmount ? formatAmount(refundAmount / 100) + ' (partial)' : formatAmount(totalPaid / 100) + ' (full)'}`
+  );
   if (reasonArg) {
     log('  ', `Reason:        ${reasonArg}`);
   }
@@ -226,10 +242,16 @@ async function main() {
     log('  ', `Currency:   ${refund.currency.toUpperCase()}`);
     console.log('');
     log('📡', 'Stripe will fire a `charge.refunded` webhook automatically.');
-    log('  ', 'The webhook will update Supabase, promote waitlist, and sync to Zoho.');
+    log(
+      '  ',
+      'The webhook will update Supabase, promote waitlist, and sync to Zoho.'
+    );
     console.log('');
   } catch (err) {
-    console.error('❌ Refund failed:', err instanceof Error ? err.message : err);
+    console.error(
+      '❌ Refund failed:',
+      err instanceof Error ? err.message : err
+    );
     process.exit(1);
   }
 }

@@ -3,10 +3,10 @@ import { RegisterPage } from '../pages';
 
 /**
  * Test: Sign up (Parent) with all fields
- * 
+ *
  * Corresponds to Gherkin Scenario: "Successful Sign Up (Parent)"
  * from tests/features/auth.feature
- * 
+ *
  * Given I am on the registration page
  * When I submit the registration form with all required fields
  * Then a new user account should be created
@@ -20,7 +20,9 @@ test.describe('Parent Sign Up', () => {
     return `parent-signup-${timestamp}-${randomId}@example.com`;
   };
 
-  test('should successfully register as a parent with all fields', async ({ page }) => {
+  test('should successfully register as a parent with all fields', async ({
+    page,
+  }) => {
     const registerPage = new RegisterPage(page);
     const testEmail = generateEmail();
     const password = 'SecurePass123!';
@@ -36,7 +38,7 @@ test.describe('Parent Sign Up', () => {
       email: testEmail,
       phone: '555-0100',
       password: password,
-      role: 'parent'
+      role: 'parent',
     });
 
     // Verify successful registration
@@ -46,17 +48,20 @@ test.describe('Parent Sign Up', () => {
     await expect(async () => {
       const url = page.url();
       const content = await page.content();
-      
-      const isOnConfirmation = content.includes('Check your email') ||
-                               content.includes('verify your email') ||
-                               content.includes('confirmation');
+
+      const isOnConfirmation =
+        content.includes('Check your email') ||
+        content.includes('verify your email') ||
+        content.includes('confirmation');
       const isOnDashboard = url.includes('/parent');
-      
+
       expect(isOnConfirmation || isOnDashboard).toBe(true);
     }).toPass({ timeout: 15000 });
   });
 
-  test('should display required fields on registration form', async ({ page }) => {
+  test('should display required fields on registration form', async ({
+    page,
+  }) => {
     const registerPage = new RegisterPage(page);
     await registerPage.goto();
 
@@ -77,7 +82,7 @@ test.describe('Parent Sign Up', () => {
 
     // Click sign in link
     await registerPage.goToSignIn();
-    
+
     // Verify navigation to login
     await expect(page).toHaveURL('/login');
   });

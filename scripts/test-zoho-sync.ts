@@ -76,30 +76,61 @@ interface AssertionResult {
 
 const results: AssertionResult[] = [];
 
-function assert(field: string, expected: string, actual: string | undefined | null): boolean {
+function assert(
+  field: string,
+  expected: string,
+  actual: string | undefined | null
+): boolean {
   const actualStr = actual ?? '(empty)';
   const pass = actualStr === expected;
   results.push({ field, expected, actual: actualStr, pass });
   return pass;
 }
 
-function assertContains(field: string, expected: string, actual: string | undefined | null): boolean {
+function assertContains(
+  field: string,
+  expected: string,
+  actual: string | undefined | null
+): boolean {
   const actualStr = actual ?? '(empty)';
   const pass = actualStr.includes(expected);
-  results.push({ field, expected: `contains "${expected}"`, actual: actualStr, pass });
+  results.push({
+    field,
+    expected: `contains "${expected}"`,
+    actual: actualStr,
+    pass,
+  });
   return pass;
 }
 
-function assertMatches(field: string, pattern: RegExp, actual: string | undefined | null): boolean {
+function assertMatches(
+  field: string,
+  pattern: RegExp,
+  actual: string | undefined | null
+): boolean {
   const actualStr = actual ?? '(empty)';
   const pass = pattern.test(actualStr);
-  results.push({ field, expected: `matches ${pattern}`, actual: actualStr, pass });
+  results.push({
+    field,
+    expected: `matches ${pattern}`,
+    actual: actualStr,
+    pass,
+  });
   return pass;
 }
 
-function assertTruthy(field: string, description: string, value: unknown): boolean {
+function assertTruthy(
+  field: string,
+  description: string,
+  value: unknown
+): boolean {
   const pass = !!value;
-  results.push({ field, expected: description, actual: value ? String(value) : '(empty)', pass });
+  results.push({
+    field,
+    expected: description,
+    actual: value ? String(value) : '(empty)',
+    pass,
+  });
   return pass;
 }
 
@@ -134,7 +165,10 @@ async function checkConnectivity(token: string) {
   }
 
   const total = data.page_context?.total || 0;
-  log('✅', `Connected to Zoho Books org ${ZOHO_ORGANIZATION_ID} — ${total} existing contact(s)`);
+  log(
+    '✅',
+    `Connected to Zoho Books org ${ZOHO_ORGANIZATION_ID} — ${total} existing contact(s)`
+  );
 }
 
 // ── Zoho Read Helpers ───────────────────────────────────────────────────────────
@@ -153,7 +187,8 @@ async function fetchInvoiceByReference(referenceNumber: string, token: string) {
     { headers: { Authorization: `Zoho-oauthtoken ${token}` } }
   );
   const detailData = await detailRes.json();
-  if (detailData.code !== 0) throw new Error(`Failed to fetch invoice: ${detailData.message}`);
+  if (detailData.code !== 0)
+    throw new Error(`Failed to fetch invoice: ${detailData.message}`);
   return detailData.invoice;
 }
 
@@ -163,7 +198,8 @@ async function fetchContact(contactId: string, token: string) {
     { headers: { Authorization: `Zoho-oauthtoken ${token}` } }
   );
   const data = await res.json();
-  if (data.code !== 0) throw new Error(`Failed to fetch contact: ${data.message}`);
+  if (data.code !== 0)
+    throw new Error(`Failed to fetch contact: ${data.message}`);
   return data.contact;
 }
 
@@ -179,7 +215,10 @@ async function voidAndDeleteInvoice(invoiceId: string, token: string) {
     for (const p of paymentsData.payments) {
       await fetch(
         `${ZOHO_BASE_URL}/customerpayments/${p.payment_id}?organization_id=${ZOHO_ORGANIZATION_ID}`,
-        { method: 'DELETE', headers: { Authorization: `Zoho-oauthtoken ${token}` } }
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Zoho-oauthtoken ${token}` },
+        }
       );
     }
   }
@@ -215,12 +254,17 @@ async function runFullSync(token: string) {
 
     if (error || !data) {
       console.error('❌ No completed/pending-sync payments found in Supabase.');
-      console.error('   Try running with --payment-id <id> to target a specific payment.');
+      console.error(
+        '   Try running with --payment-id <id> to target a specific payment.'
+      );
       process.exit(1);
     }
 
     paymentId = data.id;
-    log('📋', `Found payment: ${paymentId} ($${Number(data.amount).toFixed(2)}, sync_status: ${data.sync_status})`);
+    log(
+      '📋',
+      `Found payment: ${paymentId} ($${Number(data.amount).toFixed(2)}, sync_status: ${data.sync_status})`
+    );
   } else {
     log('📋', `Using specified payment: ${paymentId}`);
   }
@@ -228,7 +272,8 @@ async function runFullSync(token: string) {
   // ── Fetch payment details for display ─────────────────────────────────────
   const { data: payment, error: pError } = await supabase
     .from('payments')
-    .select(`
+    .select(
+      `
       *,
       enrollment:enrollments(
         id,
@@ -238,12 +283,16 @@ async function runFullSync(token: string) {
           teacher:profiles(first_name, last_name)
         )
       )
-    `)
+    `
+    )
     .eq('id', paymentId)
     .single();
 
   if (pError || !payment) {
-    console.error('❌ Could not load payment + enrollment data:', pError?.message);
+    console.error(
+      '❌ Could not load payment + enrollment data:',
+      pError?.message
+    );
     process.exit(1);
   }
 
@@ -253,7 +302,9 @@ async function runFullSync(token: string) {
   // Fetch parent profile (with address)
   const { data: parent, error: parentError } = await supabase
     .from('profiles')
-    .select('first_name, last_name, email, phone, address_line1, address_line2, city, state, zip, country')
+    .select(
+      'first_name, last_name, email, phone, address_line1, address_line2, city, state, zip, country'
+    )
     .eq('id', parentId)
     .single();
 
@@ -267,12 +318,30 @@ async function runFullSync(token: string) {
   const teacher = classInfo.teacher;
 
   console.log('');
-  log('👤', `Parent:  ${parent.first_name} ${parent.last_name} (${parent.email})`);
-  log('📍', `Address: ${parent.address_line1 || '(none)'}, ${parent.city || ''} ${parent.state || ''} ${parent.zip || ''}`);
-  log('🎓', `Student: ${student.first_name} ${student.last_name} (grade: ${student.grade || 'N/A'})`);
-  log('📚', `Class:   ${classInfo.name} — $${Number(classInfo.price).toFixed(2)}`);
-  log('👩‍🏫', `Teacher: ${teacher ? `${teacher.first_name} ${teacher.last_name}` : 'N/A'}`);
-  log('💰', `Payment: $${Number(payment.amount).toFixed(2)} (txn: ${payment.transaction_id})`);
+  log(
+    '👤',
+    `Parent:  ${parent.first_name} ${parent.last_name} (${parent.email})`
+  );
+  log(
+    '📍',
+    `Address: ${parent.address_line1 || '(none)'}, ${parent.city || ''} ${parent.state || ''} ${parent.zip || ''}`
+  );
+  log(
+    '🎓',
+    `Student: ${student.first_name} ${student.last_name} (grade: ${student.grade || 'N/A'})`
+  );
+  log(
+    '📚',
+    `Class:   ${classInfo.name} — $${Number(classInfo.price).toFixed(2)}`
+  );
+  log(
+    '👩‍🏫',
+    `Teacher: ${teacher ? `${teacher.first_name} ${teacher.last_name}` : 'N/A'}`
+  );
+  log(
+    '💰',
+    `Payment: $${Number(payment.amount).toFixed(2)} (txn: ${payment.transaction_id})`
+  );
   console.log('');
 
   // ── A: Run production sync ────────────────────────────────────────────────
@@ -327,32 +396,58 @@ async function runFullSync(token: string) {
   const billingAddr = contact.billing_address || {};
 
   if (parent.address_line1) {
-    assertTruthy('billing_address.address', 'non-empty street', billingAddr.address);
+    assertTruthy(
+      'billing_address.address',
+      'non-empty street',
+      billingAddr.address
+    );
     assertTruthy('billing_address.city', 'non-empty city', billingAddr.city);
     assertTruthy('billing_address.state', 'non-empty state', billingAddr.state);
     assertTruthy('billing_address.zip', 'non-empty zip', billingAddr.zip);
   } else {
-    log('⚠️', 'Parent has no address on file — skipping billing address assertions');
-    results.push({ field: 'billing_address', expected: 'skipped (no address on profile)', actual: 'N/A', pass: true });
+    log(
+      '⚠️',
+      'Parent has no address on file — skipping billing address assertions'
+    );
+    results.push({
+      field: 'billing_address',
+      expected: 'skipped (no address on profile)',
+      actual: 'N/A',
+      pass: true,
+    });
   }
 
   // ── D: Print results table ────────────────────────────────────────────────
   console.log('');
-  console.log('┌──────────────────────────────────────────────────────────────────────────────┐');
-  console.log('│  INV-000305 Format Verification Results                                      │');
-  console.log('├────────────────────────────┬──────┬───────────────────────────────────────────┤');
-  console.log('│ Field                      │ Pass │ Details                                   │');
-  console.log('├────────────────────────────┼──────┼───────────────────────────────────────────┤');
+  console.log(
+    '┌──────────────────────────────────────────────────────────────────────────────┐'
+  );
+  console.log(
+    '│  INV-000305 Format Verification Results                                      │'
+  );
+  console.log(
+    '├────────────────────────────┬──────┬───────────────────────────────────────────┤'
+  );
+  console.log(
+    '│ Field                      │ Pass │ Details                                   │'
+  );
+  console.log(
+    '├────────────────────────────┼──────┼───────────────────────────────────────────┤'
+  );
 
   for (const r of results) {
     const passStr = r.pass ? '  ✅  ' : '  ❌  ';
     const fieldCol = r.field.padEnd(26).slice(0, 26);
-    const detailText = r.pass ? r.actual : `expected: ${r.expected} | got: ${r.actual}`;
+    const detailText = r.pass
+      ? r.actual
+      : `expected: ${r.expected} | got: ${r.actual}`;
     const detailCol = detailText.slice(0, 41).padEnd(41);
     console.log(`│ ${fieldCol} │${passStr}│ ${detailCol} │`);
   }
 
-  console.log('└────────────────────────────┴──────┴───────────────────────────────────────────┘');
+  console.log(
+    '└────────────────────────────┴──────┴───────────────────────────────────────────┘'
+  );
 
   const passed = results.filter((r) => r.pass).length;
   const total = results.length;
@@ -371,14 +466,23 @@ async function runFullSync(token: string) {
       // Reset sync status back to pending so the payment can be re-tested
       await supabase
         .from('payments')
-        .update({ sync_status: 'pending', updated_at: new Date().toISOString() })
+        .update({
+          sync_status: 'pending',
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', paymentId);
       log('✅', 'Payment sync_status reset to "pending"');
     } catch (err) {
-      log('⚠️', `Cleanup failed (non-fatal): ${err instanceof Error ? err.message : err}`);
+      log(
+        '⚠️',
+        `Cleanup failed (non-fatal): ${err instanceof Error ? err.message : err}`
+      );
     }
   } else if (skipCleanup) {
-    log('ℹ️', 'Skipping cleanup (--skip-cleanup). Invoice remains in Zoho for manual review.');
+    log(
+      'ℹ️',
+      'Skipping cleanup (--skip-cleanup). Invoice remains in Zoho for manual review.'
+    );
   }
 
   if (!allPassed) {
@@ -391,7 +495,9 @@ async function main() {
   console.log('');
   console.log('═══════════════════════════════════════════════════');
   console.log('  Zoho Books E2E Sync Test + Format Verification');
-  console.log(`  Mode: ${dryRun ? '🔍 DRY RUN (connectivity only)' : '🚀 FULL SYNC + VERIFY'}`);
+  console.log(
+    `  Mode: ${dryRun ? '🔍 DRY RUN (connectivity only)' : '🚀 FULL SYNC + VERIFY'}`
+  );
   console.log('═══════════════════════════════════════════════════');
   console.log('');
 
