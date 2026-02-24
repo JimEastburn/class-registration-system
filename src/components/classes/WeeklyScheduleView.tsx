@@ -160,7 +160,7 @@ export function WeeklyScheduleView({ studentId }: WeeklyScheduleViewProps) {
           {BLOCKS.map((block) => (
             <div
               key={block}
-              className="flex min-h-[100px] border-b last:border-b-0"
+              className="flex min-h-[100px] border-b"
             >
               {/* Block Label Sidebar */}
               <div className="bg-muted/10 text-muted-foreground flex w-24 flex-none items-center justify-center border-r p-2 text-sm font-medium">

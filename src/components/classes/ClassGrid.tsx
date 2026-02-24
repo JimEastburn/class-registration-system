@@ -57,7 +57,7 @@ function ClassCard({ classItem }: ClassCardProps) {
           <CardTitle className="line-clamp-2 text-lg">
             {classItem.name}
           </CardTitle>
-          <Badge variant="secondary">$30.00</Badge>
+          <Badge variant="secondary">$30.00 community fee</Badge>
         </div>
       </CardHeader>
       <CardContent className="flex-1">
@@ -90,9 +90,12 @@ function ClassCard({ classItem }: ClassCardProps) {
             <span>Capacity: {classItem.capacity}</span>
           </div>
 
-          <div className="text-muted-foreground flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            <span>$30.00</span>
+          <div className="text-muted-foreground flex items-start gap-2">
+            <DollarSign className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <span>$30.00 community fee</span>
+              <p className="text-xs text-muted-foreground/70">Class payment, paid directly to the teacher later, is $550 per semester.</p>
+            </div>
           </div>
         </div>
       </CardContent>

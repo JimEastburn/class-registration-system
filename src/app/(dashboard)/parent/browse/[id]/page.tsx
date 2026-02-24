@@ -173,7 +173,8 @@ export default async function ClassDetailPage({
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl">$30.00</CardTitle>
-              <CardDescription>per enrollment</CardDescription>
+              <CardDescription>community fee per enrollment</CardDescription>
+              <p className="text-sm text-muted-foreground mt-1">Class payment, paid directly to the teacher later, is $550 per semester.</p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">

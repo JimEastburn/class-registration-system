@@ -3,6 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, MapPin, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 
+interface ScheduleConfig {
+  day?: string;
+  block?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+interface UpcomingClass {
+  className: string;
+  date: Date;
+  block: string;
+  location: string;
+}
+
 export async function NextClassCard({ studentId }: { studentId: string }) {
   const supabase = await createClient();
 
@@ -17,7 +31,7 @@ export async function NextClassCard({ studentId }: { studentId: string }) {
     return (
       <Card className="col-span-1 md:col-span-2">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Next Class</CardTitle>
+          <CardTitle className="text-sm font-medium">Upcoming Classes</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
@@ -29,31 +43,73 @@ export async function NextClassCard({ studentId }: { studentId: string }) {
   }
 
   const classIds = enrollments.map((e) => e.class_id);
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-  // 2. Get next event
-  const now = new Date().toISOString();
-  const { data: nextEvent } = await supabase
-    .from('calendar_events')
-    .select(
+  // 2. Get the next event for EACH enrolled class
+  const upcoming: UpcomingClass[] = [];
+
+  for (const classId of classIds) {
+    const { data: nextEvent } = await supabase
+      .from('calendar_events')
+      .select(
+        `
+          date,
+          block,
+          location,
+          class:classes (
+              name,
+              location,
+              block,
+              schedule_config
+          )
       `
-        *,
-        class:classes (
-            name,
-            location
-        )
-    `
-    )
-    .in('class_id', classIds)
-    .gt('start_time', now)
-    .order('start_time', { ascending: true })
-    .limit(1)
-    .single();
+      )
+      .eq('class_id', classId)
+      .gte('date', today)
+      .order('date', { ascending: true })
+      .limit(1)
+      .single();
 
-  if (!nextEvent) {
+    if (nextEvent) {
+      const event = nextEvent as unknown as {
+        date: string;
+        block?: string;
+        location?: string;
+        class?: {
+          name: string;
+          location?: string;
+          block?: string;
+          schedule_config?: ScheduleConfig | null;
+        };
+      };
+
+      const blockName =
+        event.block ||
+        event.class?.block ||
+        event.class?.schedule_config?.block ||
+        'TBA';
+
+      upcoming.push({
+        className: event.class?.name || 'Untitled Class',
+        date: new Date(event.date + 'T00:00:00'),
+        block: blockName,
+        location: event.location || event.class?.location || 'TBD',
+      });
+    }
+  }
+
+  // Sort by date, then by block name
+  upcoming.sort((a, b) => {
+    const dateDiff = a.date.getTime() - b.date.getTime();
+    if (dateDiff !== 0) return dateDiff;
+    return a.block.localeCompare(b.block);
+  });
+
+  if (upcoming.length === 0) {
     return (
       <Card className="col-span-1 md:col-span-2">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Next Class</CardTitle>
+          <CardTitle className="text-sm font-medium">Upcoming Classes</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
@@ -64,50 +120,40 @@ export async function NextClassCard({ studentId }: { studentId: string }) {
     );
   }
 
-  // Define the interface for the joined data structure
-  interface NextEventData {
-    start_time: string;
-    end_time: string;
-    location?: string;
-    class?: {
-      name: string;
-      location?: string;
-    };
-  }
-
-  const event = nextEvent as unknown as NextEventData;
-  const startTime = new Date(event.start_time);
-  const endTime = new Date(event.end_time);
-
   return (
     <Card className="col-span-1 md:col-span-2">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">Next Class</CardTitle>
+        <CardTitle className="text-sm font-medium">Upcoming Classes</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <h3 className="text-xl font-bold">
-              {event.class?.name || 'Untitled Class'}
-            </h3>
-            <div className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4" />
-              <span>{format(startTime, 'EEEE, MMMM d')}</span>
-            </div>
-          </div>
+        <div className="space-y-4">
+          {upcoming.map((cls, i) => (
+            <div
+              key={i}
+              className={`grid grid-cols-1 items-center gap-2 md:grid-cols-[auto_1fr] ${
+                i < upcoming.length - 1 ? 'border-b pb-4' : ''
+              }`}
+            >
+              <div className="flex flex-col gap-1 text-sm md:min-w-[120px]">
+                <div className="flex items-center gap-2">
+                  <Clock className="text-primary h-4 w-4" />
+                  <span>{cls.block}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="text-primary h-4 w-4" />
+                  <span>{cls.location}</span>
+                </div>
+              </div>
 
-          <div className="flex flex-col gap-2 text-sm">
-            <div className="flex items-center gap-2">
-              <Clock className="text-primary h-4 w-4" />
-              <span>
-                {format(startTime, 'h:mm a')} - {format(endTime, 'h:mm a')}
-              </span>
+              <div>
+                <h3 className="text-base font-semibold">{cls.className}</h3>
+                <div className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4" />
+                  <span>{format(cls.date, 'EEEE, MMMM d')}</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="text-primary h-4 w-4" />
-              <span>{event.location || event.class?.location || 'TBD'}</span>
-            </div>
-          </div>
+          ))}
         </div>
       </CardContent>
     </Card>

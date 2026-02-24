@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -21,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Loader2, UserPlus } from 'lucide-react';
+import { Loader2, UserPlus, Clock } from 'lucide-react';
 import { getFamilyMembers } from '@/lib/actions/family';
 import { enrollStudent } from '@/lib/actions/enrollments';
 import { hasCompleteAddress } from '@/lib/actions/profile';
@@ -39,10 +40,12 @@ export function EnrollButton({
   className,
   available,
 }: EnrollButtonProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [members, setMembers] = useState<FamilyMember[]>([]);
   const [selectedMember, setSelectedMember] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isPayLaterLoading, setIsPayLaterLoading] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [pendingEnrollmentId, setPendingEnrollmentId] = useState<string | null>(
@@ -131,6 +134,61 @@ export function EnrollButton({
       console.error('Enrollment error:', err);
       toast.error('Something went wrong. Please try again.');
       setIsLoading(false);
+    }
+  }
+
+  async function handlePayLater() {
+    if (!selectedMember) {
+      toast.error('Please select a family member');
+      return;
+    }
+
+    setIsPayLaterLoading(true);
+
+    try {
+      const {
+        status,
+        error,
+      } = await enrollStudent({
+        classId,
+        familyMemberId: selectedMember,
+      });
+
+      if (error) {
+        toast.error(error);
+        setIsPayLaterLoading(false);
+        return;
+      }
+
+      if (status === 'waitlisted') {
+        toast.success('Successfully joined waitlist');
+        setOpen(false);
+        setIsPayLaterLoading(false);
+        return;
+      }
+
+      if (status === 'blocked') {
+        toast.error('Enrollment pending approval');
+        setOpen(false);
+        setIsPayLaterLoading(false);
+        return;
+      }
+
+      if (status === 'confirmed') {
+        toast.success('Enrollment confirmed');
+        setOpen(false);
+        setIsPayLaterLoading(false);
+        return;
+      }
+
+      // Pending status — redirect to enrollments page
+      toast.success('Enrolled! You can complete payment from your enrollments page.');
+      setOpen(false);
+      router.push('/parent/enrollments');
+    } catch (err) {
+      console.error('Pay later error:', err);
+      toast.error('Something went wrong. Please try again.');
+      setIsPayLaterLoading(false);
     }
   }
 
@@ -230,25 +288,36 @@ export function EnrollButton({
               )}
             </div>
 
-            <div className="bg-muted rounded-lg p-4">
+            <div className="bg-muted rounded-lg p-4 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm">Class Fee</span>
+                <span className="text-sm">Community Fee</span>
                 <span className="font-medium">$30.00</span>
               </div>
+              <p className="text-xs text-muted-foreground">Class payment, paid directly to the teacher later, is $550 per semester.</p>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row">
             <Button
               variant="outline"
               onClick={() => setOpen(false)}
-              disabled={isLoading}
+              disabled={isLoading || isPayLaterLoading}
             >
               Cancel
             </Button>
             <Button
+              variant="secondary"
+              onClick={handlePayLater}
+              disabled={isLoading || isPayLaterLoading || !selectedMember || members.length === 0}
+              data-testid="pay-later-button"
+            >
+              {isPayLaterLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Clock className="mr-2 h-4 w-4" />
+              Pay later
+            </Button>
+            <Button
               onClick={handleEnroll}
-              disabled={isLoading || !selectedMember || members.length === 0}
+              disabled={isLoading || isPayLaterLoading || !selectedMember || members.length === 0}
               data-testid="proceed-to-payment-button"
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

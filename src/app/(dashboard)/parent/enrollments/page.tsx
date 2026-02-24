@@ -47,7 +47,7 @@ export default function EnrollmentsPage() {
             <div>
               <p className="text-sm font-medium">Pending Payment</p>
               <p className="text-muted-foreground text-xs">
-                You have secured a spot but need to complete check out.
+                You have secured a spot but need to complete check out and pay before attending the class.
               </p>
             </div>
           </div>
