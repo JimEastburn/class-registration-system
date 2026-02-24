@@ -32,16 +32,17 @@ export default async function LoginPage() {
 
       {/* Support Info Card */}
       <div className="w-full rounded-xl border border-slate-700 bg-slate-800/50 p-4 text-center shadow-lg backdrop-blur-md">
-        <p className="text-sm text-slate-300">
-          For help, please text Jim Eastburn{' '}
+        <div className="flex flex-col items-center gap-0.5 text-sm text-slate-300">
+          <span>For help, please text Jim Eastburn</span>
           <a
             href="sms:+15126896860"
             className="font-medium text-teal-400 transition-colors hover:text-teal-300"
           >
             (512) 689-6860
           </a>
-        </p>
-        <p className="mt-2 text-sm text-slate-300">
+        </div>
+        <hr className="mx-auto my-3 w-16 border-slate-600" />
+        <p className="text-sm text-slate-300">
           <a
             href="/AAC - 2025-26 Community Code of Conduct.pdf"
             target="_blank"
