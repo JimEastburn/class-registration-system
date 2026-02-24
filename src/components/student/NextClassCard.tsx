@@ -10,11 +10,60 @@ interface ScheduleConfig {
   endDate?: string;
 }
 
-interface UpcomingClass {
+export interface UpcomingClass {
   className: string;
   date: Date;
   block: string;
   location: string;
+}
+
+/** Raw shape returned by the Supabase join query. */
+export interface CalendarEventRow {
+  date: string;
+  block?: string;
+  location?: string;
+  class?: {
+    name: string;
+    location?: string;
+    block?: string;
+    schedule_config?: ScheduleConfig | null;
+  };
+}
+
+/**
+ * Resolves the display block name by falling through:
+ *  event.block → class.block → schedule_config.block → 'TBA'
+ */
+export function resolveBlockName(event: CalendarEventRow): string {
+  return (
+    event.block ||
+    event.class?.block ||
+    event.class?.schedule_config?.block ||
+    'TBA'
+  );
+}
+
+/**
+ * Maps a raw Supabase calendar event row into an UpcomingClass.
+ */
+export function toUpcomingClass(event: CalendarEventRow): UpcomingClass {
+  return {
+    className: event.class?.name || 'Untitled Class',
+    date: new Date(event.date + 'T00:00:00'),
+    block: resolveBlockName(event),
+    location: event.location || event.class?.location || 'TBD',
+  };
+}
+
+/**
+ * Sorts upcoming classes by date (ascending), then by block name.
+ */
+export function sortUpcomingClasses(classes: UpcomingClass[]): UpcomingClass[] {
+  return [...classes].sort((a, b) => {
+    const dateDiff = a.date.getTime() - b.date.getTime();
+    if (dateDiff !== 0) return dateDiff;
+    return a.block.localeCompare(b.block);
+  });
 }
 
 export async function NextClassCard({ studentId }: { studentId: string }) {
@@ -71,41 +120,13 @@ export async function NextClassCard({ studentId }: { studentId: string }) {
       .single();
 
     if (nextEvent) {
-      const event = nextEvent as unknown as {
-        date: string;
-        block?: string;
-        location?: string;
-        class?: {
-          name: string;
-          location?: string;
-          block?: string;
-          schedule_config?: ScheduleConfig | null;
-        };
-      };
-
-      const blockName =
-        event.block ||
-        event.class?.block ||
-        event.class?.schedule_config?.block ||
-        'TBA';
-
-      upcoming.push({
-        className: event.class?.name || 'Untitled Class',
-        date: new Date(event.date + 'T00:00:00'),
-        block: blockName,
-        location: event.location || event.class?.location || 'TBD',
-      });
+      upcoming.push(toUpcomingClass(nextEvent as unknown as CalendarEventRow));
     }
   }
 
-  // Sort by date, then by block name
-  upcoming.sort((a, b) => {
-    const dateDiff = a.date.getTime() - b.date.getTime();
-    if (dateDiff !== 0) return dateDiff;
-    return a.block.localeCompare(b.block);
-  });
+  const sorted = sortUpcomingClasses(upcoming);
 
-  if (upcoming.length === 0) {
+  if (sorted.length === 0) {
     return (
       <Card className="col-span-1 md:col-span-2">
         <CardHeader className="pb-2">
@@ -127,11 +148,11 @@ export async function NextClassCard({ studentId }: { studentId: string }) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {upcoming.map((cls, i) => (
+          {sorted.map((cls, i) => (
             <div
               key={i}
               className={`grid grid-cols-1 items-center gap-2 md:grid-cols-[auto_1fr] ${
-                i < upcoming.length - 1 ? 'border-b pb-4' : ''
+                i < sorted.length - 1 ? 'border-b pb-4' : ''
               }`}
             >
               <div className="flex flex-col gap-1 text-sm md:min-w-[120px]">

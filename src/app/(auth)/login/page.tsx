@@ -41,6 +41,16 @@ export default async function LoginPage() {
             (512) 689-6860
           </a>
         </p>
+        <p className="mt-2 text-sm text-slate-300">
+          <a
+            href="/AAC - 2025-26 Community Code of Conduct.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-teal-400 transition-colors hover:text-teal-300"
+          >
+            Community Code of Conduct
+          </a>
+        </p>
       </div>
     </>
   );

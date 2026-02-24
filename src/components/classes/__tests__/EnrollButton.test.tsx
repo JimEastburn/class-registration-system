@@ -275,4 +275,130 @@ describe('EnrollButton', () => {
       expect(fetchMock).not.toHaveBeenCalled();
     });
   });
+
+  // ─── Pay Later flow tests ────────────────────────────────────────────────
+
+  describe('Pay Later flow', () => {
+    async function openDialogAndSelectMember(memberName = 'John Doe') {
+      fireEvent.click(screen.getByText('Enroll Now'));
+
+      await waitFor(() => {
+        expect(
+          screen.queryByText('Loading family members...')
+        ).not.toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole('combobox'));
+      const option = await screen.findByText(memberName);
+      fireEvent.click(option);
+    }
+
+    it('enrolls and redirects without checkout on pending status', async () => {
+      (enrollStudent as any).mockResolvedValue({
+        data: { id: mockEnrollmentId },
+        status: 'pending',
+        error: null,
+      });
+
+      render(
+        <EnrollButton
+          classId={mockClassId}
+          className="Test Class"
+          available={5}
+        />
+      );
+
+      await openDialogAndSelectMember();
+
+      const payLaterBtn = screen.getByTestId('pay-later-button');
+      fireEvent.click(payLaterBtn);
+
+      await waitFor(() => {
+        expect(enrollStudent).toHaveBeenCalledWith({
+          classId: mockClassId,
+          familyMemberId: 'member-1',
+        });
+        expect(toast.success).toHaveBeenCalledWith(
+          'Enrolled! You can complete payment from your enrollments page.'
+        );
+        // Must NOT trigger Stripe checkout — this is the key regression guard
+        expect(fetchMock).not.toHaveBeenCalled();
+        // window.location.href must NOT be set to Stripe
+        expect(locationMock.href).toBe('');
+      });
+    });
+
+    it('shows waitlist toast when Pay Later results in waitlisted status', async () => {
+      (enrollStudent as any).mockResolvedValue({
+        data: null,
+        status: 'waitlisted',
+        error: null,
+      });
+
+      render(
+        <EnrollButton
+          classId={mockClassId}
+          className="Test Class"
+          available={5}
+        />
+      );
+
+      await openDialogAndSelectMember();
+
+      fireEvent.click(screen.getByTestId('pay-later-button'));
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith(
+          'Successfully joined waitlist'
+        );
+        expect(fetchMock).not.toHaveBeenCalled();
+      });
+    });
+
+    it('shows error toast when Pay Later enrollment fails', async () => {
+      (enrollStudent as any).mockResolvedValue({
+        data: null,
+        status: null,
+        error: 'Enrollment limit reached',
+      });
+
+      render(
+        <EnrollButton
+          classId={mockClassId}
+          className="Test Class"
+          available={5}
+        />
+      );
+
+      await openDialogAndSelectMember();
+
+      fireEvent.click(screen.getByTestId('pay-later-button'));
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Enrollment limit reached');
+      });
+    });
+
+    it('disables Pay Later button when no member is selected', async () => {
+      render(
+        <EnrollButton
+          classId={mockClassId}
+          className="Test Class"
+          available={5}
+        />
+      );
+
+      fireEvent.click(screen.getByText('Enroll Now'));
+
+      await waitFor(() => {
+        expect(
+          screen.queryByText('Loading family members...')
+        ).not.toBeInTheDocument();
+      });
+
+      // No member selected — both buttons should be disabled
+      const payLaterBtn = screen.getByTestId('pay-later-button');
+      expect(payLaterBtn).toBeDisabled();
+    });
+  });
 });
