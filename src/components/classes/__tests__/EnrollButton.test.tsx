@@ -280,7 +280,7 @@ describe('EnrollButton', () => {
 
   describe('Pay Later flow', () => {
     async function openDialogAndSelectMember(memberName = 'John Doe') {
-      fireEvent.click(screen.getByText('Enroll Now'));
+      fireEvent.click(screen.getByTestId('enroll-now-button'));
 
       await waitFor(() => {
         expect(
@@ -388,7 +388,7 @@ describe('EnrollButton', () => {
         />
       );
 
-      fireEvent.click(screen.getByText('Enroll Now'));
+      fireEvent.click(screen.getByTestId('enroll-now-button'));
 
       await waitFor(() => {
         expect(
