@@ -21,6 +21,21 @@ export async function signUp(
 
   const supabase = await createClient();
 
+  // Check if a user with this email already exists
+  const adminClient = await createAdminClient();
+  const { data: existingProfile } = await adminClient
+    .from('profiles')
+    .select('id')
+    .eq('email', email.toLowerCase().trim())
+    .maybeSingle();
+
+  if (existingProfile) {
+    return {
+      success: false,
+      error: 'An account with this email address already exists. Please sign in instead.',
+    };
+  }
+
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
@@ -47,9 +62,7 @@ export async function signUp(
 
   // "Belt and suspenders" - ensure profile exists
   // The trigger should create it, but we double-check
-  // Use admin client to bypass RLS/session latency issues
-
-  const adminClient = await createAdminClient();
+  // Reuse admin client created earlier for the email check
 
   const { error: profileError } = await adminClient.from('profiles').upsert(
     {
