@@ -1,5 +1,9 @@
 # Project Guidelines
 
+## Testing Methodology
+
+- **Use Red/Green TDD** for every new feature and bug fix. Write failing tests first (RED), then implement the minimal code to make them pass (GREEN).
+
 ## Tech Stack
 
 - **Framework**: Next.js 16 (App Router, Turbopack)
