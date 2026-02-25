@@ -4,6 +4,7 @@ import {
   checkRoomConflict,
   detectBatchConflicts,
   checkScheduleConflict,
+  checkStudentScheduleConflict,
 } from './scheduling';
 import { ScheduleConfig, Class } from '@/types';
 
@@ -196,6 +197,139 @@ describe('checkScheduleConflict', () => {
       { day: 'Tuesday', block: 'Block 1', recurring: true },
       't2',
       existingClasses
+    );
+    expect(result).toBeNull();
+  });
+});
+
+describe('checkStudentScheduleConflict', () => {
+  it('should return null when student has no existing enrollments', () => {
+    const result = checkStudentScheduleConflict(
+      { day: 'Tuesday', block: 'Block 1', recurring: true },
+      []
+    );
+    expect(result).toBeNull();
+  });
+
+  it('should return conflicting class when same day and same block', () => {
+    const existing = [
+      {
+        id: 'c1',
+        name: 'Art 101',
+        status: 'published' as const,
+        schedule_config: { day: 'Tuesday', block: 'Block 1', recurring: true },
+      },
+    ];
+    const result = checkStudentScheduleConflict(
+      { day: 'Tuesday', block: 'Block 1', recurring: true },
+      existing
+    );
+    expect(result).not.toBeNull();
+    expect(result?.id).toBe('c1');
+  });
+
+  it('should return null when same day but different block', () => {
+    const existing = [
+      {
+        id: 'c1',
+        name: 'Art 101',
+        status: 'published' as const,
+        schedule_config: { day: 'Tuesday', block: 'Block 2', recurring: true },
+      },
+    ];
+    const result = checkStudentScheduleConflict(
+      { day: 'Tuesday', block: 'Block 1', recurring: true },
+      existing
+    );
+    expect(result).toBeNull();
+  });
+
+  it('should return null when different day but same block', () => {
+    const existing = [
+      {
+        id: 'c1',
+        name: 'Art 101',
+        status: 'published' as const,
+        schedule_config: {
+          day: 'Wednesday',
+          block: 'Block 1',
+          recurring: true,
+        },
+      },
+    ];
+    const result = checkStudentScheduleConflict(
+      { day: 'Tuesday', block: 'Block 1', recurring: true },
+      existing
+    );
+    expect(result).toBeNull();
+  });
+
+  it('should detect conflict: Tuesday/Thursday class vs Tuesday class, same block', () => {
+    const existing = [
+      {
+        id: 'c1',
+        name: 'Art 101',
+        status: 'published' as const,
+        schedule_config: { day: 'Tuesday', block: 'Block 3', recurring: true },
+      },
+    ];
+    const result = checkStudentScheduleConflict(
+      { day: 'Tuesday/Thursday', block: 'Block 3', recurring: true },
+      existing
+    );
+    expect(result).not.toBeNull();
+    expect(result?.id).toBe('c1');
+  });
+
+  it('should detect conflict: Tuesday/Thursday class vs Thursday class, same block', () => {
+    const existing = [
+      {
+        id: 'c1',
+        name: 'Science Lab',
+        status: 'published' as const,
+        schedule_config: { day: 'Thursday', block: 'Block 2', recurring: true },
+      },
+    ];
+    const result = checkStudentScheduleConflict(
+      { day: 'Tuesday/Thursday', block: 'Block 2', recurring: true },
+      existing
+    );
+    expect(result).not.toBeNull();
+    expect(result?.id).toBe('c1');
+  });
+
+  it('should return null: Tuesday/Thursday class vs Wednesday class, same block', () => {
+    const existing = [
+      {
+        id: 'c1',
+        name: 'Music',
+        status: 'published' as const,
+        schedule_config: {
+          day: 'Wednesday',
+          block: 'Block 2',
+          recurring: true,
+        },
+      },
+    ];
+    const result = checkStudentScheduleConflict(
+      { day: 'Tuesday/Thursday', block: 'Block 2', recurring: true },
+      existing
+    );
+    expect(result).toBeNull();
+  });
+
+  it('should skip cancelled existing classes', () => {
+    const existing = [
+      {
+        id: 'c1',
+        name: 'Cancelled Art',
+        status: 'cancelled' as const,
+        schedule_config: { day: 'Tuesday', block: 'Block 1', recurring: true },
+      },
+    ];
+    const result = checkStudentScheduleConflict(
+      { day: 'Tuesday', block: 'Block 1', recurring: true },
+      existing
     );
     expect(result).toBeNull();
   });

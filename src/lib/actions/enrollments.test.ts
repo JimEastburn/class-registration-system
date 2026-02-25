@@ -29,6 +29,7 @@ describe('Enrollment Actions', () => {
     id: 'class-1',
     capacity: 10,
     teacher_id: 'teacher-1',
+    schedule_config: { day: 'Tuesday', block: 'Block 1', recurring: true },
     teacher: { first_name: 'Teacher', last_name: 'One' },
   };
 
@@ -69,88 +70,142 @@ describe('Enrollment Actions', () => {
     });
   });
 
-  describe('enrollStudent', () => {
-    it('enrolls successfully if space available', async () => {
-      const enrollmentsCallCount = { select: 0 };
-      const enrollmentsBuilder = {
-        select: vi.fn().mockImplementation((...args: unknown[]) => {
-          enrollmentsCallCount.select++;
-          if (enrollmentsCallCount.select === 1) {
-            // 1. Existing enrollment check: .select('id, status').eq().eq().in().limit().maybeSingle()
-            return {
+  // Helper: builds the enrollments table mock with call counting
+  // Call order in enrollStudent:
+  //   1. select('id, status') — existing enrollment check
+  //   2. select('class_id, classes:class_id (...)') — schedule conflict query
+  //   3. select('*', { count: 'exact', head: true }) — capacity count
+  //   4. (optional) select('*', { count: 'exact', head: true }) — waitlist count
+  function buildEnrollmentsMock(opts: {
+    existingEnrollment?: any;
+    studentEnrollments?: any[];
+    confirmedCount?: number;
+    waitlistCount?: number;
+    insertResult?: any;
+  }) {
+    const callCount = { select: 0 };
+    return {
+      select: vi.fn().mockImplementation(() => {
+        callCount.select++;
+        if (callCount.select === 1) {
+          // 1. Existing enrollment check
+          return {
+            eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  in: vi.fn().mockReturnValue({
-                    limit: vi.fn().mockReturnValue({
-                      maybeSingle: vi
-                        .fn()
-                        .mockResolvedValue({ data: null, error: null }),
+                in: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockReturnValue({
+                    maybeSingle: vi.fn().mockResolvedValue({
+                      data: opts.existingEnrollment ?? null,
+                      error: null,
                     }),
                   }),
                 }),
               }),
-            };
-          }
-          if (enrollmentsCallCount.select === 2) {
-            // 2. Capacity count check: .select('*', { count: 'exact', head: true }).eq().eq()
-            return {
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({ count: 5, error: null }),
-              }),
-            };
-          }
-          return {};
-        }),
-        insert: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi
-              .fn()
-              .mockResolvedValue({
-                data: { id: 'enrollment-1', status: 'pending' },
-                error: null,
-              }),
-          }),
-        }),
-      };
-
-      mockSupabase.from.mockImplementation((table: string) => {
-        if (table === 'family_members')
+            }),
+          };
+        }
+        if (callCount.select === 2) {
+          // 2. Schedule conflict query
           return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi
-                    .fn()
-                    .mockResolvedValue({ data: mockMember, error: null }),
-                }),
+            eq: vi.fn().mockReturnValue({
+              in: vi.fn().mockResolvedValue({
+                data: opts.studentEnrollments ?? [],
+                error: null,
               }),
             }),
           };
-        if (table === 'enrollments') return enrollmentsBuilder;
-        if (table === 'classes')
+        }
+        if (callCount.select === 3) {
+          // 3. Capacity count check
           return {
-            select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                count: opts.confirmedCount ?? 0,
+                error: null,
+              }),
+            }),
+          };
+        }
+        if (callCount.select === 4) {
+          // 4. Waitlist count check
+          return {
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                count: opts.waitlistCount ?? 0,
+                error: null,
+              }),
+            }),
+          };
+        }
+        return {};
+      }),
+      insert: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: opts.insertResult ?? {
+              id: 'enrollment-1',
+              status: 'pending',
+            },
+            error: null,
+          }),
+        }),
+      }),
+    };
+  }
+
+  function setupFromMock(
+    enrollmentsMock: any,
+    classOverride?: any,
+    blockOverride?: any
+  ) {
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === 'family_members')
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
                 single: vi
                   .fn()
-                  .mockResolvedValue({ data: mockClass, error: null }),
+                  .mockResolvedValue({ data: mockMember, error: null }),
               }),
             }),
-          };
-        if (table === 'class_blocks')
-          return {
-            select: vi.fn().mockReturnValue({
+          }),
+        };
+      if (table === 'enrollments') return enrollmentsMock;
+      if (table === 'classes')
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: classOverride ?? mockClass,
+                error: null,
+              }),
+            }),
+          }),
+        };
+      if (table === 'class_blocks')
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
               eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi
-                    .fn()
-                    .mockResolvedValue({ data: null, error: null }),
+                single: vi.fn().mockResolvedValue({
+                  data: blockOverride ?? null,
+                  error: null,
                 }),
               }),
             }),
-          };
-        return {};
+          }),
+        };
+      return {};
+    });
+  }
+
+  describe('enrollStudent', () => {
+    it('enrolls successfully if space available', async () => {
+      const enrollmentsMock = buildEnrollmentsMock({
+        confirmedCount: 5,
       });
+      setupFromMock(enrollmentsMock);
 
       const result = await enrollStudent({
         classId: 'class-1',
@@ -162,98 +217,16 @@ describe('Enrollment Actions', () => {
     });
 
     it('waitlists if class is full', async () => {
-      const enrollmentsCallCount = { select: 0 };
-      const enrollmentsBuilder = {
-        select: vi.fn().mockImplementation((...args: unknown[]) => {
-          enrollmentsCallCount.select++;
-          if (enrollmentsCallCount.select === 1) {
-            // 1. Existing enrollment check
-            return {
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  in: vi.fn().mockReturnValue({
-                    limit: vi.fn().mockReturnValue({
-                      maybeSingle: vi
-                        .fn()
-                        .mockResolvedValue({ data: null, error: null }),
-                    }),
-                  }),
-                }),
-              }),
-            };
-          }
-          if (enrollmentsCallCount.select === 2) {
-            // 2. Capacity count check (10 enrollments = FULL)
-            return {
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({ count: 10, error: null }),
-              }),
-            };
-          }
-          if (enrollmentsCallCount.select === 3) {
-            // 3. Waitlist count check (2 on waitlist)
-            return {
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({ count: 2, error: null }),
-              }),
-            };
-          }
-          return {};
-        }),
-        insert: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi
-              .fn()
-              .mockResolvedValue({
-                data: {
-                  id: 'enrollment-2',
-                  status: 'waitlisted',
-                  waitlist_position: 3,
-                },
-                error: null,
-              }),
-          }),
-        }),
-      };
-
-      mockSupabase.from.mockImplementation((table: string) => {
-        if (table === 'family_members')
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi
-                    .fn()
-                    .mockResolvedValue({ data: mockMember, error: null }),
-                }),
-              }),
-            }),
-          };
-        if (table === 'enrollments') return enrollmentsBuilder;
-        if (table === 'classes')
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi
-                  .fn()
-                  .mockResolvedValue({ data: mockClass, error: null }),
-              }),
-            }),
-          };
-        if (table === 'class_blocks')
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi
-                    .fn()
-                    .mockResolvedValue({ data: null, error: null }),
-                }),
-              }),
-            }),
-          };
-        return {};
+      const enrollmentsMock = buildEnrollmentsMock({
+        confirmedCount: 10, // Full (capacity=10)
+        waitlistCount: 2,
+        insertResult: {
+          id: 'enrollment-2',
+          status: 'waitlisted',
+          waitlist_position: 3,
+        },
       });
+      setupFromMock(enrollmentsMock);
 
       const result = await enrollStudent({
         classId: 'class-1',
@@ -263,64 +236,8 @@ describe('Enrollment Actions', () => {
     });
 
     it('blocks enrollment if student is blocked', async () => {
-      const enrollmentsBuilder = {
-        select: vi.fn().mockReturnValue({
-          // 1. Existing enrollment check
-          eq: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              in: vi.fn().mockReturnValue({
-                limit: vi.fn().mockReturnValue({
-                  maybeSingle: vi
-                    .fn()
-                    .mockResolvedValue({ data: null, error: null }),
-                }),
-              }),
-            }),
-          }),
-        }),
-      };
-
-      mockSupabase.from.mockImplementation((table: string) => {
-        if (table === 'family_members')
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi
-                    .fn()
-                    .mockResolvedValue({ data: mockMember, error: null }),
-                }),
-              }),
-            }),
-          };
-        if (table === 'enrollments') return enrollmentsBuilder;
-        if (table === 'classes')
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                single: vi
-                  .fn()
-                  .mockResolvedValue({ data: mockClass, error: null }),
-              }),
-            }),
-          };
-        if (table === 'class_blocks')
-          return {
-            select: vi.fn().mockReturnValue({
-              eq: vi.fn().mockReturnValue({
-                eq: vi.fn().mockReturnValue({
-                  single: vi
-                    .fn()
-                    .mockResolvedValue({
-                      data: { id: 'block-1' },
-                      error: null,
-                    }), // Block detected
-                }),
-              }),
-            }),
-          };
-        return {};
-      });
+      const enrollmentsMock = buildEnrollmentsMock({});
+      setupFromMock(enrollmentsMock, undefined, { id: 'block-1' });
 
       const result = await enrollStudent({
         classId: 'class-1',
@@ -328,6 +245,65 @@ describe('Enrollment Actions', () => {
       });
       expect(result.status).toBe('blocked');
       expect(result.error).toContain('blocked');
+    });
+
+    it('rejects enrollment when student has a schedule conflict', async () => {
+      const enrollmentsMock = buildEnrollmentsMock({
+        studentEnrollments: [
+          {
+            class_id: 'other-class',
+            classes: {
+              id: 'other-class',
+              name: 'Art 101',
+              status: 'published',
+              schedule_config: {
+                day: 'Tuesday',
+                block: 'Block 1',
+                recurring: true,
+              },
+            },
+          },
+        ],
+      });
+      setupFromMock(enrollmentsMock);
+
+      const result = await enrollStudent({
+        classId: 'class-1',
+        familyMemberId: 'child-1',
+      });
+      expect(result.status).toBe('schedule_conflict');
+      expect(result.error).toContain('Schedule conflict');
+      expect(result.error).toContain('Art 101');
+      expect(result.error).toContain('Kid');
+    });
+
+    it('allows enrollment when existing class is on different day/block', async () => {
+      const enrollmentsMock = buildEnrollmentsMock({
+        studentEnrollments: [
+          {
+            class_id: 'other-class',
+            classes: {
+              id: 'other-class',
+              name: 'Music',
+              status: 'published',
+              schedule_config: {
+                day: 'Wednesday',
+                block: 'Block 3',
+                recurring: true,
+              },
+            },
+          },
+        ],
+        confirmedCount: 5,
+      });
+      setupFromMock(enrollmentsMock);
+
+      const result = await enrollStudent({
+        classId: 'class-1',
+        familyMemberId: 'child-1',
+      });
+      expect(result.status).toBe('pending');
+      expect(result.data).toBeDefined();
     });
   });
 });

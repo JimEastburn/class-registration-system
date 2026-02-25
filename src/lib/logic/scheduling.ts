@@ -188,3 +188,50 @@ export function detectBatchConflicts(classes: Class[]): Set<string> {
 
   return conflictingClassIds;
 }
+
+/**
+ * Expands a day string like "Tuesday/Thursday" into its constituent days.
+ * Single-day strings return a one-element array.
+ */
+function expandDays(day: string): string[] {
+  return day.includes('/') ? day.split('/') : [day];
+}
+
+/**
+ * Checks if two day strings overlap.
+ * Handles "Tuesday/Thursday" ↔ "Tuesday" or "Thursday" cross-matching.
+ */
+function daysOverlap(dayA: string, dayB: string): boolean {
+  const aDays = expandDays(dayA);
+  const bDays = expandDays(dayB);
+  return aDays.some((a) => bDays.includes(a));
+}
+
+/**
+ * Checks if a student's new class conflicts with any of their existing enrollments.
+ * Conflict = overlapping day(s) AND same block on an active (non-cancelled/completed) class.
+ * Returns the first conflicting class or null.
+ */
+export function checkStudentScheduleConflict(
+  newClassConfig: ScheduleConfig,
+  existingClasses: Pick<Class, 'id' | 'name' | 'status' | 'schedule_config'>[]
+): Pick<Class, 'id' | 'name'> | null {
+  if (!newClassConfig.day || !newClassConfig.block) return null;
+
+  for (const existing of existingClasses) {
+    if (existing.status === 'cancelled' || existing.status === 'completed')
+      continue;
+
+    const config = existing.schedule_config as ScheduleConfig | null;
+    if (!config || !config.day || !config.block) continue;
+
+    if (
+      daysOverlap(newClassConfig.day, config.day) &&
+      newClassConfig.block === config.block
+    ) {
+      return { id: existing.id, name: existing.name };
+    }
+  }
+
+  return null;
+}

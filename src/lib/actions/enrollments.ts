@@ -4,12 +4,15 @@ import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logAuditAction } from '@/lib/actions/audit';
 import type {
+  ClassStatus,
   Enrollment,
   EnrollmentStatus,
   FamilyMember,
   Profile,
+  ScheduleConfig,
 } from '@/types';
 import { sendEnrollmentConfirmation } from '@/lib/email';
+import { checkStudentScheduleConflict } from '@/lib/logic/scheduling';
 
 interface EnrollmentWithClass extends Enrollment {
   class: {
@@ -179,7 +182,7 @@ interface EnrollStudentInput {
  */
 export async function enrollStudent(input: EnrollStudentInput): Promise<{
   data: Enrollment | null;
-  status: 'confirmed' | 'waitlisted' | 'blocked' | 'pending' | null;
+  status: 'confirmed' | 'waitlisted' | 'blocked' | 'pending' | 'schedule_conflict' | null;
   error: string | null;
 }> {
   try {
@@ -270,15 +273,55 @@ export async function enrollStudent(input: EnrollStudentInput): Promise<{
       };
     }
 
+    // Check for schedule conflicts (same day + block as an existing enrollment)
+    const { data: studentEnrollments } = await supabase
+      .from('enrollments')
+      .select('class_id, classes:class_id (id, name, status, schedule_config)')
+      .eq('student_id', input.familyMemberId)
+      .in('status', ['confirmed', 'pending', 'waitlisted']);
+
     // Check for teacher blocks
     const { data: classData, error: classError } = await supabase
       .from('classes')
-      .select('id, capacity, teacher_id')
+      .select('id, capacity, teacher_id, schedule_config')
       .eq('id', input.classId)
       .single();
 
     if (classError || !classData) {
       return { data: null, status: null, error: 'Class not found' };
+    }
+
+    // Student schedule conflict check
+    const targetConfig = classData.schedule_config as ScheduleConfig | null;
+    if (targetConfig && studentEnrollments) {
+      const enrolledClasses = studentEnrollments
+        .map((e) => {
+          const cls = e.classes as unknown as {
+            id: string;
+            name: string;
+            status: ClassStatus;
+            schedule_config: ScheduleConfig | null;
+          } | null;
+          return cls;
+        })
+        .filter(Boolean) as {
+        id: string;
+        name: string;
+        status: ClassStatus;
+        schedule_config: ScheduleConfig | null;
+      }[];
+
+      const conflict = checkStudentScheduleConflict(
+        targetConfig,
+        enrolledClasses
+      );
+      if (conflict) {
+        return {
+          data: null,
+          status: 'schedule_conflict' as const,
+          error: `Schedule conflict: ${familyMember.first_name} is already enrolled in ${conflict.name} during ${targetConfig.day} ${targetConfig.block}`,
+        };
+      }
     }
 
     // Check if teacher has blocked this student
