@@ -234,7 +234,6 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
                       'Block 2',
                       'Block 3',
                       'Block 4',
-                      'Block 5',
                     ].map((block) => (
                       <SelectItem key={block} value={block}>
                         {block}

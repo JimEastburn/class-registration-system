@@ -35,6 +35,7 @@ describe('Auth Actions', () => {
       upsert: vi.fn().mockResolvedValue({ error: null }),
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
       single: vi
         .fn()
         .mockResolvedValue({ data: { role: 'parent' }, error: null }),

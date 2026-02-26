@@ -493,11 +493,11 @@ const CLASS_TEMPLATES = [
 ];
 
 // ---------------------------------------------------------------------------
-// Schedule grid – 5 blocks × 3 valid day patterns = 15 unique slots
+// Schedule grid – 4 blocks × 4 valid day patterns = 16 unique slots
 // ---------------------------------------------------------------------------
 
 const DAYS = ['Tuesday/Thursday', 'Tuesday', 'Wednesday', 'Thursday'] as const;
-const BLOCKS = ['Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5'] as const;
+const BLOCKS = ['Block 1', 'Block 2', 'Block 3', 'Block 4'] as const;
 
 interface Slot {
   day: string;

@@ -49,7 +49,7 @@ All seeded accounts use the password: **`SeedPass123!`**
 - 3 classes per teacher, no schedule overlaps
 - Each class has a populated `schedule_config` JSONB: `{ day, block, recurring, startDate, endDate }`
 - Days: `Tuesday/Thursday`, `Tuesday`, `Wednesday`, `Thursday`
-- Blocks: `Block 1` – `Block 5`
+- Blocks: `Block 1` – `Block 4`
 - `start_time` / `end_time`: `"TBA"` (matches app behavior)
 - Semester: March 1 – May 31, 2026
 - Capacity: 15–25 students per class

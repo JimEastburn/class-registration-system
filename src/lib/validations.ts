@@ -155,8 +155,8 @@ export const scheduleConfigSchema = z.object({
     message:
       'Classes can only be scheduled on Tuesday/Thursday, Tuesday only, Wednesday only, or Thursday only',
   }),
-  block: z.enum(['Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5'], {
-    message: 'Classes can only be scheduled in Blocks 1-5',
+  block: z.enum(['Block 1', 'Block 2', 'Block 3', 'Block 4'], {
+    message: 'Classes can only be scheduled in Blocks 1-4',
   }),
   recurring: z.boolean(),
   startDate: z.string().optional(),

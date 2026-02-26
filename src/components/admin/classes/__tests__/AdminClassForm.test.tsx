@@ -69,7 +69,7 @@ describe('AdminClassForm', () => {
     expect(fridayOption).toBeNull();
   });
 
-  it('renders the correct block options (1-5 only)', async () => {
+  it('renders the correct block options (1-4 only)', async () => {
     const user = userEvent.setup();
     render(<AdminClassForm teachers={mockTeachers} />);
 
@@ -85,9 +85,9 @@ describe('AdminClassForm', () => {
     expect(optionValues).toContain('Block 2');
     expect(optionValues).toContain('Block 3');
     expect(optionValues).toContain('Block 4');
-    expect(optionValues).toContain('Block 5');
 
     // Ensure invalid options are NOT present
+    expect(optionValues).not.toContain('Block 5');
     expect(optionValues).not.toContain('Block 6');
   });
 });

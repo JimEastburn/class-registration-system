@@ -47,7 +47,6 @@ const COLUMNS = [
   'Lunch',
   'Block 3',
   'Block 4',
-  'Block 5',
 ];
 const ROWS = ['Tuesday/Thursday', 'Tuesday', 'Thursday', 'Wednesday'];
 

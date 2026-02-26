@@ -246,7 +246,7 @@ describe('Dashboard Actions', () => {
                 id: 'class-1',
                 name: 'Art 101',
                 day: 'Thursday',
-                block: 'Block 5',
+                block: 'Block 4',
                 profiles: { first_name: 'Jane', last_name: 'Teacher' },
               },
             },
@@ -262,7 +262,7 @@ describe('Dashboard Actions', () => {
 
       const cls = result.data![0];
       // System uses blocks, not clock times
-      expect(cls.block).toBe('Block 5');
+      expect(cls.block).toBe('Block 4');
       expect(cls.dayOfWeek).toBe('Thursday');
       expect(cls.className).toBe('Art 101');
       expect(cls.teacherName).toBe('Jane Teacher');

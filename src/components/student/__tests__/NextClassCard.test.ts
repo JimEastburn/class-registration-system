@@ -68,10 +68,10 @@ describe('NextClassCard helpers', () => {
       const row = makeRow({
         class: {
           name: 'Art',
-          schedule_config: { day: 'Wednesday', block: 'Block 5', recurring: true },
+          schedule_config: { day: 'Wednesday', block: 'Block 4', recurring: true },
         },
       });
-      expect(resolveBlockName(row)).toBe('Block 5');
+      expect(resolveBlockName(row)).toBe('Block 4');
     });
 
     it('returns TBA when no block info exists anywhere', () => {

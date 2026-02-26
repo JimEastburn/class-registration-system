@@ -24,7 +24,7 @@ export function Footer() {
         </span>
         <span className="hidden text-gray-300 sm:inline sm:mx-6">|</span>
         <a
-          href="/AAC - 2025-26 Community Code of Conduct.pdf"
+          href="/AAC - 2026-27 Community Code of Conduct.pdf"
           target="_blank"
           rel="noopener noreferrer"
           className="font-medium text-blue-600 hover:underline"

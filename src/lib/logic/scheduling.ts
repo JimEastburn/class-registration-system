@@ -11,7 +11,6 @@ export const VALID_BLOCKS = [
   'Block 2',
   'Block 3',
   'Block 4',
-  'Block 5',
 ] as const;
 
 export type ValidDay = (typeof VALID_DAYS)[number];
@@ -21,7 +20,7 @@ export type ValidBlock = (typeof VALID_BLOCKS)[number];
  * Validates if the given day and block are allowed by the system rules.
  * Rules:
  * - Days: Tuesday, Wednesday, Thursday ONLY (No Mon/Fri)
- * - Blocks: Block 1-5 ONLY (No Lunch)
+ * - Blocks: Block 1-4 ONLY (No Lunch)
  */
 export function validateScheduleConfig(config: ScheduleConfig): {
   valid: boolean;
@@ -42,7 +41,7 @@ export function validateScheduleConfig(config: ScheduleConfig): {
   if (!VALID_BLOCKS.includes(config.block as ValidBlock)) {
     return {
       valid: false,
-      error: `Invalid block: ${config.block}. Classes can only be scheduled in Blocks 1-5.`,
+      error: `Invalid block: ${config.block}. Classes can only be scheduled in Blocks 1-4.`,
     };
   }
 

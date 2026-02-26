@@ -328,7 +328,7 @@ export default function RegisterForm() {
               >
                 I agree to the{' '}
                 <a
-                  href="/AAC - 2025-26 Community Code of Conduct.pdf"
+                  href="/AAC - 2026-27 Community Code of Conduct.pdf"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-teal-400 hover:text-teal-300 hover:underline"

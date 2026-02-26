@@ -33,7 +33,7 @@ describe('validateScheduleConfig', () => {
   });
 
   it('should accept all valid blocks', () => {
-    const blocks = ['Block 1', 'Block 2', 'Block 3', 'Block 4', 'Block 5'];
+    const blocks = ['Block 1', 'Block 2', 'Block 3', 'Block 4'];
     blocks.forEach((block) => {
       const result = validateScheduleConfig({
         day: 'Tuesday',
@@ -58,7 +58,7 @@ describe('validateScheduleConfig', () => {
   });
 
   it('should reject invalid blocks', () => {
-    const invalidBlocks = ['Lunch', 'Block 6', 'Homeroom'];
+    const invalidBlocks = ['Lunch', 'Block 5', 'Block 6', 'Homeroom'];
     invalidBlocks.forEach((block) => {
       const result = validateScheduleConfig({
         day: 'Tuesday',

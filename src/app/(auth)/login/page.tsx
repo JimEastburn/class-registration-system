@@ -44,7 +44,7 @@ export default async function LoginPage() {
         <hr className="mx-auto my-3 w-16 border-slate-600" />
         <p className="text-sm text-slate-300">
           <a
-            href="/AAC - 2025-26 Community Code of Conduct.pdf"
+            href="/AAC - 2026-27 Community Code of Conduct.pdf"
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-teal-400 transition-colors hover:text-teal-300"

@@ -48,7 +48,7 @@ Clicking on a class opens a modal with a form to update details.
 
 The calendar is organized as a matrix:
 
-| Axis              | Labels / Structure                                            |
-| :---------------- | :------------------------------------------------------------ |
-| **X-Axis (Top)**  | Day • Block 1 • Block 2 • Lunch • Block 3 • Block 4 • Block 5 |
-| **Y-Axis (Left)** | Tuesday/Thursday • Tuesday • Thursday • Wednesday             |
+| Axis              | Labels / Structure                                  |
+| :---------------- | :-------------------------------------------------- |
+| **X-Axis (Top)**  | Day • Block 1 • Block 2 • Lunch • Block 3 • Block 4 |
+| **Y-Axis (Left)** | Tuesday/Thursday • Tuesday • Thursday • Wednesday   |
