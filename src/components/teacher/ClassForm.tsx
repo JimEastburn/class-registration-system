@@ -86,19 +86,24 @@ export function ClassForm({ existingClass, mode }: ClassFormProps) {
     const capacityNum = parseInt(values.capacity, 10);
 
     startTransition(async () => {
+      // Only include schedule_config if the class already has day/block assigned
+      // (teachers cannot set day/block — only admins/class schedulers can)
+      const hasExistingSchedule = scheduleConfig?.day && scheduleConfig?.block;
+
       const input = {
         name: values.name,
         description: values.description || undefined,
 
         capacity: capacityNum,
-        // Preserve existing day/block from schedule_config (teachers cannot change these)
-        schedule_config: {
-          day: scheduleConfig?.day || '',
-          block: scheduleConfig?.block || '',
-          recurring: true, // Default to recurring for now
-          startDate: values.startDate || undefined,
-          endDate: values.endDate || undefined,
-        },
+        schedule_config: hasExistingSchedule
+          ? {
+              day: scheduleConfig.day,
+              block: scheduleConfig.block,
+              recurring: true,
+              startDate: values.startDate || undefined,
+              endDate: values.endDate || undefined,
+            }
+          : undefined,
         location: values.location || undefined,
         ageMin: values.ageMin ? parseInt(values.ageMin, 10) : undefined,
         ageMax: values.ageMax ? parseInt(values.ageMax, 10) : undefined,

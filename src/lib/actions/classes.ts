@@ -718,7 +718,7 @@ export async function publishClass(
     // Verify ownership
     const { data: existingClass } = await supabase
       .from('classes')
-      .select('teacher_id, status, name')
+      .select('teacher_id, status, name, day, block')
       .eq('id', classId)
       .single();
 
@@ -743,6 +743,15 @@ export async function publishClass(
 
     if (existingClass.status !== 'draft') {
       return { success: false, error: 'Only draft classes can be published' };
+    }
+
+    // Day and Block must be assigned before publishing
+    if (!existingClass.day || !existingClass.block) {
+      return {
+        success: false,
+        error:
+          'Day and Block must be assigned before publishing. Please ask an admin or class scheduler to set the schedule.',
+      };
     }
 
     const { error } = await supabase

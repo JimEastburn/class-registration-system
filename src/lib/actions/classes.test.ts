@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { createClass, updateClass } from '@/lib/actions/classes';
+import { createClass, updateClass, publishClass } from '@/lib/actions/classes';
 import { createClient } from '@/lib/supabase/server';
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -360,6 +360,66 @@ describe('Class Actions', () => {
           location: null,
         })
       );
+    });
+  });
+
+  describe('publishClass', () => {
+    it('rejects publishing when day and block are not set', async () => {
+      // Mock class lookup: draft class WITHOUT day/block
+      mockSupabase.from.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: {
+                teacher_id: 'teacher-1',
+                status: 'draft',
+                name: 'Math 101',
+                day: null,
+                block: null,
+              },
+              error: null,
+            }),
+          }),
+        }),
+      });
+
+      const result = await publishClass('class-1');
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toContain('Day and Block must be assigned');
+      }
+    });
+
+    it('allows publishing when day and block are set', async () => {
+      // Mock class lookup: draft class WITH day/block
+      mockSupabase.from.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: {
+                teacher_id: 'teacher-1',
+                status: 'draft',
+                name: 'Math 101',
+                day: 'Tuesday',
+                block: 'Block 1',
+              },
+              error: null,
+            }),
+          }),
+        }),
+      });
+
+      // Mock the update query
+      mockSupabase.from.mockReturnValueOnce({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
+      });
+
+      const result = await publishClass('class-1');
+
+      expect(result.success).toBe(true);
     });
   });
 });
