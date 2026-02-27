@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { EnrollmentStatusBadge } from './EnrollmentStatusBadge';
-import PayButton from '@/components/payments/PayButton';
+// TODO: Re-enable when payment is ready
+// import PayButton from '@/components/payments/PayButton';
 import type { Enrollment } from '@/types';
 
 interface EnrollmentWithDetails extends Enrollment {
@@ -88,11 +89,14 @@ export function EnrollmentTable({
                   waitlistPosition={enrollment.waitlist_position}
                 />
                 {enrollment.status === 'pending' && enrollment.class && (
-                  <PayButton
-                    enrollmentId={enrollment.id}
-                    amount={30}
-                    compact={true}
-                  />
+                  <span className="flex items-center gap-2">
+                    <Button size="sm" disabled className="h-7 px-3 text-xs">
+                      Pay
+                    </Button>
+                    <span className="text-xs text-muted-foreground italic">
+                      Payment options coming soon!
+                    </span>
+                  </span>
                 )}
               </div>
             </TableCell>

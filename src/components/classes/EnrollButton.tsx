@@ -316,6 +316,7 @@ export function EnrollButton({
               Pay later
             </Button>
             <Button
+              className="hidden"
               onClick={handleEnroll}
               disabled={isLoading || isPayLaterLoading || !selectedMember || members.length === 0}
               data-testid="proceed-to-payment-button"
@@ -323,6 +324,7 @@ export function EnrollButton({
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Proceed to Payment
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
