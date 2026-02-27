@@ -410,7 +410,7 @@ describe('Dashboard Actions', () => {
       expect(mockBuilder.in).toHaveBeenCalledWith('student_id', ['fm-1']);
     });
 
-    it('should return amountDue in dollars without dividing by 100', async () => {
+    it('should return amountDue in dollars — classes.price is already in dollars', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({
         data: { user: { id: 'parent-123' } },
       });
@@ -423,7 +423,7 @@ describe('Dashboard Actions', () => {
         })
       );
 
-      // Pending enrollments with class data (price in dollars)
+      // Pending enrollments — DB stores price in DOLLARS (30 = $30)
       mockBuilder.then.mockImplementationOnce((resolve: any) =>
         resolve({
           data: [
@@ -441,8 +441,8 @@ describe('Dashboard Actions', () => {
 
       expect(result.error).toBeNull();
       expect(result.data).toHaveLength(1);
-      expect(result.data![0].amountDue).toBe(30); // $30.00, not $0.30
-      expect(result.data![0].amountDue).not.toBe(0.3); // Regression guard
+      expect(result.data![0].amountDue).toBe(30); // $30 — already dollars, no conversion
+      expect(result.data![0].amountDue).not.toBe(0.3); // Must NOT divide by 100
     });
   });
 

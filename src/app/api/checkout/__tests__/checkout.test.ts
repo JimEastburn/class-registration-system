@@ -225,4 +225,48 @@ describe('Checkout API Route', () => {
     expect(adminPayments).toHaveLength(1);
     expect(adminPayments[0].enrollment_id).toBe('enroll123');
   });
+
+  it('should send unit_amount in CENTS to Stripe and store amount in DOLLARS in payments', async () => {
+    (createClient as Mock).mockResolvedValue(
+      new FakeSupabase(
+        { id: 'parent123' },
+        {
+          enrollments: [
+            {
+              id: 'enroll123',
+              status: 'pending',
+              student: {
+                parent_id: 'parent123',
+                first_name: 'Jane',
+                last_name: 'Smith',
+              },
+              class: { id: 'class123', name: 'Art 101', price: 30 },
+            },
+          ],
+        }
+      )
+    );
+
+    (stripe.checkout.sessions.create as Mock).mockResolvedValue({
+      id: 'cs_456',
+      url: 'http://stripe.com/checkout/cs_456',
+    });
+
+    const request = new Request('http://localhost:3000/api/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ enrollmentId: 'enroll123' }),
+    });
+
+    await POST(request);
+
+    // Stripe must receive unit_amount in CENTS (3000 = $30)
+    const stripeCall = (stripe.checkout.sessions.create as Mock).mock
+      .calls[0][0];
+    expect(stripeCall.line_items[0].price_data.unit_amount).toBe(3000);
+    expect(stripeCall.line_items[0].price_data.unit_amount).not.toBe(30); // Must NOT send dollars
+
+    // Payments table must store amount in DOLLARS (30 = $30)
+    expect(adminPayments[0].amount).toBe(30);
+    expect(adminPayments[0].amount).not.toBe(3000); // Must NOT store cents
+  });
 });

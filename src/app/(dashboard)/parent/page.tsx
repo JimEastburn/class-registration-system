@@ -19,6 +19,7 @@ import {
   getRecentPayments,
   getPendingEnrollments,
 } from '@/lib/actions/dashboard';
+import { formatCurrency } from '@/lib/utils';
 
 export const metadata = {
   title: 'Parent Dashboard | Class Registration System',
@@ -92,7 +93,7 @@ export default async function ParentDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${stats?.pendingPaymentTotal?.toFixed(2) ?? '0.00'}
+                {formatCurrency(stats?.pendingPaymentTotal ?? 0)}
               </div>
               <p className="text-muted-foreground text-xs">outstanding balance</p>
             </CardContent>
@@ -131,7 +132,7 @@ export default async function ParentDashboardPage() {
                       </p>
                     </div>
                     <Badge variant="secondary">
-                      ${enrollment.amountDue.toFixed(2)}
+                      {formatCurrency(enrollment.amountDue)}
                     </Badge>
                   </div>
                 ))}
@@ -174,7 +175,7 @@ export default async function ParentDashboardPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="font-medium">
-                        ${payment.amount.toFixed(2)}
+                        {formatCurrency(payment.amount)}
                       </span>
                       <Badge
                         variant={

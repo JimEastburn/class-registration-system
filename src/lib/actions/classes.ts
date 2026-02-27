@@ -286,7 +286,7 @@ export async function createClass(
       .insert({
         name: input.name,
         description: input.description || null,
-        price: 3000, // Fixed $30 for all classes
+        price: 30, // Fixed $30 for all classes (stored in dollars)
         capacity: input.capacity,
         teacher_id: teacherIdToUse,
         status: 'draft',
@@ -398,7 +398,7 @@ export async function updateClass(
     if (input.name !== undefined) updateData.name = input.name;
     if (input.description !== undefined)
       updateData.description = input.description;
-    updateData.price = 3000; // Fixed $30 for all classes
+    updateData.price = 30; // Fixed $30 for all classes (stored in dollars)
     if (input.capacity !== undefined) updateData.capacity = input.capacity;
 
     if (input.schedule_config !== undefined) {
@@ -1128,7 +1128,7 @@ export async function adminUpdateClass(
     if (input.name !== undefined) updateData.name = input.name;
     if (input.description !== undefined)
       updateData.description = input.description;
-    updateData.price = 3000; // Fixed $30 for all classes
+    updateData.price = 30; // Fixed $30 for all classes (stored in dollars)
     if (input.capacity !== undefined) updateData.capacity = input.capacity;
 
     if (input.schedule_config !== undefined) {
