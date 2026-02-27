@@ -58,7 +58,7 @@ export function CalendarEventCard({
     <div
       onClick={onClick}
       className={cn(
-        'group absolute right-1 left-1 z-10 flex cursor-pointer flex-col overflow-hidden rounded-md border-l-4 p-2 text-xs transition-colors',
+        'group relative flex w-full cursor-pointer flex-col overflow-hidden rounded-md border-l-4 p-2 text-xs transition-colors',
         isConflict || event.isConflict
           ? 'border-red-500 bg-red-100 hover:bg-red-200'
           : 'border-blue-500 bg-blue-100 hover:bg-blue-200',
