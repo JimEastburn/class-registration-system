@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/card';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { getConflictAlerts } from '@/lib/actions/scheduler';
+import Link from 'next/link';
 
 export async function ConflictAlertsList() {
   const res = await getConflictAlerts();
@@ -51,12 +52,35 @@ export async function ConflictAlertsList() {
           {alerts.map((alert) => (
             <div
               key={alert.id}
-              className="bg-destructive/5 text-destructive border-destructive/10 hover:bg-destructive/10 flex items-start gap-3 rounded-md border p-3 transition-colors"
+              className="bg-destructive/5 text-destructive border-destructive/10 flex items-start gap-3 rounded-md border p-3"
             >
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <div className="flex-1">
                 <p className="text-foreground/90 text-sm leading-tight font-medium">
-                  {alert.message}
+                  {alert.message.split(': ')[0]}:{' '}
+                  {alert.classIds.map((cls, idx) => (
+                    <span key={cls.id}>
+                      {idx > 0 && (
+                        <span className="text-muted-foreground">
+                          {alert.message.includes('overlaps with')
+                            ? ' overlaps with '
+                            : ' and '}
+                        </span>
+                      )}
+                      <Link
+                        href={`/class-scheduler/classes/${cls.id}`}
+                        className="text-primary hover:text-primary/80 underline underline-offset-2 transition-colors"
+                      >
+                        {cls.name}
+                      </Link>
+                    </span>
+                  ))}
+                  {alert.message.includes(' in ') && (
+                    <span className="text-muted-foreground">
+                      {' in '}
+                      {alert.message.split(' in ').pop()}
+                    </span>
+                  )}
                 </p>
                 <div className="mt-1.5 flex items-center gap-2">
                   <span

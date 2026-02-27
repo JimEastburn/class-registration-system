@@ -310,7 +310,12 @@ export async function schedulerCreateClass(
 
 export async function getConflictAlerts(): Promise<
   ActionResult<
-    { id: string; message: string; severity: 'high' | 'medium' | 'low' }[]
+    {
+      id: string;
+      message: string;
+      severity: 'high' | 'medium' | 'low';
+      classIds: { id: string; name: string }[];
+    }[]
   >
 > {
   try {
@@ -352,6 +357,7 @@ export async function getConflictAlerts(): Promise<
       id: string;
       message: string;
       severity: 'high' | 'medium' | 'low';
+      classIds: { id: string; name: string }[];
     }[] = [];
 
     // Naive O(N^2) check - acceptable for moderate number of classes (~100s)
@@ -376,6 +382,10 @@ export async function getConflictAlerts(): Promise<
               id: `${c1.id}-${c2.id}`,
               message: `Teacher Conflict: ${c1.name} overlaps with ${c2.name}`,
               severity: 'high',
+              classIds: [
+                { id: c1.id, name: c1.name },
+                { id: c2.id, name: c2.name },
+              ],
             });
           }
         }
@@ -394,6 +404,10 @@ export async function getConflictAlerts(): Promise<
                   id: `room-${c1.id}-${c2.id}`,
                   message: `Room Conflict: ${c1.name} and ${c2.name} in ${c1.location}`,
                   severity: 'medium',
+                  classIds: [
+                    { id: c1.id, name: c1.name },
+                    { id: c2.id, name: c2.name },
+                  ],
                 });
               }
             }

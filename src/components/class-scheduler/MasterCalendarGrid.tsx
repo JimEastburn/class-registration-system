@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Select,
   SelectContent,
@@ -326,97 +326,108 @@ export function MasterCalendarGrid() {
           </div>
         </div>
 
-        {/* Matrix Container */}
-        <div className="bg-background flex min-w-[1000px] flex-col overflow-hidden rounded-md border">
+        {/* Matrix Container - CSS Grid for guaranteed column alignment */}
+        <div
+          className="bg-background min-w-[1000px] overflow-hidden rounded-md border"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '180px 1fr 1fr 100px 1fr 1fr',
+          }}
+        >
           {/* Header Row */}
-          <div className="bg-muted/40 flex border-b">
-            <div className="w-[180px] flex-none border-r p-3 text-sm font-semibold">
-              Target Pattern
-            </div>
-            {COLUMNS.map((col) => (
-              <div
-                key={col}
-                className={cn(
-                  'flex-1 border-r p-3 text-center text-sm font-semibold last:border-r-0',
-                  col === 'Lunch' &&
-                    'bg-muted/20 text-muted-foreground w-[100px] flex-none'
-                )}
-              >
-                {col}
-              </div>
-            ))}
+          <div className="bg-muted/40 border-b border-r p-3 text-sm font-semibold">
+            Target Pattern
           </div>
-
-          {/* Rows */}
-          {ROWS.map((pattern) => (
+          {COLUMNS.map((col, i) => (
             <div
-              key={pattern}
-              className="flex min-h-[140px] border-b last:border-b-0"
+              key={col}
+              className={cn(
+                'bg-muted/40 border-b p-3 text-center text-sm font-semibold',
+                i < COLUMNS.length - 1 && 'border-r',
+                col === 'Lunch' && 'bg-muted/20 text-muted-foreground'
+              )}
             >
-              {/* Row Header */}
-              <div className="bg-muted/10 flex w-[180px] flex-none items-center border-r p-3 text-sm font-medium">
-                {DAY_LABELS[pattern] ?? pattern}
-              </div>
-
-              {/* Grid Cells */}
-              {COLUMNS.map((col) => {
-                // Unique ID for droppable: pattern::block
-                const cellId = `${pattern}::${col}`;
-                const isLunch = col === 'Lunch';
-
-                return (
-                  <div
-                    key={cellId}
-                    className={cn(
-                      'relative flex-1 border-r last:border-r-0',
-                      isLunch && 'bg-muted/20 w-[100px] flex-none'
-                    )}
-                  >
-                    {isLunch ? (
-                      <div className="text-muted-foreground flex h-full w-full rotate-90 items-center justify-center text-xs sm:rotate-0">
-                        LUNCH
-                      </div>
-                    ) : (
-                      <DroppableBlock
-                        id={cellId}
-                        data={{ pattern, block: col }}
-                        className="h-full min-h-[140px] p-2"
-                      >
-                        <div className="flex flex-col gap-2">
-                          {events
-                            .filter(
-                              (e) =>
-                                e.rawConfig.day === pattern &&
-                                e.rawConfig.block === col
-                            )
-                            .map((event) => (
-                              <DraggableEventWrapper
-                                key={event.id}
-                                id={event.id}
-                                data={event}
-                              >
-                                <CalendarEventCard
-                                  event={event}
-                                  isMonthView={false}
-                                  onClick={() => {
-                                    const cls = classes.find(
-                                      (c) => c.id === event.classId
-                                    );
-                                    if (cls) {
-                                      void handleOpenClassDialog(cls);
-                                    }
-                                  }}
-                                />
-                              </DraggableEventWrapper>
-                            ))}
-                        </div>
-                      </DroppableBlock>
-                    )}
-                  </div>
-                );
-              })}
+              {col}
             </div>
           ))}
+
+          {/* Rows */}
+          {ROWS.map((pattern, rowIdx) => {
+            const isLastRow = rowIdx === ROWS.length - 1;
+            return (
+              <React.Fragment key={pattern}>
+                {/* Row Header */}
+                <div
+                  className={cn(
+                    'bg-muted/10 flex items-center border-r p-3 text-sm font-medium',
+                    !isLastRow && 'border-b'
+                  )}
+                >
+                  {DAY_LABELS[pattern] ?? pattern}
+                </div>
+
+                {/* Grid Cells */}
+                {COLUMNS.map((col, colIdx) => {
+                  const cellId = `${pattern}::${col}`;
+                  const isLunch = col === 'Lunch';
+                  const isLastCol = colIdx === COLUMNS.length - 1;
+
+                  return (
+                    <div
+                      key={cellId}
+                      className={cn(
+                        'relative',
+                        !isLastCol && 'border-r',
+                        !isLastRow && 'border-b',
+                        isLunch && 'bg-muted/20'
+                      )}
+                    >
+                      {isLunch ? (
+                        <div className="text-muted-foreground flex h-full min-h-[140px] w-full items-center justify-center text-xs">
+                          LUNCH
+                        </div>
+                      ) : (
+                        <DroppableBlock
+                          id={cellId}
+                          data={{ pattern, block: col }}
+                          className="h-full min-h-[140px] p-2"
+                        >
+                          <div className="flex flex-col gap-2">
+                            {events
+                              .filter(
+                                (e) =>
+                                  e.rawConfig.day === pattern &&
+                                  e.rawConfig.block === col
+                              )
+                              .map((event) => (
+                                <DraggableEventWrapper
+                                  key={event.id}
+                                  id={event.id}
+                                  data={event}
+                                >
+                                  <CalendarEventCard
+                                    event={event}
+                                    isMonthView={false}
+                                    onClick={() => {
+                                      const cls = classes.find(
+                                        (c) => c.id === event.classId
+                                      );
+                                      if (cls) {
+                                        void handleOpenClassDialog(cls);
+                                      }
+                                    }}
+                                  />
+                                </DraggableEventWrapper>
+                              ))}
+                          </div>
+                        </DroppableBlock>
+                      )}
+                    </div>
+                  );
+                })}
+              </React.Fragment>
+            );
+          })}
         </div>
       </div>
 
