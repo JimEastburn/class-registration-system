@@ -3,7 +3,6 @@ import {
   Users,
   BookOpen,
   CreditCard,
-  Calendar,
   ArrowRight,
 } from 'lucide-react';
 import {
@@ -17,7 +16,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   getParentDashboardStats,
-  getUpcomingClassesForFamily,
   getRecentPayments,
   getPendingEnrollments,
 } from '@/lib/actions/dashboard';
@@ -29,16 +27,14 @@ export const metadata = {
 
 export default async function ParentDashboardPage() {
   // Fetch all dashboard data in parallel
-  const [statsResult, upcomingResult, paymentsResult, pendingResult] =
+  const [statsResult, paymentsResult, pendingResult] =
     await Promise.all([
       getParentDashboardStats(),
-      getUpcomingClassesForFamily(5),
       getRecentPayments(3),
       getPendingEnrollments(),
     ]);
 
   const stats = statsResult.data;
-  const upcomingClasses = upcomingResult.data || [];
   const recentPayments = paymentsResult.data || [];
   const pendingEnrollments = pendingResult.data || [];
 
@@ -52,9 +48,9 @@ export default async function ParentDashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Link href="/parent/family" className="block">
-          <Card className="hover:border-primary/50 cursor-pointer transition-colors hover:shadow-sm">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Link href="/parent/family" className="block h-full">
+          <Card className="hover:border-primary/50 h-full cursor-pointer transition-colors hover:shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Family Members
@@ -69,8 +65,8 @@ export default async function ParentDashboardPage() {
           </Card>
         </Link>
 
-        <Link href="/parent/enrollments" className="block">
-          <Card className="hover:border-primary/50 cursor-pointer transition-colors hover:shadow-sm">
+        <Link href="/parent/enrollments" className="block h-full">
+          <Card className="hover:border-primary/50 h-full cursor-pointer transition-colors hover:shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Active Enrollments
@@ -86,81 +82,27 @@ export default async function ParentDashboardPage() {
           </Card>
         </Link>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Payments
-            </CardTitle>
-            <CreditCard className="text-muted-foreground h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              ${stats?.pendingPaymentTotal?.toFixed(2) ?? '0.00'}
-            </div>
-            <p className="text-muted-foreground text-xs">outstanding balance</p>
-          </CardContent>
-        </Card>
+        <Link href="/parent/enrollments" className="block h-full">
+          <Card className="hover:border-primary/50 h-full cursor-pointer transition-colors hover:shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Pending Payments
+              </CardTitle>
+              <CreditCard className="text-muted-foreground h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ${stats?.pendingPaymentTotal?.toFixed(2) ?? '0.00'}
+              </div>
+              <p className="text-muted-foreground text-xs">outstanding balance</p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Upcoming Classes
-            </CardTitle>
-            <Calendar className="text-muted-foreground h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats?.upcomingClassCount ?? 0}
-            </div>
-            <p className="text-muted-foreground text-xs">scheduled this week</p>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Content Grid */}
+      {/* Pending Enrollments & Recent Payments */}
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Upcoming Classes */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Upcoming Classes</CardTitle>
-            <CardDescription>
-              Your family&apos;s next scheduled classes
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {upcomingClasses.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                No upcoming classes scheduled.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {upcomingClasses.map((cls, index) => (
-                  <div
-                    key={`${cls.id}-${index}`}
-                    className="bg-muted/50 flex items-center justify-between rounded-lg p-3"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">{cls.className}</p>
-                      <p className="text-muted-foreground text-xs">
-                        {cls.dayOfWeek} • {cls.block}
-                      </p>
-                      <p className="text-muted-foreground text-xs">
-                        {cls.familyMemberName}
-                      </p>
-                    </div>
-                    <Badge variant="outline">{cls.dayOfWeek}</Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-            <Button variant="ghost" className="mt-4 w-full" asChild>
-              <Link href="/parent/enrollments">
-                View All Enrollments
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
 
         {/* Pending Enrollments */}
         <Card>
@@ -203,59 +145,59 @@ export default async function ParentDashboardPage() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Recent Payments */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Payments</CardTitle>
+            <CardDescription>Your latest payment history</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {recentPayments.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                No payment history yet.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {recentPayments.map((payment) => (
+                  <div
+                    key={payment.id}
+                    className="flex items-center justify-between border-b py-2 last:border-0"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">{payment.description}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {payment.createdAt
+                          ? new Date(payment.createdAt).toLocaleDateString()
+                          : 'N/A'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">
+                        ${payment.amount.toFixed(2)}
+                      </span>
+                      <Badge
+                        variant={
+                          payment.status === 'completed'
+                            ? 'default'
+                            : payment.status === 'pending'
+                              ? 'secondary'
+                              : 'destructive'
+                        }
+                      >
+                        {payment.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Recent Payments */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Payments</CardTitle>
-          <CardDescription>Your latest payment history</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {recentPayments.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No payment history yet.
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {recentPayments.map((payment) => (
-                <div
-                  key={payment.id}
-                  className="flex items-center justify-between border-b py-2 last:border-0"
-                >
-                  <div>
-                    <p className="text-sm font-medium">{payment.description}</p>
-                    <p className="text-muted-foreground text-xs">
-                      {payment.createdAt
-                        ? new Date(payment.createdAt).toLocaleDateString()
-                        : 'N/A'}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">
-                      ${payment.amount.toFixed(2)}
-                    </span>
-                    <Badge
-                      variant={
-                        payment.status === 'completed'
-                          ? 'default'
-                          : payment.status === 'pending'
-                            ? 'secondary'
-                            : 'destructive'
-                      }
-                    >
-                      {payment.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Quick Actions */}
-      <Card>
+      <Card className="w-fit">
         <CardHeader>
           <CardTitle>Quick Actions</CardTitle>
           <CardDescription>
@@ -278,7 +220,7 @@ export default async function ParentDashboardPage() {
             </Button>
             <Button variant="outline" asChild>
               <Link href="/parent/enrollments">
-                <Calendar className="mr-2 h-4 w-4" />
+                <BookOpen className="mr-2 h-4 w-4" />
                 View Enrollments
               </Link>
             </Button>

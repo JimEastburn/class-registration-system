@@ -26,6 +26,15 @@ export default async function RegisterPage() {
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-3xl font-bold text-white">Create Account</h1>
           <p className="text-gray-300">Join our class registration system</p>
+          <div className="mt-2 flex flex-col items-center gap-0.5 text-sm text-slate-300">
+            <span>For help, please text Jim Eastburn</span>
+            <a
+              href="sms:+15126896860"
+              className="font-medium text-teal-400 transition-colors hover:text-teal-300"
+            >
+              (512) 689-6860
+            </a>
+          </div>
         </div>
         <RegisterForm />
       </div>
