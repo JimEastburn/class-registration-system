@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import {
   Users,
-  BookOpen,
 } from 'lucide-react';
 import {
   Card,
@@ -10,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+
 import { Badge } from '@/components/ui/badge';
 import {
   getParentDashboardStats,
@@ -57,74 +56,20 @@ export default async function ParentDashboardPage() {
               <Users className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {stats?.familyMemberCount ?? 0}
-              </div>
+              {stats?.familyMemberNames && stats.familyMemberNames.length > 0 ? (
+                <ul className="space-y-1">
+                  {stats.familyMemberNames.map((name) => (
+                    <li key={name} className="text-sm">{name}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted-foreground text-sm">No family members yet.</p>
+              )}
             </CardContent>
           </Card>
         </Link>
 
-        <Link href="/parent/enrollments" className="block h-full">
-          <Card className="hover:border-primary/50 h-full cursor-pointer transition-colors hover:shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Active Enrollments
-              </CardTitle>
-              <BookOpen className="text-muted-foreground h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {stats?.activeEnrollmentCount ?? 0}
-              </div>
-              <p className="text-muted-foreground text-xs">current classes</p>
-            </CardContent>
-          </Card>
-        </Link>
-
-      </div>
-
-      {/* Pending Enrollments & Recent Payments */}
-      <div className="grid gap-6 md:grid-cols-2">
-
-        {/* Pending Enrollments */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending Enrollments</CardTitle>
-            <CardDescription>Enrollments waiting for payment</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {pendingEnrollments.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                No pending enrollments.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {pendingEnrollments.map((enrollment) => (
-                  <div
-                    key={enrollment.id}
-                    className="bg-muted/50 flex items-center justify-between rounded-lg p-3"
-                  >
-                    <div>
-                      <p className="text-sm font-medium">
-                        {enrollment.className}
-                      </p>
-                      <p className="text-muted-foreground text-xs">
-                        {enrollment.familyMemberName}
-                      </p>
-                    </div>
-                    <Badge variant="secondary">
-                      {formatCurrency(enrollment.amountDue)}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-
-          </CardContent>
-        </Card>
-
-        {/* Recent Payments */}
-        <Card>
+        <Card className="h-full">
           <CardHeader>
             <CardTitle>Recent Payments</CardTitle>
             <CardDescription>Your latest payment history</CardDescription>
@@ -171,39 +116,68 @@ export default async function ParentDashboardPage() {
             )}
           </CardContent>
         </Card>
+
       </div>
 
-      {/* Quick Actions */}
-      <Card className="w-fit">
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>
-            Common tasks for managing your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Button asChild>
-              <Link href="/parent/family">
-                <Users className="mr-2 h-4 w-4" />
-                Manage Family
-              </Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/parent/browse">
-                <BookOpen className="mr-2 h-4 w-4" />
-                Browse Classes
-              </Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/parent/enrollments">
-                <BookOpen className="mr-2 h-4 w-4" />
-                View Enrollments
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Pending Enrollments & Recent Payments */}
+      <div className="grid gap-6 md:grid-cols-2">
+
+        {/* Pending Enrollments */}
+        <Link href="/parent/enrollments" className="block">
+        <Card className="hover:border-primary/50 cursor-pointer transition-colors hover:shadow-sm">
+          <CardHeader>
+            <CardTitle>Pending Enrollments</CardTitle>
+            <CardDescription>Enrollments waiting for payment</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {pendingEnrollments.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                No pending enrollments.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {pendingEnrollments.map((enrollment) => (
+                  <div
+                    key={enrollment.id}
+                    className="bg-muted/50 flex items-center justify-between rounded-lg p-3"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">
+                        {enrollment.className}
+                      </p>
+                      <p className="text-muted-foreground text-xs">
+                        {enrollment.familyMemberName}
+                      </p>
+                    </div>
+                    <Badge variant="secondary">
+                      {formatCurrency(enrollment.amountDue)}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+
+          </CardContent>
+        </Card>
+        </Link>
+
+        {/* Active Enrollments */}
+        <Link href="/parent/enrollments" className="block h-full">
+          <Card className="hover:border-primary/50 h-full cursor-pointer transition-colors hover:shadow-sm">
+            <CardHeader>
+              <CardTitle>Active Enrollments</CardTitle>
+              <CardDescription>Current classes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {stats?.activeEnrollmentCount ?? 0}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+
     </div>
   );
 }

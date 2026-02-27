@@ -5,6 +5,7 @@ import type { ScheduleConfig } from '@/types';
 
 interface DashboardStats {
   familyMemberCount: number;
+  familyMemberNames: string[];
   activeEnrollmentCount: number;
   pendingPaymentTotal: number;
   upcomingClassCount: number;
@@ -33,10 +34,10 @@ export async function getParentDashboardStats(): Promise<{
       .select('*', { count: 'exact', head: true })
       .eq('parent_id', user.id);
 
-    // Get active enrollment count (enrollments for user's family members)
+    // Get family members (ids and names)
     const { data: familyMembers } = await supabase
       .from('family_members')
-      .select('id')
+      .select('id, first_name, last_name')
       .eq('parent_id', user.id);
 
     const familyMemberIds = familyMembers?.map((fm) => fm.id) || [];
@@ -86,6 +87,9 @@ export async function getParentDashboardStats(): Promise<{
     return {
       data: {
         familyMemberCount: familyMemberCount || 0,
+        familyMemberNames: (familyMembers || []).map(
+          (fm) => `${fm.first_name} ${fm.last_name}`
+        ),
         activeEnrollmentCount,
         pendingPaymentTotal,
         upcomingClassCount,
