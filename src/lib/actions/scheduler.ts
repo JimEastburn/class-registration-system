@@ -474,6 +474,7 @@ export async function getClassesForScheduler(
       )
       .in('status', ['published', 'draft'])
       .order('start_date', { ascending: true })
+      .order('name', { ascending: true })
       .range(offset, offset + limit - 1);
 
     if (error) {
