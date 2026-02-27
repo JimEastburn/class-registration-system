@@ -20,6 +20,14 @@ interface EnrollmentWithClass extends Enrollment {
     name: string;
     teacher_id: string;
     price: number;
+    day: string | null;
+    block: string | null;
+    location: string | null;
+    schedule_config: ScheduleConfig | null;
+    teacher: {
+      first_name: string | null;
+      last_name: string | null;
+    } | null;
   } | null;
 }
 
@@ -87,7 +95,12 @@ export async function getEnrollmentsForFamilyMember(
                     id,
                     name,
                     teacher_id,
-                    price
+                    price,
+                    day,
+                    block,
+                    location,
+                    schedule_config,
+                    teacher:profiles(first_name, last_name)
                 )
             `
       )
@@ -148,7 +161,12 @@ export async function getEnrollmentsForFamily(): Promise<{
                     id,
                     name,
                     teacher_id,
-                    price
+                    price,
+                    day,
+                    block,
+                    location,
+                    schedule_config,
+                    teacher:profiles(first_name, last_name)
                 ),
                 student:family_members (
                     id,

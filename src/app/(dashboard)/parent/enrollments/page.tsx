@@ -2,13 +2,6 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getEnrollmentsForFamily } from '@/lib/actions/enrollments';
 import { EnrollmentListClient } from '@/components/classes/EnrollmentListClient';
@@ -85,19 +78,9 @@ export default function EnrollmentsPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Enrollments</CardTitle>
-          <CardDescription>
-            A list of all enrollments for your family members
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Suspense fallback={<EnrollmentsSkeleton />}>
-            <EnrollmentsWrapper />
-          </Suspense>
-        </CardContent>
-      </Card>
+      <Suspense fallback={<EnrollmentsSkeleton />}>
+        <EnrollmentsWrapper />
+      </Suspense>
     </div>
   );
 }

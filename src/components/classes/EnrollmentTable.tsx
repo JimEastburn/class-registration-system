@@ -27,6 +27,9 @@ interface EnrollmentWithDetails extends Enrollment {
     id: string;
     name: string;
     price: number;
+    day: string | null;
+    block: string | null;
+    location: string | null;
   } | null;
   student?: {
     id: string;
@@ -60,8 +63,10 @@ export function EnrollmentTable({
         <TableRow>
           <TableHead>Class</TableHead>
           {showStudent && <TableHead>Student</TableHead>}
+          <TableHead>Day</TableHead>
+          <TableHead>Block</TableHead>
+          <TableHead>Location</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead>Price</TableHead>
           <TableHead>Enrolled</TableHead>
           <TableHead className="w-[50px]"></TableHead>
         </TableRow>
@@ -82,6 +87,9 @@ export function EnrollmentTable({
                   : '-'}
               </TableCell>
             )}
+            <TableCell>{enrollment.class?.day || '-'}</TableCell>
+            <TableCell>{enrollment.class?.block || '-'}</TableCell>
+            <TableCell>{enrollment.class?.location || '-'}</TableCell>
             <TableCell>
               <div className="flex items-center gap-2">
                 <EnrollmentStatusBadge
@@ -100,7 +108,6 @@ export function EnrollmentTable({
                 )}
               </div>
             </TableCell>
-            <TableCell>$30.00</TableCell>
             <TableCell className="text-muted-foreground">
               {new Date(enrollment.created_at).toLocaleDateString('en-US', {
                 month: 'short',
