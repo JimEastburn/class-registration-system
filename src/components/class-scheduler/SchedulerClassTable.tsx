@@ -47,6 +47,16 @@ export function SchedulerClassTable({ classes, conflictClassIds = [] }: Schedule
 
   const handleTogglePublished = (cls: Class, checked: boolean) => {
     const newStatus = checked ? 'published' : 'draft';
+
+    // Enforce same rules as publishClass: day and block must be assigned
+    if (newStatus === 'published') {
+      const config = cls.schedule_config as { day?: string; block?: string } | null;
+      if (!config?.day || !config?.block) {
+        toast.error('Day and Block must be assigned before publishing.');
+        return;
+      }
+    }
+
     startTransition(async () => {
       const result = await schedulerUpdateClass(cls.id, { status: newStatus });
       if (result.success) {
