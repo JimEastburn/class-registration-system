@@ -58,7 +58,7 @@ const DAY_LABELS: Record<string, string> = {
 };
 
 export function MasterCalendarGrid() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [classes, setClasses] = useState<ClassWithTeacher[]>([]);
   const [activeDragEvent, setActiveDragEvent] =
     useState<CalendarUIEvent | null>(null);
@@ -176,7 +176,12 @@ export function MasterCalendarGrid() {
   };
 
   useEffect(() => {
-    void fetchClasses();
+    getClassesForScheduler(1, 100).then((result) => {
+      if (result.success && result.data) {
+        setClasses(result.data.classes as unknown as ClassWithTeacher[]);
+      }
+      setLoading(false);
+    });
   }, []);
 
   const uniqueTeachers = useMemo(() => {
@@ -427,7 +432,7 @@ export function MasterCalendarGrid() {
         open={isDialogOpen}
         onOpenChange={(open) => !open && handleDialogClose()}
       >
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Class Details</DialogTitle>
             <DialogDescription>
