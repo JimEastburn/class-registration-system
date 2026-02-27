@@ -94,6 +94,7 @@ export function SchedulerClassForm({
   );
 
   const form = useForm<FormValues>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver type mismatch with react-hook-form generics
     resolver: zodResolver(formSchema) as any,
     defaultValues,
   });

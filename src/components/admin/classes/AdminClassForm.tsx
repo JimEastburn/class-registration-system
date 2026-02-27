@@ -51,6 +51,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
   const router = useRouter();
 
   const form = useForm<ClassFormValues>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver type mismatch with react-hook-form generics
     resolver: zodResolver(classFormSchema) as any,
     defaultValues: {
       name: initialData?.name || '',

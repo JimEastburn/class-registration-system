@@ -22,9 +22,11 @@ interface StudentActionMenuProps {
 }
 
 export function StudentActionMenu({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   classId,
   studentId,
   studentName,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   isBlocked = false,
   parentEmail,
   onBlock,

@@ -46,7 +46,9 @@ async function inspectClasses() {
     .order('created_at', { ascending: false })
     .limit(10);
 
-  if (profiles) {
+  if (pError) {
+    console.error('Error fetching profiles:', pError);
+  } else if (profiles) {
     console.log(`Found ${profiles.length} profiles.`);
     profiles.forEach((p) =>
       console.log(`ID: ${p.id} | Email: ${p.email} | Role: ${p.role}`)

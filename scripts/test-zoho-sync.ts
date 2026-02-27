@@ -103,6 +103,7 @@ function assertContains(
   return pass;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Available for extended tests
 function assertMatches(
   field: string,
   pattern: RegExp,
@@ -296,6 +297,7 @@ async function runFullSync(token: string) {
     process.exit(1);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase join returns untyped nested shape
   const enrollment = payment.enrollment as any;
   const parentId = enrollment.student.parent_id;
 

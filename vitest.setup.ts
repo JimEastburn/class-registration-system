@@ -44,4 +44,3 @@ window.HTMLElement.prototype.setPointerCapture = vi.fn();
 window.HTMLElement.prototype.releasePointerCapture = vi.fn();
 window.HTMLElement.prototype.scrollIntoView = vi.fn();
 
-import React from 'react';

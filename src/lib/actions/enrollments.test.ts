@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { enrollStudent } from '@/lib/actions/enrollments';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),

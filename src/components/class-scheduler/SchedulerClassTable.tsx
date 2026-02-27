@@ -36,7 +36,7 @@ export function SchedulerClassTable({ classes, conflictClassIds = [] }: Schedule
   const router = useRouter();
 
   // Helper to format schedule
-  const formatSchedule = (config: any) => {
+  const formatSchedule = (config: Class['schedule_config']) => {
     if (!config || !config.day || !config.block) return 'Unscheduled';
     const dates =
       config.startDate && config.endDate

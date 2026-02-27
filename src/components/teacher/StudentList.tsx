@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { StudentActionMenu } from '@/components/classes/StudentActionMenu';
-import { ChevronDown, ChevronRight, Mail, Phone, Users } from 'lucide-react';
+import { ChevronDown, ChevronRight, Mail, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 

@@ -25,7 +25,6 @@ export async function GET(request: Request) {
   const type = searchParams.get('type') || 'users';
 
   let data: Record<string, unknown>[] = [];
-  let headers: string[] = [];
   let filename = '';
 
   switch (type) {
@@ -36,15 +35,6 @@ export async function GET(request: Request) {
         .order('created_at', { ascending: false });
 
       data = users || [];
-      headers = [
-        'ID',
-        'Email',
-        'First Name',
-        'Last Name',
-        'Role',
-        'Phone',
-        'Created At',
-      ];
       filename = 'users.csv';
       break;
     }
@@ -69,19 +59,6 @@ export async function GET(request: Request) {
           schedule,
         };
       });
-      headers = [
-        'ID',
-        'Name',
-        'Teacher',
-        'Status',
-        'Schedule',
-        'Location',
-        'Fee',
-        'Capacity',
-        'Start Date',
-        'End Date',
-        'Created At',
-      ];
       filename = 'classes.csv';
       break;
     }
@@ -108,7 +85,6 @@ export async function GET(request: Request) {
           class_fee: classData.price,
         };
       });
-      headers = ['ID', 'Student', 'Class', 'Status', 'Fee', 'Enrolled At'];
       filename = 'enrollments.csv';
       break;
     }
@@ -138,15 +114,6 @@ export async function GET(request: Request) {
           class_name: enrollment?.class?.name,
         };
       });
-      headers = [
-        'ID',
-        'Student',
-        'Class',
-        'Amount',
-        'Status',
-        'Stripe Payment ID',
-        'Created At',
-      ];
       filename = 'payments.csv';
       break;
     }

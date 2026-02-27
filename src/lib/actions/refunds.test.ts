@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { processRefund } from '@/lib/actions/refunds';
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
-import { logAuditAction } from '@/lib/actions/audit';
 import { sendWaitlistNotification } from '@/lib/email';
 import { revalidatePath } from 'next/cache';
 

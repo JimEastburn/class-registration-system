@@ -23,7 +23,7 @@ vi.mock('@/lib/actions/audit', () => ({
 
 describe('Admin Actions', () => {
   const mockAdminUser = { id: 'admin-123' };
-  const mockTargetUser = { id: 'user-456' };
+  const _mockTargetUser = { id: 'user-456' };
 
   const mockSupabase = {
     auth: {

@@ -71,7 +71,7 @@ export default function RegisterForm() {
         } else {
           setSuccess(true);
         }
-      } catch (e) {
+      } catch (_e) {
         setError('An unexpected error occurred');
       }
     });

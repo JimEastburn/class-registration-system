@@ -3,15 +3,15 @@
 import { useGlobalLoading } from '@/components/providers/GlobalLoadingProvider';
 import { Loader2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+
+const subscribe = () => () => {};
+const getSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 export function GlobalSpinner() {
   const { isLoading } = useGlobalLoading();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   if (!mounted || !isLoading) return null;
 
