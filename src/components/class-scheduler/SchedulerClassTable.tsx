@@ -1,5 +1,7 @@
 'use client';
 
+import { useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Class } from '@/types';
 import {
   Table,
@@ -10,8 +12,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import Link from 'next/link';
 import { Edit, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { schedulerUpdateClass } from '@/lib/actions/scheduler';
 
 interface SchedulerClassTableProps {
   classes: (Class & {
@@ -27,6 +32,9 @@ interface SchedulerClassTableProps {
 
 export function SchedulerClassTable({ classes, conflictClassIds = [] }: SchedulerClassTableProps) {
   const conflictSet = new Set(conflictClassIds);
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
   // Helper to format schedule
   const formatSchedule = (config: any) => {
     if (!config || !config.day || !config.block) return 'Unscheduled';
@@ -35,6 +43,19 @@ export function SchedulerClassTable({ classes, conflictClassIds = [] }: Schedule
         ? ` • ${config.startDate}–${config.endDate}`
         : '';
     return `${config.day} • ${config.block}${dates}`;
+  };
+
+  const handleTogglePublished = (cls: Class, checked: boolean) => {
+    const newStatus = checked ? 'published' : 'draft';
+    startTransition(async () => {
+      const result = await schedulerUpdateClass(cls.id, { status: newStatus });
+      if (result.success) {
+        toast.success(`Class "${cls.name}" ${newStatus === 'published' ? 'published' : 'set to draft'}`);
+        router.refresh();
+      } else {
+        toast.error(result.error || 'Failed to update status');
+      }
+    });
   };
 
   return (
@@ -47,6 +68,7 @@ export function SchedulerClassTable({ classes, conflictClassIds = [] }: Schedule
             <TableHead>Location</TableHead>
             <TableHead>Schedule</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Published</TableHead>
             <TableHead>Conflict</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -54,13 +76,14 @@ export function SchedulerClassTable({ classes, conflictClassIds = [] }: Schedule
         <TableBody>
           {classes.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center">
+              <TableCell colSpan={8} className="h-24 text-center">
                 No classes found.
               </TableCell>
             </TableRow>
           ) : (
             classes.map((cls) => {
               const hasConflict = conflictSet.has(cls.id);
+              const canToggle = cls.status === 'draft' || cls.status === 'published';
               return (
                 <TableRow key={cls.id}>
                   <TableCell className="font-medium">{cls.name}</TableCell>
@@ -84,6 +107,14 @@ export function SchedulerClassTable({ classes, conflictClassIds = [] }: Schedule
                     >
                       {cls.status}
                     </span>
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={cls.status === 'published'}
+                      onCheckedChange={(checked) => handleTogglePublished(cls, checked)}
+                      disabled={!canToggle || isPending}
+                      aria-label={`Toggle published status for ${cls.name}`}
+                    />
                   </TableCell>
                   <TableCell>
                     {hasConflict ? (
@@ -114,4 +145,3 @@ export function SchedulerClassTable({ classes, conflictClassIds = [] }: Schedule
     </div>
   );
 }
-

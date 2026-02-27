@@ -57,8 +57,8 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
       description: initialData?.description || '',
       capacity: initialData?.capacity || 10,
 
-      day: initialData?.schedule_config?.day || '',
-      block: initialData?.schedule_config?.block || '',
+      day: initialData?.schedule_config?.day || initialData?.day || '',
+      block: initialData?.schedule_config?.block || initialData?.block || '',
       status: ['draft', 'published', 'completed', 'cancelled'].includes(
         initialData?.status as string
       )
@@ -160,7 +160,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Assigned Teacher</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a teacher" />
@@ -189,7 +189,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
                 <FormLabel>Day</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -221,7 +221,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
                 <FormLabel>Block</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -253,7 +253,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Status" />
