@@ -46,7 +46,7 @@ export default async function BrowsePage({ searchParams }: BrowsePageProps) {
         <Info className="mt-0.5 h-5 w-5 shrink-0" />
         <p>
           The $30 fee is the community fee for the class. Payment will still
-          need to be made to the teacher of the class for the teacher&apos;s
+          need to be made directly to the teacher of the class for the teacher&apos;s
           fee.
         </p>
       </div>

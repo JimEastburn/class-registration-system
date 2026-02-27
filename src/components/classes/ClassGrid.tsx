@@ -34,9 +34,11 @@ interface ClassGridProps {
 
 export function ClassGrid({ classes, showSearch = false, showCalendarToggle = false }: ClassGridProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [childAge, setChildAge] = useState('');
   const [calendarView, setCalendarView] = useState(false);
 
-  const filteredClasses = searchQuery
+  // Apply text search filter
+  let filteredClasses = searchQuery
     ? classes.filter((cls) => {
         const query = searchQuery.toLowerCase();
         const teacherName = cls.teacher
@@ -54,26 +56,62 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
       })
     : classes;
 
+  // Apply age filter
+  const ageValue = childAge ? parseInt(childAge, 10) : null;
+  if (ageValue !== null && !isNaN(ageValue)) {
+    filteredClasses = filteredClasses.filter((cls) => {
+      // Classes with no age range are always shown
+      if (cls.age_min == null && cls.age_max == null) return true;
+      // Only min set: age must be >= min
+      if (cls.age_min != null && cls.age_max == null) return ageValue >= cls.age_min;
+      // Only max set: age must be <= max
+      if (cls.age_min == null && cls.age_max != null) return ageValue <= cls.age_max;
+      // Both set: age must be within range
+      return ageValue >= cls.age_min! && ageValue <= cls.age_max!;
+    });
+  }
+
+  const hasActiveFilters = !!searchQuery || (ageValue !== null && !isNaN(ageValue));
+
   return (
     <div className="space-y-4">
       {/* Sticky controls: pin to top when scrolling */}
       <div className="bg-background sticky top-16 z-20 space-y-4 pb-2 pt-2">
         {showCalendarToggle && (
-          <div className="flex items-center gap-2">
-            <Switch
-              id="calendar-view-toggle"
-              checked={calendarView}
-              onCheckedChange={setCalendarView}
-            />
-            <Label htmlFor="calendar-view-toggle" className="cursor-pointer text-sm">
-              Show calendar view
-            </Label>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="calendar-view-toggle"
+                checked={calendarView}
+                onCheckedChange={setCalendarView}
+              />
+              <Label htmlFor="calendar-view-toggle" className="cursor-pointer text-sm">
+                Show calendar view
+              </Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Label htmlFor="child-age-input" className="shrink-0 cursor-pointer text-sm">
+                Child&apos;s age
+              </Label>
+              <Input
+                id="child-age-input"
+                type="number"
+                min={1}
+                max={18}
+                placeholder="—"
+                value={childAge}
+                onChange={(e) => setChildAge(e.target.value)}
+                className="w-18"
+                data-testid="child-age-input"
+              />
+            </div>
           </div>
         )}
 
         {showSearch && (
           <div className="flex items-center gap-3">
-            <div className="relative max-w-md flex-1">
+            <div className="relative max-w-sm flex-1">
               <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
               <Input
                 type="text"
@@ -93,9 +131,9 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
                 </button>
               )}
             </div>
-            {searchQuery && (
+            {hasActiveFilters && (
               <span className="text-muted-foreground shrink-0 text-sm">
-                {filteredClasses.length} {filteredClasses.length === 1 ? 'class matches' : 'classes match'} your search
+                {filteredClasses.length} {filteredClasses.length === 1 ? 'class' : 'classes'} found
               </span>
             )}
           </div>
@@ -104,7 +142,7 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
 
       {filteredClasses.length === 0 ? (
         <p className="text-muted-foreground py-8 text-center text-sm">
-          No classes match &ldquo;{searchQuery}&rdquo;. Try a different search term.
+          No classes match your filters. Try adjusting your search or age.
         </p>
       ) : calendarView ? (
         <ParentCalendarGrid classes={filteredClasses} />
@@ -172,6 +210,19 @@ function ClassCard({ classItem }: ClassCardProps) {
           <div className="text-muted-foreground flex items-center gap-2">
             <Users className="h-4 w-4" />
             <span>Capacity: {classItem.capacity}</span>
+          </div>
+
+          <div className="text-muted-foreground flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <span>
+              {classItem.age_min != null && classItem.age_max != null
+                ? `Ages ${classItem.age_min}–${classItem.age_max}`
+                : classItem.age_min != null
+                  ? `Ages ${classItem.age_min}+`
+                  : classItem.age_max != null
+                    ? `Ages up to ${classItem.age_max}`
+                    : 'All ages welcome for this class.'}
+            </span>
           </div>
 
           <div className="text-muted-foreground flex items-start gap-2">
