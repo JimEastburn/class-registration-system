@@ -75,70 +75,87 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
 
   return (
     <div className="space-y-4">
-      {/* Sticky controls: pin to top when scrolling */}
-      <div className="bg-background sticky top-16 z-20 space-y-4 pb-2 pt-2">
-        {showCalendarToggle && (
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="calendar-view-toggle"
-                checked={calendarView}
-                onCheckedChange={setCalendarView}
-              />
-              <Label htmlFor="calendar-view-toggle" className="cursor-pointer text-sm">
-                Show calendar view
-              </Label>
-            </div>
+      {/* Sticky unified filter bar */}
+      {(showSearch || showCalendarToggle) && (
+        <div className="bg-background sticky top-16 z-20 pb-2 pt-2">
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
+            {/* Search input */}
+            {showSearch && (
+              <div className="relative min-w-[180px] flex-1">
+                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                <Input
+                  type="text"
+                  placeholder="Search by class name, teacher, day..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="border-0 bg-background pl-9 pr-9 shadow-sm"
+                  data-testid="class-search-input"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            )}
 
-            <div className="flex items-center gap-2">
-              <Label htmlFor="child-age-input" className="shrink-0 cursor-pointer text-sm">
-                Child&apos;s age
-              </Label>
-              <Input
-                id="child-age-input"
-                type="number"
-                min={1}
-                max={18}
-                placeholder="—"
-                value={childAge}
-                onChange={(e) => setChildAge(e.target.value)}
-                className="w-18"
-                data-testid="child-age-input"
-              />
-            </div>
-          </div>
-        )}
-
-        {showSearch && (
-          <div className="flex items-center gap-3">
-            <div className="relative max-w-sm flex-1">
-              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-              <Input
-                type="text"
-                placeholder="Search by class name, teacher, day, etc."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-9"
-                data-testid="class-search-input"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
-                  aria-label="Clear search"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+            {/* Result count */}
             {hasActiveFilters && (
               <span className="text-muted-foreground shrink-0 text-sm">
                 {filteredClasses.length} {filteredClasses.length === 1 ? 'class' : 'classes'} found
               </span>
             )}
+
+            {/* Divider */}
+            {showCalendarToggle && showSearch && (
+              <div className="hidden h-6 w-px bg-border/60 sm:block" aria-hidden="true" />
+            )}
+
+            {/* Age filter */}
+            {showCalendarToggle && (
+              <div className="flex items-center gap-2">
+                <Label htmlFor="child-age-input" className="shrink-0 cursor-pointer text-sm whitespace-nowrap">
+                  Child&apos;s age
+                </Label>
+                <Input
+                  id="child-age-input"
+                  type="number"
+                  min={1}
+                  max={18}
+                  placeholder="—"
+                  value={childAge}
+                  onChange={(e) => setChildAge(e.target.value)}
+                  className="w-18 border-0 bg-background shadow-sm"
+                  data-testid="child-age-input"
+                />
+              </div>
+            )}
+
+            {/* Divider */}
+            {showCalendarToggle && (
+              <div className="hidden h-6 w-px bg-border/60 sm:block" aria-hidden="true" />
+            )}
+
+            {/* Calendar view toggle */}
+            {showCalendarToggle && (
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="calendar-view-toggle"
+                  checked={calendarView}
+                  onCheckedChange={setCalendarView}
+                />
+                <Label htmlFor="calendar-view-toggle" className="cursor-pointer text-sm whitespace-nowrap">
+                  Calendar view
+                </Label>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {filteredClasses.length === 0 ? (
         <p className="text-muted-foreground py-8 text-center text-sm">
