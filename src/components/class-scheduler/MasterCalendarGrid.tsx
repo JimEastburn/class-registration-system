@@ -8,7 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Filter } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, Filter, Search } from 'lucide-react';
 import {
   getClassesForScheduler,
   schedulerUpdateClass,
@@ -70,6 +71,7 @@ export function MasterCalendarGrid() {
   const [isSyllabusLoading, setIsSyllabusLoading] = useState(false);
 
   // Filter states
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedTeacher, setSelectedTeacher] = useState<string>('all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
 
@@ -228,7 +230,16 @@ export function MasterCalendarGrid() {
         : 'Unknown Teacher';
       if (selectedTeacher !== 'all' && teacherName !== selectedTeacher) return;
       if (selectedLocation !== 'all' && cls.location !== selectedLocation)
-        return; // Fixed: check cls.location not teacherName
+        return;
+
+      // Apply text search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = cls.name.toLowerCase().includes(query);
+        const matchesTeacher = teacherName.toLowerCase().includes(query);
+        const matchesLocation = (cls.location || '').toLowerCase().includes(query);
+        if (!matchesName && !matchesTeacher && !matchesLocation) return;
+      }
 
       // Map to UI Event
       // We use a dummy date for now since this is a pattern view,
@@ -247,7 +258,7 @@ export function MasterCalendarGrid() {
     });
 
     return mappedEvents;
-  }, [classes, selectedTeacher, selectedLocation]);
+  }, [classes, selectedTeacher, selectedLocation, searchQuery]);
 
   const handleOpenClassDialog = async (cls: ClassWithTeacher) => {
     setSelectedClass(cls);
@@ -289,6 +300,16 @@ export function MasterCalendarGrid() {
             {/* Filters */}
             <div className="flex items-center space-x-2">
               <Filter className="text-muted-foreground mr-1 h-4 w-4" />
+              <div className="relative">
+                <Search className="text-muted-foreground absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2" />
+                <Input
+                  type="text"
+                  placeholder="Search classes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-[180px] pl-8"
+                />
+              </div>
               <Select
                 value={selectedTeacher}
                 onValueChange={setSelectedTeacher}
