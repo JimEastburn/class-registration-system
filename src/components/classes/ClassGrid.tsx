@@ -13,6 +13,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { ParentCalendarGrid } from '@/components/classes/ParentCalendarGrid';
 import type { Class } from '@/types';
 
 interface ClassWithTeacher extends Class {
@@ -26,10 +29,12 @@ interface ClassWithTeacher extends Class {
 interface ClassGridProps {
   classes: ClassWithTeacher[];
   showSearch?: boolean;
+  showCalendarToggle?: boolean;
 }
 
-export function ClassGrid({ classes, showSearch = false }: ClassGridProps) {
+export function ClassGrid({ classes, showSearch = false, showCalendarToggle = false }: ClassGridProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [calendarView, setCalendarView] = useState(false);
 
   const filteredClasses = searchQuery
     ? classes.filter((cls) => {
@@ -51,6 +56,19 @@ export function ClassGrid({ classes, showSearch = false }: ClassGridProps) {
 
   return (
     <div className="space-y-4">
+      {showCalendarToggle && (
+        <div className="flex items-center gap-2">
+          <Switch
+            id="calendar-view-toggle"
+            checked={calendarView}
+            onCheckedChange={setCalendarView}
+          />
+          <Label htmlFor="calendar-view-toggle" className="cursor-pointer text-sm">
+            Show calendar view
+          </Label>
+        </div>
+      )}
+
       {showSearch && (
         <div className="flex items-center gap-3">
           <div className="relative max-w-md flex-1">
@@ -85,6 +103,8 @@ export function ClassGrid({ classes, showSearch = false }: ClassGridProps) {
         <p className="text-muted-foreground py-8 text-center text-sm">
           No classes match &ldquo;{searchQuery}&rdquo;. Try a different search term.
         </p>
+      ) : calendarView ? (
+        <ParentCalendarGrid classes={filteredClasses} />
       ) : (
         <div
           className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
