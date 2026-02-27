@@ -2,8 +2,6 @@ import Link from 'next/link';
 import {
   Users,
   BookOpen,
-  CreditCard,
-  ArrowRight,
 } from 'lucide-react';
 import {
   Card,
@@ -49,7 +47,7 @@ export default async function ParentDashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Link href="/parent/family" className="block h-full">
           <Card className="hover:border-primary/50 h-full cursor-pointer transition-colors hover:shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -79,23 +77,6 @@ export default async function ParentDashboardPage() {
                 {stats?.activeEnrollmentCount ?? 0}
               </div>
               <p className="text-muted-foreground text-xs">current classes</p>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/parent/enrollments" className="block h-full">
-          <Card className="hover:border-primary/50 h-full cursor-pointer transition-colors hover:shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Pending Payments
-              </CardTitle>
-              <CreditCard className="text-muted-foreground h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatCurrency(stats?.pendingPaymentTotal ?? 0)}
-              </div>
-              <p className="text-muted-foreground text-xs">outstanding balance</p>
             </CardContent>
           </Card>
         </Link>
@@ -138,12 +119,7 @@ export default async function ParentDashboardPage() {
                 ))}
               </div>
             )}
-            <Button variant="ghost" className="mt-4 w-full" asChild>
-              <Link href="/parent/browse">
-                Browse Classes
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
+
           </CardContent>
         </Card>
 
