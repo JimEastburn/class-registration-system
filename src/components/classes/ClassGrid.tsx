@@ -56,48 +56,51 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
 
   return (
     <div className="space-y-4">
-      {showCalendarToggle && (
-        <div className="flex items-center gap-2">
-          <Switch
-            id="calendar-view-toggle"
-            checked={calendarView}
-            onCheckedChange={setCalendarView}
-          />
-          <Label htmlFor="calendar-view-toggle" className="cursor-pointer text-sm">
-            Show calendar view
-          </Label>
-        </div>
-      )}
-
-      {showSearch && (
-        <div className="flex items-center gap-3">
-          <div className="relative max-w-md flex-1">
-            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-            <Input
-              type="text"
-              placeholder="Search by class name, teacher, day, etc."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-9"
-              data-testid="class-search-input"
+      {/* Sticky controls: pin to top when scrolling */}
+      <div className="bg-background sticky top-16 z-20 space-y-4 pb-2 pt-2">
+        {showCalendarToggle && (
+          <div className="flex items-center gap-2">
+            <Switch
+              id="calendar-view-toggle"
+              checked={calendarView}
+              onCheckedChange={setCalendarView}
             />
+            <Label htmlFor="calendar-view-toggle" className="cursor-pointer text-sm">
+              Show calendar view
+            </Label>
+          </div>
+        )}
+
+        {showSearch && (
+          <div className="flex items-center gap-3">
+            <div className="relative max-w-md flex-1">
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+              <Input
+                type="text"
+                placeholder="Search by class name, teacher, day, etc."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-9"
+                data-testid="class-search-input"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
             {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
-                aria-label="Clear search"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <span className="text-muted-foreground shrink-0 text-sm">
+                {filteredClasses.length} {filteredClasses.length === 1 ? 'class matches' : 'classes match'} your search
+              </span>
             )}
           </div>
-          {searchQuery && (
-            <span className="text-muted-foreground shrink-0 text-sm">
-              {filteredClasses.length} {filteredClasses.length === 1 ? 'class matches' : 'classes match'} your search
-            </span>
-          )}
-        </div>
-      )}
+        )}
+      </div>
 
       {filteredClasses.length === 0 ? (
         <p className="text-muted-foreground py-8 text-center text-sm">
