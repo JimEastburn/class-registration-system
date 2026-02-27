@@ -68,22 +68,22 @@ export function ParentCalendarGrid({ classes }: ParentCalendarGridProps) {
   return (
     <div className="overflow-x-auto">
       <div
-        className="bg-background min-w-[1000px] overflow-hidden rounded-md border"
+        className="bg-background min-w-[1000px] overflow-hidden rounded-md border-2 border-border/90"
         style={{
           display: 'grid',
           gridTemplateColumns: '180px 1fr 1fr 100px 1fr 1fr',
         }}
       >
         {/* Header Row */}
-        <div className="bg-muted/40 border-b border-r p-3 text-sm font-semibold">
+        <div className="bg-muted/40 border-b-2 border-r-2 border-border/90 p-3 text-sm font-semibold">
           Day
         </div>
         {COLUMNS.map((col, i) => (
           <div
             key={col}
             className={cn(
-              'bg-muted/40 border-b p-3 text-center text-sm font-semibold',
-              i < COLUMNS.length - 1 && 'border-r',
+              'bg-muted/40 border-b-2 border-border/90 p-3 text-center text-sm font-semibold',
+              i < COLUMNS.length - 1 && 'border-r-2 border-border/90',
               col === 'Lunch' && 'bg-muted/20 text-muted-foreground'
             )}
           >
@@ -99,8 +99,8 @@ export function ParentCalendarGrid({ classes }: ParentCalendarGridProps) {
               {/* Row Header */}
               <div
                 className={cn(
-                  'bg-muted/10 flex items-center border-r p-3 text-sm font-medium',
-                  !isLastRow && 'border-b'
+                  'bg-muted/10 flex items-center border-r-2 border-border/90 p-3 text-sm font-medium',
+                  !isLastRow && 'border-b-2 border-border/90'
                 )}
               >
                 {DAY_LABELS[pattern] ?? pattern}
@@ -116,8 +116,8 @@ export function ParentCalendarGrid({ classes }: ParentCalendarGridProps) {
                     key={`${pattern}::${col}`}
                     className={cn(
                       'relative',
-                      !isLastCol && 'border-r',
-                      !isLastRow && 'border-b',
+                      !isLastCol && 'border-r-2 border-border/90',
+                      !isLastRow && 'border-b-2 border-border/90',
                       isLunch && 'bg-muted/20'
                     )}
                   >
