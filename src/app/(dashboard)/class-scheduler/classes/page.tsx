@@ -1,14 +1,27 @@
-import { getClassesForScheduler } from '@/lib/actions/scheduler';
+import { getClassesForScheduler, getConflictAlerts } from '@/lib/actions/scheduler';
 import { SchedulerClassTable } from '@/components/class-scheduler/SchedulerClassTable';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 
 export default async function SchedulerClassesPage() {
-  const res = await getClassesForScheduler(1, 100);
+  const [res, conflictRes] = await Promise.all([
+    getClassesForScheduler(1, 100),
+    getConflictAlerts(),
+  ]);
 
   const classes = res.success && res.data ? res.data.classes : [];
   const count = res.success && res.data ? res.data.total : 0;
+
+  // Build a Set of class IDs involved in any conflict
+  const conflictClassIds = new Set<string>();
+  if (conflictRes.success && conflictRes.data) {
+    for (const alert of conflictRes.data) {
+      for (const cls of alert.classIds) {
+        conflictClassIds.add(cls.id);
+      }
+    }
+  }
 
   return (
     <div className="container mx-auto space-y-6 py-6">
@@ -22,7 +35,7 @@ export default async function SchedulerClassesPage() {
         </Button>
       </div>
 
-      <SchedulerClassTable classes={classes} count={count} />
+      <SchedulerClassTable classes={classes} count={count} conflictClassIds={Array.from(conflictClassIds)} />
     </div>
   );
 }

@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { Edit } from 'lucide-react';
+import { Edit, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 interface SchedulerClassTableProps {
   classes: (Class & {
@@ -22,9 +22,11 @@ interface SchedulerClassTableProps {
     };
   })[]; // Extended type
   count: number;
+  conflictClassIds?: string[];
 }
 
-export function SchedulerClassTable({ classes }: SchedulerClassTableProps) {
+export function SchedulerClassTable({ classes, conflictClassIds = [] }: SchedulerClassTableProps) {
+  const conflictSet = new Set(conflictClassIds);
   // Helper to format schedule
   const formatSchedule = (config: any) => {
     if (!config || !config.day || !config.block) return 'Unscheduled';
@@ -45,54 +47,71 @@ export function SchedulerClassTable({ classes }: SchedulerClassTableProps) {
             <TableHead>Location</TableHead>
             <TableHead>Schedule</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Conflict</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {classes.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center">
+              <TableCell colSpan={7} className="h-24 text-center">
                 No classes found.
               </TableCell>
             </TableRow>
           ) : (
-            classes.map((cls) => (
-              <TableRow key={cls.id}>
-                <TableCell className="font-medium">{cls.name}</TableCell>
-                <TableCell>
-                  {cls.teacher
-                    ? `${cls.teacher.first_name ?? ''} ${cls.teacher.last_name ?? ''}`.trim() ||
-                      cls.teacher.email
-                    : 'Unknown'}
-                </TableCell>
-                <TableCell>{cls.location || 'TBD'}</TableCell>
-                <TableCell>{formatSchedule(cls.schedule_config)}</TableCell>
-                <TableCell>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      cls.status === 'published'
-                        ? 'bg-green-100 text-green-800'
-                        : cls.status === 'draft'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {cls.status}
-                  </span>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/class-scheduler/classes/${cls.id}`}>
-                      <Edit className="h-4 w-4" />
-                      <span className="sr-only">Edit</span>
-                    </Link>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))
+            classes.map((cls) => {
+              const hasConflict = conflictSet.has(cls.id);
+              return (
+                <TableRow key={cls.id}>
+                  <TableCell className="font-medium">{cls.name}</TableCell>
+                  <TableCell>
+                    {cls.teacher
+                      ? `${cls.teacher.first_name ?? ''} ${cls.teacher.last_name ?? ''}`.trim() ||
+                        cls.teacher.email
+                      : 'Unknown'}
+                  </TableCell>
+                  <TableCell>{cls.location || 'TBD'}</TableCell>
+                  <TableCell>{formatSchedule(cls.schedule_config)}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        cls.status === 'published'
+                          ? 'bg-green-100 text-green-800'
+                          : cls.status === 'draft'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
+                      {cls.status}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    {hasConflict ? (
+                      <span className="inline-flex items-center gap-1 text-destructive text-xs font-medium">
+                        <AlertTriangle className="h-4 w-4" />
+                        Yes
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-green-600 text-xs">
+                        <CheckCircle2 className="h-4 w-4 opacity-40" />
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href={`/class-scheduler/classes/${cls.id}`}>
+                        <Edit className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>
     </div>
   );
 }
+
