@@ -50,12 +50,13 @@ export async function getSchedulerStats(): Promise<
 
     if (totalError) throw totalError;
 
-    // 2. Unscheduled (draft)
+    // 2. Unscheduled (no day/block assigned)
     const { count: unscheduledCount, error: unscheduledError } =
       await adminClient
         .from('classes')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'draft');
+        .is('day', null)
+        .neq('status', 'cancelled');
 
     if (unscheduledError) throw unscheduledError;
 
@@ -523,7 +524,8 @@ export async function getUnscheduledClasses(
     const { data, error } = await adminClient
       .from('classes')
       .select('*')
-      .eq('status', 'draft')
+      .is('day', null)
+      .neq('status', 'cancelled')
       .order('created_at', { ascending: false })
       .limit(limit);
 

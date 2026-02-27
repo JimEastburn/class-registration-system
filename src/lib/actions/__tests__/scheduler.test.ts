@@ -67,10 +67,12 @@ describe('Scheduler Actions', () => {
             };
           }
           if (adminFromCallCount.n === 2) {
-            // Unscheduled classes count (eq 'draft')
+            // Unscheduled classes count (is 'day' null, neq 'cancelled')
             return {
               select: vi.fn().mockReturnValue({
-                eq: vi.fn().mockResolvedValue({ count: 3, error: null }),
+                is: vi.fn().mockReturnValue({
+                  neq: vi.fn().mockResolvedValue({ count: 3, error: null }),
+                }),
               }),
             };
           }
@@ -133,11 +135,11 @@ describe('Scheduler Actions', () => {
     });
   });
 
-  describe('getUnscheduledClasses', () => {
-    it('should return list of draft classes', async () => {
+   describe('getUnscheduledClasses', () => {
+    it('should return list of unscheduled classes (no day assigned)', async () => {
       // getUnscheduledClasses flow:
       // 1. createClient() -> auth + role='class_scheduler'
-      // 2. createAdminClient() -> fetch classes eq('status','draft').order().limit()
+      // 2. createAdminClient() -> fetch classes is('day', null).neq('status','cancelled').order().limit()
 
       const mockUserClient = {
         auth: {
@@ -160,16 +162,18 @@ describe('Scheduler Actions', () => {
         }),
       };
 
-      const mockClasses = [{ id: '1', name: 'Draft Class', status: 'draft' }];
+      const mockClasses = [{ id: '1', name: 'Unscheduled Class', status: 'draft', day: null, block: null }];
 
       const mockAdminClient = {
         from: vi.fn().mockReturnValue({
           select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi
-                  .fn()
-                  .mockResolvedValue({ data: mockClasses, error: null }),
+            is: vi.fn().mockReturnValue({
+              neq: vi.fn().mockReturnValue({
+                order: vi.fn().mockReturnValue({
+                  limit: vi
+                    .fn()
+                    .mockResolvedValue({ data: mockClasses, error: null }),
+                }),
               }),
             }),
           }),
@@ -184,7 +188,7 @@ describe('Scheduler Actions', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data).toHaveLength(1);
-        expect(result.data[0].name).toBe('Draft Class');
+        expect(result.data[0].name).toBe('Unscheduled Class');
       }
     });
   });
