@@ -1,4 +1,5 @@
 import { getAllClasses } from '@/lib/actions/classes';
+import { getConflictAlerts } from '@/lib/actions/scheduler';
 import AdminClassTable from '@/components/admin/AdminClassTable';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -18,7 +19,10 @@ export default async function AdminClassesPage({
   const search = params.search || undefined;
   const limit = 20;
 
-  const result = await getAllClasses({ page, limit, search });
+  const [result, conflictRes] = await Promise.all([
+    getAllClasses({ page, limit, search }),
+    getConflictAlerts(),
+  ]);
 
   if (!result.success) {
     return (
@@ -30,6 +34,16 @@ export default async function AdminClassesPage({
   }
 
   const { classes, total } = result.data;
+
+  // Build a Set of class IDs involved in any conflict
+  const conflictClassIds = new Set<string>();
+  if (conflictRes.success && conflictRes.data) {
+    for (const alert of conflictRes.data) {
+      for (const cls of alert.classIds) {
+        conflictClassIds.add(cls.id);
+      }
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -53,6 +67,7 @@ export default async function AdminClassesPage({
         total={total}
         currentPage={page}
         limit={limit}
+        conflictClassIds={Array.from(conflictClassIds)}
       />
     </div>
   );

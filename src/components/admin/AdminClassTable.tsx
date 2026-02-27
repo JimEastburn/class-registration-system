@@ -9,20 +9,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit, Trash2, Eye, ChevronLeft, ChevronRight, AlertTriangle, CheckCircle2, Search } from 'lucide-react';
 import Link from 'next/link';
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { adminDeleteClass } from '@/lib/actions/classes';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
 interface AdminClassTableProps {
   initialClasses: ClassWithTeacher[];
   total: number;
   currentPage: number;
   limit: number;
+  conflictClassIds?: string[];
 }
 
 export default function AdminClassTable({
@@ -30,9 +32,26 @@ export default function AdminClassTable({
   total,
   currentPage,
   limit,
+  conflictClassIds = [],
 }: AdminClassTableProps) {
+  const conflictSet = new Set(conflictClassIds);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
+  const [search, setSearch] = useState(searchParams.get('search') || '');
+
+  const handleSearch = (term: string) => {
+    setSearch(term);
+    const params = new URLSearchParams(searchParams.toString());
+    if (term) {
+      params.set('search', term);
+    } else {
+      params.delete('search');
+    }
+    params.set('page', '1');
+    router.replace(`${pathname}?${params.toString()}`);
+  };
 
   const handleDelete = (classId: string) => {
     // In a real app, use a proper Dialog component instead of confirm
@@ -53,7 +72,29 @@ export default function AdminClassTable({
   const showPagination = totalPages > 1;
 
   return (
-    <div className="rounded-md border">
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="relative max-w-sm flex-1">
+          <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
+          <Input
+            placeholder="Search classes..."
+            className="pl-8"
+            data-testid="class-search-input"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleSearch(search);
+              }
+            }}
+          />
+        </div>
+        <Button variant="outline" onClick={() => handleSearch(search)}>
+          Search
+        </Button>
+      </div>
+
+      <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -62,6 +103,7 @@ export default function AdminClassTable({
             <TableHead>Status</TableHead>
             <TableHead>Capacity</TableHead>
             <TableHead>Price</TableHead>
+            <TableHead>Conflict</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -69,7 +111,7 @@ export default function AdminClassTable({
           {initialClasses.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={6}
+                colSpan={7}
                 className="text-muted-foreground h-24 text-center"
               >
                 No classes found.
@@ -99,6 +141,18 @@ export default function AdminClassTable({
                 </TableCell>
                 <TableCell>{cls.capacity}</TableCell>
                 <TableCell>$30.00</TableCell>
+                <TableCell>
+                  {conflictSet.has(cls.id) ? (
+                    <span className="inline-flex items-center gap-1 text-destructive text-xs font-medium">
+                      <AlertTriangle className="h-4 w-4" />
+                      Yes
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-green-600 text-xs">
+                      <CheckCircle2 className="h-4 w-4 opacity-40" />
+                    </span>
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button variant="ghost" size="icon" asChild>
@@ -136,7 +190,7 @@ export default function AdminClassTable({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push(`?page=${currentPage - 1}`)}
+              onClick={() => { const p = new URLSearchParams(searchParams.toString()); p.set('page', String(currentPage - 1)); router.push(`${pathname}?${p.toString()}`); }}
               disabled={currentPage <= 1}
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
@@ -148,7 +202,7 @@ export default function AdminClassTable({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push(`?page=${currentPage + 1}`)}
+              onClick={() => { const p = new URLSearchParams(searchParams.toString()); p.set('page', String(currentPage + 1)); router.push(`${pathname}?${p.toString()}`); }}
               disabled={currentPage >= totalPages}
             >
               Next
@@ -162,6 +216,7 @@ export default function AdminClassTable({
           Total Classes: {total}
         </div>
       )}
+      </div>
     </div>
   );
 }
