@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { UserPermissionsEditor } from '@/components/admin/UserPermissionsEditor';
 
 export default async function UserDetailPage({
   params,
@@ -77,12 +78,6 @@ export default async function UserDetailPage({
               <span>{profile.email}</span>
             </div>
             <div className="flex justify-between border-b pb-2">
-              <span className="font-medium">Role</span>
-              <Badge variant="outline" className="capitalize">
-                {profile.role}
-              </Badge>
-            </div>
-            <div className="flex justify-between border-b pb-2">
               <span className="font-medium">Joined</span>
               <span>
                 {profile.created_at
@@ -90,6 +85,19 @@ export default async function UserDetailPage({
                   : 'N/A'}
               </span>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Permissions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <UserPermissionsEditor
+              userId={profile.id}
+              currentRole={profile.role}
+              isParent={profile.is_parent}
+            />
           </CardContent>
         </Card>
 

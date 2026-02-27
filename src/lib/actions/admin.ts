@@ -258,6 +258,50 @@ export async function updateUserRole(
   }
 }
 
+// updateParentStatus
+export async function updateParentStatus(
+  targetUserId: string,
+  isParent: boolean
+): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    const { data: adminProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    if (!adminProfile || !['admin', 'super_admin'].includes(adminProfile.role))
+      return { success: false, error: 'Unauthorized' };
+
+    const db = await createAdminClient();
+
+    const { error } = await db
+      .from('profiles')
+      .update({ is_parent: isParent })
+      .eq('id', targetUserId);
+    if (error) throw error;
+
+    await logAuditAction(
+      user.id,
+      'update_parent_status',
+      'profile',
+      targetUserId,
+      { is_parent: isParent }
+    );
+
+    revalidatePath('/', 'layout');
+    return { success: true, error: null };
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: 'Failed to update parent status' };
+  }
+}
+
 // 8.2.7 deleteUser
 export async function deleteUser(
   targetUserId: string

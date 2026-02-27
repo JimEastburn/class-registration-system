@@ -1,0 +1,113 @@
+'use client';
+
+import { UserRole } from '@/types';
+import { UserRoleSelect } from './UserRoleSelect';
+import { ChangeRoleDialog } from './ChangeRoleDialog';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useState } from 'react';
+import { updateParentStatus } from '@/lib/actions/admin';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+
+interface UserPermissionsEditorProps {
+  userId: string;
+  currentRole: UserRole;
+  isParent: boolean;
+}
+
+export function UserPermissionsEditor({
+  userId,
+  currentRole,
+  isParent,
+}: UserPermissionsEditorProps) {
+  const router = useRouter();
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
+  const [parentToggleLoading, setParentToggleLoading] = useState(false);
+  const [localIsParent, setLocalIsParent] = useState(isParent);
+
+  const handleRoleChange = (newRole: UserRole) => {
+    if (newRole === currentRole) return;
+    setPendingRole(newRole);
+    setRoleDialogOpen(true);
+  };
+
+  const handleParentToggle = async (checked: boolean) => {
+    setParentToggleLoading(true);
+    setLocalIsParent(checked); // optimistic
+    try {
+      const { success, error } = await updateParentStatus(userId, checked);
+      if (success) {
+        toast.success(
+          checked ? 'Parent access enabled' : 'Parent access disabled'
+        );
+        router.refresh();
+      } else {
+        setLocalIsParent(!checked); // revert
+        toast.error(error || 'Failed to update parent status');
+      }
+    } catch {
+      setLocalIsParent(!checked); // revert
+      toast.error('An unexpected error occurred');
+    } finally {
+      setParentToggleLoading(false);
+    }
+  };
+
+  // Don't show is_parent toggle for users whose role is already 'parent'
+  const showParentToggle = currentRole !== 'parent';
+
+  return (
+    <div className="space-y-4">
+      {/* Role selector */}
+      <div className="flex items-center justify-between border-b pb-2">
+        <span className="font-medium">Role</span>
+        <UserRoleSelect
+          currentRole={currentRole}
+          onRoleChange={handleRoleChange}
+        />
+      </div>
+
+      {/* Parent access toggle */}
+      {showParentToggle && (
+        <div className="flex items-center justify-between border-b pb-2">
+          <div className="space-y-0.5">
+            <Label htmlFor="parent-toggle" className="text-sm font-medium">
+              Parent Access
+            </Label>
+            <p className="text-muted-foreground text-xs">
+              Allow this user to manage family members and enroll students
+            </p>
+          </div>
+          <Switch
+            id="parent-toggle"
+            checked={localIsParent}
+            onCheckedChange={handleParentToggle}
+            disabled={parentToggleLoading}
+            data-testid="parent-access-toggle"
+          />
+        </div>
+      )}
+
+      {/* Role change confirmation dialog */}
+      {pendingRole && (
+        <ChangeRoleDialog
+          open={roleDialogOpen}
+          onOpenChange={(open) => {
+            setRoleDialogOpen(open);
+            if (!open) setPendingRole(null);
+          }}
+          userId={userId}
+          currentRole={currentRole}
+          newRole={pendingRole}
+          onSuccess={() => {
+            setPendingRole(null);
+            setRoleDialogOpen(false);
+            router.refresh();
+          }}
+        />
+      )}
+    </div>
+  );
+}

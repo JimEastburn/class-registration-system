@@ -134,7 +134,12 @@ export function UserManagementTable({
               </TableRow>
             ) : (
               users.map((user) => (
-                <TableRow key={user.id} data-testid={`user-row-${user.id}`}>
+                <TableRow
+                  key={user.id}
+                  data-testid={`user-row-${user.id}`}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/admin/users/${user.id}`)}
+                >
                   <TableCell>
                     <div>
                       <div className="font-medium">
@@ -142,7 +147,7 @@ export function UserManagementTable({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <UserRoleSelect
                       currentRole={user.role}
                       onRoleChange={(role) => onRoleChangeRequest(user, role)}
@@ -152,7 +157,7 @@ export function UserManagementTable({
                   <TableCell>
                     {new Date(user.created_at).toLocaleDateString()}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <Button
                       variant="ghost"
                       size="icon"

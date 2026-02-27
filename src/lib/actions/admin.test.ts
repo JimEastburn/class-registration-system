@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   updateUserRole,
+  updateParentStatus,
   deleteUser,
   getSystemStats,
 } from '@/lib/actions/admin';
@@ -193,6 +194,60 @@ describe('Admin Actions', () => {
       expect(result.error).toBeNull();
       expect(result.data?.totalRevenue).toBe(60); // $30 + $30 = $60, NOT $0.60
       expect(result.data?.totalRevenue).not.toBe(0.6);
+    });
+  });
+
+  describe('updateParentStatus', () => {
+    it('allows admin to toggle is_parent', async () => {
+      // Mock Admin Check
+      mockSupabase.from.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi
+              .fn()
+              .mockResolvedValue({ data: { role: 'admin' }, error: null }),
+          }),
+        }),
+      });
+
+      // Mock Update
+      mockSupabase.from.mockReturnValueOnce({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: null }),
+        }),
+      });
+
+      const result = await updateParentStatus('user-456', true);
+      expect(result.success).toBe(true);
+      expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
+    });
+
+    it('denies non-admin users', async () => {
+      // Mock Admin Check (returns teacher role)
+      mockSupabase.from.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi
+              .fn()
+              .mockResolvedValue({ data: { role: 'teacher' }, error: null }),
+          }),
+        }),
+      });
+
+      const result = await updateParentStatus('user-456', true);
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Unauthorized');
+    });
+
+    it('denies unauthenticated users', async () => {
+      mockSupabase.auth.getUser.mockResolvedValueOnce({
+        data: { user: null },
+        error: null,
+      });
+
+      const result = await updateParentStatus('user-456', true);
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Not authenticated');
     });
   });
 });
