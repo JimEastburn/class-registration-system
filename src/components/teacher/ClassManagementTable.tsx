@@ -8,10 +8,8 @@ import {
   Eye,
   Edit,
   Trash2,
-  Send,
   CheckCircle,
   XCircle,
-  Users,
 } from 'lucide-react';
 import {
   Table,
@@ -45,7 +43,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { Class } from '@/types';
 import {
   deleteClass,
-  publishClass,
   cancelClass,
   completeClass,
 } from '@/lib/actions/classes';
@@ -83,7 +80,7 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
     null
   );
   const [actionType, setActionType] = useState<
-    'delete' | 'publish' | 'cancel' | 'complete' | null
+    'delete' | 'cancel' | 'complete' | null
   >(null);
 
   const handleAction = async () => {
@@ -95,9 +92,7 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
         case 'delete':
           result = await deleteClass(selectedClass.id);
           break;
-        case 'publish':
-          result = await publishClass(selectedClass.id);
-          break;
+
         case 'cancel':
           result = await cancelClass(selectedClass.id);
           break;
@@ -136,11 +131,7 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
               ? `Are you sure you want to permanently delete "${selectedClass.name}"? This action cannot be undone.`
               : `"${selectedClass.name}" will be cancelled. This action cannot be undone.`,
         };
-      case 'publish':
-        return {
-          title: 'Publish Class',
-          description: `Are you sure you want to publish "${selectedClass.name}"? Students will be able to enroll once published.`,
-        };
+
       case 'cancel':
         return {
           title: 'Cancel Class',
@@ -243,14 +234,7 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
                           </span>
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/teacher/classes/${cls.id}`}>
-                          <span className="flex items-center">
-                            <Users className="mr-2 h-4 w-4" />
-                            View Roster
-                          </span>
-                        </Link>
-                      </DropdownMenuItem>
+
                       <DropdownMenuItem asChild>
                         <Link href={`/teacher/classes/${cls.id}/edit`}>
                           <span className="flex items-center">
@@ -260,14 +244,7 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      {cls.status === 'draft' && (
-                        <DropdownMenuItem
-                          onClick={() => openConfirmDialog(cls, 'publish')}
-                        >
-                          <Send className="mr-2 h-4 w-4" />
-                          Publish
-                        </DropdownMenuItem>
-                      )}
+
                       {cls.status === 'published' && (
                         <>
                           <DropdownMenuItem
