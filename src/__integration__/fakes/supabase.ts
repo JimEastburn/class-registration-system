@@ -1,19 +1,37 @@
-import { vi } from 'vitest';
 
 /**
  * A fake Supabase client for integration testing.
  * Stores data in-memory and mimics basic Supabase query syntax.
+ *
+ * Supports:
+ * - Basic CRUD (insert, update, delete, select)
+ * - Filtering (eq, neq, in, gt, gte, lt, lte, ilike, or)
+ * - Modifiers (order, limit, single, maybeSingle)
+ * - Count/head queries: select('*', { count: 'exact', head: true })
+ * - Relational joins: select('id, classes(name, price)')
+ * - Inner joins: select('id, classes!inner(name)')
+ * - Dot-path filters on joins: .gte('classes.start_date', '2026-01-01')
  */
-export class SupabaseFake {
-  private db: Record<string, any[]>;
-  private authUser: any | null = null;
 
-  constructor(initialData: Record<string, any[]> = {}) {
-    this.db = JSON.parse(JSON.stringify(initialData)); // Deep copy to avoid reference issues
+/** Naive singularizer for FK column derivation: classes→class, profiles→profile */
+function singularize(tableName: string): string {
+  if (tableName.endsWith('ies')) return tableName.slice(0, -3) + 'y';
+  if (tableName.endsWith('sses')) return tableName.slice(0, -2);
+  if (tableName.endsWith('ses')) return tableName.slice(0, -2);
+  if (tableName.endsWith('s')) return tableName.slice(0, -1);
+  return tableName;
+}
+export class SupabaseFake {
+  // Exposed for FakeQueryBuilder to access related tables
+  db: Record<string, Record<string, unknown>[]>;
+  private authUser: Record<string, unknown> | null = null;
+
+  constructor(initialData: Record<string, Record<string, unknown>[]> = {}) {
+    this.db = JSON.parse(JSON.stringify(initialData));
   }
 
   /* Auth Helpers */
-  setAuthUser(user: any) {
+  setAuthUser(user: Record<string, unknown>) {
     this.authUser = user;
   }
 
@@ -23,7 +41,6 @@ export class SupabaseFake {
       error: this.authUser ? null : { message: 'Not authenticated' },
     }),
     signInWithPassword: async ({ email }: { email: string }) => {
-      // Mock simple signin
       const user = { id: 'mock-user-id', email };
       this.authUser = user;
       return { data: { user }, error: null };
@@ -45,59 +62,69 @@ export class SupabaseFake {
   }
 }
 
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+interface SelectOptions {
+  count?: 'exact';
+  head?: boolean;
+}
+
+/** Parsed relation from select string, e.g. `classes!inner(name, price)` */
+interface ParsedRelation {
+  /** The table name (e.g. "classes") */
+  table: string;
+  /** Column(s) requested from the related table */
+  columns: string;
+  /** Whether !inner join semantics apply */
+  inner: boolean;
+}
+
+// ─── Query Builder ──────────────────────────────────────────────────────────
+
 class FakeQueryBuilder {
-  private data: any[];
-  private error: any | null = null;
+  private data: Record<string, unknown>[];
   private tableName: string;
   private client: SupabaseFake;
   private selectQuery: string | null = null;
-  private modifiers: ((data: any[]) => any[])[] = [];
+  private selectOpts: SelectOptions = {};
+  private modifiers: ((data: Record<string, unknown>[]) => Record<string, unknown>[])[] = [];
+  private _pendingUpdate: Record<string, unknown> | null = null;
+  private _pendingDelete = false;
 
-  constructor(data: any[], tableName: string, client: SupabaseFake) {
+  constructor(
+    data: Record<string, unknown>[],
+    tableName: string,
+    client: SupabaseFake,
+  ) {
     this.data = [...data];
     this.tableName = tableName;
     this.client = client;
   }
 
-  select(query = '*') {
+  select(query = '*', opts: SelectOptions = {}) {
     this.selectQuery = query;
+    this.selectOpts = opts;
     return this;
   }
 
-  insert(record: any) {
-    // Basic insert mock
-    // In a real implementation this would maintain state, but for simple mocks
-    // we often just want success or return data.
-    // However, for integration tests, stateful is better.
-
-    // Check if db table exists, if not create it
-    if (!this.client['db'][this.tableName]) {
-      this.client['db'][this.tableName] = [];
+  insert(record: Record<string, unknown> | Record<string, unknown>[]) {
+    if (!this.client.db[this.tableName]) {
+      this.client.db[this.tableName] = [];
     }
 
     const records = Array.isArray(record) ? record : [record];
     const newRecords = records.map((r) => ({
       ...r,
-      id: r.id || crypto.randomUUID(),
-      created_at: new Date().toISOString(),
+      id: r.id ?? crypto.randomUUID(),
+      created_at: (r.created_at as string) ?? new Date().toISOString(),
     }));
 
-    this.client['db'][this.tableName].push(...newRecords);
-
-    // Update local data for subsequent selects in this chain (if valid)
+    this.client.db[this.tableName].push(...newRecords);
     this.data = newRecords;
-
     return this;
   }
 
-  update(updates: any) {
-    this.modifiers.push((currentData) => {
-      // This is tricky because updates usually depend on filters applied AFTER .update()
-      // But Supabase chaining is .update().eq()
-      // So we really need to delay execution until 'then'
-      return currentData;
-    });
-    // We store the updates to apply at the end
+  update(updates: Record<string, unknown>) {
     this._pendingUpdate = updates;
     return this;
   }
@@ -107,67 +134,83 @@ class FakeQueryBuilder {
     return this;
   }
 
-  eq(column: string, value: any) {
-    this.modifiers.push((rows) => rows.filter((row) => row[column] === value));
+  // ── Filter methods ──────────────────────────────────────────────────────
+
+  eq(column: string, value: unknown) {
+    if (column.includes('.')) {
+      this._addDotPathFilter(column, (v) => v === value);
+    } else {
+      this.modifiers.push((rows) => rows.filter((row) => row[column] === value));
+    }
     return this;
   }
 
-  neq(column: string, value: any) {
+  neq(column: string, value: unknown) {
     this.modifiers.push((rows) => rows.filter((row) => row[column] !== value));
     return this;
   }
 
-  in(column: string, values: any[]) {
+  in(column: string, values: unknown[]) {
     this.modifiers.push((rows) =>
-      rows.filter((row) => values.includes(row[column]))
+      rows.filter((row) => values.includes(row[column])),
     );
     return this;
   }
 
-  gt(column: string, value: any) {
-    this.modifiers.push((rows) => rows.filter((row) => row[column] > value));
+  gt(column: string, value: unknown) {
+    this.modifiers.push((rows) =>
+      rows.filter((row) => (row[column] as number) > (value as number)),
+    );
     return this;
   }
 
-  gte(column: string, value: any) {
-    this.modifiers.push((rows) => rows.filter((row) => row[column] >= value));
+  gte(column: string, value: unknown) {
+    if (column.includes('.')) {
+      this._addDotPathFilter(column, (v) => String(v) >= String(value));
+    } else {
+      this.modifiers.push((rows) =>
+        rows.filter((row) => (row[column] as number) >= (value as number)),
+      );
+    }
     return this;
   }
 
-  lt(column: string, value: any) {
-    this.modifiers.push((rows) => rows.filter((row) => row[column] < value));
+  lt(column: string, value: unknown) {
+    this.modifiers.push((rows) =>
+      rows.filter((row) => (row[column] as number) < (value as number)),
+    );
     return this;
   }
 
-  lte(column: string, value: any) {
-    this.modifiers.push((rows) => rows.filter((row) => row[column] <= value));
+  lte(column: string, value: unknown) {
+    this.modifiers.push((rows) =>
+      rows.filter((row) => (row[column] as number) <= (value as number)),
+    );
     return this;
   }
 
   ilike(column: string, pattern: string) {
     const regex = new RegExp(pattern.replace(/%/g, '.*'), 'i');
     this.modifiers.push((rows) =>
-      rows.filter((row) => regex.test(row[column]))
+      rows.filter((row) => regex.test(row[column] as string)),
     );
     return this;
   }
 
-  or(filterStr: string) {
-    // Very basic implementation of OR, simplistic parsing
-    // Assuming 'col.ilike.val,col2.eq.val' for now only as per usage in classes.ts
-    // In reality Supabase OR syntax is complex.
-    // We will just return everything for now to avoid breaking tests if OR is complex
-    // Or simple filter if we can.
+  or(_filterStr: string) {
+    // Basic no-op; returns all rows. Sufficient for current test needs.
     return this;
   }
+
+  // ── Modifier methods ──────────────────────────────────────────────────
 
   order(column: string, { ascending = true } = {}) {
     this.modifiers.push((rows) =>
       [...rows].sort((a, b) => {
-        if (a[column] < b[column]) return ascending ? -1 : 1;
-        if (a[column] > b[column]) return ascending ? 1 : -1;
+        if ((a[column] as number) < (b[column] as number)) return ascending ? -1 : 1;
+        if ((a[column] as number) > (b[column] as number)) return ascending ? 1 : -1;
         return 0;
-      })
+      }),
     );
     return this;
   }
@@ -179,108 +222,232 @@ class FakeQueryBuilder {
 
   single() {
     this.modifiers.push((rows) => {
-      if (rows.length === 0)
-        throw new Error(
-          'JSON object requested, multiple (or no) rows returned'
-        );
-      if (rows.length > 1)
-        throw new Error(
-          'JSON object requested, multiple (or no) rows returned'
-        );
-      return rows[0];
+      if (rows.length !== 1) {
+        throw new Error('JSON object requested, multiple (or no) rows returned');
+      }
+      return rows[0] as unknown as Record<string, unknown>[];
     });
     return this;
   }
 
   maybeSingle() {
     this.modifiers.push((rows) => {
-      if (rows.length === 0) return null;
-      if (rows.length > 1)
+      if (rows.length === 0) return null as unknown as Record<string, unknown>[];
+      if (rows.length > 1) {
         throw new Error('JSON object requested, multiple rows returned');
-      return rows[0];
+      }
+      return rows[0] as unknown as Record<string, unknown>[];
     });
     return this;
   }
 
-  // Private state for mutations
-  private _pendingUpdate: any = null;
-  private _pendingDelete: boolean = false;
+  // ── Thenable (makes query awaitable) ──────────────────────────────────
 
   then(
-    resolve: (result: { data: any; error: any; count?: number }) => void,
-    reject: (err: any) => void
+    resolve: (result: { data: unknown; error: unknown; count?: number }) => void,
+    _reject?: (err: unknown) => void,
   ) {
     setTimeout(() => {
       try {
-        let result = this.data;
+        let result: Record<string, unknown>[] = this.data;
 
-        // 1. Filter finding the rows to operate on
-        // Note: This logic assumes we are filtering strict equality for Filter modifiers
-        // In reality, .update() applies to rows matching the filters.
-
-        // If it's a read query, we just pipe through modifiers
-        if (!this._pendingUpdate && !this._pendingDelete) {
+        // ── Mutations ────────────────────────────────────────────────
+        if (this._pendingUpdate || this._pendingDelete) {
+          let rowsToMatch = [...(this.client.db[this.tableName] || [])];
           for (const mod of this.modifiers) {
-            try {
-              result = mod(result);
-            } catch (e: any) {
-              if (e.message.includes('multiple (or no) rows')) {
-                resolve({
-                  data: null,
-                  error: {
-                    message: 'PGRST116',
-                    code: 'PGRST116',
-                    details: e.message,
-                  },
-                });
-                return;
-              }
-              throw e;
-            }
+            rowsToMatch = mod(rowsToMatch);
           }
-          resolve({ data: result, error: null });
+          const matchingIds = new Set(rowsToMatch.map((r) => r.id));
+
+          if (this._pendingDelete) {
+            this.client.db[this.tableName] = (
+              this.client.db[this.tableName] || []
+            ).filter((r) => !matchingIds.has(r.id));
+            resolve({ data: null, error: null });
+          } else if (this._pendingUpdate) {
+            this.client.db[this.tableName] = (
+              this.client.db[this.tableName] || []
+            ).map((r) =>
+              matchingIds.has(r.id) ? { ...r, ...this._pendingUpdate } : r,
+            );
+            resolve({ data: null, error: null });
+          }
           return;
         }
 
-        // Mutation Logic (Update/Delete)
-        // We need to apply filters to find IDs of rows to mutate in the REAL store
-        // Then mutate them.
+        // ── Read path ────────────────────────────────────────────────
 
-        // Clone the full table data to apply filters to find matching indices/IDs
-        let rowsToMatch = [...this.client['db'][this.tableName]];
+        // Parse relational joins from select query
+        const relations = this._parseRelations(this.selectQuery || '*');
 
-        // Apply filters to find matches
+        // Apply non-join modifiers (eq, in, etc.)
         for (const mod of this.modifiers) {
-          rowsToMatch = mod(rowsToMatch);
-        }
-
-        const matchingIds = new Set(rowsToMatch.map((r) => r.id));
-
-        if (this._pendingDelete) {
-          this.client['db'][this.tableName] = this.client['db'][
-            this.tableName
-          ].filter((r) => !matchingIds.has(r.id));
-          resolve({ data: null, error: null });
-        } else if (this._pendingUpdate) {
-          this.client['db'][this.tableName] = this.client['db'][
-            this.tableName
-          ].map((r) => {
-            if (matchingIds.has(r.id)) {
-              return { ...r, ...this._pendingUpdate };
+          try {
+            result = mod(result);
+          } catch (e: unknown) {
+            const msg = (e as Error).message;
+            if (msg.includes('multiple (or no) rows')) {
+              resolve({
+                data: null,
+                error: { message: 'PGRST116', code: 'PGRST116', details: msg },
+              });
+              return;
             }
-            return r;
-          });
-          resolve({ data: null, error: null });
+            throw e;
+          }
         }
-      } catch (e: any) {
-        resolve({ data: null, error: { message: e.message } });
+
+        // Resolve relational joins
+        if (relations.length > 0) {
+          result = this._resolveRelations(result, relations);
+        }
+
+        // Count/head mode
+        if (this.selectOpts.head) {
+          resolve({
+            data: null,
+            error: null,
+            count: Array.isArray(result) ? result.length : 0,
+          });
+          return;
+        }
+
+        resolve({ data: result, error: null });
+      } catch (e: unknown) {
+        resolve({ data: null, error: { message: (e as Error).message } });
       }
     }, 0);
+  }
 
-    // We return the promise interface implicitly by calling resolve/reject immediately (or via timeout)
-    // But actually `then` needs to satisfy PromiseLike.
+  // ── Private helpers ───────────────────────────────────────────────────
+
+  /**
+   * Parse select string for relational patterns like `classes(name, price)` or
+   * `classes!inner(name, profiles(first_name, last_name))`.
+   */
+  private _parseRelations(query: string): ParsedRelation[] {
+    const relations: ParsedRelation[] = [];
+    // Match: tableName!inner(columns) or tableName(columns)
+    // Columns can include nested relations, so we need balanced paren matching
+    const regex = /(\w+)(!inner)?\(/g;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(query)) !== null) {
+      const table = match[1];
+      const inner = match[2] === '!inner';
+      const startIdx = regex.lastIndex; // position after '('
+
+      // Find the matching closing paren (handle nesting)
+      let depth = 1;
+      let endIdx = startIdx;
+      while (depth > 0 && endIdx < query.length) {
+        if (query[endIdx] === '(') depth++;
+        if (query[endIdx] === ')') depth--;
+        if (depth > 0) endIdx++;
+      }
+
+      const columns = query.substring(startIdx, endIdx);
+      relations.push({ table, columns, inner });
+    }
+
+    return relations;
+  }
+
+  /**
+   * For each row, resolve FK relations by looking up `<table>_id` in the row
+   * and finding the matching record in the related table.
+   */
+  private _resolveRelations(
+    rows: Record<string, unknown>[],
+    relations: ParsedRelation[],
+  ): Record<string, unknown>[] {
+    let result = rows.map((row) => {
+      const enriched = { ...row };
+      for (const rel of relations) {
+        const relatedTable = this.client.db[rel.table] || [];
+
+        // 1. Standard FK: row.<singularTable>_id → related.id
+        const standardFk = row[`${singularize(rel.table)}_id`] ?? row[`${rel.table}_id`];
+        let related = standardFk != null
+          ? relatedTable.find((r) => r.id === standardFk)
+          : null;
+
+        // 2. Fallback: try matching via <singularParent>_id on the child table
+        if (!related && row.id != null) {
+          const singularParent = singularize(this.tableName);
+          related = relatedTable.find((r) => r[`${singularParent}_id`] === row.id) ?? null;
+        }
+
+        // 3. Broader scan: try any _id column on the row that matches a record in the related table
+        //    This handles cases like classes.teacher_id → profiles.id
+        if (!related) {
+          for (const [key, val] of Object.entries(row)) {
+            if (key.endsWith('_id') && val != null) {
+              const match = relatedTable.find((r) => r.id === val);
+              if (match) {
+                related = match;
+                break;
+              }
+            }
+          }
+        }
+
+        if (related) {
+          // Pick only requested columns, resolving nested relations
+          const nestedRelations = this._parseRelations(rel.columns);
+          const requestedCols = rel.columns
+            .replace(/\w+(!inner)?\([^)]*\)/g, '') // remove nested relation patterns
+            .split(',')
+            .map((c) => c.trim())
+            .filter(Boolean);
+
+          const picked: Record<string, unknown> = {};
+          for (const col of requestedCols) {
+            picked[col] = related[col];
+          }
+
+          // Resolve nested relations recursively
+          if (nestedRelations.length > 0) {
+            const resolved = this._resolveRelations([related], nestedRelations);
+            for (const nr of nestedRelations) {
+              picked[nr.table] = resolved[0]?.[nr.table] ?? null;
+            }
+          }
+
+          enriched[rel.table] = picked;
+        } else {
+          enriched[rel.table] = null;
+        }
+      }
+      return enriched;
+    });
+
+    // Filter out rows with null joins when !inner
+    for (const rel of relations) {
+      if (rel.inner) {
+        result = result.filter((row) => row[rel.table] != null);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Add a filter for dot-path column references like `classes.start_date`.
+   * These filter on already-resolved join data.
+   */
+  private _addDotPathFilter(dotPath: string, predicate: (val: unknown) => boolean) {
+    const [table, column] = dotPath.split('.');
+    this.modifiers.push((rows) =>
+      rows.filter((row) => {
+        // The join data might not be resolved yet at filter time,
+        // so look it up directly from the FK
+        const fk = row[`${singularize(table)}_id`] ?? row[`${table}_id`];
+        const relatedTable = this.client.db[table] || [];
+        const related = relatedTable.find((r) => r.id === fk);
+        if (!related) return false;
+        return predicate(related[column]);
+      }),
+    );
   }
 }
-
-// To make it awaitable, we can also wrap it in a real promise for clean tests if needed
-// But typically Supabase QueryBuilder is "thenable"

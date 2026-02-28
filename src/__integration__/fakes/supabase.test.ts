@@ -138,6 +138,122 @@ describe('SupabaseFake', () => {
     });
   });
 
+  describe('Count / Head Queries', () => {
+    beforeEach(async () => {
+      await client.from('items').insert([
+        { id: '1', val: 10, name: 'A' },
+        { id: '2', val: 20, name: 'B' },
+        { id: '3', val: 30, name: 'C' },
+      ]);
+    });
+
+    it('should return count when select uses count: exact, head: true', async () => {
+      const { count, data, error } = await client
+        .from('items')
+        .select('*', { count: 'exact', head: true });
+
+      expect(error).toBeNull();
+      expect(count).toBe(3);
+      expect(data).toBeNull();
+    });
+
+    it('should return filtered count with eq', async () => {
+      const { count } = await client
+        .from('items')
+        .select('*', { count: 'exact', head: true })
+        .eq('val', 20);
+
+      expect(count).toBe(1);
+    });
+
+    it('should return filtered count with in', async () => {
+      const { count } = await client
+        .from('items')
+        .select('*', { count: 'exact', head: true })
+        .in('val', [10, 30]);
+
+      expect(count).toBe(2);
+    });
+  });
+
+  describe('Relational Joins', () => {
+    beforeEach(async () => {
+      // Seed related tables
+      client = new SupabaseFake({
+        profiles: [
+          { id: 'teacher-1', first_name: 'Jane', last_name: 'Teacher', role: 'teacher' },
+        ],
+        classes: [
+          { id: 'class-1', name: 'Art 101', price: 30, teacher_id: 'teacher-1', day: 'Monday', block: 'Block 1', start_date: '2026-03-01' },
+          { id: 'class-2', name: 'Music 201', price: 50, teacher_id: 'teacher-1', day: 'Tuesday', block: 'Block 2', start_date: '2026-04-01' },
+        ],
+        enrollments: [
+          { id: 'enr-1', student_id: 'fm-1', class_id: 'class-1', status: 'confirmed' },
+          { id: 'enr-2', student_id: 'fm-1', class_id: 'class-2', status: 'pending' },
+        ],
+      });
+    });
+
+    it('should resolve nested select with table(columns) syntax', async () => {
+      const { data, error } = await client
+        .from('enrollments')
+        .select('id, student_id, classes(name, price)')
+        .eq('id', 'enr-1');
+
+      expect(error).toBeNull();
+      expect(data).toHaveLength(1);
+      expect(data[0].id).toBe('enr-1');
+      expect(data[0].classes).toEqual({ name: 'Art 101', price: 30 });
+    });
+
+    it('should resolve deeply nested joins like classes(profiles(first_name, last_name))', async () => {
+      const { data } = await client
+        .from('enrollments')
+        .select('id, classes(id, name, profiles(first_name, last_name))')
+        .eq('id', 'enr-1');
+
+      expect(data).toHaveLength(1);
+      expect(data[0].classes.profiles).toEqual({ first_name: 'Jane', last_name: 'Teacher' });
+    });
+
+    it('should set joined data to null when no FK match', async () => {
+      // Add enrollment with no matching class
+      await client.from('enrollments').insert({ id: 'enr-orphan', student_id: 'fm-1', class_id: 'nonexistent', status: 'pending' });
+
+      const { data } = await client
+        .from('enrollments')
+        .select('id, classes(name)')
+        .eq('id', 'enr-orphan');
+
+      expect(data).toHaveLength(1);
+      expect(data[0].classes).toBeNull();
+    });
+
+    it('should filter with !inner join syntax (exclude rows with no match)', async () => {
+      await client.from('enrollments').insert({ id: 'enr-orphan', student_id: 'fm-1', class_id: 'nonexistent', status: 'confirmed' });
+
+      const { data } = await client
+        .from('enrollments')
+        .select('id, classes!inner(name)')
+        .eq('status', 'confirmed');
+
+      // Should return enr-1 but NOT enr-orphan (no matching class)
+      expect(data).toHaveLength(1);
+      expect(data[0].id).toBe('enr-1');
+    });
+
+    it('should support gte filter on joined columns like classes.start_date', async () => {
+      const { count } = await client
+        .from('enrollments')
+        .select('id, classes!inner(start_date)', { count: 'exact', head: true })
+        .eq('status', 'confirmed')
+        .gte('classes.start_date', '2026-02-28');
+
+      // enr-1 has class-1 with start_date 2026-03-01 which is >= 2026-02-28
+      expect(count).toBe(1);
+    });
+  });
+
   describe('Auth', () => {
     it('should handle sign in and get user', async () => {
       const {

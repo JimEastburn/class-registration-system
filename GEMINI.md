@@ -145,5 +145,22 @@ The following business logic safeguards are strictly enforced:
 - **Cross-Cutting Refactors**: Any property rename, type change, or column rename MUST follow the `.agent/skills/systematic-refactoring/SKILL.md` audit process before editing files. No exceptions.
 - **Migration File Sync**: Every call to `mcp_supabase_apply_migration` MUST be immediately followed by creating a matching local SQL file in `supabase/migrations/<version>_<name>.sql` with identical content. No exceptions—remote and local migrations must always stay in sync.
 - **Dual-Database Migrations**: Every migration MUST be pushed to BOTH Supabase databases: **production** (`jakjpigeafqqgispwlhl`) and **dev/preview** (`nztngdpneuyhhnrkhehq`). After pushing, run `supabase migration list` against both to verify Local and Remote are fully aligned. Always re-link back to **production** when done. Use the `/push-migrations` workflow for the full procedure.
-- **Type Regeneration After Migrations**: After any database migration, ALWAYS regenerate Supabase types (`npx supabase gen types ...`) and run `npm run build` to verify no type errors were introduced. Stale types cause silent drift between the schema and application code.
+
+## Type Regeneration After Migrations — MANDATORY
+
+> [!CAUTION]
+> **Stale types cause silent drift between the schema and application code. Never skip this. No shortcuts.**
+
+### Hard Gates — Enforced After Every Migration
+
+1. **EXECUTION gate**: After any database migration is applied (locally or remotely), you MUST follow the `/post-migration` workflow **before** writing any application code that depends on the new schema. Never skip this. Never substitute a grep for the actual regeneration.
+
+2. **VERIFICATION gate**: `npm run build` must pass with zero type errors after regeneration. If it fails, fix the type errors before proceeding.
+
+### What Triggers This
+
+- Every `mcp_supabase_apply_migration` call
+- Every `supabase db push` or `supabase migration up`
+- Every manual SQL change to the database schema
+- Any time you are asked "do the types need updating?" (run the workflow; do NOT grep)
 - **Type Reuse**: Before defining new interfaces for Supabase data shapes, ALWAYS check `src/types/database.ts` (generated) and `src/types/index.ts` (project-level) for existing types. Prefer importing and extending these over hand-rolling new interfaces. For joined queries, compose types using `Pick<>` from existing interfaces (e.g., `Pick<Class, 'name' | 'location' | 'block' | 'schedule_config'>`). Only create local types if no suitable base exists.
