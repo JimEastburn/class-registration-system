@@ -9,6 +9,14 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 
 Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
 
+> [!CAUTION]
+> **TDD SELF-CHECK — DO NOT SKIP**
+> Before finalizing ANY plan, verify:
+>
+> 1. Does every task that adds/modifies a server action, API route, or utility include a **"Write the failing test"** step BEFORE the implementation step?
+> 2. Is the test step listed FIRST in each task, not last?
+> 3. If you cannot answer YES to both, the plan is INCOMPLETE. Fix it before presenting to the user.
+
 Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
 
 **Announce at start:** "I'm using the planning skill to create the implementation plan."

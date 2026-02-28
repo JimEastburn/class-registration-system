@@ -20,6 +20,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +31,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import type { RosterEnrollment } from '@/lib/actions/enrollments';
+import { updateDepositPaid } from '@/lib/actions/enrollments';
 import { BlockStudentDialog } from './BlockStudentDialog';
 import { unblockStudentByStudentId } from '@/lib/actions/blocking';
 import { toast } from 'sonner';
@@ -62,6 +64,32 @@ export function StudentRosterTable({
     name: string;
   } | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
+
+  // Optimistic state for deposit checkboxes
+  const [depositState, setDepositState] = useState<Record<string, boolean>>(
+    () => {
+      const initial: Record<string, boolean> = {};
+      for (const e of enrollments) {
+        initial[e.id] = e.deposit_paid;
+      }
+      return initial;
+    }
+  );
+
+  const handleDepositChange = async (
+    enrollmentId: string,
+    checked: boolean
+  ) => {
+    // Optimistic update
+    setDepositState((prev) => ({ ...prev, [enrollmentId]: checked }));
+
+    const result = await updateDepositPaid(enrollmentId, checked, classId);
+    if (!result.success) {
+      // Revert on failure
+      setDepositState((prev) => ({ ...prev, [enrollmentId]: !checked }));
+      toast.error(result.error || 'Failed to update deposit status');
+    }
+  };
 
   const handleBlockClick = (student: {
     id: string;
@@ -121,6 +149,7 @@ export function StudentRosterTable({
               <TableRow>
                 <TableHead>Student</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Paid $25 deposit</TableHead>
                 <TableHead>Parent / Guardian</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead className="text-right">Joined</TableHead>
@@ -177,6 +206,18 @@ export function StudentRosterTable({
                         {statusConfig[enrollment.status]?.label ||
                           enrollment.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Checkbox
+                        checked={depositState[enrollment.id] ?? enrollment.deposit_paid}
+                        onCheckedChange={(checked) =>
+                          handleDepositChange(
+                            enrollment.id,
+                            checked === true
+                          )
+                        }
+                        aria-label={`Mark deposit paid for ${studentName}`}
+                      />
                     </TableCell>
                     <TableCell>{parentName}</TableCell>
                     <TableCell>

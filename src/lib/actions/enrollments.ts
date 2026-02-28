@@ -663,6 +663,71 @@ export async function getClassRoster(
 }
 
 /**
+ * Update the deposit_paid status for an enrollment (Teacher or Admin only)
+ */
+export async function updateDepositPaid(
+  enrollmentId: string,
+  depositPaid: boolean,
+  classId: string
+): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Verify user is teacher of the class or admin
+    const { data: classData, error: classError } = await supabase
+      .from('classes')
+      .select('teacher_id')
+      .eq('id', classId)
+      .single();
+
+    if (classError || !classData) {
+      return { success: false, error: 'Class not found' };
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const isAdmin = ['admin', 'super_admin', 'class_scheduler'].includes(
+      profile?.role || ''
+    );
+
+    if (classData.teacher_id !== user.id && !isAdmin) {
+      return { success: false, error: 'Access denied' };
+    }
+
+    // Update deposit_paid via admin client (RLS bypass since auth is verified)
+    const adminClient = await createAdminClient();
+    const { error } = await adminClient
+      .from('enrollments')
+      .update({ deposit_paid: depositPaid })
+      .eq('id', enrollmentId)
+      .eq('class_id', classId);
+
+    if (error) {
+      console.error('Error updating deposit_paid:', error);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath(`/teacher/classes/${classId}`);
+
+    return { success: true, error: null };
+  } catch (err) {
+    console.error('Unexpected error in updateDepositPaid:', err);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
  * Admin: Force enroll a student, bypassing capacity and blocks.
  */
 export async function adminForceEnroll(

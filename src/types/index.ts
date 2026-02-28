@@ -132,6 +132,7 @@ export interface Enrollment {
   class_id: string;
   status: EnrollmentStatus;
   waitlist_position: number | null; // Null if not on waitlist
+  deposit_paid: boolean; // Whether the $25 deposit has been paid for this enrollment
   created_at: string;
   updated_at: string;
 }

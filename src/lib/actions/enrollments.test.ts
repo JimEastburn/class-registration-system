@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { enrollStudent } from '@/lib/actions/enrollments';
+import { enrollStudent, updateDepositPaid } from '@/lib/actions/enrollments';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -303,6 +303,186 @@ describe('Enrollment Actions', () => {
       });
       expect(result.status).toBe('pending');
       expect(result.data).toBeDefined();
+    });
+  });
+
+  describe('updateDepositPaid', () => {
+    it('returns error when not authenticated', async () => {
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: null },
+        error: null,
+      });
+
+      const result = await updateDepositPaid('enrollment-1', true, 'class-1');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Not authenticated');
+    });
+
+    it('returns error when class not found', async () => {
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'classes') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: null,
+                  error: { message: 'Not found' },
+                }),
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      const result = await updateDepositPaid('enrollment-1', true, 'class-1');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Class not found');
+    });
+
+    it('returns access denied when user is not teacher or admin', async () => {
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'classes') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { teacher_id: 'other-teacher' },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === 'profiles') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { role: 'parent' },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      const result = await updateDepositPaid('enrollment-1', true, 'class-1');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Access denied');
+    });
+
+    it('updates deposit_paid successfully when user is the teacher', async () => {
+      // User is the teacher of the class
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: 'teacher-1' } },
+        error: null,
+      });
+
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'classes') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { teacher_id: 'teacher-1' },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === 'profiles') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { role: 'teacher' },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      // Admin client for the actual update
+      mockAdminSupabase.from.mockImplementation((table: string) => {
+        if (table === 'enrollments') {
+          return {
+            update: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockResolvedValue({
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      const result = await updateDepositPaid('enrollment-1', true, 'class-1');
+      expect(result.success).toBe(true);
+      expect(result.error).toBeNull();
+    });
+
+    it('updates deposit_paid successfully when user is an admin', async () => {
+      // User is an admin but NOT the teacher
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: { id: 'admin-user' } },
+        error: null,
+      });
+
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'classes') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { teacher_id: 'other-teacher' },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === 'profiles') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: { role: 'admin' },
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      mockAdminSupabase.from.mockImplementation((table: string) => {
+        if (table === 'enrollments') {
+          return {
+            update: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                eq: vi.fn().mockResolvedValue({
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      const result = await updateDepositPaid('enrollment-1', false, 'class-1');
+      expect(result.success).toBe(true);
+      expect(result.error).toBeNull();
     });
   });
 });

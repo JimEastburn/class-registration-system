@@ -1,8 +1,28 @@
 # Project Guidelines
 
-## Testing Methodology
+## Testing Methodology — MANDATORY TDD (Red/Green)
 
-- **Use Red/Green TDD** for every new feature and bug fix. Write failing tests first (RED), then implement the minimal code to make them pass (GREEN).
+> [!CAUTION]
+> **This is the #1 project rule. Violating TDD is NEVER acceptable. No exceptions. No shortcuts.**
+
+### Hard Gates — Enforced at Every Stage
+
+1. **PLANNING gate**: Every implementation plan MUST include a **"Tests (RED)"** section before any **"Implementation (GREEN)"** section. If the plan does not contain test code/descriptions, the plan is incomplete and MUST NOT be approved.
+
+2. **EXECUTION gate**: During execution, test files MUST be created and run (failing) BEFORE writing any implementation code. The sequence is always:
+   - Write the test → Run it → Confirm it FAILS (RED)
+   - Write the minimal implementation → Run it → Confirm it PASSES (GREEN)
+   - Never reverse this order. Never skip the RED step.
+
+3. **VERIFICATION gate**: `npm run test` must be run at the end. New test count must be > 0 for any new feature or bug fix.
+
+### What Requires Tests
+
+- Every new server action
+- Every new API route
+- Every new utility/helper function
+- Every bug fix (write a test that reproduces the bug first)
+- UI behavior changes that affect data flow (e.g., checkbox toggles that call server actions)
 
 ## Tech Stack
 
