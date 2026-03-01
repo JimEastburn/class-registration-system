@@ -120,7 +120,7 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
                 <Label htmlFor="child-age-input" className="shrink-0 cursor-pointer text-sm whitespace-nowrap text-muted-foreground">
                   Child&apos;s age
                 </Label>
-                <div className="inline-flex items-center rounded-full border border-border/60 bg-background">
+                <div className="inline-flex items-center rounded-md border border-border/60 bg-background">
                   <button
                     type="button"
                     data-testid="age-decrement"
@@ -131,7 +131,7 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
                         setChildAge(String(current - 1));
                       }
                     }}
-                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-l-full text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-l-md text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
                     disabled={childAge === '0'}
                   >
                     <Minus className="h-4 w-4" />
@@ -149,7 +149,7 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
                         setChildAge(String(current + 1));
                       }
                     }}
-                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-r-full text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
                     disabled={childAge === '18'}
                   >
                     <Plus className="h-4 w-4" />
@@ -171,13 +171,13 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
 
             {/* View toggle: Cards | Calendar */}
             {showCalendarToggle && (
-              <div className="inline-flex items-center gap-0.5 rounded-full bg-muted p-1" role="group" aria-label="View mode">
+              <div className="inline-flex items-center gap-0.5 rounded-md bg-muted/70 p-1" role="group" aria-label="View mode">
                 <button
                   type="button"
                   onClick={() => setCalendarView(false)}
                   aria-pressed={!calendarView}
                   data-testid="view-toggle-cards"
-                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-sm px-3.5 py-1.5 text-sm font-medium transition-all ${
                     !calendarView
                       ? 'bg-background text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
@@ -191,7 +191,7 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
                   onClick={() => setCalendarView(true)}
                   aria-pressed={calendarView}
                   data-testid="view-toggle-calendar"
-                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-sm px-3.5 py-1.5 text-sm font-medium transition-all ${
                     calendarView
                       ? 'bg-background text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
