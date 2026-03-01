@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Clock, Users, Calendar, DollarSign, User, Search, X, LayoutGrid, Minus, Plus } from 'lucide-react';
+import { Clock, Users, Calendar, DollarSign, User, Search, X, Minus, Plus } from 'lucide-react';
+import { ViewToggle } from '@/components/classes/ViewToggle';
 import {
   Card,
   CardContent,
@@ -171,36 +172,7 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
 
             {/* View toggle: Cards | Calendar */}
             {showCalendarToggle && (
-              <div className="inline-flex items-center gap-0.5 rounded-md bg-muted/70 p-1" role="group" aria-label="View mode">
-                <button
-                  type="button"
-                  onClick={() => setCalendarView(false)}
-                  aria-pressed={!calendarView}
-                  data-testid="view-toggle-cards"
-                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-sm px-3.5 py-1.5 text-sm font-medium transition-all ${
-                    !calendarView
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                  Cards
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCalendarView(true)}
-                  aria-pressed={calendarView}
-                  data-testid="view-toggle-calendar"
-                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-sm px-3.5 py-1.5 text-sm font-medium transition-all ${
-                    calendarView
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <Calendar className="h-4 w-4" />
-                  Calendar
-                </button>
-              </div>
+              <ViewToggle calendarView={calendarView} onToggle={setCalendarView} />
             )}
           </div>
         </div>

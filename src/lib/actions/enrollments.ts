@@ -24,6 +24,8 @@ interface EnrollmentWithClass extends Enrollment {
     block: string | null;
     location: string | null;
     schedule_config: ScheduleConfig | null;
+    age_min: number | null;
+    age_max: number | null;
     teacher: {
       first_name: string | null;
       last_name: string | null;
@@ -166,6 +168,8 @@ export async function getEnrollmentsForFamily(): Promise<{
                     block,
                     location,
                     schedule_config,
+                    age_min,
+                    age_max,
                     teacher:profiles(first_name, last_name)
                 ),
                 student:family_members (
