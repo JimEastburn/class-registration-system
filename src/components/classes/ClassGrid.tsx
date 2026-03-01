@@ -77,7 +77,7 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
       {/* Sticky unified filter bar */}
       {(showSearch || showCalendarToggle) && (
         <div className="bg-background sticky top-16 z-20 pb-2 pt-2">
-          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border/60 bg-filter-bar px-3 py-2.5">
             {/* Search input */}
             {showSearch && (
               <div className="relative min-w-[180px] flex-1">
