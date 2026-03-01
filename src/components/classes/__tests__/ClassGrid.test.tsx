@@ -91,8 +91,9 @@ describe('ClassGrid age filter', () => {
     expect(screen.queryByTestId('child-age-input')).not.toBeInTheDocument();
   });
 
-  it('shows all classes when no age is entered', () => {
+  it('shows all classes when age is 0 (no filter)', () => {
     renderGrid();
+    expect(getAgeInput().value).toBe('0');
     expect(visibleClassNames()).toEqual(
       expect.arrayContaining(['elem', 'ms', 'hs', 'open-min', 'open-max', 'no-range'])
     );
@@ -170,7 +171,7 @@ describe('ClassGrid age filter', () => {
     fireEvent.change(getAgeInput(), { target: { value: '8' } });
     expect(visibleClassNames().length).toBeLessThan(6);
 
-    fireEvent.change(getAgeInput(), { target: { value: '' } });
+    fireEvent.change(getAgeInput(), { target: { value: '0' } });
     expect(visibleClassNames()).toHaveLength(6);
   });
 
@@ -205,12 +206,73 @@ describe('ClassGrid age filter', () => {
 
   it('filters calendar view classes by age too', () => {
     renderGrid();
-    // Toggle calendar view on
-    fireEvent.click(screen.getByRole('switch'));
+    // Toggle calendar view on via segmented control
+    fireEvent.click(screen.getByTestId('view-toggle-calendar'));
     // Set age filter
     fireEvent.change(getAgeInput(), { target: { value: '8' } });
 
     // Calendar grid should receive the filtered count
     expect(screen.getByTestId('parent-calendar-grid')).toHaveTextContent('3 classes');
+  });
+
+  it('renders segmented toggle with Cards active by default', () => {
+    renderGrid();
+    const cardsBtn = screen.getByTestId('view-toggle-cards');
+    const calendarBtn = screen.getByTestId('view-toggle-calendar');
+    expect(cardsBtn).toBeInTheDocument();
+    expect(calendarBtn).toBeInTheDocument();
+    // Cards should be pressed by default
+    expect(cardsBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(calendarBtn).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('toggles back to cards view when Cards button clicked', () => {
+    renderGrid();
+    // Switch to calendar
+    fireEvent.click(screen.getByTestId('view-toggle-calendar'));
+    expect(screen.getByTestId('parent-calendar-grid')).toBeInTheDocument();
+
+    // Switch back to cards
+    fireEvent.click(screen.getByTestId('view-toggle-cards'));
+    expect(screen.getByTestId('class-grid')).toBeInTheDocument();
+    expect(screen.queryByTestId('parent-calendar-grid')).not.toBeInTheDocument();
+  });
+
+  // -----------------------------------------------------------------------
+  // Pill stepper button tests
+  // -----------------------------------------------------------------------
+
+  it('increment button sets age from 0 to 1', () => {
+    renderGrid();
+    fireEvent.click(screen.getByTestId('age-increment'));
+    expect(getAgeInput().value).toBe('1');
+  });
+
+  it('decrement at age 1 returns to 0 (no filter)', () => {
+    renderGrid();
+    // Set age to 1 via hidden input
+    fireEvent.change(getAgeInput(), { target: { value: '1' } });
+    // Age 1 matches: open-max (≤10) and no-range (always) = 2 classes
+    expect(visibleClassNames().length).toBe(2);
+
+    // Click decrement — should go to 0 (no filter)
+    fireEvent.click(screen.getByTestId('age-decrement'));
+    expect(getAgeInput().value).toBe('0');
+    expect(visibleClassNames()).toHaveLength(6);
+  });
+
+  it('increment and decrement adjust age correctly', () => {
+    renderGrid();
+    // Click + → 1
+    fireEvent.click(screen.getByTestId('age-increment'));
+    expect(getAgeInput().value).toBe('1');
+
+    // Click + → 2
+    fireEvent.click(screen.getByTestId('age-increment'));
+    expect(getAgeInput().value).toBe('2');
+
+    // Click − → 1
+    fireEvent.click(screen.getByTestId('age-decrement'));
+    expect(getAgeInput().value).toBe('1');
   });
 });

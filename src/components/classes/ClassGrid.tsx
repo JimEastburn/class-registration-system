@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Clock, Users, Calendar, DollarSign, User, Search, X } from 'lucide-react';
+import { Clock, Users, Calendar, DollarSign, User, Search, X, LayoutGrid, Minus, Plus } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -13,7 +13,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ParentCalendarGrid } from '@/components/classes/ParentCalendarGrid';
 import type { Class } from '@/types';
@@ -34,7 +33,7 @@ interface ClassGridProps {
 
 export function ClassGrid({ classes, showSearch = false, showCalendarToggle = false }: ClassGridProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [childAge, setChildAge] = useState('');
+  const [childAge, setChildAge] = useState('0');
   const [calendarView, setCalendarView] = useState(false);
 
   // Apply text search filter
@@ -57,8 +56,8 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
     : classes;
 
   // Apply age filter
-  const ageValue = childAge ? parseInt(childAge, 10) : null;
-  if (ageValue !== null && !isNaN(ageValue)) {
+  const ageValue = childAge ? parseInt(childAge, 10) : 0;
+  if (ageValue > 0 && !isNaN(ageValue)) {
     filteredClasses = filteredClasses.filter((cls) => {
       // Classes with no age range are always shown
       if (cls.age_min == null && cls.age_max == null) return true;
@@ -71,7 +70,7 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
     });
   }
 
-  const hasActiveFilters = !!searchQuery || (ageValue !== null && !isNaN(ageValue));
+  const hasActiveFilters = !!searchQuery || (ageValue > 0 && !isNaN(ageValue));
 
   return (
     <div className="space-y-4">
@@ -115,42 +114,92 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
               <div className="hidden h-6 w-px bg-border/60 sm:block" aria-hidden="true" />
             )}
 
-            {/* Age filter */}
+            {/* Age filter — pill stepper */}
             {showCalendarToggle && (
-              <div className="flex items-center gap-2">
-                <Label htmlFor="child-age-input" className="shrink-0 cursor-pointer text-sm whitespace-nowrap">
+              <div className="flex items-center gap-3">
+                <Label htmlFor="child-age-input" className="shrink-0 cursor-pointer text-sm whitespace-nowrap text-muted-foreground">
                   Child&apos;s age
                 </Label>
-                <Input
+                <div className="inline-flex items-center rounded-full border border-border/60 bg-background">
+                  <button
+                    type="button"
+                    data-testid="age-decrement"
+                    aria-label="Decrease age"
+                    onClick={() => {
+                      const current = parseInt(childAge, 10) || 0;
+                      if (current > 0) {
+                        setChildAge(String(current - 1));
+                      }
+                    }}
+                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-l-full text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+                    disabled={childAge === '0'}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <span className="flex h-10 min-w-[3.5rem] items-center justify-center border-x border-border/60 px-2 text-sm font-medium tabular-nums">
+                    {childAge} yrs
+                  </span>
+                  <button
+                    type="button"
+                    data-testid="age-increment"
+                    aria-label="Increase age"
+                    onClick={() => {
+                      const current = parseInt(childAge, 10) || 0;
+                      if (current < 18) {
+                        setChildAge(String(current + 1));
+                      }
+                    }}
+                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-r-full text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+                    disabled={childAge === '18'}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+                {/* Visually hidden input for test compatibility */}
+                <input
                   id="child-age-input"
-                  type="number"
-                  min={1}
-                  max={18}
-                  placeholder="—"
+                  type="text"
                   value={childAge}
                   onChange={(e) => setChildAge(e.target.value)}
-                  className="w-18 border-0 bg-background shadow-sm"
                   data-testid="child-age-input"
+                  className="sr-only"
+                  tabIndex={-1}
+                  aria-hidden="true"
                 />
               </div>
             )}
 
-            {/* Divider */}
+            {/* View toggle: Cards | Calendar */}
             {showCalendarToggle && (
-              <div className="hidden h-6 w-px bg-border/60 sm:block" aria-hidden="true" />
-            )}
-
-            {/* Calendar view toggle */}
-            {showCalendarToggle && (
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="calendar-view-toggle"
-                  checked={calendarView}
-                  onCheckedChange={setCalendarView}
-                />
-                <Label htmlFor="calendar-view-toggle" className="cursor-pointer text-sm whitespace-nowrap">
-                  Calendar view
-                </Label>
+              <div className="inline-flex items-center gap-0.5 rounded-full bg-muted p-1" role="group" aria-label="View mode">
+                <button
+                  type="button"
+                  onClick={() => setCalendarView(false)}
+                  aria-pressed={!calendarView}
+                  data-testid="view-toggle-cards"
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
+                    !calendarView
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                  Cards
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCalendarView(true)}
+                  aria-pressed={calendarView}
+                  data-testid="view-toggle-calendar"
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
+                    calendarView
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Calendar className="h-4 w-4" />
+                  Calendar
+                </button>
               </div>
             )}
           </div>

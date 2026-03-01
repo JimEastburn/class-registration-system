@@ -21,6 +21,13 @@ const DAY_LABELS: Record<string, string> = {
   Wednesday: 'Wednesday only',
 };
 
+const DAY_LABELS_SHORT: Record<string, string> = {
+  'Tuesday/Thursday': 'T/Th',
+  Tuesday: 'Tue',
+  Thursday: 'Thu',
+  Wednesday: 'Wed',
+};
+
 interface ClassForCalendar {
   id: string;
   name: string;
@@ -41,10 +48,10 @@ type CalendarUIEventWithConfig = CalendarUIEvent & { rawConfig: ScheduleConfig }
 
 /** Build gridTemplateColumns string based on which columns are collapsed */
 function buildGridTemplate(collapsed: Record<string, boolean>): string {
-  const dayCol = collapsed['Day'] ? '90px' : '180px';
+  const dayCol = collapsed['Day'] ? '60px' : '180px';
   const blockCols = COLUMNS.map((col) => {
-    if (col === 'Lunch') return collapsed[col] ? '50px' : '100px';
-    return collapsed[col] ? '0.5fr' : '1fr';
+    if (col === 'Lunch') return collapsed[col] ? '75px' : '100px';
+    return collapsed[col] ? '90px' : '1fr';
   });
   return [dayCol, ...blockCols].join(' ');
 }
@@ -116,7 +123,7 @@ export function ParentCalendarGrid({ classes }: ParentCalendarGridProps) {
                 'flex items-center gap-1',
                 isDay ? 'justify-between' : 'justify-center'
               )}>
-                {!isCollapsed && <span className="truncate">{col}</span>}
+                {<span className="truncate">{col}</span>}
                 <button
                   type="button"
                   onClick={() => toggleColumn(col)}
@@ -150,7 +157,7 @@ export function ParentCalendarGrid({ classes }: ParentCalendarGridProps) {
               >
                 {collapsed['Day'] ? (
                   <span className="text-muted-foreground truncate text-xs" title={DAY_LABELS[pattern] ?? pattern}>
-                    {(DAY_LABELS[pattern] ?? pattern).slice(0, 3)}
+                    {DAY_LABELS_SHORT[pattern] ?? pattern}
                   </span>
                 ) : (
                   DAY_LABELS[pattern] ?? pattern
