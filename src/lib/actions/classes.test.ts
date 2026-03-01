@@ -1,150 +1,67 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createClass, updateClass, publishClass } from '@/lib/actions/classes';
-import { createClient } from '@/lib/supabase/server';
+import {
+  seedFake,
+  TEACHER_PROFILE,
+  type SeedClass,
+} from '@/__integration__/fakes/fixtures';
 
-vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(),
-}));
-
-vi.mock('next/cache', () => ({
-  revalidatePath: vi.fn(),
-}));
-
-vi.mock('@/lib/actions/audit', () => ({
-  logAuditAction: vi.fn(),
-}));
-
-// Mock Email
+vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }));
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+vi.mock('@/lib/actions/audit', () => ({ logAuditAction: vi.fn() }));
 vi.mock('@/lib/email', () => ({
   sendClassCancellation: vi.fn(),
   sendScheduleChangeNotification: vi.fn(),
 }));
-
-// Mock scheduling logic
 vi.mock('@/lib/logic/scheduling', () => ({
   validateScheduleConfig: vi.fn().mockReturnValue({ valid: true }),
   checkScheduleConflict: vi.fn().mockReturnValue(null),
 }));
-
-// Mock calendar logic
 vi.mock('@/lib/logic/calendar', () => ({
   generateClassEvents: vi.fn().mockReturnValue([]),
 }));
 
-describe('Class Actions', () => {
-  const mockUser = { id: 'teacher-1' };
+// ── Seed Data ───────────────────────────────────────────────────────────────
 
-  const mockSupabase = {
-    auth: {
-      getUser: vi.fn(),
+// Use teacher-123 from shared TEACHER_PROFILE
+const TEACHER_ID = TEACHER_PROFILE.id;
+
+const existingClass: SeedClass = {
+  id: 'class-1', name: 'Math 101', teacher_id: TEACHER_ID, status: 'draft',
+  price: 30, capacity: 20,
+  day: null, block: null, start_date: null, end_date: null,
+  location: null, description: null, schedule_config: null, age_min: null, age_max: null,
+};
+
+function seed(overrides: Record<string, Record<string, unknown>[]> = {}) {
+  return seedFake({
+    authUserId: TEACHER_ID,
+    data: {
+      profiles: [TEACHER_PROFILE] as unknown as Record<string, unknown>[],
+      classes: [existingClass] as unknown as Record<string, unknown>[],
+      calendar_events: [],
+      ...overrides,
     },
-    from: vi.fn(),
-  };
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    (createClient as Mock).mockResolvedValue(mockSupabase);
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: mockUser },
-      error: null,
-    });
   });
+}
+
+// ── Tests ───────────────────────────────────────────────────────────────────
+
+describe('Class Actions', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
 
   describe('createClass', () => {
     it('allows teacher to create draft class', async () => {
-      // Mock Role Check: profiles
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi
-              .fn()
-              .mockResolvedValue({ data: { role: 'teacher' }, error: null }),
-          }),
-        }),
-      });
-
-      // Mock Insert: classes → .insert().select().single()
-      mockSupabase.from.mockReturnValueOnce({
-        insert: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            single: vi
-              .fn()
-              .mockResolvedValue({
-                data: {
-                  id: 'class-new',
-                  schedule_config: null,
-                  location: null,
-                  description: null,
-                },
-                error: null,
-              }),
-          }),
-        }),
-      });
-
-      const input = {
-        name: 'Math 101',
-        capacity: 20,
-      };
-
-      const result = await createClass(input);
-
-      if (result.success) {
-        expect(result.data.classId).toBe('class-new');
-      } else {
-        throw new Error(`Expected success but got error: ${result.error}`);
-      }
+      seed();
+      const result = await createClass({ name: 'Art 101', capacity: 20 });
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.classId).toBeDefined();
     });
 
     it('correctly maps schedule config to columns', async () => {
-      // Mock Role Check
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi
-              .fn()
-              .mockResolvedValue({ data: { role: 'teacher' }, error: null }),
-          }),
-        }),
-      });
-
-      // Mock teacher conflict check: classes → .select().eq().in()
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            in: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
-        }),
-      });
-
-      const mockInsert = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          single: vi
-            .fn()
-            .mockResolvedValue({
-              data: {
-                id: 'class-schedule-test',
-                schedule_config: {
-                  day: 'Tuesday',
-                  block: 'Block 2 (10:00 AM - 11:00 AM)',
-                  startDate: '2025-01-01',
-                  endDate: '2025-05-31',
-                },
-                location: null,
-                description: null,
-              },
-              error: null,
-            }),
-        }),
-      });
-
-      // Mock Insert
-      mockSupabase.from.mockReturnValueOnce({
-        insert: mockInsert,
-      });
-
+      const fake = seed();
       const input = {
-        name: 'Math 101',
+        name: 'Music 201',
         capacity: 20,
         schedule_config: {
           day: 'Tuesday',
@@ -155,271 +72,76 @@ describe('Class Actions', () => {
       };
 
       // @ts-expect-error - complex union type on schedule_config day/block
-      await createClass(input);
+      const result = await createClass(input);
+      expect(result.success).toBe(true);
 
-      expect(mockInsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          day: 'Tuesday',
-          block: 'Block 2 (10:00 AM - 11:00 AM)',
-          start_date: '2025-01-01',
-          end_date: '2025-05-31',
-          schedule_config: expect.objectContaining({
-            day: 'Tuesday',
-          }),
-        })
-      );
+      const storedClass = fake.db.classes.find((c) => c.name === 'Music 201');
+      expect(storedClass).toBeDefined();
+      expect(storedClass!.day).toBe('Tuesday');
+      expect(storedClass!.block).toBe('Block 2 (10:00 AM - 11:00 AM)');
+      expect(storedClass!.start_date).toBe('2025-01-01');
+      expect(storedClass!.end_date).toBe('2025-05-31');
+      expect(storedClass!.schedule_config).toEqual(expect.objectContaining({ day: 'Tuesday' }));
     });
 
     it('denies parent role', async () => {
-      // Mock Role Check
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi
-              .fn()
-              .mockResolvedValue({ data: { role: 'parent' }, error: null }),
-          }),
-        }),
+      const fake = seedFake({
+        authUserId: 'parent-1',
+        data: {
+          profiles: [{ id: 'parent-1', first_name: 'Parent', last_name: 'User', role: 'parent' }] as unknown as Record<string, unknown>[],
+          classes: [],
+          calendar_events: [],
+        },
       });
-
-      const input = {
-        name: 'Math 101',
-        capacity: 20,
-      };
-
-      const result = await createClass(input);
-      if (!result.success) {
-        expect(result.error).toContain('Not authorized');
-      } else {
-        throw new Error('Expected failure');
-      }
+      const result = await createClass({ name: 'Art', capacity: 10 });
+      expect(result.success).toBe(false);
+      if (!result.success) expect(result.error).toContain('Not authorized');
     });
   });
 
   describe('updateClass', () => {
     it('allows owner to update class', async () => {
-      // Mock Existing Class Check (expanded select columns)
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi
-              .fn()
-              .mockResolvedValue({
-                data: {
-                  teacher_id: 'teacher-1',
-                  status: 'draft',
-                  name: 'Math 101',
-                  location: null,
-                  schedule_config: null,
-                  start_date: null,
-                  end_date: null,
-                },
-                error: null,
-              }),
-          }),
-        }),
-      });
-
-      // Mock Role Check
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi
-              .fn()
-              .mockResolvedValue({ data: { role: 'teacher' }, error: null }),
-          }),
-        }),
-      });
-
-      // Mock Update
-      mockSupabase.from.mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      });
-
+      const fake = seed();
       const result = await updateClass('class-1', { name: 'Math 102' });
       expect(result.success).toBe(true);
+      expect(fake.db.classes.find((c) => c.id === 'class-1')!.name).toBe('Math 102');
     });
 
     it('denies non-owner (if not admin) to update class', async () => {
-      // Mock Existing Class Check (owned by teacher-2)
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi
-              .fn()
-              .mockResolvedValue({
-                data: {
-                  teacher_id: 'teacher-2',
-                  status: 'draft',
-                  name: 'Math 101',
-                  location: null,
-                  schedule_config: null,
-                  start_date: null,
-                  end_date: null,
-                },
-                error: null,
-              }),
-          }),
-        }),
+      seed({
+        profiles: [TEACHER_PROFILE] as unknown as Record<string, unknown>[],
+        classes: [{ ...existingClass, teacher_id: 'teacher-2' }] as unknown as Record<string, unknown>[],
       });
-
-      // Mock Role Check (current user is teacher-1)
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi
-              .fn()
-              .mockResolvedValue({ data: { role: 'teacher' }, error: null }),
-          }),
-        }),
-      });
-
       const result = await updateClass('class-1', { name: 'Math 102' });
-      if (!result.success) {
-        expect(result.error).toContain('Not authorized');
-      } else {
-        throw new Error('Expected failure');
-      }
+      expect(result.success).toBe(false);
+      if (!result.success) expect(result.error).toContain('Not authorized');
     });
 
     it('allows clearing location (setting to null)', async () => {
-      // Mock Existing Class Check
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: {
-                teacher_id: 'teacher-1',
-                status: 'draft',
-                name: 'Math 101',
-                location: 'Old Location',
-                schedule_config: null,
-                start_date: null,
-                end_date: null,
-              },
-              error: null,
-            }),
-          }),
-        }),
+      const fake = seed({
+        classes: [{ ...existingClass, location: 'Old Location' }] as unknown as Record<string, unknown>[],
       });
-
-      // Mock Role Check
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi
-              .fn()
-              .mockResolvedValue({ data: { role: 'teacher' }, error: null }),
-          }),
-        }),
-      });
-
-      const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      });
-
-      // Mock Update
-      mockSupabase.from.mockReturnValueOnce({
-        update: mockUpdate,
-      });
-
-      // Mock calendar_events delete for location change (delete future events)
-      mockSupabase.from.mockReturnValueOnce({
-        delete: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            gte: vi.fn().mockResolvedValue({ error: null }),
-          }),
-        }),
-      });
-
-      // Mock re-fetch updated class for calendar regeneration
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: {
-                id: 'class-1',
-                schedule_config: null,
-                location: null,
-                description: null,
-              },
-              error: null,
-            }),
-          }),
-        }),
-      });
-
-      // Type now allows null, so no error expected
       const result = await updateClass('class-1', { location: null });
-
       expect(result.success).toBe(true);
-      expect(mockUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          location: null,
-        })
-      );
+      expect(fake.db.classes.find((c) => c.id === 'class-1')!.location).toBeNull();
     });
   });
 
   describe('publishClass', () => {
     it('rejects publishing when day and block are not set', async () => {
-      // Mock class lookup: draft class WITHOUT day/block
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: {
-                teacher_id: 'teacher-1',
-                status: 'draft',
-                name: 'Math 101',
-                day: null,
-                block: null,
-              },
-              error: null,
-            }),
-          }),
-        }),
-      });
-
+      seed();
       const result = await publishClass('class-1');
-
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error).toContain('Day and Block must be assigned');
-      }
+      if (!result.success) expect(result.error).toContain('Day and Block must be assigned');
     });
 
     it('allows publishing when day and block are set', async () => {
-      // Mock class lookup: draft class WITH day/block
-      mockSupabase.from.mockReturnValueOnce({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: {
-                teacher_id: 'teacher-1',
-                status: 'draft',
-                name: 'Math 101',
-                day: 'Tuesday',
-                block: 'Block 1',
-              },
-              error: null,
-            }),
-          }),
-        }),
+      const fake = seed({
+        classes: [{ ...existingClass, day: 'Tuesday', block: 'Block 1' }] as unknown as Record<string, unknown>[],
       });
-
-      // Mock the update query
-      mockSupabase.from.mockReturnValueOnce({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({ error: null }),
-        }),
-      });
-
       const result = await publishClass('class-1');
-
       expect(result.success).toBe(true);
+      expect(fake.db.classes.find((c) => c.id === 'class-1')!.status).toBe('published');
     });
   });
 });

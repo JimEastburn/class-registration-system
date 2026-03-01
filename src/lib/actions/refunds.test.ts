@@ -1,237 +1,87 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { processRefund } from '@/lib/actions/refunds';
-import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
-import { sendWaitlistNotification } from '@/lib/email';
 import { revalidatePath } from 'next/cache';
+import {
+  seedFake,
+  ADMIN_PROFILE,
+  PARENT_PROFILE,
+  type SeedPayment,
+  type SeedEnrollment,
+} from '@/__integration__/fakes/fixtures';
 
-vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(),
-}));
+vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }));
+vi.mock('@/lib/stripe', () => ({ stripe: { refunds: { create: vi.fn() } } }));
+vi.mock('@/lib/actions/audit', () => ({ logAuditAction: vi.fn() }));
+vi.mock('@/lib/email', () => ({ sendWaitlistNotification: vi.fn() }));
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
-vi.mock('@/lib/stripe', () => ({
-  stripe: {
-    refunds: {
-      create: vi.fn(),
+// ── Seed Data ───────────────────────────────────────────────────────────────
+
+const completedPayment: SeedPayment = {
+  id: 'pay-1', transaction_id: 'pi_123', amount: 1000,
+  status: 'completed', enrollment_id: 'enr-1',
+};
+
+const confirmedEnrollment: SeedEnrollment = {
+  id: 'enr-1', student_id: 'student-1', class_id: 'class-1',
+  status: 'confirmed', waitlist_position: null,
+};
+
+const waitlistedEnrollment: SeedEnrollment = {
+  id: 'enr-wait-1', student_id: 'student-2', class_id: 'class-1',
+  status: 'waitlisted', waitlist_position: 1,
+};
+
+function seed(authUserId: string | null) {
+  return seedFake({
+    authUserId,
+    data: {
+      profiles: [ADMIN_PROFILE, PARENT_PROFILE] as unknown as Record<string, unknown>[],
+      payments: [completedPayment] as unknown as Record<string, unknown>[],
+      enrollments: [confirmedEnrollment, waitlistedEnrollment] as unknown as Record<string, unknown>[],
+      classes: [{ id: 'class-1', name: 'Math 101', start_date: '2026-03-01' }] as Record<string, unknown>[],
+      family_members: [
+        { id: 'student-1', parent_id: 'parent-123', first_name: 'Kid', last_name: 'One' },
+        { id: 'student-2', parent_id: 'parent-123', first_name: 'Next', last_name: 'Student' },
+      ] as Record<string, unknown>[],
     },
-  },
-}));
+  });
+}
 
-vi.mock('@/lib/actions/audit', () => ({
-  logAuditAction: vi.fn(),
-}));
-
-vi.mock('@/lib/email', () => ({
-  sendWaitlistNotification: vi.fn(),
-}));
-
-vi.mock('next/cache', () => ({
-  revalidatePath: vi.fn(),
-}));
+// ── Tests ───────────────────────────────────────────────────────────────────
 
 describe('Refund Actions', () => {
-  const mockUser = { id: 'admin-123' };
-
-  // Setup persistent builders
-  const profilesBuilder = {
-    select: vi.fn(),
-  };
-  const paymentsBuilder = {
-    select: vi.fn(),
-    update: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-  };
-  const enrollmentsBuilder = {
-    select: vi.fn(),
-    update: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    order: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockReturnThis(),
-    single: vi.fn(),
-  };
-
-  const mockSupabase = {
-    auth: {
-      getUser: vi.fn(),
-    },
-    from: vi.fn(),
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
-    (createClient as any).mockResolvedValue(mockSupabase);
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: mockUser },
-      error: null,
-    });
-
-    // Reset builders state (important for mockReturnValueOnce)
-    profilesBuilder.select.mockReset();
-    paymentsBuilder.select.mockReset();
-    paymentsBuilder.update.mockReset();
-    paymentsBuilder.update.mockReturnThis();
-    enrollmentsBuilder.select.mockReset();
-    enrollmentsBuilder.update.mockReset();
-    enrollmentsBuilder.update.mockReturnThis();
-
-    // Default Stubs
-    (stripe.refunds.create as any).mockResolvedValue({ id: 're_123' });
+    vi.mocked(stripe.refunds.create).mockResolvedValue({ id: 're_123' } as never);
   });
 
-  it('processes refund successfully', async () => {
-    // 1. Admin check
-    profilesBuilder.select.mockReturnValueOnce({
-      eq: vi.fn().mockReturnValue({
-        single: vi
-          .fn()
-          .mockResolvedValue({ data: { role: 'admin' }, error: null }),
-      }),
-    });
-
-    // 2. Fetch Payment
-    paymentsBuilder.select.mockReturnValueOnce({
-      eq: vi.fn().mockReturnValue({
-        single: vi.fn().mockResolvedValue({
-          data: {
-            id: 'pay-1',
-            transaction_id: 'pi_123',
-            amount: 1000,
-            status: 'completed',
-            enrollment_id: 'enr-1',
-          },
-          error: null,
-        }),
-      }),
-    });
-
-    // 3. Update Payment
-    // update().eq() calls. update returns this. eq returns this? No, eq returns a promise-like?
-    // In Supabase, update().eq() returns a Promise.
-    // My builder: update returns this. eq returns this?
-    // Wait, chain: update({...}).eq('id', ...).
-    // My builder definition: update returns this (builder). eq returns this (builder).
-    // But the code awaits it. So `builder` must be thenable or we mock resolved value on last call.
-    // Or simpler: make `eq` return `{ error: null }`.
-
-    // Let's refine builders for mutation chains.
-    const mutationChain = {
-      eq: vi.fn().mockResolvedValue({ error: null }),
-    };
-    paymentsBuilder.update.mockReturnValue(mutationChain);
-    enrollmentsBuilder.update.mockReturnValue(mutationChain); // For enrollment status update & promotion
-
-    // 4. Fetch Enrollment class_id
-    enrollmentsBuilder.select.mockReturnValueOnce({
-      eq: vi.fn().mockReturnValue({
-        single: vi
-          .fn()
-          .mockResolvedValue({ data: { class_id: 'class-1' }, error: null }),
-      }),
-    });
-
-    // 5. Update Enrollment (cancelled) -> handled by mutationChain
-
-    // 6. Fetch Next Waitlisted
-    enrollmentsBuilder.select.mockReturnValueOnce({
-      eq: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          order: vi.fn().mockReturnValue({
-            limit: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: {
-                  id: 'enr-wait-1',
-                  class: { name: 'Math' },
-                  student: {
-                    parent_id: 'parent-2',
-                    first_name: 'Next',
-                    last_name: 'Student',
-                  },
-                },
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      }),
-    });
-
-    // 7. Update Waitlisted to Pending -> mutationChain
-
-    // 8. Fetch Parent Profile
-    profilesBuilder.select.mockReturnValueOnce({
-      eq: vi.fn().mockReturnValue({
-        single: vi
-          .fn()
-          .mockResolvedValue({
-            data: { email: 'parent@test.com', first_name: 'P', last_name: 'T' },
-            error: null,
-          }),
-      }),
-    });
-
-    mockSupabase.from.mockImplementation((table) => {
-      if (table === 'profiles') return profilesBuilder;
-      if (table === 'payments') return paymentsBuilder;
-      if (table === 'enrollments') return enrollmentsBuilder;
-      return {};
-    });
-
+  it('processes refund successfully with waitlist promotion', async () => {
+    const fake = seed('admin-123');
     const result = await processRefund({ paymentId: 'pay-1' });
 
     expect(result.success).toBe(true);
     expect(stripe.refunds.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        payment_intent: 'pi_123',
-        amount: 1000,
-      })
+      expect.objectContaining({ payment_intent: 'pi_123', amount: 1000 })
     );
-    expect(sendWaitlistNotification).toHaveBeenCalled();
+    expect(fake.db.payments.find((p) => p.id === 'pay-1')?.status).toBe('refunded');
+    expect(fake.db.enrollments.find((e) => e.id === 'enr-1')?.status).toBe('cancelled');
+    expect(fake.db.enrollments.find((e) => e.id === 'enr-wait-1')?.status).toBe('pending');
     expect(revalidatePath).toHaveBeenCalledWith('/admin/payments');
   });
 
   it('fails if non-admin', async () => {
-    profilesBuilder.select.mockReturnValueOnce({
-      eq: vi.fn().mockReturnValue({
-        single: vi
-          .fn()
-          .mockResolvedValue({ data: { role: 'parent' }, error: null }),
-      }),
-    });
-
-    mockSupabase.from.mockReturnValue(profilesBuilder);
-
+    seed('parent-123');
     const result = await processRefund({ paymentId: 'pay-1' });
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain('Not authorized');
-    }
+    if (!result.success) expect(result.error).toContain('Not authorized');
   });
 
   it('fails if payment not found', async () => {
-    profilesBuilder.select.mockReturnValueOnce({
-      eq: vi.fn().mockReturnValue({
-        single: vi
-          .fn()
-          .mockResolvedValue({ data: { role: 'admin' }, error: null }),
-      }),
-    });
-
-    paymentsBuilder.select.mockReturnValueOnce({
-      eq: vi.fn().mockReturnValue({
-        single: vi.fn().mockResolvedValue({ data: null, error: null }),
-      }),
-    });
-
-    mockSupabase.from.mockImplementation((table) => {
-      if (table === 'profiles') return profilesBuilder;
-      if (table === 'payments') return paymentsBuilder;
-      return {};
-    });
-
-    const result = await processRefund({ paymentId: 'pay-1' });
+    seed('admin-123');
+    const result = await processRefund({ paymentId: 'nonexistent' });
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain('Payment not found');
-    }
+    if (!result.success) expect(result.error).toContain('Payment not found');
   });
 });

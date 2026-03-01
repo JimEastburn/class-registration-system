@@ -45,6 +45,21 @@ export class SupabaseFake {
       this.authUser = user;
       return { data: { user }, error: null };
     },
+    signUp: async ({ email, options, ..._ }: { email: string; password?: string; options?: Record<string, unknown> }) => {
+      const user: Record<string, unknown> = { id: crypto.randomUUID(), email };
+      if (options?.data) {
+        user.user_metadata = options.data;
+      }
+      this.authUser = user;
+      return { data: { user }, error: null };
+    },
+    updateUser: async (updates: Record<string, unknown>) => {
+      if (!this.authUser) {
+        return { data: { user: null }, error: { message: 'Not authenticated' } };
+      }
+      this.authUser = { ...this.authUser, ...updates };
+      return { data: { user: this.authUser }, error: null };
+    },
     signOut: async () => {
       this.authUser = null;
       return { error: null };
@@ -90,6 +105,7 @@ class FakeQueryBuilder {
   private modifiers: ((data: Record<string, unknown>[]) => Record<string, unknown>[])[] = [];
   private _pendingUpdate: Record<string, unknown> | null = null;
   private _pendingDelete = false;
+  private _singleMode: 'single' | 'maybeSingle' | null = null;
 
   constructor(
     data: Record<string, unknown>[],
@@ -121,6 +137,37 @@ class FakeQueryBuilder {
 
     this.client.db[this.tableName].push(...newRecords);
     this.data = newRecords;
+    return this;
+  }
+
+  upsert(
+    record: Record<string, unknown> | Record<string, unknown>[],
+    opts?: { onConflict?: string },
+  ) {
+    if (!this.client.db[this.tableName]) {
+      this.client.db[this.tableName] = [];
+    }
+
+    const conflictKey = opts?.onConflict || 'id';
+    const records = Array.isArray(record) ? record : [record];
+
+    for (const r of records) {
+      const existing = this.client.db[this.tableName].find(
+        (row) => row[conflictKey] === r[conflictKey],
+      );
+      if (existing) {
+        Object.assign(existing, r);
+      } else {
+        const newRecord = {
+          ...r,
+          id: r.id ?? crypto.randomUUID(),
+          created_at: (r.created_at as string) ?? new Date().toISOString(),
+        };
+        this.client.db[this.tableName].push(newRecord);
+      }
+    }
+
+    this.data = records;
     return this;
   }
 
@@ -189,6 +236,13 @@ class FakeQueryBuilder {
     return this;
   }
 
+  is(column: string, value: unknown) {
+    this.modifiers.push((rows) =>
+      rows.filter((row) => row[column] === value),
+    );
+    return this;
+  }
+
   ilike(column: string, pattern: string) {
     const regex = new RegExp(pattern.replace(/%/g, '.*'), 'i');
     this.modifiers.push((rows) =>
@@ -220,24 +274,18 @@ class FakeQueryBuilder {
     return this;
   }
 
+  range(from: number, to: number) {
+    this.modifiers.push((rows) => rows.slice(from, to + 1));
+    return this;
+  }
+
   single() {
-    this.modifiers.push((rows) => {
-      if (rows.length !== 1) {
-        throw new Error('JSON object requested, multiple (or no) rows returned');
-      }
-      return rows[0] as unknown as Record<string, unknown>[];
-    });
+    this._singleMode = 'single';
     return this;
   }
 
   maybeSingle() {
-    this.modifiers.push((rows) => {
-      if (rows.length === 0) return null as unknown as Record<string, unknown>[];
-      if (rows.length > 1) {
-        throw new Error('JSON object requested, multiple rows returned');
-      }
-      return rows[0] as unknown as Record<string, unknown>[];
-    });
+    this._singleMode = 'maybeSingle';
     return this;
   }
 
@@ -270,7 +318,26 @@ class FakeQueryBuilder {
             ).map((r) =>
               matchingIds.has(r.id) ? { ...r, ...this._pendingUpdate } : r,
             );
-            resolve({ data: null, error: null });
+
+            // If .select() was chained after .update(), return the updated rows
+            if (this.selectQuery !== null) {
+              const updatedRows = (this.client.db[this.tableName] || [])
+                .filter((r) => matchingIds.has(r.id));
+              // Apply single/maybeSingle if they were chained
+              if (this._singleMode === 'single') {
+                if (updatedRows.length !== 1) {
+                  resolve({ data: null, error: { message: 'PGRST116', code: 'PGRST116' } });
+                  return;
+                }
+                resolve({ data: updatedRows[0], error: null });
+              } else if (this._singleMode === 'maybeSingle') {
+                resolve({ data: updatedRows[0] || null, error: null });
+              } else {
+                resolve({ data: updatedRows, error: null });
+              }
+            } else {
+              resolve({ data: null, error: null });
+            }
           }
           return;
         }
@@ -309,6 +376,32 @@ class FakeQueryBuilder {
             error: null,
             count: Array.isArray(result) ? result.length : 0,
           });
+          return;
+        }
+
+        // Apply single/maybeSingle
+        if (this._singleMode === 'single') {
+          const rows = Array.isArray(result) ? result : [result];
+          if (rows.length !== 1) {
+            resolve({
+              data: null,
+              error: { message: 'PGRST116', code: 'PGRST116', details: 'JSON object requested, multiple (or no) rows returned' },
+            });
+            return;
+          }
+          resolve({ data: rows[0], error: null });
+          return;
+        }
+        if (this._singleMode === 'maybeSingle') {
+          const rows = Array.isArray(result) ? result : [result];
+          if (rows.length > 1) {
+            resolve({
+              data: null,
+              error: { message: 'PGRST116', code: 'PGRST116', details: 'JSON object requested, multiple rows returned' },
+            });
+            return;
+          }
+          resolve({ data: rows[0] || null, error: null });
           return;
         }
 

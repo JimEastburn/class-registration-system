@@ -1,6 +1,11 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getSchedulerStats, getUnscheduledClasses } from '../scheduler';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import {
+  seedFake,
+  SCHEDULER_PROFILE,
+  PARENT_PROFILE,
+  type SeedClass,
+} from '@/__integration__/fakes/fixtures';
 
 // Mock dependencies
 vi.mock('@/lib/supabase/server', () => ({
@@ -8,126 +13,68 @@ vi.mock('@/lib/supabase/server', () => ({
   createAdminClient: vi.fn(),
 }));
 
-// Mock scheduling logic (used by getConflictAlerts internally)
 vi.mock('@/lib/logic/scheduling', () => ({
   checkScheduleConflict: vi.fn().mockReturnValue(null),
 }));
 
+// ── Seed Data ───────────────────────────────────────────────────────────────
+
+const scheduledClass1: SeedClass = {
+  id: 'class-1', name: 'Math 101', status: 'published',
+  day: 'Monday', block: 'Block 1', teacher_id: 'teacher-1',
+};
+
+const scheduledClass2: SeedClass = {
+  id: 'class-2', name: 'Science 101', status: 'draft',
+  day: 'Tuesday', block: 'Block 2', teacher_id: 'teacher-2',
+};
+
+const unscheduledClass: SeedClass = {
+  id: 'class-3', name: 'Unscheduled Class', status: 'draft',
+  day: null, block: null, teacher_id: 'teacher-1',
+};
+
+const cancelledClass: SeedClass = {
+  id: 'class-4', name: 'Cancelled Class', status: 'cancelled',
+  day: null, block: null, teacher_id: 'teacher-1',
+};
+
+const allClasses = [scheduledClass1, scheduledClass2, unscheduledClass, cancelledClass];
+
+// ── Tests ───────────────────────────────────────────────────────────────────
+
 describe('Scheduler Actions', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  beforeEach(() => { vi.clearAllMocks(); });
 
   describe('getSchedulerStats', () => {
     it('should return correct stats for class_scheduler', async () => {
-      // getSchedulerStats flow:
-      // 1. createClient() -> auth check + role='class_scheduler'
-      // 2. createAdminClient() -> totalClasses count (neq 'cancelled')
-      // 3. createAdminClient() -> unscheduledCount (eq 'draft')
-      // 4. getConflictAlerts() internally calls:
-      //    4a. createClient() -> auth + role check AGAIN
-      //    4b. createAdminClient() -> fetch classes .in('status',...)
-
-      const mockUserClient = {
-        auth: {
-          getUser: vi
-            .fn()
-            .mockResolvedValue({
-              data: { user: { id: 'scheduler-123' } },
-              error: null,
-            }),
+      seedFake({
+        authUserId: 'scheduler-123',
+        data: {
+          profiles: [SCHEDULER_PROFILE, PARENT_PROFILE] as unknown as Record<string, unknown>[],
+          classes: allClasses as unknown as Record<string, unknown>[],
         },
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: { role: 'class_scheduler' },
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      };
-
-      // createClient will be called twice (once by getSchedulerStats, once by getConflictAlerts)
-      (createClient as Mock)
-        .mockResolvedValueOnce(mockUserClient) // getSchedulerStats auth
-        .mockResolvedValueOnce(mockUserClient); // getConflictAlerts auth
-
-      const adminFromCallCount = { n: 0 };
-      const mockAdminClient = {
-        from: vi.fn().mockImplementation(() => {
-          adminFromCallCount.n++;
-          if (adminFromCallCount.n === 1) {
-            // Total classes count (neq 'cancelled')
-            return {
-              select: vi.fn().mockReturnValue({
-                neq: vi.fn().mockResolvedValue({ count: 10, error: null }),
-              }),
-            };
-          }
-          if (adminFromCallCount.n === 2) {
-            // Unscheduled classes count (is 'day' null, neq 'cancelled')
-            return {
-              select: vi.fn().mockReturnValue({
-                is: vi.fn().mockReturnValue({
-                  neq: vi.fn().mockResolvedValue({ count: 3, error: null }),
-                }),
-              }),
-            };
-          }
-          if (adminFromCallCount.n === 3) {
-            // getConflictAlerts: fetch classes .in('status', ...)
-            return {
-              select: vi.fn().mockReturnValue({
-                in: vi.fn().mockResolvedValue({ data: [], error: null }),
-              }),
-            };
-          }
-          return {};
-        }),
-      };
-
-      (createAdminClient as Mock)
-        .mockResolvedValueOnce(mockAdminClient) // getSchedulerStats admin
-        .mockResolvedValueOnce(mockAdminClient); // getConflictAlerts admin
+      });
 
       const result = await getSchedulerStats();
-
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.totalClasses).toBe(10);
-        expect(result.data.unscheduledCount).toBe(3);
+        expect(result.data.totalClasses).toBe(3);
+        expect(result.data.unscheduledCount).toBe(1);
         expect(result.data.conflictCount).toBe(0);
       }
     });
 
     it('should return unauthorized for parent', async () => {
-      const mockUserClient = {
-        auth: {
-          getUser: vi
-            .fn()
-            .mockResolvedValue({
-              data: { user: { id: 'parent-123' } },
-              error: null,
-            }),
+      seedFake({
+        authUserId: 'parent-123',
+        data: {
+          profiles: [SCHEDULER_PROFILE, PARENT_PROFILE] as unknown as Record<string, unknown>[],
+          classes: allClasses as unknown as Record<string, unknown>[],
         },
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: { role: 'parent' },
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      };
-
-      (createClient as Mock).mockResolvedValue(mockUserClient);
+      });
 
       const result = await getSchedulerStats();
-
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error).toBe('Unauthorized');
@@ -135,56 +82,17 @@ describe('Scheduler Actions', () => {
     });
   });
 
-   describe('getUnscheduledClasses', () => {
+  describe('getUnscheduledClasses', () => {
     it('should return list of unscheduled classes (no day assigned)', async () => {
-      // getUnscheduledClasses flow:
-      // 1. createClient() -> auth + role='class_scheduler'
-      // 2. createAdminClient() -> fetch classes is('day', null).neq('status','cancelled').order().limit()
-
-      const mockUserClient = {
-        auth: {
-          getUser: vi
-            .fn()
-            .mockResolvedValue({
-              data: { user: { id: 'scheduler-123' } },
-              error: null,
-            }),
+      seedFake({
+        authUserId: 'scheduler-123',
+        data: {
+          profiles: [SCHEDULER_PROFILE, PARENT_PROFILE] as unknown as Record<string, unknown>[],
+          classes: allClasses as unknown as Record<string, unknown>[],
         },
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: { role: 'class_scheduler' },
-                error: null,
-              }),
-            }),
-          }),
-        }),
-      };
-
-      const mockClasses = [{ id: '1', name: 'Unscheduled Class', status: 'draft', day: null, block: null }];
-
-      const mockAdminClient = {
-        from: vi.fn().mockReturnValue({
-          select: vi.fn().mockReturnValue({
-            is: vi.fn().mockReturnValue({
-              neq: vi.fn().mockReturnValue({
-                order: vi.fn().mockReturnValue({
-                  limit: vi
-                    .fn()
-                    .mockResolvedValue({ data: mockClasses, error: null }),
-                }),
-              }),
-            }),
-          }),
-        }),
-      };
-
-      (createClient as Mock).mockResolvedValue(mockUserClient);
-      (createAdminClient as Mock).mockResolvedValue(mockAdminClient);
+      });
 
       const result = await getUnscheduledClasses(5);
-
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.data).toHaveLength(1);

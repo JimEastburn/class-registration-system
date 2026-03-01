@@ -54,10 +54,80 @@ We prioritize **Fakes** (stateful in-memory implementations) over generic Mocks.
 
 ### Supabase (Database)
 
-Instead of mocking individual `supabase.from().select()` calls, we use a **Fake Supabase Client** backed by an in-memory database.
+Instead of mocking individual `supabase.from().select()` calls, we use a **Fake Supabase Client** (`SupabaseFake`) backed by an in-memory database.
 
 - **Why**: Allows complex queries and multiple operations (insert then select) to work naturally in tests.
-- **Implementation**: See `src/__integration__/fakes/supabase.ts`.
+- **Implementation**: [`src/__integration__/fakes/supabase.ts`](../src/__integration__/fakes/supabase.ts)
+- **Tests for the fake itself**: [`src/__integration__/fakes/supabase.test.ts`](../src/__integration__/fakes/supabase.test.ts)
+
+#### Usage Pattern
+
+```typescript
+import { SupabaseFake } from '@/__integration__/fakes/supabase';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
+import type { Profile, FamilyMember } from '@/types';
+
+// 1. Use Supabase types for seed data (Pick<> for minimal shapes)
+type SeedProfile = Pick<Profile, 'id' | 'first_name' | 'last_name' | 'role'>;
+
+const adminProfile: SeedProfile = {
+  id: 'admin-1',
+  first_name: 'Admin',
+  last_name: 'User',
+  role: 'admin',
+};
+
+// 2. Create and wire up the fake
+function seedFake(overrides = {}): SupabaseFake {
+  const fake = new SupabaseFake({
+    profiles: [adminProfile] as unknown as Record<string, unknown>[],
+    classes: [],
+    enrollments: [],
+    ...overrides,
+  });
+  fake.setAuthUser({ id: 'admin-1' });
+
+  // Point both clients to the same fake
+  const fakeClient = fake as unknown as Awaited<
+    ReturnType<typeof createClient>
+  >;
+  vi.mocked(createClient).mockResolvedValue(fakeClient);
+  vi.mocked(createAdminClient).mockResolvedValue(fakeClient);
+
+  return fake;
+}
+
+// 3. Assert on behavior, not mock calls
+it('deletes the user', async () => {
+  const fake = seedFake({
+    profiles: [adminProfile, targetProfile] as unknown as Record<
+      string,
+      unknown
+    >[],
+  });
+
+  await deleteUser('target-1');
+
+  // Verify state changed in the fake DB
+  const remaining = fake.db.profiles.filter((p) => p.id === 'target-1');
+  expect(remaining).toHaveLength(0);
+});
+```
+
+#### Supported Query Features
+
+| Feature          | Example                                                          | Notes                               |
+| ---------------- | ---------------------------------------------------------------- | ----------------------------------- |
+| Basic CRUD       | `insert`, `update`, `delete`, `select`                           | Full chain support                  |
+| Filters          | `.eq()`, `.neq()`, `.in()`, `.gt()`, `.gte()`, `.lt()`, `.lte()` | All standard filters                |
+| Count/head       | `select('*', { count: 'exact', head: true })`                    | Returns `{ count, data: null }`     |
+| Relational joins | `select('*, classes:class_id (name, price)')`                    | FK-based resolution                 |
+| Inner joins      | `classes!inner(name)`                                            | Filters out rows with no match      |
+| Nested joins     | `classes(profiles(first_name))`                                  | Multi-level resolution              |
+| Dot-path filters | `.eq('classes.status', 'published')`                             | Filters on joined columns           |
+| Modifiers        | `.order()`, `.limit()`, `.single()`, `.maybeSingle()`            | Standard modifiers                  |
+| Auth             | `fake.setAuthUser({ id })` / no-auth                             | Simulates `supabase.auth.getUser()` |
+| UUID generation  | Auto-generated on `.insert()`                                    | Uses `crypto.randomUUID()`          |
 
 ### Stripe (Payments)
 

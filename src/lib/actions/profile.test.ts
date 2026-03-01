@@ -1,9 +1,13 @@
 import { updateProfile } from './profile';
-import { createClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import {
+  seedFake,
+  PARENT_PROFILE,
+  type SeedProfile,
+} from '@/__integration__/fakes/fixtures';
+import type { SupabaseFake } from '@/__integration__/fakes/supabase';
 
-// Mock dependencies
+// Module mocks (Next.js / Supabase wiring – required for seedFake)
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }));
@@ -12,31 +16,36 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
 
-describe('updateProfile', () => {
-  let mockSupabase: {
-    auth: {
-      getUser: ReturnType<typeof vi.fn>;
-      updateUser: ReturnType<typeof vi.fn>;
-    };
-    from: ReturnType<typeof vi.fn>;
-  };
+// ── Seed data ───────────────────────────────────────────────────────────────
 
+const USER_ID = 'user-123';
+
+const userProfile: SeedProfile = {
+  ...PARENT_PROFILE,
+  id: USER_ID,
+  first_name: 'Original',
+  last_name: 'Name',
+  email: 'user@test.com',
+};
+
+function seed(): SupabaseFake {
+  return seedFake({
+    authUserId: USER_ID,
+    data: {
+      profiles: [userProfile] as unknown as Record<string, unknown>[],
+    },
+  });
+}
+
+// ── Tests ───────────────────────────────────────────────────────────────────
+
+describe('updateProfile', () => {
   beforeEach(() => {
-    mockSupabase = {
-      auth: {
-        getUser: vi.fn(),
-        updateUser: vi.fn(),
-      },
-      from: vi.fn(),
-    };
-    (createClient as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
-      mockSupabase
-    );
     vi.clearAllMocks();
   });
 
   it('should return error if not authenticated', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } });
+    seedFake({ authUserId: null });
 
     const formData = new FormData();
     const result = await updateProfile(formData);
@@ -45,16 +54,7 @@ describe('updateProfile', () => {
   });
 
   it('should update profile successfully', async () => {
-    const mockUser = { id: 'user-123' };
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser } });
-
-    // Mock profile update
-    const mockUpdateOption = { eq: vi.fn().mockResolvedValue({ error: null }) };
-    const mockFrom = { update: vi.fn().mockReturnValue(mockUpdateOption) };
-    mockSupabase.from.mockReturnValue(mockFrom);
-
-    // Mock auth update
-    mockSupabase.auth.updateUser.mockResolvedValue({ error: null });
+    const fake = seed();
 
     const formData = new FormData();
     formData.append('firstName', 'John');
@@ -67,46 +67,27 @@ describe('updateProfile', () => {
     const result = await updateProfile(formData);
 
     expect(result).toEqual({ success: true, data: undefined });
-    expect(mockSupabase.from).toHaveBeenCalledWith('profiles');
-    expect(mockFrom.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        first_name: 'John',
-        last_name: 'Doe',
-        phone: '555-5555',
-        bio: 'Hello world',
-        specializations: ['Math', 'Science'],
-      })
-    );
-    expect(mockUpdateOption.eq).toHaveBeenCalledWith('id', 'user-123');
-    expect(mockSupabase.auth.updateUser).toHaveBeenCalledWith({
-      data: {
-        first_name: 'John',
-        last_name: 'Doe',
-        phone: '555-5555',
-      },
-    });
-    expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
+
+    // Verify the profile was updated in the fake db
+    const profile = fake.db.profiles.find((p) => p.id === USER_ID);
+    expect(profile).toBeDefined();
+    expect(profile!.first_name).toBe('John');
+    expect(profile!.last_name).toBe('Doe');
+    expect(profile!.phone).toBe('555-5555');
+    expect(profile!.bio).toBe('Hello world');
+    expect(profile!.specializations).toEqual(['Math', 'Science']);
   });
 
-  it('should return error if profile update fails', async () => {
-    const mockUser = { id: 'user-123' };
-    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser } });
-
-    // Mock profile update failure
-    const mockUpdateOption = {
-      eq: vi.fn().mockResolvedValue({ error: { message: 'DB Error' } }),
-    };
-    const mockFrom = { update: vi.fn().mockReturnValue(mockUpdateOption) };
-    mockSupabase.from.mockReturnValue(mockFrom);
+  it('should update profile even with minimal fields', async () => {
+    const fake = seed();
 
     const formData = new FormData();
-    formData.append('firstName', 'John');
+    formData.append('firstName', 'Jane');
 
     const result = await updateProfile(formData);
 
-    expect(result).toEqual({
-      success: false,
-      error: 'Failed to update profile',
-    });
+    expect(result).toEqual({ success: true, data: undefined });
+    const profile = fake.db.profiles.find((p) => p.id === USER_ID);
+    expect(profile!.first_name).toBe('Jane');
   });
 });

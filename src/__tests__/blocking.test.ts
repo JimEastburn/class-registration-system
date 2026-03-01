@@ -1,250 +1,161 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
-  blockStudent,
-  unblockStudent,
-  unblockStudentByStudentId,
-  getBlockedStudents,
+  blockStudent, unblockStudent, unblockStudentByStudentId, getBlockedStudents,
 } from '@/lib/actions/blocking';
-import { createClient } from '@/lib/supabase/server';
+import {
+  seedFake,
+  TEACHER_PROFILE,
+  ADMIN_PROFILE,
+  PARENT_PROFILE,
+  type SeedProfile,
+  type SeedBlock,
+  type SeedClass,
+  type SeedEnrollment,
+  type SeedFamilyMember,
+} from '@/__integration__/fakes/fixtures';
 
-// Mock the Supabase client
-vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(),
-}));
+vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }));
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
-// Mock next/cache
-vi.mock('next/cache', () => ({
-  revalidatePath: vi.fn(),
-}));
+// ── Seed Data ───────────────────────────────────────────────────────────────
+
+const otherTeacher: SeedProfile = {
+  id: 'other-teacher', first_name: 'Other', last_name: 'Teacher',
+  role: 'teacher', email: 'other@test.com',
+};
+
+const studentMember: SeedFamilyMember = {
+  id: 'student-123', parent_id: 'parent-123',
+  first_name: 'Bad', last_name: 'Student', email: 'student@test.com', relationship: 'Student',
+};
+
+const teacherClass: SeedClass = {
+  id: 'class-1', name: 'Math 101', teacher_id: 'teacher-123', status: 'published',
+};
+
+const existingBlock: SeedBlock = {
+  id: 'block-123', teacher_id: 'teacher-123', student_id: 'student-123',
+  reason: 'Disruptive', created_by: 'teacher-123', created_at: '2026-01-01T00:00:00Z',
+};
+
+const otherTeacherBlock: SeedBlock = {
+  id: 'block-other', teacher_id: 'other-teacher', student_id: 'student-123',
+  reason: null, created_by: 'other-teacher', created_at: '2026-01-01T00:00:00Z',
+};
+
+const activeEnrollment: SeedEnrollment = {
+  id: 'enr-1', student_id: 'student-123', class_id: 'class-1', status: 'confirmed',
+};
+
+const allProfiles = [TEACHER_PROFILE, otherTeacher, ADMIN_PROFILE, PARENT_PROFILE] as unknown as Record<string, unknown>[];
+
+function seed(
+  authUserId: string | null,
+  overrides: Record<string, Record<string, unknown>[]> = {},
+) {
+  return seedFake({
+    authUserId,
+    data: {
+      profiles: allProfiles,
+      class_blocks: [] as Record<string, unknown>[],
+      classes: [teacherClass] as unknown as Record<string, unknown>[],
+      enrollments: [] as Record<string, unknown>[],
+      family_members: [studentMember] as unknown as Record<string, unknown>[],
+      ...overrides,
+    },
+  });
+}
+
+// ── Tests ───────────────────────────────────────────────────────────────────
 
 describe('Blocking Actions', () => {
-  let mockSupabase: any;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    mockSupabase = {
-      auth: {
-        getUser: vi.fn(),
-      },
-      from: vi.fn(() => mockSupabase),
-      select: vi.fn(() => mockSupabase),
-      insert: vi.fn(() => mockSupabase),
-      update: vi.fn(() => mockSupabase),
-      delete: vi.fn(() => mockSupabase),
-      eq: vi.fn(() => mockSupabase),
-      in: vi.fn(() => mockSupabase),
-      order: vi.fn(() => mockSupabase),
-      single: vi.fn(),
-    };
-
-    (createClient as any).mockResolvedValue(mockSupabase);
-  });
+  beforeEach(() => { vi.clearAllMocks(); });
 
   describe('blockStudent', () => {
     it('should fail if user is not authenticated', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } });
-
-      const result = await blockStudent('student-123');
-      expect(result).toEqual({ success: false, error: 'Not authenticated' });
+      seed(null);
+      expect(await blockStudent('student-123')).toEqual({ success: false, error: 'Not authenticated' });
     });
 
     it('should fail if user is not a teacher or admin', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({
-        data: { user: { id: 'user-123' } },
-      });
-      mockSupabase.single.mockResolvedValueOnce({ data: { role: 'parent' } }); // Profile check
-
-      const result = await blockStudent('student-123');
-      expect(result).toEqual({
-        success: false,
-        error: 'Only teachers can block students',
-      });
+      seed('parent-123');
+      expect(await blockStudent('student-123')).toEqual({ success: false, error: 'Only teachers can block students' });
     });
 
     it('should fail if student is already blocked', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({
-        data: { user: { id: 'teacher-123' } },
-      });
-      mockSupabase.single
-        .mockResolvedValueOnce({ data: { role: 'teacher' } }) // Profile check
-        .mockResolvedValueOnce({ data: { id: 'block-123' } }); // Existing block check
-
-      const result = await blockStudent('student-123');
-      expect(result).toEqual({
-        success: false,
-        error: 'Student is already blocked',
-      });
+      seed('teacher-123', { class_blocks: [existingBlock] as unknown as Record<string, unknown>[] });
+      expect(await blockStudent('student-123')).toEqual({ success: false, error: 'Student is already blocked' });
     });
 
     it('should successfully block a student', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({
-        data: { user: { id: 'teacher-123' } },
-      });
-      mockSupabase.single
-        .mockResolvedValueOnce({ data: { role: 'teacher' } }) // Profile check
-        .mockResolvedValueOnce({ data: null }); // No existing block check
-
-      mockSupabase.insert.mockReturnValue({ error: null });
-
-      const result = await blockStudent('student-123', 'Disruptive');
-      expect(result).toEqual({ success: true, error: null });
-      expect(mockSupabase.from).toHaveBeenCalledWith('class_blocks');
-      expect(mockSupabase.insert).toHaveBeenCalledWith({
-        teacher_id: 'teacher-123',
-        student_id: 'student-123',
-        reason: 'Disruptive',
-        created_by: 'teacher-123',
-      });
+      const fake = seed('teacher-123');
+      expect(await blockStudent('student-123', 'Disruptive')).toEqual({ success: true, error: null });
+      expect(fake.db.class_blocks).toHaveLength(1);
+      expect(fake.db.class_blocks[0].student_id).toBe('student-123');
+      expect(fake.db.class_blocks[0].reason).toBe('Disruptive');
     });
-    it('should successfully block a student and remove existing enrollments', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({
-        data: { user: { id: 'teacher-123' } },
-      });
 
-      // Profiles builder
-      const profilesBuilder = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: { role: 'teacher' } }),
-      };
-
-      // Class blocks builder
-      const classBlocksBuilder = {
-        select: vi.fn().mockReturnThis(),
-        insert: vi.fn().mockResolvedValue({ error: null }), // Insert is terminal (await check) OR returns builder?
-        // In code: await supabase.from().insert(...)
-        // So insert should resolve.
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null }), // existing check
-      };
-      // Need to handle insert returning error: null.
-      // Insert usually returns PostgrestFilterBuilder which is awaitable.
-      // So let's make insert return a then-able or just resolve
-      classBlocksBuilder.insert.mockResolvedValue({ error: null });
-
-      // Classes builder (fetching teacher classes)
-      const classesBuilder = {
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({ data: [{ id: 'class-1' }] }), // Terminal eq
-      };
-
-      // Enrollments builder (cancelling)
-      const enrollmentsBuilder = {
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        in: vi.fn().mockReturnThis(),
-        neq: vi.fn().mockResolvedValue({ error: null }), // Terminal neq
-      };
-
-      mockSupabase.from.mockImplementation((table: string) => {
-        if (table === 'profiles') return profilesBuilder;
-        if (table === 'class_blocks') return classBlocksBuilder;
-        if (table === 'classes') return classesBuilder;
-        if (table === 'enrollments') return enrollmentsBuilder;
-        return mockSupabase;
-      });
-
-      const result = await blockStudent('student-123', 'Disruptive');
-      expect(result).toEqual({ success: true, error: null });
-
-      expect(mockSupabase.from).toHaveBeenCalledWith('class_blocks');
-      expect(classBlocksBuilder.insert).toHaveBeenCalled();
-
-      expect(mockSupabase.from).toHaveBeenCalledWith('classes');
-      expect(classesBuilder.eq).toHaveBeenCalledWith(
-        'teacher_id',
-        'teacher-123'
-      );
-
-      expect(mockSupabase.from).toHaveBeenCalledWith('enrollments');
-      expect(enrollmentsBuilder.update).toHaveBeenCalledWith({
-        status: 'cancelled',
-      });
-      expect(enrollmentsBuilder.in).toHaveBeenCalledWith('class_id', [
-        'class-1',
-      ]);
+    it('should successfully block and cancel existing enrollments', async () => {
+      const fake = seed('teacher-123', { enrollments: [activeEnrollment] as unknown as Record<string, unknown>[] });
+      expect(await blockStudent('student-123', 'Disruptive')).toEqual({ success: true, error: null });
+      expect(fake.db.class_blocks).toHaveLength(1);
+      expect(fake.db.enrollments.find((e) => e.id === 'enr-1')?.status).toBe('cancelled');
     });
   });
 
   describe('unblockStudent', () => {
     it('should fail if user is not authenticated', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } });
-
-      const result = await unblockStudent('block-123');
-      expect(result).toEqual({ success: false, error: 'Not authenticated' });
+      seed(null);
+      expect(await unblockStudent('block-123')).toEqual({ success: false, error: 'Not authenticated' });
     });
 
     it('should fail if block is not found', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({
-        data: { user: { id: 'teacher-123' } },
-      });
-      mockSupabase.single.mockResolvedValueOnce({
-        data: null,
-        error: 'Not found',
-      }); // Block check
-
-      const result = await unblockStudent('block-123');
-      expect(result).toEqual({ success: false, error: 'Block not found' });
+      seed('teacher-123');
+      expect(await unblockStudent('nonexistent')).toEqual({ success: false, error: 'Block not found' });
     });
 
     it('should fail if teacher tries to remove another teachers block', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({
-        data: { user: { id: 'teacher-123' } },
-      });
-      mockSupabase.single
-        .mockResolvedValueOnce({ data: { teacher_id: 'other-teacher' } }) // Block check
-        .mockResolvedValueOnce({ data: { role: 'teacher' } }); // Admin override check
-
-      const result = await unblockStudent('block-123');
-      expect(result).toEqual({ success: false, error: 'Access denied' });
+      seed('teacher-123', { class_blocks: [otherTeacherBlock] as unknown as Record<string, unknown>[] });
+      expect(await unblockStudent('block-other')).toEqual({ success: false, error: 'Access denied' });
     });
 
     it('should successfully unblock a student', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({
-        data: { user: { id: 'teacher-123' } },
-      });
-      mockSupabase.single.mockResolvedValueOnce({
-        data: { teacher_id: 'teacher-123' },
-      }); // Block check
+      const fake = seed('teacher-123', { class_blocks: [existingBlock] as unknown as Record<string, unknown>[] });
+      expect(await unblockStudent('block-123')).toEqual({ success: true, error: null });
+      expect(fake.db.class_blocks).toHaveLength(0);
+    });
+  });
 
-      // Fix: delete() returns a builder where eq() returns the final result
-      const deleteBuilder = {
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      };
-      mockSupabase.delete.mockReturnValue(deleteBuilder);
+  describe('unblockStudentByStudentId', () => {
+    it('should fail if user is not authenticated', async () => {
+      seed(null);
+      expect(await unblockStudentByStudentId('student-123')).toEqual({ success: false, error: 'Not authenticated' });
+    });
 
-      const result = await unblockStudent('block-123');
-      expect(result).toEqual({ success: true, error: null });
-      expect(mockSupabase.from).toHaveBeenCalledWith('class_blocks');
-      expect(mockSupabase.delete).toHaveBeenCalled();
-      expect(deleteBuilder.eq).toHaveBeenCalledWith('id', 'block-123');
+    it('should fail if no block exists', async () => {
+      seed('teacher-123');
+      expect(await unblockStudentByStudentId('student-123')).toEqual({ success: false, error: 'Block not found' });
+    });
+
+    it('should successfully unblock by student ID', async () => {
+      const fake = seed('teacher-123', { class_blocks: [existingBlock] as unknown as Record<string, unknown>[] });
+      expect(await unblockStudentByStudentId('student-123')).toEqual({ success: true, error: null });
+      expect(fake.db.class_blocks).toHaveLength(0);
     });
   });
 
   describe('getBlockedStudents', () => {
     it('should fail if user is not authenticated', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null } });
-
-      const result = await getBlockedStudents();
-      expect(result).toEqual({ data: null, error: 'Not authenticated' });
+      seed(null);
+      expect(await getBlockedStudents()).toEqual({ data: null, error: 'Not authenticated' });
     });
 
     it('should return blocked students for the teacher', async () => {
-      mockSupabase.auth.getUser.mockResolvedValue({
-        data: { user: { id: 'teacher-123' } },
-      });
-      const mockData = [
-        { id: 'block-1', student: { first_name: 'Bad', last_name: 'Student' } },
-      ];
-      // eq returns mockSupabase (builder), order returns valid response
-      mockSupabase.order.mockResolvedValue({ data: mockData, error: null });
-
+      seed('teacher-123', { class_blocks: [existingBlock] as unknown as Record<string, unknown>[] });
       const result = await getBlockedStudents();
-      expect(result).toEqual({ data: mockData, error: null });
-      expect(mockSupabase.from).toHaveBeenCalledWith('class_blocks');
-      expect(mockSupabase.select).toHaveBeenCalled();
-      expect(mockSupabase.eq).toHaveBeenCalledWith('teacher_id', 'teacher-123');
+      expect(result.error).toBeNull();
+      expect(result.data).toHaveLength(1);
+      expect(result.data![0].id).toBe('block-123');
     });
   });
 });

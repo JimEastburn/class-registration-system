@@ -275,5 +275,54 @@ describe('SupabaseFake', () => {
       } = await client.auth.getUser();
       expect(user).toBeNull();
     });
+
+    it('should handle signUp and return a user with generated id', async () => {
+      const { data, error } = await client.auth.signUp({
+        email: 'new@test.com',
+        password: 'password123',
+        options: { data: { first_name: 'New', last_name: 'User' } },
+      });
+
+      expect(error).toBeNull();
+      expect(data.user).toBeDefined();
+      expect(data.user.email).toBe('new@test.com');
+      expect(data.user.id).toBeDefined();
+    });
+
+    it('should make signUp user available via getUser', async () => {
+      await client.auth.signUp({ email: 'signup@test.com', password: 'pw' });
+
+      const {
+        data: { user },
+      } = await client.auth.getUser();
+      expect(user).not.toBeNull();
+      expect(user.email).toBe('signup@test.com');
+    });
+
+    it('should handle updateUser by merging metadata', async () => {
+      await client.auth.signInWithPassword({ email: 'update@test.com' });
+
+      const { data, error } = await client.auth.updateUser({
+        data: { first_name: 'Updated', phone: '555-1234' },
+      });
+
+      expect(error).toBeNull();
+      expect(data.user.email).toBe('update@test.com');
+
+      // Verify merged via getUser
+      const {
+        data: { user },
+      } = await client.auth.getUser();
+      expect(user.data).toMatchObject({ first_name: 'Updated', phone: '555-1234' });
+    });
+
+    it('should return error from updateUser when not signed in', async () => {
+      const { data, error } = await client.auth.updateUser({
+        data: { first_name: 'Nobody' },
+      });
+
+      expect(error).not.toBeNull();
+      expect(data.user).toBeNull();
+    });
   });
 });

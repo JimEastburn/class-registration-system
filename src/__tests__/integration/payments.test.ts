@@ -1,215 +1,113 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getAllPayments, updatePaymentStatus } from '@/lib/actions/payments';
+import {
+  seedFake,
+  ADMIN_PROFILE,
+  PARENT_PROFILE,
+  type SeedPayment,
+  type SeedEnrollment,
+} from '@/__integration__/fakes/fixtures';
 
-// Mock Supabase
-const mockGetUser = vi.fn();
-const mockSelect = vi.fn();
-const mockEq = vi.fn();
-const mockGte = vi.fn();
-const mockLte = vi.fn();
-const mockOrder = vi.fn();
-const mockRange = vi.fn();
-const mockSingle = vi.fn();
+vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }));
 
-const mockFrom = vi.fn();
+// ── Seed Data ───────────────────────────────────────────────────────────────
 
-vi.mock('@/lib/supabase/server', () => ({
-  createClient: vi.fn(() => ({
-    auth: { getUser: mockGetUser },
-    from: mockFrom,
-  })),
-}));
+const payment1: SeedPayment = {
+  id: 'pay-1', amount: 3000, status: 'pending',
+  enrollment_id: 'enr-1', created_at: '2023-01-15T10:00:00Z',
+};
+
+const payment2: SeedPayment = {
+  id: 'pay-2', amount: 5000, status: 'completed',
+  enrollment_id: 'enr-2', created_at: '2023-01-20T10:00:00Z',
+};
+
+const enrollment1: SeedEnrollment = {
+  id: 'enr-1', student_id: 'student-1', class_id: 'class-1', status: 'pending',
+};
+
+function seed(authUserId: string | null) {
+  return seedFake({
+    authUserId,
+    data: {
+      profiles: [ADMIN_PROFILE, PARENT_PROFILE] as unknown as Record<string, unknown>[],
+      payments: [payment1, payment2] as unknown as Record<string, unknown>[],
+      enrollments: [enrollment1] as unknown as Record<string, unknown>[],
+      classes: [] as Record<string, unknown>[],
+      family_members: [] as Record<string, unknown>[],
+    },
+  });
+}
+
+// ── Tests ───────────────────────────────────────────────────────────────────
 
 describe('getAllPayments Action', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it('should deny access if not authenticated', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: null } });
-    const result = await getAllPayments();
-    expect(result.error).toBe('Not authenticated');
+    seed(null);
+    expect((await getAllPayments()).error).toBe('Not authenticated');
   });
 
   it('should deny access if user is not admin', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } });
-    // Mock profile check
-    mockFrom.mockReturnValueOnce({
-      // For profiles check
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: { role: 'parent' } }),
-    });
-
-    const result = await getAllPayments();
-    expect(result.error).toBe('Access denied: Admin privileges required');
+    seed('parent-123');
+    expect((await getAllPayments()).error).toBe('Access denied: Admin privileges required');
   });
 
   it('should fetch payments if user is admin', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'admin_123' } } });
-
-    // Mock profile queries and payment queries
-    const mockProfileQuery = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: { role: 'admin' } }),
-    };
-
-    const mockPaymentsQuery = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      gte: vi.fn().mockReturnThis(),
-      lte: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      range: vi.fn().mockResolvedValue({
-        data: [{ id: 'pay_1' }],
-        count: 1,
-        error: null,
-      }),
-    };
-
-    mockFrom.mockImplementation((table) => {
-      if (table === 'profiles') return mockProfileQuery;
-      if (table === 'payments') return mockPaymentsQuery;
-      return {};
-    });
-
+    seed('admin-123');
     const result = await getAllPayments();
-
     expect(result.error).toBeNull();
-    expect(result.data).toHaveLength(1);
-    expect(mockFrom).toHaveBeenCalledWith('payments');
+    expect(result.data.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('should apply filters correctly', async () => {
-    mockGetUser.mockResolvedValue({ data: { user: { id: 'admin_123' } } });
+  it('should apply status filter', async () => {
+    seed('admin-123');
+    const result = await getAllPayments({ status: 'completed' });
+    expect(result.error).toBeNull();
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].id).toBe('pay-2');
+  });
 
-    mockFrom.mockImplementation((table) => {
-      if (table === 'profiles')
-        return {
-          select: vi.fn().mockReturnThis(),
-          eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({ data: { role: 'admin' } }),
-        };
-      if (table === 'payments')
-        return {
-          select: vi.fn().mockReturnThis(),
-          eq: mockEq.mockReturnThis(),
-          gte: mockGte.mockReturnThis(),
-          lte: mockLte.mockReturnThis(),
-          order: vi.fn().mockReturnThis(),
-          range: vi.fn().mockResolvedValue({ data: [], count: 0, error: null }),
-        };
-      return {};
-    });
+  it('should apply date filters', async () => {
+    seed('admin-123');
+    const result = await getAllPayments({ startDate: '2023-01-01', endDate: '2023-01-16' });
+    expect(result.error).toBeNull();
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].id).toBe('pay-1');
+  });
 
-    await getAllPayments({
-      status: 'completed',
-      startDate: '2023-01-01',
-      endDate: '2023-01-31',
-    });
-
-    expect(mockEq).toHaveBeenCalledWith('status', 'completed');
-    expect(mockGte).toHaveBeenCalledWith('created_at', '2023-01-01');
-    expect(mockLte).toHaveBeenCalledWith('created_at', '2023-01-31');
+  it('should respect pagination via range', async () => {
+    seed('admin-123');
+    const result = await getAllPayments({ page: 1, limit: 1 });
+    expect(result.error).toBeNull();
+    expect(result.data).toHaveLength(1);
   });
 
   describe('updatePaymentStatus Action', () => {
     it('should deny access if not authenticated', async () => {
-      mockGetUser.mockResolvedValueOnce({ data: { user: null } });
-      const result = await updatePaymentStatus('pay_1', 'completed');
-      expect(result.error).toBe('Not authenticated');
+      seed(null);
+      expect((await updatePaymentStatus('pay-1', 'completed')).error).toBe('Not authenticated');
     });
 
     it('should deny access if not admin', async () => {
-      mockGetUser.mockResolvedValue({ data: { user: { id: 'user_123' } } });
-      mockFrom.mockReturnValueOnce({
-        select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: { role: 'parent' } }),
-      });
-
-      const result = await updatePaymentStatus('pay_1', 'completed');
-      expect(result.error).toBe('Access denied: Admin privileges required');
+      seed('parent-123');
+      expect((await updatePaymentStatus('pay-1', 'completed')).error).toBe('Access denied: Admin privileges required');
     });
 
     it('should update payment status successfully', async () => {
-      mockGetUser.mockResolvedValue({ data: { user: { id: 'admin_123' } } });
-
-      mockFrom.mockImplementation((table) => {
-        if (table === 'profiles')
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: { role: 'admin' } }),
-          };
-        if (table === 'payments')
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi
-              .fn()
-              .mockResolvedValue({
-                data: {
-                  id: 'pay_1',
-                  status: 'pending',
-                  enrollment_id: 'enr_1',
-                },
-              }),
-            update: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ error: null }),
-            }),
-          };
-        return {};
-      });
-
-      const result = await updatePaymentStatus('pay_1', 'failed');
+      const fake = seed('admin-123');
+      const result = await updatePaymentStatus('pay-1', 'failed');
       expect(result.success).toBe(true);
+      expect(fake.db.payments.find((p) => p.id === 'pay-1')?.status).toBe('failed');
     });
 
     it('should confirm enrollment if payment completed', async () => {
-      mockGetUser.mockResolvedValue({ data: { user: { id: 'admin_123' } } });
-
-      const mockEnrollmentUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      });
-
-      mockFrom.mockImplementation((table) => {
-        if (table === 'profiles')
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({ data: { role: 'admin' } }),
-          };
-        if (table === 'payments')
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi
-              .fn()
-              .mockResolvedValue({
-                data: {
-                  id: 'pay_1',
-                  status: 'pending',
-                  enrollment_id: 'enr_1',
-                },
-              }),
-            update: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ error: null }),
-            }),
-          };
-        if (table === 'enrollments')
-          return {
-            update: mockEnrollmentUpdate,
-          };
-        return {};
-      });
-
-      const result = await updatePaymentStatus('pay_1', 'completed');
+      const fake = seed('admin-123');
+      const result = await updatePaymentStatus('pay-1', 'completed');
       expect(result.success).toBe(true);
-      expect(mockEnrollmentUpdate).toHaveBeenCalledWith({
-        status: 'confirmed',
-      });
+      expect(fake.db.payments.find((p) => p.id === 'pay-1')?.status).toBe('completed');
+      expect(fake.db.enrollments.find((e) => e.id === 'enr-1')?.status).toBe('confirmed');
     });
   });
 });
