@@ -382,6 +382,27 @@ export function SchedulerClassForm({
           />
         </div>
 
+        {isEdit && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none">Age Min</label>
+              <Input
+                value={initialData?.age_min != null ? String(initialData.age_min) : '—'}
+                disabled
+                data-testid="age-min-display"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none">Age Max</label>
+              <Input
+                value={initialData?.age_max != null ? String(initialData.age_max) : '—'}
+                disabled
+                data-testid="age-max-display"
+              />
+            </div>
+          </div>
+        )}
+
         <FormField
           control={form.control}
           name="syllabusUrl"
