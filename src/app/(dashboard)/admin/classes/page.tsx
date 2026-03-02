@@ -55,7 +55,7 @@ export default async function AdminClassesPage({
           </p>
         </div>
         <Button asChild>
-          <Link href="/teacher/classes/new">
+          <Link href="/admin/classes/new">
             <Plus className="mr-2 h-4 w-4" />
             Create Class
           </Link>
