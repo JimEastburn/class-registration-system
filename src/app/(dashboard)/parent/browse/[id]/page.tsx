@@ -1,7 +1,5 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Clock, Calendar, User, MapPin } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Clock, Calendar, User, MapPin } from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -16,6 +14,7 @@ import { getEnrollmentsForFamily } from '@/lib/actions/enrollments';
 import { getMaterialsForClass } from '@/lib/actions/materials';
 import { EnrollButton } from '@/components/classes/EnrollButton';
 import { ClassMaterialsList } from '@/components/classes/ClassMaterialsList';
+import { BackButton } from '@/components/ui/BackButton';
 
 interface ClassDetailPageProps {
   params: Promise<{ id: string }>;
@@ -77,12 +76,7 @@ export default async function ClassDetailPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/parent/browse">
-            <ArrowLeft className="h-5 w-5" />
-            <span className="sr-only">Back to Browse</span>
-          </Link>
-        </Button>
+        <BackButton />
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             {classItem.name}

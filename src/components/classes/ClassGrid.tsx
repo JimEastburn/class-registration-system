@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Clock, Users, Calendar, DollarSign, User, Search, X, Minus, Plus } from 'lucide-react';
 import { ViewToggle } from '@/components/classes/ViewToggle';
 import {
@@ -33,9 +34,25 @@ interface ClassGridProps {
 }
 
 export function ClassGrid({ classes, showSearch = false, showCalendarToggle = false }: ClassGridProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [childAge, setChildAge] = useState('0');
+  const [childAge, setChildAgeState] = useState(() => searchParams.get('age') || '0');
   const [calendarView, setCalendarView] = useState(false);
+
+  const setChildAge = useCallback((value: string) => {
+    setChildAgeState(value);
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === '0' || value === '') {
+      params.delete('age');
+    } else {
+      params.set('age', value);
+    }
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [searchParams, router, pathname]);
 
   // Apply text search filter
   let filteredClasses = searchQuery

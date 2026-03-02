@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ClassGrid } from '../ClassGrid';
-import { vi, describe, it, expect } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import type { Class } from '@/types';
 
 // Mock next/link
@@ -8,6 +8,15 @@ vi.mock('next/link', () => ({
   default: ({ href, children }: { href: string; children: React.ReactNode }) => (
     <a href={href}>{children}</a>
   ),
+}));
+
+// Mock next/navigation
+const mockReplace = vi.fn();
+let mockSearchParams = new URLSearchParams();
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => mockSearchParams,
+  useRouter: () => ({ replace: mockReplace }),
+  usePathname: () => '/parent/browse',
 }));
 
 // Mock ParentCalendarGrid (not under test)
@@ -64,6 +73,11 @@ const CLASSES = [
 // ---------------------------------------------------------------------------
 
 describe('ClassGrid age filter', () => {
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams();
+    mockReplace.mockClear();
+  });
+
   function renderGrid() {
     return render(
       <ClassGrid classes={CLASSES} showSearch showCalendarToggle />
@@ -274,5 +288,22 @@ describe('ClassGrid age filter', () => {
     // Click − → 1
     fireEvent.click(screen.getByTestId('age-decrement'));
     expect(getAgeInput().value).toBe('1');
+  });
+
+  it('initializes child age from URL search param "age"', () => {
+    mockSearchParams = new URLSearchParams('age=8');
+    renderGrid();
+
+    // Age should be initialized to 8
+    expect(getAgeInput().value).toBe('8');
+
+    // Only age-8-matching classes should be visible
+    const ids = visibleClassNames();
+    expect(ids).toContain('elem');      // 6-11
+    expect(ids).toContain('open-max');   // ≤10
+    expect(ids).toContain('no-range');   // always
+    expect(ids).not.toContain('ms');     // 11-14
+    expect(ids).not.toContain('hs');     // 14-18
+    expect(ids).not.toContain('open-min'); // 12+
   });
 });
