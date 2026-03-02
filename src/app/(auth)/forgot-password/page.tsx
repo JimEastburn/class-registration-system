@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { getDefaultPathForRole } from '@/lib/supabase/middleware';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 
 export const metadata = {
@@ -16,7 +17,7 @@ export default async function ForgotPasswordPage() {
 
   if (user) {
     const role = user.user_metadata?.role || 'parent';
-    redirect(`/${role}`);
+    redirect(getDefaultPathForRole(role));
   }
 
   return (

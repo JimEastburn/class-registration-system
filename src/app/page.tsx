@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { getDefaultPathForRole } from '@/lib/supabase/middleware';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ export default async function HomePage() {
   // Redirect authenticated users to their dashboard
   if (user) {
     const role = user.user_metadata?.role || 'parent';
-    redirect(`/${role}`);
+    redirect(getDefaultPathForRole(role));
   }
 
   return (
