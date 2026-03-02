@@ -26,6 +26,11 @@ vi.mock('@/components/classes/ParentCalendarGrid', () => ({
   ),
 }));
 
+// Mock useScrollRestore hook
+vi.mock('@/hooks/useScrollRestore', () => ({
+  useScrollRestore: () => ({ saveScroll: vi.fn() }),
+}));
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------

@@ -15,6 +15,7 @@ import { getMaterialsForClass } from '@/lib/actions/materials';
 import { EnrollButton } from '@/components/classes/EnrollButton';
 import { ClassMaterialsList } from '@/components/classes/ClassMaterialsList';
 import { BackButton } from '@/components/ui/BackButton';
+import { ScrollToTop } from '@/components/ui/ScrollToTop';
 
 interface ClassDetailPageProps {
   params: Promise<{ id: string }>;
@@ -75,6 +76,7 @@ export default async function ClassDetailPage({
 
   return (
     <div className="space-y-6">
+      <ScrollToTop />
       <div className="flex items-center gap-4">
         <BackButton />
         <div>

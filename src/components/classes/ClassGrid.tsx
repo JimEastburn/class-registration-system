@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Clock, Users, Calendar, DollarSign, User, Search, X, Minus, Plus } from 'lucide-react';
+import { useScrollRestore } from '@/hooks/useScrollRestore';
 import { ViewToggle } from '@/components/classes/ViewToggle';
 import {
   Card,
@@ -37,6 +38,8 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+
+  const { saveScroll } = useScrollRestore('/parent/browse');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [childAge, setChildAgeState] = useState(() => searchParams.get('age') || '0');
@@ -207,7 +210,7 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
           data-testid="class-grid"
         >
           {filteredClasses.map((cls) => (
-            <ClassCard key={cls.id} classItem={cls} />
+            <ClassCard key={cls.id} classItem={cls} onNavigateAway={saveScroll} />
           ))}
         </div>
       )}
@@ -217,9 +220,10 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
 
 interface ClassCardProps {
   classItem: ClassWithTeacher;
+  onNavigateAway?: () => void;
 }
 
-function ClassCard({ classItem }: ClassCardProps) {
+function ClassCard({ classItem, onNavigateAway }: ClassCardProps) {
   const teacherName = classItem.teacher
     ? `${classItem.teacher.first_name || ''} ${classItem.teacher.last_name || ''}`.trim()
     : 'TBD';
@@ -295,7 +299,7 @@ function ClassCard({ classItem }: ClassCardProps) {
           asChild
           data-testid="view-class-details-button"
         >
-          <Link href={`/parent/browse/${classItem.id}`}>View Details</Link>
+          <Link href={`/parent/browse/${classItem.id}`} onClick={onNavigateAway}>View Details</Link>
         </Button>
       </CardFooter>
     </Card>
