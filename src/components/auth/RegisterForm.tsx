@@ -79,7 +79,7 @@ export default function RegisterForm() {
 
   if (success) {
     return (
-      <Card className="border-white/20 bg-white/10 backdrop-blur-lg">
+      <Card className="border-slate-600 bg-slate-700/90">
         <CardContent className="pt-6">
           <div
             className="space-y-4 text-center"
@@ -119,7 +119,7 @@ export default function RegisterForm() {
   }
 
   return (
-    <Card className="border-white/20 bg-white/10 backdrop-blur-lg">
+    <Card className="border-slate-600 bg-slate-700/90">
       <CardHeader className="space-y-1 pb-4">
         <h2 className="text-center text-xl font-semibold text-white">
           Create Account

@@ -58,7 +58,7 @@ export default function ForgotPasswordForm() {
   if (success) {
     return (
       <Card
-        className="border-0 bg-white/10 shadow-2xl backdrop-blur-lg"
+        className="border-slate-600 bg-slate-700/90 shadow-2xl"
         data-testid="forgot-success-message"
       >
         <CardHeader className="text-center">
@@ -100,7 +100,7 @@ export default function ForgotPasswordForm() {
   }
 
   return (
-    <Card className="border-0 bg-white/10 shadow-2xl backdrop-blur-lg">
+    <Card className="border-slate-600 bg-slate-700/90 shadow-2xl">
       <CardHeader>
         <CardTitle className="text-center text-white">Reset Password</CardTitle>
       </CardHeader>

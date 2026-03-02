@@ -23,7 +23,7 @@ export default async function LoginPage() {
   return (
     <>
       {/* Form Container */}
-      <div className="w-full rounded-2xl border border-slate-700 bg-slate-800/50 p-8 shadow-xl backdrop-blur-sm">
+      <div className="w-full rounded-2xl border border-slate-700 bg-slate-800 p-8 shadow-xl">
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-3xl font-bold text-white">Welcome Back</h1>
           <p className="text-gray-300">Sign in to access your dashboard</p>
@@ -32,7 +32,7 @@ export default async function LoginPage() {
       </div>
 
       {/* Support Info Card */}
-      <div className="w-full rounded-xl border border-slate-700 bg-slate-800/50 p-4 text-center shadow-lg backdrop-blur-md">
+      <div className="w-full rounded-xl border border-slate-700 bg-slate-800 p-4 text-center shadow-lg">
         <div className="flex flex-col items-center gap-0.5 text-sm text-slate-300">
           <span>For help, please text Jim Eastburn</span>
           <a

@@ -35,7 +35,7 @@ export default function GatePage() {
 
       {/* Gate Form */}
       <div className="relative z-10 mx-4 w-full max-w-md">
-        <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-8 shadow-xl backdrop-blur-sm">
+        <div className="rounded-2xl border border-slate-700 bg-slate-800 p-8 shadow-xl">
           <div className="mb-6 flex justify-center">
             <Image
               src="/AAC_FINAL.webp"

@@ -35,7 +35,7 @@ export default async function ResetPasswordPage({
 
     return (
       <>
-        <div className="w-full rounded-2xl border border-slate-700 bg-slate-800/50 p-8 shadow-xl backdrop-blur-sm">
+        <div className="w-full rounded-2xl border border-slate-700 bg-slate-800 p-8 shadow-xl">
           <div className="mb-6 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/20">
               <svg
@@ -80,7 +80,7 @@ export default async function ResetPasswordPage({
   return (
     <>
       {/* Form Container */}
-      <div className="w-full rounded-2xl border border-slate-700 bg-slate-800/50 p-8 shadow-xl backdrop-blur-sm">
+      <div className="w-full rounded-2xl border border-slate-700 bg-slate-800 p-8 shadow-xl">
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-3xl font-bold text-white">Reset Password</h1>
           <p className="text-slate-300">Enter your new password below</p>
