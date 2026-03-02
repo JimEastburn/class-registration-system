@@ -127,7 +127,7 @@ export function EnrollmentManagementTable({
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="confirmed">Confirmed and paid</SelectItem>
               <SelectItem value="waitlisted">Waitlisted</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>

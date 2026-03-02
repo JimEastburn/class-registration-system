@@ -96,16 +96,7 @@ export function EnrollmentTable({
                   status={enrollment.status}
                   waitlistPosition={enrollment.waitlist_position}
                 />
-                {enrollment.status === 'pending' && enrollment.class && (
-                  <span className="flex items-center gap-2">
-                    <Button size="sm" disabled className="h-7 px-3 text-xs">
-                      Pay
-                    </Button>
-                    <span className="text-xs text-muted-foreground italic">
-                      Payment options coming soon!
-                    </span>
-                  </span>
-                )}
+
               </div>
             </TableCell>
             <TableCell className="text-muted-foreground">

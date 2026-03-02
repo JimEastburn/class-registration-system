@@ -42,7 +42,7 @@ export default async function HomePage() {
             className="h-auto w-20 object-contain md:w-[165px]"
           />
           <div className="flex gap-2 md:gap-4">
-            <Link href="/login">
+            <Link href="/gate">
               <Button
                 variant="outline"
                 className="hover:bg-accent hover:text-accent-foreground border-amber-300 bg-amber-200/80 text-slate-900"
@@ -69,7 +69,7 @@ export default async function HomePage() {
               Manage class registrations, schedules, and payments.
             </p>
             <div className="flex flex-col justify-center gap-4 sm:flex-row">
-              <Link href="/login">
+              <Link href="/gate">
                 <Button
                   size="lg"
                   variant="outline"

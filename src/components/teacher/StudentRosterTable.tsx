@@ -50,7 +50,7 @@ const statusConfig: Record<
 > = {
   confirmed: { label: 'Enrolled', variant: 'default' },
   waitlisted: { label: 'Waitlist', variant: 'secondary' },
-  pending: { label: 'Pending Payment', variant: 'outline' },
+  pending: { label: 'Enrolled', variant: 'outline' },
   cancelled: { label: 'Cancelled', variant: 'destructive' },
 };
 

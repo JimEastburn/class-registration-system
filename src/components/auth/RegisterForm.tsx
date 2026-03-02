@@ -108,7 +108,7 @@ export default function RegisterForm() {
               to verify your account before signing in.
             </p>
             <Button className="bg-primary hover:bg-primary/90" asChild>
-              <Link href="/login" data-testid="back-to-login-link">
+              <Link href="/gate" data-testid="back-to-login-link">
                 Back to Login
               </Link>
             </Button>
@@ -358,7 +358,7 @@ export default function RegisterForm() {
           <p className="text-center text-sm text-slate-300">
             Already have an account?{' '}
             <Link
-              href="/login"
+              href="/gate"
               className="font-medium text-teal-400 transition-colors hover:text-teal-300"
               data-testid="signin-link"
             >

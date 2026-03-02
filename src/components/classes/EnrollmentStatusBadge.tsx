@@ -12,12 +12,12 @@ const statusConfig: Record<
   { label: string; className: string }
 > = {
   pending: {
-    label: 'Pending Payment',
+    label: 'Enrolled',
     className:
       'border-[var(--status-pending-border)] bg-[var(--status-pending-bg)] text-[var(--status-pending-fg)]',
   },
   confirmed: {
-    label: 'Confirmed',
+    label: 'Confirmed and paid',
     className:
       'border-[var(--status-confirmed-border)] bg-[var(--status-confirmed-bg)] text-[var(--status-confirmed-fg)]',
   },

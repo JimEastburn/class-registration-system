@@ -119,15 +119,15 @@ export default async function ParentDashboardPage() {
 
       </div>
 
-      {/* Pending Enrollments & Recent Payments */}
+      {/* Pending Payments & Recent Payments */}
       <div className="grid gap-6 md:grid-cols-2">
 
-        {/* Pending Enrollments */}
+        {/* Pending Payments */}
         <Link href="/parent/enrollments" className="block">
         <Card className="hover:border-primary/50 cursor-pointer transition-colors hover:shadow-sm">
           <CardHeader>
-            <CardTitle>Pending Enrollments</CardTitle>
-            <CardDescription>Enrollments waiting for payment</CardDescription>
+            <CardTitle>Pending Payments</CardTitle>
+            <CardDescription>Payment options coming soon!  We&apos;ll let you know when payments can be made using this website.</CardDescription>
           </CardHeader>
           <CardContent>
             {pendingEnrollments.length === 0 ? (
@@ -161,12 +161,12 @@ export default async function ParentDashboardPage() {
         </Card>
         </Link>
 
-        {/* Active Enrollments */}
+        {/* Class Payments */}
         <Link href="/parent/enrollments" className="block h-full">
           <Card className="hover:border-primary/50 h-full cursor-pointer transition-colors hover:shadow-sm">
             <CardHeader>
-              <CardTitle>Active Enrollments</CardTitle>
-              <CardDescription>Current classes</CardDescription>
+              <CardTitle>Class Payments</CardTitle>
+              <CardDescription>Payment options coming soon!  We&apos;ll let you know when payments can be made using this website.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">

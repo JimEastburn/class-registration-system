@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Loader2, UserPlus, Clock } from 'lucide-react';
+import { Loader2, UserPlus } from 'lucide-react';
 import { getFamilyMembers } from '@/lib/actions/family';
 import { enrollStudent } from '@/lib/actions/enrollments';
 import { hasCompleteAddress } from '@/lib/actions/profile';
@@ -306,14 +306,12 @@ export function EnrollButton({
               Cancel
             </Button>
             <Button
-              variant="secondary"
               onClick={handlePayLater}
               disabled={isLoading || isPayLaterLoading || !selectedMember || members.length === 0}
               data-testid="pay-later-button"
             >
               {isPayLaterLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <Clock className="mr-2 h-4 w-4" />
-              Pay later
+              Enroll
             </Button>
             <Button
               className="hidden"
