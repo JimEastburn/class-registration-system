@@ -12,10 +12,12 @@ vi.mock('next/link', () => ({
 
 // Mock next/navigation
 const mockReplace = vi.fn();
+const mockPush = vi.fn();
+const mockBack = vi.fn();
 let mockSearchParams = new URLSearchParams();
 vi.mock('next/navigation', () => ({
   useSearchParams: () => mockSearchParams,
-  useRouter: () => ({ replace: mockReplace }),
+  useRouter: () => ({ replace: mockReplace, push: mockPush, back: mockBack }),
   usePathname: () => '/parent/browse',
 }));
 
@@ -27,8 +29,9 @@ vi.mock('@/components/classes/ParentCalendarGrid', () => ({
 }));
 
 // Mock useScrollRestore hook
+const mockSaveScroll = vi.fn();
 vi.mock('@/hooks/useScrollRestore', () => ({
-  useScrollRestore: () => ({ saveScroll: vi.fn() }),
+  useScrollRestore: () => ({ saveScroll: mockSaveScroll }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -81,6 +84,9 @@ describe('ClassGrid age filter', () => {
   beforeEach(() => {
     mockSearchParams = new URLSearchParams();
     mockReplace.mockClear();
+    mockPush.mockClear();
+    mockBack.mockClear();
+    mockSaveScroll.mockClear();
   });
 
   function renderGrid() {
@@ -224,9 +230,8 @@ describe('ClassGrid age filter', () => {
   });
 
   it('filters calendar view classes by age too', () => {
+    mockSearchParams = new URLSearchParams('view=calendar');
     renderGrid();
-    // Toggle calendar view on via segmented control
-    fireEvent.click(screen.getByTestId('view-toggle-calendar'));
     // Set age filter
     fireEvent.change(getAgeInput(), { target: { value: '8' } });
 
@@ -245,36 +250,49 @@ describe('ClassGrid age filter', () => {
     expect(calendarBtn).toHaveAttribute('aria-pressed', 'false');
   });
 
-  it('toggles back to cards view when Cards button clicked', () => {
+  it('shows calendar view when URL has view=calendar', () => {
+    mockSearchParams = new URLSearchParams('view=calendar');
     renderGrid();
-    // Switch to calendar
-    fireEvent.click(screen.getByTestId('view-toggle-calendar'));
     expect(screen.getByTestId('parent-calendar-grid')).toBeInTheDocument();
+    expect(screen.queryByTestId('class-grid')).not.toBeInTheDocument();
+    // Calendar toggle should be pressed
+    expect(screen.getByTestId('view-toggle-calendar')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('view-toggle-cards')).toHaveAttribute('aria-pressed', 'false');
+  });
 
-    // Switch back to cards
+  it('clicking Calendar saves scroll and calls router.push with view=calendar', () => {
+    renderGrid();
+    fireEvent.click(screen.getByTestId('view-toggle-calendar'));
+    expect(mockSaveScroll).toHaveBeenCalled();
+    expect(mockPush).toHaveBeenCalledWith(
+      expect.stringContaining('view=calendar'),
+      { scroll: false },
+    );
+  });
+
+  it('clicking Cards calls router.back()', () => {
+    mockSearchParams = new URLSearchParams('view=calendar');
+    renderGrid();
     fireEvent.click(screen.getByTestId('view-toggle-cards'));
-    expect(screen.getByTestId('class-grid')).toBeInTheDocument();
-    expect(screen.queryByTestId('parent-calendar-grid')).not.toBeInTheDocument();
+    expect(mockBack).toHaveBeenCalled();
   });
 
   // -----------------------------------------------------------------------
   // Pill stepper button tests
   // -----------------------------------------------------------------------
 
-  it('increment button sets age from 0 to 1', () => {
+  it('increment button skips from 0 to 5', () => {
     renderGrid();
     fireEvent.click(screen.getByTestId('age-increment'));
-    expect(getAgeInput().value).toBe('1');
+    expect(getAgeInput().value).toBe('5');
   });
 
-  it('decrement at age 1 returns to 0 (no filter)', () => {
+  it('decrement at age 5 returns to 0 (no filter)', () => {
     renderGrid();
-    // Set age to 1 via hidden input
-    fireEvent.change(getAgeInput(), { target: { value: '1' } });
-    // Age 1 matches: open-max (≤10) and no-range (always) = 2 classes
-    expect(visibleClassNames().length).toBe(2);
+    // Set age to 5 via hidden input
+    fireEvent.change(getAgeInput(), { target: { value: '5' } });
 
-    // Click decrement — should go to 0 (no filter)
+    // Click decrement — should skip to 0 (no filter)
     fireEvent.click(screen.getByTestId('age-decrement'));
     expect(getAgeInput().value).toBe('0');
     expect(visibleClassNames()).toHaveLength(6);
@@ -282,17 +300,21 @@ describe('ClassGrid age filter', () => {
 
   it('increment and decrement adjust age correctly', () => {
     renderGrid();
-    // Click + → 1
+    // Click + → 5 (skips 1-4)
     fireEvent.click(screen.getByTestId('age-increment'));
-    expect(getAgeInput().value).toBe('1');
+    expect(getAgeInput().value).toBe('5');
 
-    // Click + → 2
+    // Click + → 6
     fireEvent.click(screen.getByTestId('age-increment'));
-    expect(getAgeInput().value).toBe('2');
+    expect(getAgeInput().value).toBe('6');
 
-    // Click − → 1
+    // Click − → 5
     fireEvent.click(screen.getByTestId('age-decrement'));
-    expect(getAgeInput().value).toBe('1');
+    expect(getAgeInput().value).toBe('5');
+
+    // Click − → 0 (skips back from 5)
+    fireEvent.click(screen.getByTestId('age-decrement'));
+    expect(getAgeInput().value).toBe('0');
   });
 
   it('initializes child age from URL search param "age"', () => {

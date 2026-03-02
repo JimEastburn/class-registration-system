@@ -43,7 +43,18 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
 
   const [searchQuery, setSearchQuery] = useState('');
   const [childAge, setChildAgeState] = useState(() => searchParams.get('age') || '0');
-  const [calendarView, setCalendarView] = useState(false);
+  const calendarView = searchParams.get('view') === 'calendar';
+
+  const handleViewToggle = useCallback((calendar: boolean) => {
+    if (calendar) {
+      saveScroll();
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('view', 'calendar');
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    } else {
+      router.back();
+    }
+  }, [saveScroll, searchParams, pathname, router]);
 
   const setChildAge = useCallback((value: string) => {
     setChildAgeState(value);
@@ -148,7 +159,9 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
                     aria-label="Decrease age"
                     onClick={() => {
                       const current = parseInt(childAge, 10) || 0;
-                      if (current > 0) {
+                      if (current <= 5) {
+                        setChildAge('0');
+                      } else {
                         setChildAge(String(current - 1));
                       }
                     }}
@@ -166,7 +179,9 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
                     aria-label="Increase age"
                     onClick={() => {
                       const current = parseInt(childAge, 10) || 0;
-                      if (current < 18) {
+                      if (current === 0) {
+                        setChildAge('5');
+                      } else if (current < 18) {
                         setChildAge(String(current + 1));
                       }
                     }}
@@ -192,7 +207,7 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
 
             {/* View toggle: Cards | Calendar */}
             {showCalendarToggle && (
-              <ViewToggle calendarView={calendarView} onToggle={setCalendarView} />
+              <ViewToggle calendarView={calendarView} onToggle={handleViewToggle} />
             )}
           </div>
         </div>

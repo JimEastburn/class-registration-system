@@ -183,7 +183,9 @@ export function EnrollmentListClient({
                 aria-label="Decrease age"
                 onClick={() => {
                   const current = parseInt(childAge, 10) || 0;
-                  if (current > 0) {
+                  if (current <= 5) {
+                    setChildAge('0');
+                  } else {
                     setChildAge(String(current - 1));
                   }
                 }}
@@ -201,7 +203,9 @@ export function EnrollmentListClient({
                 aria-label="Increase age"
                 onClick={() => {
                   const current = parseInt(childAge, 10) || 0;
-                  if (current < 18) {
+                  if (current === 0) {
+                    setChildAge('5');
+                  } else if (current < 18) {
                     setChildAge(String(current + 1));
                   }
                 }}

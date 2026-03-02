@@ -149,10 +149,10 @@ describe('EnrollmentListClient filter bar', () => {
       expect(screen.getByText(/2 enrollments found/)).toBeInTheDocument();
     });
 
-    it('increment and decrement buttons work', () => {
+    it('increment and decrement buttons skip between 0 and 5', () => {
       renderComponent();
       fireEvent.click(screen.getByTestId('enrollment-age-increment'));
-      expect(getAgeInput().value).toBe('1');
+      expect(getAgeInput().value).toBe('5');
 
       fireEvent.click(screen.getByTestId('enrollment-age-decrement'));
       expect(getAgeInput().value).toBe('0');
