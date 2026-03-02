@@ -131,7 +131,7 @@ export default function ForgotPasswordForm() {
               id="email"
               type="email"
               placeholder="you@example.com"
-              className="border-white/20 bg-white/10 text-white placeholder:text-slate-400"
+              className="border-white/20 bg-slate-600 text-white placeholder:text-slate-400"
               {...register('email')}
               data-testid="forgot-email-input"
             />

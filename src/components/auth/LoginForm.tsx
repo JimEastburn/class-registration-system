@@ -87,7 +87,7 @@ export default function LoginForm() {
               id="email"
               type="email"
               placeholder="you@example.com"
-              className="border-white/20 bg-white/10 text-white placeholder:text-slate-400"
+              className="border-white/20 bg-slate-600 text-white placeholder:text-slate-400"
               {...register('email')}
               data-testid="email-input"
             />
@@ -113,7 +113,7 @@ export default function LoginForm() {
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                className="border-white/20 bg-white/10 pr-10 text-white placeholder:text-slate-400"
+                className="border-white/20 bg-slate-600 pr-10 text-white placeholder:text-slate-400"
                 {...register('password')}
                 data-testid="password-input"
               />

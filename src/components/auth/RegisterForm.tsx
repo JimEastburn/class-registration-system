@@ -148,7 +148,7 @@ export default function RegisterForm() {
               <Input
                 id="firstName"
                 placeholder="John"
-                className="border-white/20 bg-white/10 text-white placeholder:text-slate-400"
+                className="border-white/20 bg-slate-600 text-white placeholder:text-slate-400"
                 {...register('firstName')}
                 data-testid="first-name-input"
               />
@@ -166,7 +166,7 @@ export default function RegisterForm() {
               <Input
                 id="lastName"
                 placeholder="Doe"
-                className="border-white/20 bg-white/10 text-white placeholder:text-slate-400"
+                className="border-white/20 bg-slate-600 text-white placeholder:text-slate-400"
                 {...register('lastName')}
                 data-testid="last-name-input"
               />
@@ -186,7 +186,7 @@ export default function RegisterForm() {
               id="email"
               type="email"
               placeholder="you@example.com"
-              className="border-white/20 bg-white/10 text-white placeholder:text-slate-400"
+              className="border-white/20 bg-slate-600 text-white placeholder:text-slate-400"
               {...register('email')}
               data-testid="register-email-input"
             />
@@ -207,7 +207,7 @@ export default function RegisterForm() {
               }
             >
               <SelectTrigger
-                className="border-white/20 bg-white/10 text-white"
+                className="border-white/20 bg-slate-600 text-white"
                 data-testid="role-select-trigger"
               >
                 <SelectValue placeholder="Select your role" />
@@ -237,7 +237,7 @@ export default function RegisterForm() {
               id="phone"
               type="tel"
               placeholder="+1 (555) 123-4567"
-              className="border-white/20 bg-white/10 text-white placeholder:text-slate-400"
+              className="border-white/20 bg-slate-600 text-white placeholder:text-slate-400"
               {...register('phone')}
               data-testid="phone-input"
             />
@@ -251,7 +251,7 @@ export default function RegisterForm() {
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                className="border-white/20 bg-white/10 pr-10 text-white placeholder:text-slate-400"
+                className="border-white/20 bg-slate-600 pr-10 text-white placeholder:text-slate-400"
                 {...register('password')}
                 data-testid="register-password-input"
               />
@@ -282,7 +282,7 @@ export default function RegisterForm() {
               <Input
                 id="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
-                className="border-white/20 bg-white/10 pr-10 text-white placeholder:text-slate-400"
+                className="border-white/20 bg-slate-600 pr-10 text-white placeholder:text-slate-400"
                 {...register('confirmPassword')}
                 data-testid="confirm-password-input"
               />

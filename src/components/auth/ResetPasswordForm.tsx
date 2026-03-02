@@ -123,7 +123,7 @@ export default function ResetPasswordForm() {
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                className="border-white/20 bg-white/10 pr-10 text-white placeholder:text-slate-400"
+                className="border-white/20 bg-slate-600 pr-10 text-white placeholder:text-slate-400"
                 {...register('password')}
                 data-testid="reset-password-input"
               />
@@ -157,7 +157,7 @@ export default function ResetPasswordForm() {
               <Input
                 id="confirmPassword"
                 type={showConfirmPassword ? 'text' : 'password'}
-                className="border-white/20 bg-white/10 pr-10 text-white placeholder:text-slate-400"
+                className="border-white/20 bg-slate-600 pr-10 text-white placeholder:text-slate-400"
                 {...register('confirmPassword')}
                 data-testid="reset-confirm-input"
               />
