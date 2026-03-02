@@ -48,7 +48,20 @@ const formSchema = z.object({
   status: z
     .enum(['draft', 'published', 'completed', 'cancelled'])
     .default('draft'),
-});
+  age_min: z.coerce.number().min(0).optional(),
+  age_max: z.coerce.number().min(0).optional(),
+}).refine(
+  (data) => {
+    if (data.age_min != null && data.age_max != null) {
+      return data.age_min <= data.age_max;
+    }
+    return true;
+  },
+  {
+    message: 'Age Min cannot exceed Age Max',
+    path: ['age_min'],
+  }
+);
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -89,6 +102,8 @@ export function SchedulerClassForm({
       startDate: initialData?.schedule_config?.startDate || '',
       endDate: initialData?.schedule_config?.endDate || '',
       syllabusUrl: initialSyllabusUrl || '',
+      age_min: initialData?.age_min ?? undefined,
+      age_max: initialData?.age_max ?? undefined,
     }),
     [initialData, initialSyllabusUrl]
   );
@@ -131,6 +146,8 @@ export function SchedulerClassForm({
         capacity: values.capacity,
         location: values.location,
         teacher_id: values.teacher_id,
+        age_min: values.age_min ?? null,
+        age_max: values.age_max ?? null,
 
         schedule_config: {
           day: values.day,
@@ -382,26 +399,46 @@ export function SchedulerClassForm({
           />
         </div>
 
-        {isEdit && (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium leading-none">Age Min</label>
-              <Input
-                value={initialData?.age_min != null ? String(initialData.age_min) : '—'}
-                disabled
-                data-testid="age-min-display"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium leading-none">Age Max</label>
-              <Input
-                value={initialData?.age_max != null ? String(initialData.age_max) : '—'}
-                disabled
-                data-testid="age-max-display"
-              />
-            </div>
-          </div>
-        )}
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="age_min"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Age Min</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="e.g. 5"
+                    {...field}
+                    value={field.value ?? ''}
+                    data-testid="age-min-input"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="age_max"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Age Max</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="e.g. 12"
+                    {...field}
+                    value={field.value ?? ''}
+                    data-testid="age-max-input"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormField
           control={form.control}

@@ -14,7 +14,7 @@
    - Write the minimal implementation → Run it → Confirm it PASSES (GREEN)
    - Never reverse this order. Never skip the RED step.
 
-3. **VERIFICATION gate**: `npm run test` must be run at the end. New test count must be > 0 for any new feature or bug fix.
+3. **VERIFICATION gate**: `npm run test:run` must be run at the end. New test count must be > 0 for any new feature or bug fix.
 
 ### What Requires Tests
 
@@ -101,7 +101,7 @@ src/
 npm run dev    # Start dev server (Turbopack)
 npm run build  # Production build
 npm run lint   # Run ESLint
-npm run test   # Run all tests
+npm run test:run   # Run all tests (non-interactive)
 npx supabase gen types --lang=typescript --project-id jakjpigeafqqgispwlhl --schema public > src/types/database.ts  # Regenerate DB types
 ```
 

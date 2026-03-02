@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getSchedulerStats, getUnscheduledClasses } from '../scheduler';
+import { getSchedulerStats, getUnscheduledClasses, schedulerCreateClass } from '../scheduler';
 import {
   seedFake,
   SCHEDULER_PROFILE,
@@ -100,4 +100,39 @@ describe('Scheduler Actions', () => {
       }
     });
   });
+
+  describe('schedulerCreateClass', () => {
+    it('should persist age_min and age_max when provided', async () => {
+      const fake = seedFake({
+        authUserId: 'scheduler-123',
+        data: {
+          profiles: [SCHEDULER_PROFILE] as unknown as Record<string, unknown>[],
+          classes: [] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await schedulerCreateClass({
+        name: 'Art for Kids',
+        teacher_id: 'teacher-1',
+        capacity: 15,
+        age_min: 5,
+        age_max: 12,
+        schedule_config: { day: 'Tuesday', block: 'Block 1', recurring: true },
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.classId).toBeDefined();
+      }
+
+      // Verify the inserted row has age_min and age_max
+      const insertedClasses = fake.db.classes as Record<string, unknown>[];
+      expect(insertedClasses).toHaveLength(1);
+      expect(insertedClasses[0]).toMatchObject({
+        age_min: 5,
+        age_max: 12,
+      });
+    });
+  });
 });
+

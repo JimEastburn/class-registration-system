@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { SchedulerClassForm } from '../SchedulerClassForm';
+import { schedulerCreateClass } from '@/lib/actions/scheduler';
 
 // Mock dependencies
 vi.mock('next/navigation', () => ({
@@ -25,7 +26,10 @@ vi.mock('@/lib/actions/scheduler', () => ({
   schedulerUpdateClass: vi.fn().mockResolvedValue({ success: true }),
   getTeachersForScheduler: vi
     .fn()
-    .mockResolvedValue({ success: true, data: [] }),
+    .mockResolvedValue({
+      success: true,
+      data: [{ id: 'teacher-1', first_name: 'Jane', last_name: 'Doe', email: 'jane@test.com' }],
+    }),
 }));
 
 vi.mock('@/lib/actions/materials', () => ({
@@ -79,5 +83,92 @@ describe('SchedulerClassForm', () => {
     // Ensure invalid options are NOT present
     expect(optionValues).not.toContain('Block 5');
     expect(optionValues).not.toContain('Block 6');
+  });
+
+  it('renders age range inputs in create mode', () => {
+    render(<SchedulerClassForm />);
+
+    const ageMinInput = screen.getByTestId('age-min-input');
+    const ageMaxInput = screen.getByTestId('age-max-input');
+
+    expect(ageMinInput).toBeInTheDocument();
+    expect(ageMaxInput).toBeInTheDocument();
+    // They should be editable (not disabled)
+    expect(ageMinInput).not.toBeDisabled();
+    expect(ageMaxInput).not.toBeDisabled();
+  });
+
+  it('validates age_min must be less than or equal to age_max', async () => {
+    const user = userEvent.setup();
+    render(<SchedulerClassForm />);
+
+    // Fill required fields
+    const nameInput = screen.getByTestId('class-name-input');
+    await user.type(nameInput, 'Test Class');
+
+    // Set age_min greater than age_max
+    const ageMinInput = screen.getByTestId('age-min-input');
+    const ageMaxInput = screen.getByTestId('age-max-input');
+    await user.clear(ageMinInput);
+    await user.type(ageMinInput, '12');
+    await user.clear(ageMaxInput);
+    await user.type(ageMaxInput, '8');
+
+    // Submit
+    const submitButton = screen.getByTestId('scheduler-submit-button');
+    await user.click(submitButton);
+
+    // Expect validation error
+    await waitFor(() => {
+      expect(screen.getByText(/age min.*cannot.*exceed.*age max/i)).toBeInTheDocument();
+    });
+  });
+
+  it('includes age values in the create payload', async () => {
+    const user = userEvent.setup();
+    render(<SchedulerClassForm />);
+
+    // Fill required fields
+    const nameInput = screen.getByTestId('class-name-input');
+    await user.type(nameInput, 'Art Class');
+
+    // Wait for teacher options to load & select teacher
+    const teacherTrigger = screen.getByRole('combobox', { name: /assigned teacher/i });
+    await user.click(teacherTrigger);
+    const teacherOption = await screen.findByRole('option', { name: /Jane Doe/i });
+    await user.click(teacherOption);
+
+    // Select day
+    const dayTrigger = screen.getByRole('combobox', { name: /day/i });
+    await user.click(dayTrigger);
+    const dayOption = await screen.findByRole('option', { name: /tuesday\/thursday/i });
+    await user.click(dayOption);
+
+    // Select block
+    const blockTrigger = screen.getByRole('combobox', { name: /block/i });
+    await user.click(blockTrigger);
+    const blockOption = await screen.findByRole('option', { name: /block 1/i });
+    await user.click(blockOption);
+
+    // Fill age fields
+    const ageMinInput = screen.getByTestId('age-min-input');
+    const ageMaxInput = screen.getByTestId('age-max-input');
+    await user.clear(ageMinInput);
+    await user.type(ageMinInput, '5');
+    await user.clear(ageMaxInput);
+    await user.type(ageMaxInput, '12');
+
+    // Submit
+    const submitButton = screen.getByTestId('scheduler-submit-button');
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(schedulerCreateClass).toHaveBeenCalledWith(
+        expect.objectContaining({
+          age_min: 5,
+          age_max: 12,
+        })
+      );
+    });
   });
 });
