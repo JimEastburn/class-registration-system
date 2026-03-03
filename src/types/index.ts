@@ -192,6 +192,13 @@ export interface AuditLog {
 }
 
 /**
+ * Audit log with user profile info for display
+ */
+export interface AuditLogWithUser extends AuditLog {
+  profiles: Pick<Profile, 'first_name' | 'last_name' | 'email'> | null;
+}
+
+/**
  * System setting key-value pair
  */
 export interface SystemSetting {

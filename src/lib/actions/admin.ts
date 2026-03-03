@@ -2,7 +2,7 @@
 
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { logAuditAction } from '@/lib/actions/audit';
-import { AuditLog } from '@/types';
+import { AuditLog, AuditLogWithUser } from '@/types';
 import { revalidatePath } from 'next/cache';
 
 export interface SystemStats {
@@ -73,7 +73,7 @@ export async function getSystemStats(): Promise<{
 
 export async function getRecentActivity(
   limit = 10
-): Promise<{ data: AuditLog[] | null; error: string | null }> {
+): Promise<{ data: AuditLogWithUser[] | null; error: string | null }> {
   try {
     const supabase = await createClient();
     // Auth check...
@@ -97,13 +97,13 @@ export async function getRecentActivity(
 
     const { data, error } = await db
       .from('audit_logs')
-      .select('*')
+      .select('*, profiles:user_id(first_name, last_name, email)')
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
 
-    return { data: data as AuditLog[], error: null };
+    return { data: data as AuditLogWithUser[], error: null };
   } catch (err) {
     console.error(err);
     return { data: null, error: 'Failed to fetch activity' };
