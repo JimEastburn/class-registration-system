@@ -31,8 +31,8 @@ describe('Site Gate Middleware Helpers', () => {
       expect(isSiteGateBypassed('/api/health')).toBe(true);
     });
 
-    it('does NOT bypass /login', () => {
-      expect(isSiteGateBypassed('/login')).toBe(false);
+    it('bypasses /login', () => {
+      expect(isSiteGateBypassed('/login')).toBe(true);
     });
 
     it('does NOT bypass /parent', () => {
@@ -43,8 +43,8 @@ describe('Site Gate Middleware Helpers', () => {
       expect(isSiteGateBypassed('/admin')).toBe(false);
     });
 
-    it('does NOT bypass /forgot-password', () => {
-      expect(isSiteGateBypassed('/forgot-password')).toBe(false);
+    it('bypasses /forgot-password', () => {
+      expect(isSiteGateBypassed('/forgot-password')).toBe(true);
     });
 
     it('does NOT bypass /reset-password', () => {

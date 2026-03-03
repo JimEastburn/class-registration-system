@@ -11,7 +11,7 @@ export const SITE_GATE_COOKIE_NAME = 'site_gate_passed';
  * Paths that bypass the site-gate password check.
  * These are accessible to everyone, even without the gate cookie.
  */
-const SITE_GATE_BYPASS_PATHS = ['/', '/register', '/gate'];
+const SITE_GATE_BYPASS_PATHS = ['/', '/register', '/gate', '/login', '/forgot-password'];
 
 /**
  * Prefixes that bypass the site gate (e.g. /auth/callback, /api/*)

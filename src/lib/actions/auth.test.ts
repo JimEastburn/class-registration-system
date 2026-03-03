@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { signUp, signIn } from '@/lib/actions/auth';
+import { signUp, signIn, signOut } from '@/lib/actions/auth';
 import { redirect } from 'next/navigation';
 import {
   seedFake,
@@ -122,6 +122,17 @@ describe('Auth Actions', () => {
       // Should still redirect (fake auth always succeeds, profile insert fallback)
       await signIn(formData);
       expect(redirect).toHaveBeenCalledWith('/parent');
+    });
+  });
+
+  describe('signOut', () => {
+    it('calls redirect to /login after signing out', async () => {
+      const fake = seed();
+      fake.setAuthUser({ id: AUTH_USER_ID, email: 'existing@example.com' });
+
+      await signOut();
+
+      expect(redirect).toHaveBeenCalledWith('/login');
     });
   });
 });

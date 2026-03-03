@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import Link from 'next/link';
 import { LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -54,6 +56,7 @@ function getInitials(user: TopbarUser): string {
 export function Topbar({ user }: TopbarProps) {
   const displayName = getDisplayName(user);
   const initials = getInitials(user);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   return (
     <header
@@ -109,7 +112,10 @@ export function Topbar({ user }: TopbarProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive focus:text-destructive cursor-pointer"
+              disabled={isSigningOut}
               onClick={async () => {
+                if (isSigningOut) return;
+                setIsSigningOut(true);
                 await signOut();
               }}
               data-testid="logout-button"
