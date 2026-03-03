@@ -53,6 +53,7 @@ interface ClassWithTeacher extends Class {
     first_name: string | null;
     last_name: string | null;
   } | null;
+  enrolled_count: number;
 }
 
 interface ClassManagementTableProps {
@@ -171,9 +172,10 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Classroom</TableHead>
               <TableHead>Schedule</TableHead>
-              <TableHead>Capacity</TableHead>
-
+              <TableHead>Enrolled</TableHead>
+              <TableHead>Ages</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -188,6 +190,9 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
               >
                 <TableCell className="font-medium">{cls.name}</TableCell>
                 <TableCell>
+                  {cls.location || '—'}
+                </TableCell>
+                <TableCell>
                   {cls.day ? (
                     <span>
                       {cls.day} • {cls.block || 'TBD'}
@@ -198,7 +203,16 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
                     </span>
                   )}
                 </TableCell>
-                <TableCell>{cls.capacity}</TableCell>
+                <TableCell>{cls.enrolled_count} / {cls.capacity}</TableCell>
+                <TableCell>
+                  {cls.age_min != null && cls.age_max != null
+                    ? `${cls.age_min} – ${cls.age_max}`
+                    : cls.age_min != null
+                      ? `${cls.age_min}+`
+                      : cls.age_max != null
+                        ? `Up to ${cls.age_max}`
+                        : 'All Ages'}
+                </TableCell>
 
                 <TableCell>
                   <Badge

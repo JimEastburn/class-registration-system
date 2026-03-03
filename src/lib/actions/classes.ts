@@ -951,11 +951,15 @@ export async function completeClass(
   }
 }
 
+export type ClassWithTeacherAndCount = ClassWithTeacher & {
+  enrolled_count: number;
+};
+
 /**
- * Get all classes for the current teacher
+ * Get all classes for the current teacher, including enrolled counts
  */
 export async function getTeacherClasses(): Promise<
-  ActionResult<ClassWithTeacher[]>
+  ActionResult<ClassWithTeacherAndCount[]>
 > {
   try {
     const supabase = await createClient();
@@ -988,7 +992,33 @@ export async function getTeacherClasses(): Promise<
       return { success: false, error: error.message };
     }
 
-    return { success: true, data: classes as ClassWithTeacher[] };
+    // Fetch confirmed enrollment counts for all teacher classes
+    const classIds = (classes || []).map((c) => c.id);
+    const enrollmentCounts = new Map<string, number>();
+
+    if (classIds.length > 0) {
+      const { data: enrollments } = await supabase
+        .from('enrollments')
+        .select('class_id')
+        .in('class_id', classIds)
+        .eq('status', 'confirmed');
+
+      (enrollments || []).forEach((e) => {
+        enrollmentCounts.set(
+          e.class_id,
+          (enrollmentCounts.get(e.class_id) || 0) + 1
+        );
+      });
+    }
+
+    const classesWithCounts: ClassWithTeacherAndCount[] = (
+      classes as ClassWithTeacher[]
+    ).map((c) => ({
+      ...c,
+      enrolled_count: enrollmentCounts.get(c.id) || 0,
+    }));
+
+    return { success: true, data: classesWithCounts };
   } catch (err) {
     console.error('Unexpected error in getTeacherClasses:', err);
     return { success: false, error: 'An unexpected error occurred' };

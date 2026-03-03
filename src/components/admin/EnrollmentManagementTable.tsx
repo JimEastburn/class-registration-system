@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, MoreHorizontal, XCircle, Trash2 } from 'lucide-react';
+import { Search, MoreHorizontal, XCircle, Trash2, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { ForceEnrollDialog } from './ForceEnrollDialog';
 import { CancelEnrollmentDialog } from './CancelEnrollmentDialog';
@@ -51,6 +51,7 @@ export function EnrollmentManagementTable({
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
+  const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [statusFilter, setStatusFilter] = useState<string>(
     searchParams.get('status') || 'all'
@@ -92,16 +93,22 @@ export function EnrollmentManagementTable({
       params.delete('search');
     }
     params.set('page', '1');
-    router.replace(`${pathname}?${params.toString()}`);
+    startTransition(() => {
+      router.replace(`${pathname}?${params.toString()}`);
+    });
   };
 
   const handleStatusChange = (status: string) => {
     setStatusFilter(status);
-    router.replace(pathname + '?' + createQueryString('status', status));
+    startTransition(() => {
+      router.replace(pathname + '?' + createQueryString('status', status));
+    });
   };
 
   const handlePageChange = (newPage: number) => {
-    router.push(pathname + '?' + createQueryString('page', newPage.toString()));
+    startTransition(() => {
+      router.push(pathname + '?' + createQueryString('page', newPage.toString()));
+    });
   };
 
   return (
@@ -132,8 +139,12 @@ export function EnrollmentManagementTable({
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={() => handleSearch(search)}>
-            Search
+          <Button variant="outline" onClick={() => handleSearch(search)} disabled={isPending}>
+            {isPending ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Searching…</>
+            ) : (
+              'Search'
+            )}
           </Button>
         </div>
         <ForceEnrollDialog />
