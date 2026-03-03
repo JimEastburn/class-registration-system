@@ -48,7 +48,7 @@ const statusConfig: Record<
     variant: 'default' | 'secondary' | 'outline' | 'destructive';
   }
 > = {
-  confirmed: { label: 'Enrolled', variant: 'default' },
+  confirmed: { label: 'Confirmed', variant: 'default' },
   waitlisted: { label: 'Waitlist', variant: 'secondary' },
   pending: { label: 'Enrolled', variant: 'outline' },
   cancelled: { label: 'Cancelled', variant: 'destructive' },
