@@ -90,4 +90,67 @@ describe('AdminClassForm', () => {
     expect(optionValues).not.toContain('Block 5');
     expect(optionValues).not.toContain('Block 6');
   });
+
+  it('renders Age Min and Age Max inputs', () => {
+    render(<AdminClassForm teachers={mockTeachers} />);
+    expect(screen.getByLabelText(/age min/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/age max/i)).toBeInTheDocument();
+  });
+
+  it('populates age fields from initialData in edit mode', () => {
+    const classData = {
+      id: 'class-1',
+      name: 'Art 101',
+      description: '',
+      capacity: 20,
+      price: 30,
+      status: 'draft' as const,
+      teacher_id: 't1',
+      day: 'Tuesday',
+      block: 'Block 1',
+      age_min: 5,
+      age_max: 12,
+      current_enrollment: 0,
+      created_at: '',
+      updated_at: '',
+      schedule_config: null,
+      start_date: null,
+      end_date: null,
+      start_time: null,
+      end_time: null,
+      day_of_week: null,
+      location: null,
+    };
+
+    render(
+      <AdminClassForm
+        initialData={classData}
+        teachers={mockTeachers}
+      />
+    );
+
+    expect(screen.getByLabelText(/age min/i)).toHaveValue(5);
+    expect(screen.getByLabelText(/age max/i)).toHaveValue(12);
+  });
+
+  it('shows validation error when age_min exceeds age_max', async () => {
+    const user = userEvent.setup();
+    render(<AdminClassForm teachers={mockTeachers} />);
+
+    const ageMinInput = screen.getByLabelText(/age min/i);
+    const ageMaxInput = screen.getByLabelText(/age max/i);
+
+    await user.clear(ageMinInput);
+    await user.type(ageMinInput, '15');
+    await user.clear(ageMaxInput);
+    await user.type(ageMaxInput, '10');
+
+    // Submit the form to trigger validation
+    const submitButton = screen.getByRole('button', { name: /save class/i });
+    await user.click(submitButton);
+
+    expect(
+      await screen.findByText(/age min cannot exceed age max/i)
+    ).toBeInTheDocument();
+  });
 });

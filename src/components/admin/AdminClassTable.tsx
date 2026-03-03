@@ -102,7 +102,8 @@ export default function AdminClassTable({
             <TableHead>Teacher</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Capacity</TableHead>
-            <TableHead>Price</TableHead>
+            <TableHead>Min Age</TableHead>
+            <TableHead>Max Age</TableHead>
             <TableHead>Conflict</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -111,7 +112,7 @@ export default function AdminClassTable({
           {initialClasses.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={7}
+                colSpan={8}
                 className="text-muted-foreground h-24 text-center"
               >
                 No classes found.
@@ -140,7 +141,8 @@ export default function AdminClassTable({
                   </Badge>
                 </TableCell>
                 <TableCell>{cls.capacity}</TableCell>
-                <TableCell>$30.00</TableCell>
+                <TableCell>{cls.age_min ?? '—'}</TableCell>
+                <TableCell>{cls.age_max ?? '—'}</TableCell>
                 <TableCell>
                   {conflictSet.has(cls.id) ? (
                     <span className="inline-flex items-center gap-1 text-destructive text-xs font-medium">

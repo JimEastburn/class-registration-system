@@ -38,7 +38,20 @@ const classFormSchema = z.object({
   block: z.string().min(1, 'Block is required'),
   status: z.enum(['draft', 'published', 'completed', 'cancelled']),
   teacher_id: z.string().uuid({ message: 'Assigned teacher is required' }),
-});
+  age_min: z.coerce.number().min(0).optional(),
+  age_max: z.coerce.number().min(0).optional(),
+}).refine(
+  (data) => {
+    if (data.age_min != null && data.age_max != null) {
+      return data.age_min <= data.age_max;
+    }
+    return true;
+  },
+  {
+    message: 'Age Min cannot exceed Age Max',
+    path: ['age_min'],
+  }
+);
 
 type ClassFormValues = z.infer<typeof classFormSchema>;
 
@@ -70,6 +83,8 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
             | 'cancelled')
         : 'draft',
       teacher_id: initialData?.teacher_id || '',
+      age_min: initialData?.age_min ?? undefined,
+      age_max: initialData?.age_max ?? undefined,
     },
   });
 
@@ -86,7 +101,8 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
       },
       teacherId: data.teacher_id,
       status: data.status,
-      // Add other fields mapping if needed
+      ageMin: data.age_min ?? undefined,
+      ageMax: data.age_max ?? undefined,
     };
 
     let result;
@@ -148,6 +164,45 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
                 <FormLabel>Capacity</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="age_min"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Age Min</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="e.g. 5"
+                    {...field}
+                    value={field.value ?? ''}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="age_max"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Age Max</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="e.g. 12"
+                    {...field}
+                    value={field.value ?? ''}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
