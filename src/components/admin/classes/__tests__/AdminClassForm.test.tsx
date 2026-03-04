@@ -118,6 +118,7 @@ describe('AdminClassForm', () => {
       age_min: 5,
       age_max: 12,
       age_display_mode: 'both' as const,
+      schedule_display_mode: 'day_block' as const,
       current_enrollment: 0,
       created_at: '',
       updated_at: '',
@@ -164,7 +165,7 @@ describe('AdminClassForm', () => {
 
   it('renders age display mode radio group with three options', () => {
     render(<AdminClassForm teachers={mockTeachers} />);
-    expect(screen.getByRole('radiogroup')).toBeInTheDocument();
+    expect(screen.getAllByRole('radiogroup').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByLabelText(/show only age ranges/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/show only elementary.*ms.*hs/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/show both/i)).toBeInTheDocument();
@@ -190,6 +191,7 @@ describe('AdminClassForm', () => {
       age_min: 5,
       age_max: 12,
       age_display_mode: 'pills' as const,
+      schedule_display_mode: 'day_block' as const,
       current_enrollment: 0,
       created_at: '',
       updated_at: '',
@@ -211,5 +213,96 @@ describe('AdminClassForm', () => {
 
     const pillsRadio = screen.getByLabelText(/show only elementary.*ms.*hs/i);
     expect(pillsRadio).toBeChecked();
+  });
+
+  it('renders schedule display mode radio group with two options', () => {
+    render(<AdminClassForm teachers={mockTeachers} />);
+    expect(screen.getByLabelText(/show day and block/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/show asynchronous/i)).toBeInTheDocument();
+  });
+
+  it('defaults schedule display mode to "day_block" when creating a new class', () => {
+    render(<AdminClassForm teachers={mockTeachers} />);
+    const dayBlockRadio = screen.getByLabelText(/show day and block/i);
+    expect(dayBlockRadio).toBeChecked();
+  });
+
+  it('pre-selects schedule display mode from initialData in edit mode', () => {
+    const classData = {
+      id: 'class-1',
+      name: 'Art 101',
+      description: '',
+      capacity: 20,
+      price: 30,
+      status: 'draft' as const,
+      teacher_id: 't1',
+      day: 'Tuesday',
+      block: 'Block 1',
+      age_min: 5,
+      age_max: 12,
+      age_display_mode: 'both' as const,
+      schedule_display_mode: 'asynchronous' as const,
+      current_enrollment: 0,
+      created_at: '',
+      updated_at: '',
+      schedule_config: null,
+      start_date: null,
+      end_date: null,
+      start_time: null,
+      end_time: null,
+      day_of_week: null,
+      location: null,
+    };
+
+    render(
+      <AdminClassForm
+        initialData={classData}
+        teachers={mockTeachers}
+      />
+    );
+
+    const asyncRadio = screen.getByLabelText(/show asynchronous/i);
+    expect(asyncRadio).toBeChecked();
+  });
+
+  it('does not require Day and Block when schedule mode is asynchronous', async () => {
+    const user = userEvent.setup();
+    render(<AdminClassForm teachers={mockTeachers} />);
+
+    // Switch to asynchronous mode
+    const asyncRadio = screen.getByLabelText(/show asynchronous/i);
+    await user.click(asyncRadio);
+
+    // Fill required fields but NOT Day or Block
+    await user.type(screen.getByLabelText(/class name/i), 'Async Class');
+    await user.clear(screen.getByLabelText(/capacity/i));
+    await user.type(screen.getByLabelText(/capacity/i), '20');
+
+    // Submit the form
+    const submitButton = screen.getByRole('button', { name: /save class/i });
+    await user.click(submitButton);
+
+    // Day and Block validation errors should NOT appear
+    expect(screen.queryByText(/day is required/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/block is required/i)).not.toBeInTheDocument();
+  });
+
+  it('requires Day and Block when schedule mode is day_block', async () => {
+    const user = userEvent.setup();
+    render(<AdminClassForm teachers={mockTeachers} />);
+
+    // day_block is the default — don't set Day or Block
+    // Fill other required fields
+    await user.type(screen.getByLabelText(/class name/i), 'Sync Class');
+    await user.clear(screen.getByLabelText(/capacity/i));
+    await user.type(screen.getByLabelText(/capacity/i), '20');
+
+    // Submit the form
+    const submitButton = screen.getByRole('button', { name: /save class/i });
+    await user.click(submitButton);
+
+    // Day and Block validation errors SHOULD appear
+    expect(await screen.findByText(/day is required/i)).toBeInTheDocument();
+    expect(await screen.findByText(/block is required/i)).toBeInTheDocument();
   });
 });

@@ -35,13 +35,14 @@ const classFormSchema = z.object({
   description: z.string().optional(),
   capacity: z.coerce.number().min(1),
 
-  day: z.string().min(1, 'Day is required'),
-  block: z.string().min(1, 'Block is required'),
+  day: z.string().optional(),
+  block: z.string().optional(),
   status: z.enum(['draft', 'published', 'completed', 'cancelled']),
   teacher_id: z.string().uuid({ message: 'Assigned teacher is required' }),
   age_min: z.coerce.number().min(0).optional(),
   age_max: z.coerce.number().min(0).optional(),
   age_display_mode: z.enum(['age_range', 'pills', 'both']).default('both'),
+  schedule_display_mode: z.enum(['day_block', 'asynchronous']).default('day_block'),
 }).refine(
   (data) => {
     if (data.age_min != null && data.age_max != null) {
@@ -52,6 +53,28 @@ const classFormSchema = z.object({
   {
     message: 'Age Min cannot exceed Age Max',
     path: ['age_min'],
+  }
+).refine(
+  (data) => {
+    if (data.schedule_display_mode === 'day_block') {
+      return !!data.day && data.day.length > 0;
+    }
+    return true;
+  },
+  {
+    message: 'Day is required',
+    path: ['day'],
+  }
+).refine(
+  (data) => {
+    if (data.schedule_display_mode === 'day_block') {
+      return !!data.block && data.block.length > 0;
+    }
+    return true;
+  },
+  {
+    message: 'Block is required',
+    path: ['block'],
   }
 );
 
@@ -88,6 +111,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
       age_min: initialData?.age_min ?? undefined,
       age_max: initialData?.age_max ?? undefined,
       age_display_mode: initialData?.age_display_mode ?? 'both',
+      schedule_display_mode: initialData?.schedule_display_mode ?? 'day_block',
     },
   });
 
@@ -97,16 +121,15 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
       description: data.description,
       capacity: data.capacity,
 
-      schedule_config: {
-        day: data.day,
-        block: data.block,
-        recurring: true,
-      },
+      schedule_config: data.schedule_display_mode === 'day_block'
+        ? { day: data.day!, block: data.block!, recurring: true }
+        : undefined,
       teacherId: data.teacher_id,
       status: data.status,
       ageMin: data.age_min ?? undefined,
       ageMax: data.age_max ?? undefined,
       ageDisplayMode: data.age_display_mode,
+      scheduleDisplayMode: data.schedule_display_mode,
     };
 
     let result;
@@ -214,7 +237,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
           />
         </div>
 
-        <div className="rounded-lg border bg-muted/50 p-4">
+        <div className="rounded-lg border bg-muted/50 p-4 max-w-xs">
           <FormField
             control={form.control}
             name="age_display_mode"
@@ -238,6 +261,35 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="both" id="age-display-both" />
                       <label htmlFor="age-display-both" className="text-sm font-normal cursor-pointer">Show both</label>
+                    </div>
+                  </RadioGroup>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="rounded-lg border bg-muted/50 p-4 max-w-xs">
+          <FormField
+            control={form.control}
+            name="schedule_display_mode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Schedule Display on Browse Page</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    className="flex flex-col space-y-1"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="day_block" id="schedule-display-day-block" />
+                      <label htmlFor="schedule-display-day-block" className="text-sm font-normal cursor-pointer">Show Day and Block</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="asynchronous" id="schedule-display-async" />
+                      <label htmlFor="schedule-display-async" className="text-sm font-normal cursor-pointer">Show Asynchronous</label>
                     </div>
                   </RadioGroup>
                 </FormControl>

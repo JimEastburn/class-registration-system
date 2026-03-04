@@ -2,6 +2,7 @@
  * Type definitions for the Class Registration System
  * Aligned with database schema defined in supabase/migrations/
  */
+import type { Database } from './database';
 
 // =============================================================================
 // Enums / Union Types
@@ -101,27 +102,19 @@ export interface ScheduleConfig {
 
 /**
  * Class offered by a teacher
+ *
+ * Derived from the Supabase-generated Row type with narrowed overrides
+ * for fields that need stricter typing (enums, JSON → structured objects).
+ * New DB columns will automatically surface here after type regeneration.
  */
-export interface Class {
-  id: string;
-  teacher_id: string;
-  name: string; // Renamed from 'title'
-  description: string | null;
-  capacity: number;
-  price: number; // Stored as decimal in DB (in cents)
-  location: string | null;
+type ClassRow = Database['public']['Tables']['classes']['Row'];
+
+export interface Class
+  extends Omit<ClassRow, 'schedule_config' | 'status' | 'age_display_mode' | 'schedule_display_mode'> {
   schedule_config: ScheduleConfig | null;
   status: ClassStatus;
-  // Individual schedule fields (for easier querying)
-  day: string | null;
-  block: string | null;
-  start_date: string | null; // ISO date string
-  end_date: string | null; // ISO date string
-  age_min: number | null;
-  age_max: number | null;
   age_display_mode: 'age_range' | 'pills' | 'both';
-  created_at: string;
-  updated_at: string;
+  schedule_display_mode: 'day_block' | 'asynchronous';
 }
 
 /**

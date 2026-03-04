@@ -212,6 +212,7 @@ export type Database = {
           name: string
           price: number
           schedule_config: Json | null
+          schedule_display_mode: string
           start_date: string | null
           start_time: string | null
           status: Database["public"]["Enums"]["ClassStatus"]
@@ -236,6 +237,7 @@ export type Database = {
           name: string
           price?: number
           schedule_config?: Json | null
+          schedule_display_mode?: string
           start_date?: string | null
           start_time?: string | null
           status?: Database["public"]["Enums"]["ClassStatus"]
@@ -260,6 +262,7 @@ export type Database = {
           name?: string
           price?: number
           schedule_config?: Json | null
+          schedule_display_mode?: string
           start_date?: string | null
           start_time?: string | null
           status?: Database["public"]["Enums"]["ClassStatus"]

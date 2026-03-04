@@ -298,18 +298,27 @@ function ClassCard({ classItem, onNavigateAway }: ClassCardProps) {
             <span>{teacherName}</span>
           </div>
 
-          {day && (
+          {(classItem.schedule_display_mode ?? 'day_block') === 'asynchronous' ? (
             <div className="text-muted-foreground flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              <span>{day}</span>
+              <span>Asynchronous</span>
             </div>
-          )}
+          ) : (
+            <>
+              {day && (
+                <div className="text-muted-foreground flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span>{day}</span>
+                </div>
+              )}
 
-          {schedule?.block && (
-            <div className="text-muted-foreground flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              <span>{schedule.block}</span>
-            </div>
+              {schedule?.block && (
+                <div className="text-muted-foreground flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  <span>{schedule.block}</span>
+                </div>
+              )}
+            </>
           )}
 
           <div className="text-muted-foreground flex items-center gap-2">

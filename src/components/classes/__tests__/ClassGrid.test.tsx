@@ -58,6 +58,7 @@ function makeClass(
     age_min: overrides.age_min ?? null,
     age_max: overrides.age_max ?? null,
     age_display_mode: overrides.age_display_mode ?? 'both',
+    schedule_display_mode: overrides.schedule_display_mode ?? 'day_block',
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
   };
@@ -494,5 +495,48 @@ describe('ClassCard age display mode', () => {
     const card = getCard();
     expect(card).toHaveTextContent('Ages 5–12');
     expect(getPillTexts().length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Schedule display mode tests
+// ---------------------------------------------------------------------------
+
+describe('ClassCard schedule display mode', () => {
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams();
+    mockReplace.mockClear();
+    mockPush.mockClear();
+    mockBack.mockClear();
+    mockSaveScroll.mockClear();
+  });
+
+  function renderSingleCard(displayMode: 'day_block' | 'asynchronous') {
+    const cls = makeClass({
+      id: 'sched-test',
+      name: 'Schedule Test',
+      schedule_config: { day: 'Tuesday', block: 'Block 2', recurring: true },
+      schedule_display_mode: displayMode,
+    });
+    return render(<ClassGrid classes={[cls]} showSearch showCalendarToggle />);
+  }
+
+  function getCard() {
+    return screen.getByTestId('class-card-sched-test');
+  }
+
+  it('shows Day and Block when mode is day_block', () => {
+    renderSingleCard('day_block');
+    const card = getCard();
+    expect(card).toHaveTextContent('Tuesday');
+    expect(card).toHaveTextContent('Block 2');
+    expect(card).not.toHaveTextContent('Asynchronous');
+  });
+
+  it('shows Asynchronous when mode is asynchronous', () => {
+    renderSingleCard('asynchronous');
+    const card = getCard();
+    expect(card).toHaveTextContent('Asynchronous');
+    expect(card).not.toHaveTextContent('Block 2');
   });
 });
