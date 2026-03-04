@@ -177,10 +177,7 @@ export default async function ClassDetailPage({
                 <span className="text-muted-foreground text-sm">Capacity</span>
                 <span className="font-medium">{availability.capacity}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-sm">Enrolled</span>
-                <span className="font-medium">{availability.enrolled}</span>
-              </div>
+
               <Separator />
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Available Spots</span>
