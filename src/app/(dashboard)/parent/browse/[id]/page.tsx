@@ -178,19 +178,7 @@ export default async function ClassDetailPage({
                 <span className="font-medium">{availability.capacity}</span>
               </div>
 
-              <Separator />
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Available Spots</span>
-                <Badge
-                  variant={
-                    availability.available > 0 ? 'default' : 'destructive'
-                  }
-                >
-                  {availability.available > 0
-                    ? `${availability.available} available`
-                    : 'Full'}
-                </Badge>
-              </div>
+
 
               <EnrollButton
                 classId={classItem.id}
