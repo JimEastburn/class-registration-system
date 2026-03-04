@@ -243,7 +243,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
             name="age_display_mode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Age Display on Browse Page</FormLabel>
+                <FormLabel>Age display on class list page</FormLabel>
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
@@ -276,7 +276,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
             name="schedule_display_mode"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Schedule Display on Browse Page</FormLabel>
+                <FormLabel>Schedule display on class list page</FormLabel>
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
