@@ -7,8 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { getClassDetails, getClassAvailability } from '@/lib/actions/classes';
 import { getEnrollmentsForFamily } from '@/lib/actions/enrollments';
 import { getMaterialsForClass } from '@/lib/actions/materials';
