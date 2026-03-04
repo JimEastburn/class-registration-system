@@ -11,7 +11,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -26,7 +25,9 @@ import { Loader2, UserPlus } from 'lucide-react';
 import { getFamilyMembers } from '@/lib/actions/family';
 import { enrollStudent } from '@/lib/actions/enrollments';
 import { hasCompleteAddress } from '@/lib/actions/profile';
+import { isSiteGatePassed } from '@/lib/actions/site-gate';
 import { AddressModal } from '@/components/payments/AddressModal';
+import { SiteGateModal } from '@/components/classes/SiteGateModal';
 import type { FamilyMember } from '@/types';
 
 interface EnrollButtonProps {
@@ -48,9 +49,30 @@ export function EnrollButton({
   const [isPayLaterLoading, setIsPayLaterLoading] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const [showGateModal, setShowGateModal] = useState(false);
   const [pendingEnrollmentId, setPendingEnrollmentId] = useState<string | null>(
     null
   );
+
+  async function handleEnrollClick() {
+    // Check if the site gate has been passed
+    const passed = await isSiteGatePassed();
+    if (!passed) {
+      setShowGateModal(true);
+      return;
+    }
+    openEnrollmentDialog();
+  }
+
+  function openEnrollmentDialog() {
+    setOpen(true);
+    loadMembers();
+  }
+
+  function handleGateSuccess() {
+    setShowGateModal(false);
+    openEnrollmentDialog();
+  }
 
   async function loadMembers() {
     if (members.length > 0) return;
@@ -231,6 +253,21 @@ export function EnrollButton({
 
   return (
     <>
+      <Button
+        className="w-full"
+        data-testid="enroll-now-button"
+        onClick={handleEnrollClick}
+      >
+        <UserPlus className="mr-2 h-4 w-4" />
+        Enroll Now
+      </Button>
+
+      <SiteGateModal
+        open={showGateModal}
+        onOpenChange={setShowGateModal}
+        onSuccess={handleGateSuccess}
+      />
+
       <Dialog
         open={open}
         onOpenChange={(isOpen) => {
@@ -238,12 +275,6 @@ export function EnrollButton({
           if (isOpen) loadMembers();
         }}
       >
-        <DialogTrigger asChild>
-          <Button className="w-full" data-testid="enroll-now-button">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Enroll Now
-          </Button>
-        </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Enroll in {className}</DialogTitle>

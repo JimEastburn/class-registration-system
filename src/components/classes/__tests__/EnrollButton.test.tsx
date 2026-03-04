@@ -3,6 +3,7 @@ import { EnrollButton } from '../EnrollButton';
 import { enrollStudent } from '@/lib/actions/enrollments';
 import { getFamilyMembers } from '@/lib/actions/family';
 import { hasCompleteAddress } from '@/lib/actions/profile';
+import { isSiteGatePassed } from '@/lib/actions/site-gate';
 import { toast } from 'sonner';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
@@ -17,6 +18,19 @@ vi.mock('@/lib/actions/family', () => ({
 
 vi.mock('@/lib/actions/profile', () => ({
   hasCompleteAddress: vi.fn(),
+}));
+
+vi.mock('@/lib/actions/site-gate', () => ({
+  isSiteGatePassed: vi.fn(),
+  verifySitePassword: vi.fn(),
+}));
+
+// Mock next/image to avoid Invalid URL errors in test environment
+vi.mock('next/image', () => ({
+  default: (props: Record<string, unknown>) => {
+    const { fill, priority, ...rest } = props;
+    return <img {...rest} data-fill={fill ? 'true' : undefined} data-priority={priority ? 'true' : undefined} />;
+  },
 }));
 
 vi.mock('sonner', () => ({
@@ -58,9 +72,59 @@ describe('EnrollButton', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     locationMock.href = '';
+    // Default: gate is passed so existing tests work as before
+    (isSiteGatePassed as any).mockResolvedValue(true);
     (getFamilyMembers as any).mockResolvedValue({
       data: mockMembers,
       error: null,
+    });
+  });
+
+  // ─── Site Gate Modal Tests ──────────────────────────────────────────────
+
+  describe('Site Gate check', () => {
+    it('shows gate modal when site gate cookie is not set', async () => {
+      (isSiteGatePassed as any).mockResolvedValue(false);
+
+      render(
+        <EnrollButton
+          classId={mockClassId}
+          className="Test Class"
+          available={5}
+        />
+      );
+
+      fireEvent.click(screen.getByTestId('enroll-now-button'));
+
+      await waitFor(() => {
+        expect(isSiteGatePassed).toHaveBeenCalled();
+        expect(screen.getByText('Site Access')).toBeInTheDocument();
+      });
+
+      // The enrollment dialog should NOT be shown
+      expect(screen.queryByText('Enroll in Test Class')).not.toBeInTheDocument();
+    });
+
+    it('opens enrollment dialog directly when site gate cookie is set', async () => {
+      (isSiteGatePassed as any).mockResolvedValue(true);
+
+      render(
+        <EnrollButton
+          classId={mockClassId}
+          className="Test Class"
+          available={5}
+        />
+      );
+
+      fireEvent.click(screen.getByTestId('enroll-now-button'));
+
+      await waitFor(() => {
+        expect(isSiteGatePassed).toHaveBeenCalled();
+        expect(screen.getByText('Enroll in Test Class')).toBeInTheDocument();
+      });
+
+      // The gate modal should NOT be shown
+      expect(screen.queryByText('Site Access')).not.toBeInTheDocument();
     });
   });
 
@@ -76,7 +140,10 @@ describe('EnrollButton', () => {
     const enrollBtn = screen.getByText('Enroll Now');
     fireEvent.click(enrollBtn);
 
-    expect(screen.getByText('Enroll in Test Class')).toBeInTheDocument();
+    // Wait for the async gate check to complete and dialog to open
+    await waitFor(() => {
+      expect(screen.getByText('Enroll in Test Class')).toBeInTheDocument();
+    });
 
     // Wait for loading to finish
     await waitFor(() => {
