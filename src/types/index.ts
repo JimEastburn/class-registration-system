@@ -119,6 +119,7 @@ export interface Class {
   end_date: string | null; // ISO date string
   age_min: number | null;
   age_max: number | null;
+  age_display_mode: 'age_range' | 'pills' | 'both';
   created_at: string;
   updated_at: string;
 }

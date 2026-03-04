@@ -57,6 +57,7 @@ function makeClass(
     end_date: overrides.end_date ?? null,
     age_min: overrides.age_min ?? null,
     age_max: overrides.age_max ?? null,
+    age_display_mode: overrides.age_display_mode ?? 'both',
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
   };
@@ -440,5 +441,58 @@ describe('SchoolLevelPills', () => {
     // age_min=null, age_max=18 → range is 0–18, overlaps all
     renderSingleCard(null, 18);
     expect(getPills()).toEqual(['Elementary', 'MS', 'HS']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Age display mode tests
+// ---------------------------------------------------------------------------
+
+describe('ClassCard age display mode', () => {
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams();
+    mockReplace.mockClear();
+    mockPush.mockClear();
+    mockBack.mockClear();
+    mockSaveScroll.mockClear();
+  });
+
+  function renderSingleCard(ageMin: number | null, ageMax: number | null, displayMode: 'age_range' | 'pills' | 'both') {
+    const cls = makeClass({ id: 'display-test', name: 'Display Test', age_min: ageMin, age_max: ageMax, age_display_mode: displayMode });
+    return render(<ClassGrid classes={[cls]} showSearch showCalendarToggle />);
+  }
+
+  function getCard() {
+    return screen.getByTestId('class-card-display-test');
+  }
+
+  function getPillTexts() {
+    const card = getCard();
+    const labels = ['Elementary', 'MS', 'HS'];
+    return labels.filter((label) => {
+      const elements = card.querySelectorAll('span');
+      return Array.from(elements).some((el) => el.textContent === label);
+    });
+  }
+
+  it('shows only age text when mode is age_range', () => {
+    renderSingleCard(5, 12, 'age_range');
+    const card = getCard();
+    expect(card).toHaveTextContent('Ages 5–12');
+    expect(getPillTexts()).toEqual([]);
+  });
+
+  it('shows only pills when mode is pills', () => {
+    renderSingleCard(5, 12, 'pills');
+    const card = getCard();
+    expect(card).not.toHaveTextContent('Ages 5–12');
+    expect(getPillTexts().length).toBeGreaterThan(0);
+  });
+
+  it('shows both age text and pills when mode is both', () => {
+    renderSingleCard(5, 12, 'both');
+    const card = getCard();
+    expect(card).toHaveTextContent('Ages 5–12');
+    expect(getPillTexts().length).toBeGreaterThan(0);
   });
 });

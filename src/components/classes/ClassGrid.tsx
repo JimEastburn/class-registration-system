@@ -319,16 +319,20 @@ function ClassCard({ classItem, onNavigateAway }: ClassCardProps) {
 
           <div className="text-muted-foreground flex items-center gap-2">
             <Users className="h-4 w-4 shrink-0" />
-            <span>
-              {classItem.age_min != null && classItem.age_max != null
-                ? `Ages ${classItem.age_min}–${classItem.age_max}`
-                : classItem.age_min != null
-                  ? `Ages ${classItem.age_min}+`
-                  : classItem.age_max != null
-                    ? `Ages up to ${classItem.age_max}`
-                    : 'All ages welcome for this class.'}
-            </span>
-            <SchoolLevelPills ageMin={classItem.age_min} ageMax={classItem.age_max} />
+            {(classItem.age_display_mode ?? 'both') !== 'pills' && (
+              <span>
+                {classItem.age_min != null && classItem.age_max != null
+                  ? `Ages ${classItem.age_min}–${classItem.age_max}`
+                  : classItem.age_min != null
+                    ? `Ages ${classItem.age_min}+`
+                    : classItem.age_max != null
+                      ? `Ages up to ${classItem.age_max}`
+                      : 'All ages welcome for this class.'}
+              </span>
+            )}
+            {(classItem.age_display_mode ?? 'both') !== 'age_range' && (
+              <SchoolLevelPills ageMin={classItem.age_min} ageMax={classItem.age_max} />
+            )}
           </div>
 
           <div className="text-muted-foreground flex items-start gap-2">

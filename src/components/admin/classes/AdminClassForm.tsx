@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Class } from '@/types';
 import { createClass, updateClass } from '@/lib/actions/classes';
 import { useRouter } from 'next/navigation';
@@ -40,6 +41,7 @@ const classFormSchema = z.object({
   teacher_id: z.string().uuid({ message: 'Assigned teacher is required' }),
   age_min: z.coerce.number().min(0).optional(),
   age_max: z.coerce.number().min(0).optional(),
+  age_display_mode: z.enum(['age_range', 'pills', 'both']).default('both'),
 }).refine(
   (data) => {
     if (data.age_min != null && data.age_max != null) {
@@ -85,6 +87,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
       teacher_id: initialData?.teacher_id || '',
       age_min: initialData?.age_min ?? undefined,
       age_max: initialData?.age_max ?? undefined,
+      age_display_mode: initialData?.age_display_mode ?? 'both',
     },
   });
 
@@ -103,6 +106,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
       status: data.status,
       ageMin: data.age_min ?? undefined,
       ageMax: data.age_max ?? undefined,
+      ageDisplayMode: data.age_display_mode,
     };
 
     let result;
@@ -203,6 +207,39 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
                     {...field}
                     value={field.value ?? ''}
                   />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="rounded-lg border bg-muted/50 p-4">
+          <FormField
+            control={form.control}
+            name="age_display_mode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Age Display on Browse Page</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    className="flex flex-col space-y-1"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="age_range" id="age-display-range" />
+                      <label htmlFor="age-display-range" className="text-sm font-normal cursor-pointer">Show only age ranges</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="pills" id="age-display-pills" />
+                      <label htmlFor="age-display-pills" className="text-sm font-normal cursor-pointer">Show only Elementary, MS, HS</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="both" id="age-display-both" />
+                      <label htmlFor="age-display-both" className="text-sm font-normal cursor-pointer">Show both</label>
+                    </div>
+                  </RadioGroup>
                 </FormControl>
                 <FormMessage />
               </FormItem>

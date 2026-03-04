@@ -206,6 +206,7 @@ interface CreateClassInput {
   location?: string | null;
   ageMin?: number;
   ageMax?: number;
+  ageDisplayMode?: 'age_range' | 'pills' | 'both';
 }
 
 /**
@@ -300,6 +301,7 @@ export async function createClass(
         location: input.location || null,
         age_min: input.ageMin || null,
         age_max: input.ageMax || null,
+        age_display_mode: input.ageDisplayMode || 'both',
       })
       .select('id, schedule_config, location, description')
       .single();
@@ -419,6 +421,7 @@ export async function updateClass(
     if (input.location !== undefined) updateData.location = input.location;
     if (input.ageMin !== undefined) updateData.age_min = input.ageMin;
     if (input.ageMax !== undefined) updateData.age_max = input.ageMax;
+    if (input.ageDisplayMode !== undefined) updateData.age_display_mode = input.ageDisplayMode;
     if (input.teacherId !== undefined && isAdmin)
       updateData.teacher_id = input.teacherId;
     if (input.status !== undefined && isAdmin) updateData.status = input.status; // Allow admin to force status
@@ -1172,6 +1175,7 @@ export async function adminUpdateClass(
     if (input.location !== undefined) updateData.location = input.location;
     if (input.ageMin !== undefined) updateData.age_min = input.ageMin;
     if (input.ageMax !== undefined) updateData.age_max = input.ageMax;
+    if (input.ageDisplayMode !== undefined) updateData.age_display_mode = input.ageDisplayMode;
     if (input.teacherId !== undefined) updateData.teacher_id = input.teacherId;
     if (input.status !== undefined) updateData.status = input.status;
 

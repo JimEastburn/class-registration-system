@@ -195,6 +195,7 @@ export type Database = {
       }
       classes: {
         Row: {
+          age_display_mode: string
           age_max: number | null
           age_min: number | null
           block: string | null
@@ -218,6 +219,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          age_display_mode?: string
           age_max?: number | null
           age_min?: number | null
           block?: string | null
@@ -241,6 +243,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          age_display_mode?: string
           age_max?: number | null
           age_min?: number | null
           block?: string | null
