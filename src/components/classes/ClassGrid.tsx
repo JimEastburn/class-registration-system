@@ -235,8 +235,8 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
 
 // School level ranges
 const SCHOOL_LEVELS = [
-  { label: 'Elementary', min: 5, max: 10, className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' },
-  { label: 'MS', min: 11, max: 14, className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
+  { label: 'Elementary', min: 6, max: 10, className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' },
+  { label: 'MS', min: 11, max: 13, className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
   { label: 'HS', min: 14, max: 18, className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' },
 ] as const;
 

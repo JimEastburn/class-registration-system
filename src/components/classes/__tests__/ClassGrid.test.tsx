@@ -391,9 +391,9 @@ describe('SchoolLevelPills', () => {
     expect(getPills()).toEqual(['MS']);
   });
 
-  it('shows MS and HS pills for ages 14–14 (boundary overlap)', () => {
+  it('shows only HS pill for ages 14–14 (boundary)', () => {
     renderSingleCard(14, 14);
-    expect(getPills()).toEqual(['MS', 'HS']);
+    expect(getPills()).toEqual(['HS']);
   });
 
   it('shows only HS pill for ages 15–18', () => {
