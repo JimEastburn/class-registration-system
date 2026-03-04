@@ -16,13 +16,29 @@
 
 3. **VERIFICATION gate**: `npm run test:run` must be run at the end. New test count must be > 0 for any new feature or bug fix.
 
+### Pre-Flight Checklist — STOP Before Every Code Change
+
+> [!CAUTION]
+> **Before writing or editing ANY implementation file, ask yourself these questions. If any answer is YES, you MUST write tests FIRST.**
+
+1. Am I adding a new component, function, or helper? → **YES = tests first**
+2. Am I changing what gets rendered or displayed? → **YES = tests first**
+3. Am I adding conditional logic (if/else, filtering, mapping)? → **YES = tests first**
+4. Am I fixing a bug? → **YES = write a test that reproduces the bug first**
+5. Does this change affect data flow or user-visible behavior? → **YES = tests first**
+
+**There is NO size exemption.** A "small" change, a "simple" UI tweak, or a "quick" helper function still requires TDD. The size of the change does not excuse skipping the process.
+
 ### What Requires Tests
 
 - Every new server action
 - Every new API route
 - Every new utility/helper function
+- Every new UI component (even small ones like pills, badges, indicators)
+- Every new rendering helper or sub-component added to an existing component
 - Every bug fix (write a test that reproduces the bug first)
 - UI behavior changes that affect data flow (e.g., checkbox toggles that call server actions)
+- Conditional rendering logic (e.g., showing/hiding elements based on props or state)
 
 ## Tech Stack
 

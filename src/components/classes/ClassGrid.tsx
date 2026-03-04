@@ -136,7 +136,7 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
 
             {/* Result count */}
             {hasActiveFilters && (
-              <span className="text-muted-foreground shrink-0 text-sm">
+              <span className="text-muted-foreground shrink-0 text-base font-bold">
                 {filteredClasses.length} {filteredClasses.length === 1 ? 'class' : 'classes'} found
               </span>
             )}
@@ -233,6 +233,37 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
   );
 }
 
+// School level ranges
+const SCHOOL_LEVELS = [
+  { label: 'Elementary', min: 5, max: 10, className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' },
+  { label: 'MS', min: 11, max: 14, className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
+  { label: 'HS', min: 14, max: 18, className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' },
+] as const;
+
+function SchoolLevelPills({ ageMin, ageMax }: { ageMin: number | null; ageMax: number | null }) {
+  if (ageMin == null && ageMax == null) return null;
+
+  const lo = ageMin ?? 0;
+  const hi = ageMax ?? 99;
+
+  const matching = SCHOOL_LEVELS.filter((level) => lo <= level.max && hi >= level.min);
+
+  if (matching.length === 0) return null;
+
+  return (
+    <span className="inline-flex flex-wrap gap-1">
+      {matching.map((level) => (
+        <span
+          key={level.label}
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold leading-none ${level.className}`}
+        >
+          {level.label}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 interface ClassCardProps {
   classItem: ClassWithTeacher;
   onNavigateAway?: () => void;
@@ -287,7 +318,7 @@ function ClassCard({ classItem, onNavigateAway }: ClassCardProps) {
           </div>
 
           <div className="text-muted-foreground flex items-center gap-2">
-            <Users className="h-4 w-4" />
+            <Users className="h-4 w-4 shrink-0" />
             <span>
               {classItem.age_min != null && classItem.age_max != null
                 ? `Ages ${classItem.age_min}–${classItem.age_max}`
@@ -297,6 +328,7 @@ function ClassCard({ classItem, onNavigateAway }: ClassCardProps) {
                     ? `Ages up to ${classItem.age_max}`
                     : 'All ages welcome for this class.'}
             </span>
+            <SchoolLevelPills ageMin={classItem.age_min} ageMax={classItem.age_max} />
           </div>
 
           <div className="text-muted-foreground flex items-start gap-2">

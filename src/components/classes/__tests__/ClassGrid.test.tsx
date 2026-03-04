@@ -334,3 +334,111 @@ describe('ClassGrid age filter', () => {
     expect(ids).not.toContain('open-min'); // 12+
   });
 });
+
+// ---------------------------------------------------------------------------
+// School level pills tests
+// ---------------------------------------------------------------------------
+
+describe('SchoolLevelPills', () => {
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams();
+    mockReplace.mockClear();
+    mockPush.mockClear();
+    mockBack.mockClear();
+    mockSaveScroll.mockClear();
+  });
+
+  function renderSingleCard(ageMin: number | null, ageMax: number | null) {
+    const cls = makeClass({ id: 'pill-test', name: 'Pill Test Class', age_min: ageMin, age_max: ageMax });
+    return render(<ClassGrid classes={[cls]} showSearch showCalendarToggle />);
+  }
+
+  function getPills() {
+    const card = screen.getByTestId('class-card-pill-test');
+    const labels = ['Elementary', 'MS', 'HS'];
+    return labels.filter((label) => {
+      // Look for pill text nodes within the card
+      const elements = card.querySelectorAll('span');
+      return Array.from(elements).some((el) => el.textContent === label);
+    });
+  }
+
+  it('shows Elementary, MS, and HS pills for ages 5–18', () => {
+    renderSingleCard(5, 18);
+    expect(getPills()).toEqual(['Elementary', 'MS', 'HS']);
+  });
+
+  it('shows Elementary and MS pills for ages 5–14', () => {
+    renderSingleCard(5, 14);
+    expect(getPills()).toEqual(['Elementary', 'MS', 'HS']);
+    // 14 overlaps with both MS (11-14) and HS (14-18)
+  });
+
+  it('shows Elementary and MS pills for ages 5–13', () => {
+    renderSingleCard(5, 13);
+    expect(getPills()).toEqual(['Elementary', 'MS']);
+  });
+
+  it('shows only Elementary pill for ages 5–10', () => {
+    renderSingleCard(5, 10);
+    expect(getPills()).toEqual(['Elementary']);
+  });
+
+  it('shows only MS pill for ages 11–13', () => {
+    renderSingleCard(11, 13);
+    expect(getPills()).toEqual(['MS']);
+  });
+
+  it('shows MS and HS pills for ages 14–14 (boundary overlap)', () => {
+    renderSingleCard(14, 14);
+    expect(getPills()).toEqual(['MS', 'HS']);
+  });
+
+  it('shows only HS pill for ages 15–18', () => {
+    renderSingleCard(15, 18);
+    expect(getPills()).toEqual(['HS']);
+  });
+
+  it('shows all three pills for ages 5–15 (user example)', () => {
+    renderSingleCard(5, 15);
+    expect(getPills()).toEqual(['Elementary', 'MS', 'HS']);
+  });
+
+  it('shows Elementary and MS for ages 3–13 (user example)', () => {
+    renderSingleCard(3, 13);
+    expect(getPills()).toEqual(['Elementary', 'MS']);
+  });
+
+  it('shows no pills when age range is entirely below school levels (ages 2–4)', () => {
+    renderSingleCard(2, 4);
+    expect(getPills()).toEqual([]);
+  });
+
+  it('shows no pills when age range is entirely above school levels (ages 19–21)', () => {
+    renderSingleCard(19, 21);
+    expect(getPills()).toEqual([]);
+  });
+
+  it('shows no pills when both age_min and age_max are null', () => {
+    renderSingleCard(null, null);
+    expect(getPills()).toEqual([]);
+  });
+
+  it('shows pills for age_min only (open-ended max)', () => {
+    // age_min=12, age_max=null → range is 12–99, overlaps MS and HS
+    renderSingleCard(12, null);
+    expect(getPills()).toEqual(['MS', 'HS']);
+  });
+
+  it('shows pills for age_max only (open-ended min)', () => {
+    // age_min=null, age_max=10 → range is 0–10, overlaps Elementary
+    renderSingleCard(null, 10);
+    expect(getPills()).toEqual(['Elementary']);
+  });
+
+  it('shows all pills for age_max only with high max', () => {
+    // age_min=null, age_max=18 → range is 0–18, overlaps all
+    renderSingleCard(null, 18);
+    expect(getPills()).toEqual(['Elementary', 'MS', 'HS']);
+  });
+});
