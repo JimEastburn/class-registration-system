@@ -87,4 +87,27 @@ describe('RegisterForm', () => {
       ).not.toBeInTheDocument();
     });
   });
+
+  it('validates fee acknowledgment requirement', async () => {
+    const user = userEvent.setup();
+    render(<RegisterForm />);
+
+    const submitButton = screen.getByRole('button', {
+      name: /create account/i,
+    });
+    await user.click(submitButton);
+
+    expect(
+      await screen.findByText('You must agree to pay a deposit for each class')
+    ).toBeInTheDocument();
+
+    const checkbox = screen.getByTestId('fee-acknowledgment-checkbox');
+    await user.click(checkbox);
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('You must agree to pay a deposit for each class')
+      ).not.toBeInTheDocument();
+    });
+  });
 });

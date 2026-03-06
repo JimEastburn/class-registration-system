@@ -42,6 +42,9 @@ export const registerSchema = z
     codeOfConduct: z.literal(true, {
       message: 'You must agree to the Community Code of Conduct',
     }),
+    feeAcknowledgment: z.literal(true, {
+      message: 'You must agree to pay a deposit for each class',
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',

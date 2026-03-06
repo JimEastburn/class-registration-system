@@ -41,12 +41,14 @@ export default function RegisterForm() {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       codeOfConduct: false as unknown as true,
+      feeAcknowledgment: false as unknown as true,
     },
   });
 
   useEffect(() => {
     register('role');
     register('codeOfConduct');
+    register('feeAcknowledgment');
   }, [register]);
 
   const onSubmit = (data: RegisterFormData) => {
@@ -147,8 +149,7 @@ export default function RegisterForm() {
               </Label>
               <Input
                 id="firstName"
-                placeholder="John"
-                className="border-white/20 bg-slate-600 text-white placeholder:text-slate-400"
+                className="border-white/20 bg-slate-600 text-white"
                 {...register('firstName')}
                 data-testid="first-name-input"
               />
@@ -165,8 +166,7 @@ export default function RegisterForm() {
               </Label>
               <Input
                 id="lastName"
-                placeholder="Doe"
-                className="border-white/20 bg-slate-600 text-white placeholder:text-slate-400"
+                className="border-white/20 bg-slate-600 text-white"
                 {...register('lastName')}
                 data-testid="last-name-input"
               />
@@ -339,6 +339,33 @@ export default function RegisterForm() {
               {errors.codeOfConduct && (
                 <p className="text-sm text-red-400">
                   {errors.codeOfConduct.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-start space-x-2 pb-4">
+            <Checkbox
+              id="feeAcknowledgment"
+              onCheckedChange={(checked) => {
+                setValue(
+                  'feeAcknowledgment',
+                  checked === true ? true : (false as unknown as true),
+                  { shouldValidate: true }
+                );
+              }}
+              data-testid="fee-acknowledgment-checkbox"
+            />
+            <div className="grid gap-1.5 leading-none">
+              <Label
+                htmlFor="feeAcknowledgment"
+                className="text-sm leading-none font-medium text-slate-200 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                I understand that I will pay a nonrefundable $25 deposit for each class, paid directly to the teacher, to hold a space in the class.
+              </Label>
+              {errors.feeAcknowledgment && (
+                <p className="text-sm text-red-400">
+                  {errors.feeAcknowledgment.message}
                 </p>
               )}
             </div>
