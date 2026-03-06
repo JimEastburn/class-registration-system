@@ -13,7 +13,7 @@ Run this workflow after **every** database migration to keep types in sync with 
 1. Regenerate Supabase types from the production database:
 
 ```bash
-npx supabase gen types --lang=typescript --project-id jakjpigeafqqgispwlhl --schema public > src/types/database.ts
+supabase gen types --lang=typescript --project-id jakjpigeafqqgispwlhl --schema public > src/types/database.ts
 ```
 
 2. Run the production build to verify no type errors were introduced:

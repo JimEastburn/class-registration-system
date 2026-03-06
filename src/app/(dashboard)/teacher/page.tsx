@@ -87,7 +87,7 @@ export default async function TeacherDashboardPage() {
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalStudents}</div>
               <p className="text-muted-foreground text-xs">
-                enrolled across classes
+                across classes
               </p>
               <div className="mt-3 space-y-1 border-t pt-3 text-xs">
                 <div className="flex justify-between">

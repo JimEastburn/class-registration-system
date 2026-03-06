@@ -70,6 +70,7 @@ export interface Profile {
   state: string | null;
   zip: string | null;
   country: string | null;
+  is_banned: boolean;
 }
 
 /**

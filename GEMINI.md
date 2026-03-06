@@ -118,7 +118,7 @@ npm run dev    # Start dev server (Turbopack)
 npm run build  # Production build
 npm run lint   # Run ESLint
 npm run test:run   # Run all tests (non-interactive)
-npx supabase gen types --lang=typescript --project-id jakjpigeafqqgispwlhl --schema public > src/types/database.ts  # Regenerate DB types
+supabase gen types --lang=typescript --project-id jakjpigeafqqgispwlhl --schema public > src/types/database.ts  # Regenerate DB types
 ```
 
 ## Environment Variables

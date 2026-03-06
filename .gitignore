@@ -29,6 +29,9 @@ supabase/.temp/*
 # production
 /build
 
+# database backups (contain sensitive data)
+/backups
+
 # misc
 .DS_Store
 *.pem

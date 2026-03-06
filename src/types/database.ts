@@ -459,6 +459,7 @@ export type Database = {
           email: string
           first_name: string
           id: string
+          is_banned: boolean
           is_parent: boolean
           last_name: string
           phone: string | null
@@ -480,6 +481,7 @@ export type Database = {
           email: string
           first_name?: string
           id: string
+          is_banned?: boolean
           is_parent?: boolean
           last_name?: string
           phone?: string | null
@@ -501,6 +503,7 @@ export type Database = {
           email?: string
           first_name?: string
           id?: string
+          is_banned?: boolean
           is_parent?: boolean
           last_name?: string
           phone?: string | null
