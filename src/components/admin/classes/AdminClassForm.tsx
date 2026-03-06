@@ -4,8 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod'; // Use Zod directly or import schema
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Form,
   FormControl,
@@ -309,7 +310,19 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
             name="show_payment_info"
             render={({ field }) => (
               <FormItem className="flex items-center justify-between gap-4">
-                <FormLabel className="cursor-pointer">Show payment info on browse page</FormLabel>
+                <div className="flex items-center gap-1.5">
+                  <FormLabel className="cursor-pointer">Show or hide the payment info text for a class when parents browse for classes on the /parent/browse page</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                        <Info className="h-4 w-4" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent side="top" className="text-sm max-w-xs">
+                      <p>Hide or show this text: &ldquo;Class payment, paid directly to the teacher later, is $255 for a one day a week class per semester, and the two day a week classes are $500 per semester.&rdquo;</p>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <FormControl>
                   <Switch
                     checked={field.value}

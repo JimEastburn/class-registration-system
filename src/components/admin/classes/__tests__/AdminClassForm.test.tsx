@@ -119,6 +119,7 @@ describe('AdminClassForm', () => {
       age_max: 12,
       age_display_mode: 'both' as const,
       schedule_display_mode: 'day_block' as const,
+      show_payment_info: true,
       current_enrollment: 0,
       created_at: '',
       updated_at: '',
@@ -192,6 +193,7 @@ describe('AdminClassForm', () => {
       age_max: 12,
       age_display_mode: 'pills' as const,
       schedule_display_mode: 'day_block' as const,
+      show_payment_info: true,
       current_enrollment: 0,
       created_at: '',
       updated_at: '',
@@ -242,6 +244,7 @@ describe('AdminClassForm', () => {
       age_max: 12,
       age_display_mode: 'both' as const,
       schedule_display_mode: 'asynchronous' as const,
+      show_payment_info: true,
       current_enrollment: 0,
       created_at: '',
       updated_at: '',
@@ -308,7 +311,7 @@ describe('AdminClassForm', () => {
 
   it('renders "Show payment info" toggle, defaults to checked for new class', () => {
     render(<AdminClassForm teachers={mockTeachers} />);
-    const toggle = screen.getByRole('switch', { name: /show payment info/i });
+    const toggle = screen.getByRole('switch', { name: /show or hide the payment info/i });
     expect(toggle).toBeInTheDocument();
     expect(toggle).toBeChecked();
   });
@@ -348,7 +351,7 @@ describe('AdminClassForm', () => {
       />
     );
 
-    const toggle = screen.getByRole('switch', { name: /show payment info/i });
+    const toggle = screen.getByRole('switch', { name: /show or hide the payment info/i });
     expect(toggle).not.toBeChecked();
   });
 });
