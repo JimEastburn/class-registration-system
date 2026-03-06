@@ -48,6 +48,7 @@ describe('validations', () => {
       confirmPassword: 'Password1',
       role: 'parent',
       codeOfConduct: true,
+      feeAcknowledgment: true,
     };
 
     it('accepts valid input', () => {

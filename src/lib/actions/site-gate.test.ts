@@ -2,20 +2,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock next/headers cookies
 const mockCookieSet = vi.fn();
-const mockCookieGet = vi.fn();
 vi.mock('next/headers', () => ({
   cookies: vi.fn(async () => ({
     set: mockCookieSet,
-    get: mockCookieGet,
+    get: vi.fn(),
   })),
 }));
 
-// Mock next/navigation redirect — should NOT be called anymore
+// Mock next/navigation redirect
 vi.mock('next/navigation', () => ({
   redirect: vi.fn(),
 }));
 
-import { verifySitePassword, isSiteGatePassed } from '@/lib/actions/site-gate';
+import { verifySitePassword } from '@/lib/actions/site-gate';
 import { redirect } from 'next/navigation';
 
 describe('verifySitePassword', () => {
@@ -41,11 +40,11 @@ describe('verifySitePassword', () => {
     expect(redirect).not.toHaveBeenCalled();
   });
 
-  it('sets cookie and returns success for correct password (no redirect)', async () => {
+  it('sets cookie and redirects for correct password', async () => {
     const formData = new FormData();
     formData.append('password', 'secret123');
 
-    const result = await verifySitePassword(formData);
+    await verifySitePassword(formData);
 
     expect(mockCookieSet).toHaveBeenCalledWith(
       'site_gate_passed',
@@ -56,10 +55,7 @@ describe('verifySitePassword', () => {
         path: '/',
       })
     );
-    // Should NOT redirect — the modal stays on the same page
-    expect(redirect).not.toHaveBeenCalled();
-    // Should return success
-    expect(result).toEqual({ success: true });
+    expect(redirect).toHaveBeenCalledWith('/login');
   });
 
   it('returns error when SITE_PASSWORD env var is not set', async () => {
@@ -79,51 +75,5 @@ describe('verifySitePassword', () => {
     const result = await verifySitePassword(formData);
 
     expect(result).toEqual({ error: 'Incorrect password' });
-  });
-});
-
-describe('isSiteGatePassed', () => {
-  const ORIGINAL_ENV = process.env;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    process.env = { ...ORIGINAL_ENV, SITE_PASSWORD: 'secret123' };
-  });
-
-  afterEach(() => {
-    process.env = ORIGINAL_ENV;
-  });
-
-  it('returns true when the gate cookie is set to "true"', async () => {
-    mockCookieGet.mockReturnValue({ value: 'true' });
-
-    const result = await isSiteGatePassed();
-
-    expect(result).toBe(true);
-  });
-
-  it('returns false when the gate cookie is not set', async () => {
-    mockCookieGet.mockReturnValue(undefined);
-
-    const result = await isSiteGatePassed();
-
-    expect(result).toBe(false);
-  });
-
-  it('returns false when the gate cookie has wrong value', async () => {
-    mockCookieGet.mockReturnValue({ value: 'false' });
-
-    const result = await isSiteGatePassed();
-
-    expect(result).toBe(false);
-  });
-
-  it('returns true when SITE_PASSWORD is not configured (gate disabled)', async () => {
-    delete process.env.SITE_PASSWORD;
-    mockCookieGet.mockReturnValue(undefined);
-
-    const result = await isSiteGatePassed();
-
-    expect(result).toBe(true);
   });
 });
