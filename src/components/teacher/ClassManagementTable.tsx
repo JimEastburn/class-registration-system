@@ -54,6 +54,9 @@ interface ClassWithTeacher extends Class {
     last_name: string | null;
   } | null;
   enrolled_count: number;
+  pending_count: number;
+  confirmed_count: number;
+  waitlisted_count: number;
 }
 
 interface ClassManagementTableProps {
@@ -203,7 +206,14 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
                     </span>
                   )}
                 </TableCell>
-                <TableCell>{cls.enrolled_count} / {cls.capacity}</TableCell>
+                <TableCell>
+                  <div>{cls.enrolled_count} / {cls.capacity}</div>
+                  <div className="text-muted-foreground mt-0.5 space-y-0 text-[11px] leading-tight">
+                    <div>Enrolled: {cls.pending_count}</div>
+                    <div>Confirmed: {cls.confirmed_count}</div>
+                    <div>Waitlisted: {cls.waitlisted_count}</div>
+                  </div>
+                </TableCell>
                 <TableCell>
                   {cls.age_min != null && cls.age_max != null
                     ? `${cls.age_min} – ${cls.age_max}`

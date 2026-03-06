@@ -36,6 +36,9 @@ const makeClass = (overrides = {}) => ({
   updated_at: new Date().toISOString(),
   teacher: { id: 'teacher-1', first_name: 'Jane', last_name: 'Doe' },
   enrolled_count: 15,
+  pending_count: 0,
+  confirmed_count: 0,
+  waitlisted_count: 0,
   ...overrides,
 });
 
@@ -98,5 +101,25 @@ describe('ClassManagementTable', () => {
     );
 
     expect(screen.getByText('5+')).toBeInTheDocument();
+  });
+
+  it('displays enrollment status breakdown counts', () => {
+    render(
+      <ClassManagementTable
+        classes={[
+          makeClass({
+            enrolled_count: 15,
+            pending_count: 3,
+            confirmed_count: 10,
+            waitlisted_count: 2,
+            capacity: 20,
+          }),
+        ]}
+      />
+    );
+
+    expect(screen.getByText('Enrolled: 3')).toBeInTheDocument();
+    expect(screen.getByText('Confirmed: 10')).toBeInTheDocument();
+    expect(screen.getByText('Waitlisted: 2')).toBeInTheDocument();
   });
 });

@@ -357,6 +357,9 @@ interface TeacherStats {
   totalClasses: number;
   activeClasses: number;
   totalStudents: number;
+  pendingStudents: number;
+  confirmedStudents: number;
+  waitlistedStudents: number;
   classesToday: number;
   upcomingClasses: number;
 }
@@ -429,19 +432,29 @@ export async function getTeacherDashboardData(): Promise<{
 
     const classIds = classes?.map((c) => c.id) || [];
 
-    // Get enrollment counts for each class
+    // Get enrollment counts by status for all teacher classes
     let enrollmentCounts: { class_id: string; count: number }[] = [];
+    let pendingStudents = 0;
+    let confirmedStudents = 0;
+    let waitlistedStudents = 0;
     if (classIds.length > 0) {
       const { data: enrollments } = await supabase
         .from('enrollments')
-        .select('class_id')
+        .select('class_id, status')
         .in('class_id', classIds)
-        .eq('status', 'confirmed');
+        .in('status', ['confirmed', 'pending', 'waitlisted']);
 
-      // Count enrollments per class
+      // Count enrollments per class (confirmed only for capacity display)
       const countMap = new Map<string, number>();
       (enrollments || []).forEach((e) => {
-        countMap.set(e.class_id, (countMap.get(e.class_id) || 0) + 1);
+        if (e.status === 'confirmed') {
+          countMap.set(e.class_id, (countMap.get(e.class_id) || 0) + 1);
+          confirmedStudents++;
+        } else if (e.status === 'pending') {
+          pendingStudents++;
+        } else if (e.status === 'waitlisted') {
+          waitlistedStudents++;
+        }
       });
       enrollmentCounts = Array.from(countMap.entries()).map(
         ([class_id, count]) => ({ class_id, count })
@@ -487,6 +500,9 @@ export async function getTeacherDashboardData(): Promise<{
       totalClasses,
       activeClasses,
       totalStudents,
+      pendingStudents,
+      confirmedStudents,
+      waitlistedStudents,
       classesToday,
       upcomingClasses,
     };

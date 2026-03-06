@@ -962,6 +962,9 @@ export async function completeClass(
 
 export type ClassWithTeacherAndCount = ClassWithTeacher & {
   enrolled_count: number;
+  pending_count: number;
+  confirmed_count: number;
+  waitlisted_count: number;
 };
 
 /**
@@ -1001,22 +1004,42 @@ export async function getTeacherClasses(): Promise<
       return { success: false, error: error.message };
     }
 
-    // Fetch confirmed enrollment counts for all teacher classes
+    // Fetch enrollment counts by status for all teacher classes
     const classIds = (classes || []).map((c) => c.id);
-    const enrollmentCounts = new Map<string, number>();
+    const enrolledCounts = new Map<string, number>();
+    const pendingCounts = new Map<string, number>();
+    const confirmedCounts = new Map<string, number>();
+    const waitlistedCounts = new Map<string, number>();
 
     if (classIds.length > 0) {
       const { data: enrollments } = await supabase
         .from('enrollments')
-        .select('class_id')
+        .select('class_id, status')
         .in('class_id', classIds)
-        .eq('status', 'confirmed');
+        .in('status', ['confirmed', 'pending', 'waitlisted']);
 
       (enrollments || []).forEach((e) => {
-        enrollmentCounts.set(
-          e.class_id,
-          (enrollmentCounts.get(e.class_id) || 0) + 1
-        );
+        // enrolled_count = confirmed (matches original behavior for capacity)
+        if (e.status === 'confirmed') {
+          enrolledCounts.set(
+            e.class_id,
+            (enrolledCounts.get(e.class_id) || 0) + 1
+          );
+          confirmedCounts.set(
+            e.class_id,
+            (confirmedCounts.get(e.class_id) || 0) + 1
+          );
+        } else if (e.status === 'pending') {
+          pendingCounts.set(
+            e.class_id,
+            (pendingCounts.get(e.class_id) || 0) + 1
+          );
+        } else if (e.status === 'waitlisted') {
+          waitlistedCounts.set(
+            e.class_id,
+            (waitlistedCounts.get(e.class_id) || 0) + 1
+          );
+        }
       });
     }
 
@@ -1024,7 +1047,10 @@ export async function getTeacherClasses(): Promise<
       classes as ClassWithTeacher[]
     ).map((c) => ({
       ...c,
-      enrolled_count: enrollmentCounts.get(c.id) || 0,
+      enrolled_count: enrolledCounts.get(c.id) || 0,
+      pending_count: pendingCounts.get(c.id) || 0,
+      confirmed_count: confirmedCounts.get(c.id) || 0,
+      waitlisted_count: waitlistedCounts.get(c.id) || 0,
     }));
 
     return { success: true, data: classesWithCounts };

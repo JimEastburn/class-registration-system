@@ -20,6 +20,7 @@ import {
 import { getClassDetails, getClassAvailability } from '@/lib/actions/classes';
 import { getClassRoster } from '@/lib/actions/enrollments';
 import { StudentRosterTable } from '@/components/teacher/StudentRosterTable';
+import { computeEnrollmentStatusCounts } from '@/lib/logic/enrollment-helpers';
 
 interface ClassDetailPageProps {
   params: Promise<{ id: string }>;
@@ -55,6 +56,7 @@ export default async function ClassDetailPage({
 
   const classData = classResult.data;
   const availability = availabilityResult;
+  const statusCounts = computeEnrollmentStatusCounts(rosterResult.data || []);
 
   return (
     <div className="space-y-6">
@@ -109,8 +111,22 @@ export default async function ClassDetailPage({
               {availability.enrolled}/{availability.capacity}
             </div>
             <p className="text-muted-foreground text-xs">
-              {availability.available} spots available
+              {availability.available} spots remaining for enrollment
             </p>
+            <div className="mt-3 space-y-1 border-t pt-3 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Enrolled</span>
+                <span className="font-medium">{statusCounts.enrolled}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Confirmed &amp; Paid</span>
+                <span className="font-medium">{statusCounts.confirmed}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Waitlisted</span>
+                <span className="font-medium">{statusCounts.waitlisted}</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

@@ -89,6 +89,20 @@ export default async function TeacherDashboardPage() {
               <p className="text-muted-foreground text-xs">
                 enrolled across classes
               </p>
+              <div className="mt-3 space-y-1 border-t pt-3 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Enrolled</span>
+                  <span className="font-medium">{stats.pendingStudents}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Confirmed &amp; Paid</span>
+                  <span className="font-medium">{stats.confirmedStudents}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Waitlisted</span>
+                  <span className="font-medium">{stats.waitlistedStudents}</span>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </Link>

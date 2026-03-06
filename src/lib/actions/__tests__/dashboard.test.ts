@@ -285,5 +285,20 @@ describe('Dashboard Actions', () => {
       const result = await getTeacherDashboardData();
       expect(result.data!.todayClasses[0].block).toBe('TBA');
     });
+
+    it('should return per-status student counts', async () => {
+      const enrollments: SeedEnrollment[] = [
+        { id: 'enr-1', student_id: 'fm-1', class_id: 'class-1', status: 'confirmed' },
+        { id: 'enr-2', student_id: 'fm-2', class_id: 'class-1', status: 'confirmed' },
+        { id: 'enr-3', student_id: 'fm-1', class_id: 'class-2', status: 'pending' },
+        { id: 'enr-4', student_id: 'fm-2', class_id: 'class-2', status: 'waitlisted' },
+      ];
+      seedTeacher({ enrollments: enrollments as unknown as Record<string, unknown>[] });
+      const result = await getTeacherDashboardData();
+      expect(result.success).toBe(true);
+      expect(result.data!.stats.pendingStudents).toBe(1);
+      expect(result.data!.stats.confirmedStudents).toBe(2);
+      expect(result.data!.stats.waitlistedStudents).toBe(1);
+    });
   });
 });
