@@ -33,12 +33,14 @@ interface EnrollButtonProps {
   classId: string;
   className: string;
   available: number;
+  showPaymentInfo?: boolean;
 }
 
 export function EnrollButton({
   classId,
   className,
   available,
+  showPaymentInfo = true,
 }: EnrollButtonProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -293,7 +295,9 @@ export function EnrollButton({
                 <span className="text-sm">Community Fee</span>
                 <span className="font-medium">$30.00</span>
               </div>
-              <p className="text-xs text-muted-foreground">Class payment, paid directly to the teacher later, is $255 for a one day a week class per semester, and the two day a week classes are $500 per semester.</p>
+              {showPaymentInfo && (
+                <p className="text-xs text-muted-foreground">Class payment, paid directly to the teacher later, is $255 for a one day a week class per semester, and the two day a week classes are $500 per semester.</p>
+              )}
             </div>
           </div>
 

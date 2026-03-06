@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import * as z from 'zod'; // Use Zod directly or import schema
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import {
   Form,
   FormControl,
@@ -43,6 +44,7 @@ const classFormSchema = z.object({
   age_max: z.coerce.number().min(0).optional(),
   age_display_mode: z.enum(['age_range', 'pills', 'both']).default('both'),
   schedule_display_mode: z.enum(['day_block', 'asynchronous']).default('day_block'),
+  show_payment_info: z.boolean().default(true),
 }).refine(
   (data) => {
     if (data.age_min != null && data.age_max != null) {
@@ -112,6 +114,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
       age_max: initialData?.age_max ?? undefined,
       age_display_mode: initialData?.age_display_mode ?? 'both',
       schedule_display_mode: initialData?.schedule_display_mode ?? 'day_block',
+      show_payment_info: initialData?.show_payment_info ?? true,
     },
   });
 
@@ -130,6 +133,7 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
       ageMax: data.age_max ?? undefined,
       ageDisplayMode: data.age_display_mode,
       scheduleDisplayMode: data.schedule_display_mode,
+      showPaymentInfo: data.show_payment_info,
     };
 
     let result;
@@ -294,6 +298,24 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
                   </RadioGroup>
                 </FormControl>
                 <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="rounded-lg border bg-muted/50 p-4 max-w-xs">
+          <FormField
+            control={form.control}
+            name="show_payment_info"
+            render={({ field }) => (
+              <FormItem className="flex items-center justify-between gap-4">
+                <FormLabel className="cursor-pointer">Show payment info on browse page</FormLabel>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
               </FormItem>
             )}
           />

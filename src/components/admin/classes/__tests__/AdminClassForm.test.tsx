@@ -305,4 +305,50 @@ describe('AdminClassForm', () => {
     expect(await screen.findByText(/day is required/i)).toBeInTheDocument();
     expect(await screen.findByText(/block is required/i)).toBeInTheDocument();
   });
+
+  it('renders "Show payment info" toggle, defaults to checked for new class', () => {
+    render(<AdminClassForm teachers={mockTeachers} />);
+    const toggle = screen.getByRole('switch', { name: /show payment info/i });
+    expect(toggle).toBeInTheDocument();
+    expect(toggle).toBeChecked();
+  });
+
+  it('pre-selects show_payment_info from initialData in edit mode', () => {
+    const classData = {
+      id: 'class-1',
+      name: 'Art 101',
+      description: '',
+      capacity: 20,
+      price: 30,
+      status: 'draft' as const,
+      teacher_id: 't1',
+      day: 'Tuesday',
+      block: 'Block 1',
+      age_min: 5,
+      age_max: 12,
+      age_display_mode: 'both' as const,
+      schedule_display_mode: 'day_block' as const,
+      show_payment_info: false,
+      current_enrollment: 0,
+      created_at: '',
+      updated_at: '',
+      schedule_config: null,
+      start_date: null,
+      end_date: null,
+      start_time: null,
+      end_time: null,
+      day_of_week: null,
+      location: null,
+    };
+
+    render(
+      <AdminClassForm
+        initialData={classData}
+        teachers={mockTeachers}
+      />
+    );
+
+    const toggle = screen.getByRole('switch', { name: /show payment info/i });
+    expect(toggle).not.toBeChecked();
+  });
 });

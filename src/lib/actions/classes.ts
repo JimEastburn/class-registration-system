@@ -208,6 +208,7 @@ interface CreateClassInput {
   ageMax?: number;
   ageDisplayMode?: 'age_range' | 'pills' | 'both';
   scheduleDisplayMode?: 'day_block' | 'asynchronous';
+  showPaymentInfo?: boolean;
 }
 
 /**
@@ -304,6 +305,7 @@ export async function createClass(
         age_max: input.ageMax || null,
         age_display_mode: input.ageDisplayMode || 'both',
         schedule_display_mode: input.scheduleDisplayMode || 'day_block',
+        show_payment_info: input.showPaymentInfo ?? true,
       })
       .select('id, schedule_config, location, description')
       .single();
@@ -425,6 +427,7 @@ export async function updateClass(
     if (input.ageMax !== undefined) updateData.age_max = input.ageMax;
     if (input.ageDisplayMode !== undefined) updateData.age_display_mode = input.ageDisplayMode;
     if (input.scheduleDisplayMode !== undefined) updateData.schedule_display_mode = input.scheduleDisplayMode;
+    if (input.showPaymentInfo !== undefined) updateData.show_payment_info = input.showPaymentInfo;
     if (input.teacherId !== undefined && isAdmin)
       updateData.teacher_id = input.teacherId;
     if (input.status !== undefined && isAdmin) updateData.status = input.status; // Allow admin to force status

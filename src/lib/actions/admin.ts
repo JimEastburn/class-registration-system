@@ -140,7 +140,7 @@ export async function getAllUsers(
 
     const offset = (page - 1) * limit;
 
-    let query = db.from('profiles').select('*', { count: 'exact' });
+    let query = db.from('profiles').select('*', { count: 'exact' }).neq('is_banned', true);
 
     if (search) {
       query = query.or(

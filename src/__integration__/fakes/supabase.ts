@@ -405,7 +405,11 @@ class FakeQueryBuilder {
           return;
         }
 
-        resolve({ data: result, error: null });
+        const response: { data: unknown; error: null; count?: number } = { data: result, error: null };
+        if (this.selectOpts.count === 'exact') {
+          response.count = Array.isArray(result) ? result.length : 0;
+        }
+        resolve(response);
       } catch (e: unknown) {
         resolve({ data: null, error: { message: (e as Error).message } });
       }

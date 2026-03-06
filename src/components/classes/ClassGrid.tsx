@@ -348,7 +348,9 @@ function ClassCard({ classItem, onNavigateAway }: ClassCardProps) {
             <DollarSign className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
               <span>$30.00 community fee</span>
-              <p className="text-xs text-muted-foreground/70">Class payment, paid directly to the teacher later, is $255 for a one day a week class per semester, and the two day a week classes are $500 per semester.</p>
+              {classItem.show_payment_info !== false && (
+                <p className="text-xs text-muted-foreground/70">Class payment, paid directly to the teacher later, is $255 for a one day a week class per semester, and the two day a week classes are $500 per semester.</p>
+              )}
             </div>
           </div>
         </div>

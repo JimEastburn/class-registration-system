@@ -4,6 +4,7 @@ import {
   updateParentStatus,
   deleteUser,
   getSystemStats,
+  getAllUsers,
 } from '@/lib/actions/admin';
 import { revalidatePath } from 'next/cache';
 import {
@@ -141,6 +142,33 @@ describe('Admin Actions', () => {
       const result = await updateParentStatus(TARGET_ID, true);
       expect(result.success).toBe(false);
       expect(result.error).toContain('Not authenticated');
+    });
+  });
+
+  describe('getAllUsers', () => {
+    it('excludes banned users from results', async () => {
+      const bannedProfile: SeedProfile = {
+        id: 'banned-user',
+        first_name: 'Banned',
+        last_name: 'User',
+        role: 'parent',
+        email: 'banned@test.com',
+      };
+
+      seed({
+        profiles: [
+          ADMIN_PROFILE,
+          targetProfile,
+          { ...bannedProfile, is_banned: true },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+      const result = await getAllUsers(1, 20);
+      expect(result.error).toBeNull();
+      // Should exclude the banned user — only ADMIN_PROFILE and targetProfile
+      expect(result.data).toHaveLength(2);
+      expect(result.data?.find((u) => u.id === 'banned-user')).toBeUndefined();
+      expect(result.count).toBe(2);
     });
   });
 });
