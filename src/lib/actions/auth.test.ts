@@ -21,13 +21,6 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
 
-const mockCookieDelete = vi.fn();
-vi.mock('next/headers', () => ({
-  cookies: vi.fn(async () => ({
-    delete: mockCookieDelete,
-  })),
-}));
-
 vi.mock('@/lib/email', () => ({
   sendPasswordReset: vi.fn(),
 }));
@@ -140,15 +133,6 @@ describe('Auth Actions', () => {
       await signOut();
 
       expect(redirect).toHaveBeenCalledWith('/login');
-    });
-
-    it('deletes the site_gate_passed cookie on sign out', async () => {
-      const fake = seed();
-      fake.setAuthUser({ id: AUTH_USER_ID, email: 'existing@example.com' });
-
-      await signOut();
-
-      expect(mockCookieDelete).toHaveBeenCalledWith('site_gate_passed');
     });
   });
 });

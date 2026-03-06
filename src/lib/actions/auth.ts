@@ -1,11 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { sendPasswordReset } from '@/lib/email';
-import { SITE_GATE_COOKIE_NAME } from '@/lib/supabase/site-gate';
 import type { ActionResult, Profile } from '@/types';
 
 /**
@@ -182,10 +180,6 @@ export async function signOut(): Promise<{ error?: string }> {
   if (error) {
     return { error: error.message };
   }
-
-  // Clear the site gate cookie so the user must re-verify on next login
-  const cookieStore = await cookies();
-  cookieStore.delete(SITE_GATE_COOKIE_NAME);
 
   revalidatePath('/', 'layout');
   redirect('/login');

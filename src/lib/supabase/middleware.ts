@@ -1,10 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import type { UserRole } from '@/types';
-import {
-  isSiteGateBypassed,
-  SITE_GATE_COOKIE_NAME,
-} from '@/lib/supabase/site-gate';
 
 /**
  * Route protection configuration
@@ -41,7 +37,6 @@ const PUBLIC_PATHS = [
   '/reset-password',
   '/auth/callback',
   '/auth/confirm',
-  '/gate',
 ];
 
 /**
@@ -120,19 +115,6 @@ export async function updateSession(request: NextRequest) {
 
   // API routes are handled separately (via their own auth checks)
   const isApiRoute = pathname.startsWith('/api/');
-
-  // Site-gate: if SITE_PASSWORD is configured, require the gate cookie
-  // for all non-bypass paths. This runs BEFORE the public-path check so
-  // that even public-auth pages like /login are gated.
-  const sitePassword = process.env.SITE_PASSWORD;
-  if (sitePassword && !isApiRoute && !isSiteGateBypassed(pathname)) {
-    const gateCookie = request.cookies.get(SITE_GATE_COOKIE_NAME);
-    if (!gateCookie || gateCookie.value !== 'true') {
-      const url = request.nextUrl.clone();
-      url.pathname = '/gate';
-      return NextResponse.redirect(url);
-    }
-  }
 
   // Public paths don't require authentication
   if (isPublicPath(pathname) || isApiRoute) {
