@@ -148,7 +148,7 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
 
             {/* Age filter — pill stepper */}
             {showCalendarToggle && (
-              <div className="flex items-center gap-3">
+              <div className="flex w-full items-center justify-center gap-3 sm:w-auto sm:justify-start">
                 <Label htmlFor="child-age-input" className="shrink-0 cursor-pointer text-sm whitespace-nowrap text-muted-foreground">
                   Child&apos;s age
                 </Label>
@@ -207,7 +207,9 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
 
             {/* View toggle: Cards | Calendar */}
             {showCalendarToggle && (
-              <ViewToggle calendarView={calendarView} onToggle={handleViewToggle} />
+              <div className="flex w-full justify-center sm:w-auto sm:justify-start">
+                <ViewToggle calendarView={calendarView} onToggle={handleViewToggle} />
+              </div>
             )}
           </div>
         </div>
