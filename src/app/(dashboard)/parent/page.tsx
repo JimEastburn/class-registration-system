@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/card';
 
 import { Badge } from '@/components/ui/badge';
+import { BrowseClassesCard } from '@/components/classes/BrowseClassesCard';
 import {
   getParentDashboardStats,
   getRecentPayments,
@@ -44,6 +45,9 @@ export default async function ParentDashboardPage() {
           Welcome back! Manage your family and enroll in classes.
         </p>
       </div>
+
+      {/* Browse Classes - mobile only */}
+      <BrowseClassesCard />
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2">

@@ -7,7 +7,7 @@
 # SETUP (one-time):
 #   1. Find your database password in the Supabase Dashboard:
 #      Settings → Database → Database password
-#   2. Set it as an environment variable (add to ~/.zshrc for persistence):
+#   2. Set it as an environment variable  (DONT DO THIS, IT'S A SECURITY RISK, but if you must, add to ~/.zshrc for persistence):
 #      export SUPABASE_DB_PASSWORD="your_database_password"
 #   3. Make this script executable:
 #      chmod +x scripts/backup-db.sh
