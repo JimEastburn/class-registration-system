@@ -13,7 +13,9 @@ import {
 vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }));
 vi.mock('@/lib/stripe', () => ({ stripe: { refunds: { create: vi.fn() } } }));
 vi.mock('@/lib/actions/audit', () => ({ logAuditAction: vi.fn() }));
-vi.mock('@/lib/email', () => ({ sendWaitlistNotification: vi.fn() }));
+vi.mock('@/lib/actions/waitlist', () => ({
+  promoteFromWaitlist: vi.fn().mockResolvedValue({ success: true, data: null }),
+}));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
 // ── Seed Data ───────────────────────────────────────────────────────────────
@@ -67,7 +69,6 @@ describe('Refund Actions', () => {
     );
     expect(fake.db.payments.find((p) => p.id === 'pay-1')?.status).toBe('refunded');
     expect(fake.db.enrollments.find((e) => e.id === 'enr-1')?.status).toBe('cancelled');
-    expect(fake.db.enrollments.find((e) => e.id === 'enr-wait-1')?.status).toBe('pending');
     expect(revalidatePath).toHaveBeenCalledWith('/admin/payments');
   });
 

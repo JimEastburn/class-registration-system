@@ -189,15 +189,23 @@ describe('Integration Flow: Waitlist -> Promotion', () => {
         data: unknown;
         method: string;
         order: { col: string; opts: { ascending: boolean } } | null;
+        count: boolean;
+        head: boolean;
       } = {
         filters: {},
         data: null,
         method: 'select',
         order: null,
+        count: false,
+        head: false,
       };
 
       const builder = {
-        select: vi.fn().mockReturnThis(),
+        select: vi.fn().mockImplementation((_cols?: string, opts?: { count?: string; head?: boolean }) => {
+          if (opts?.count) queryState.count = true;
+          if (opts?.head) queryState.head = true;
+          return builder;
+        }),
         insert: vi.fn().mockImplementation((newData) => {
           queryState.method = 'insert';
           queryState.data = newData;
@@ -214,6 +222,14 @@ describe('Integration Flow: Waitlist -> Promotion', () => {
         }),
         in: vi.fn().mockImplementation((col: string, vals: unknown[]) => {
           queryState.filters[`_in_${col}`] = vals;
+          return builder;
+        }),
+        gt: vi.fn().mockImplementation((col: string, val: unknown) => {
+          queryState.filters[`_gt_${col}`] = val;
+          return builder;
+        }),
+        neq: vi.fn().mockImplementation((col: string, val: unknown) => {
+          queryState.filters[`_neq_${col}`] = val;
           return builder;
         }),
         order: vi.fn().mockImplementation((col, opts) => {
@@ -246,6 +262,8 @@ describe('Integration Flow: Waitlist -> Promotion', () => {
       data: unknown;
       method: string;
       order: { col: string; opts: { ascending: boolean } } | null;
+      count: boolean;
+      head: boolean;
     },
     mode: 'single' | 'maybeSingle' | 'all'
   ) => {
@@ -289,6 +307,12 @@ describe('Integration Flow: Waitlist -> Promotion', () => {
         if (key.startsWith('_in_')) {
           const col = key.slice(4);
           if (!Array.isArray(val) || !val.includes((item as any)[col])) return false;
+        } else if (key.startsWith('_gt_')) {
+          const col = key.slice(4);
+          if (!((item as any)[col] > (val as number))) return false;
+        } else if (key.startsWith('_neq_')) {
+          const col = key.slice(5);
+          if ((item as any)[col] === val) return false;
         } else {
           // Handle .eq() filters
           if ((item as any)[key] !== val) return false;
@@ -314,6 +338,11 @@ describe('Integration Flow: Waitlist -> Promotion', () => {
         const c = dbClasses.find((cl) => cl.id === e.class_id);
         return { ...e, student: s, class: c };
       });
+    }
+
+    // Handle head-only count queries
+    if (state.head && state.count) {
+      return { data: null, count: result.length, error: null };
     }
 
     if (mode === 'single') {

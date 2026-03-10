@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { enrollStudent, updateDepositPaid, cancelEnrollment } from '@/lib/actions/enrollments';
+import { enrollStudent, updateDepositPaid, cancelEnrollment, adminCancelEnrollment } from '@/lib/actions/enrollments';
 import { promoteFromWaitlist } from '@/lib/actions/waitlist';
 import { checkStudentScheduleConflict } from '@/lib/logic/scheduling';
 import {
@@ -232,6 +232,30 @@ describe('Enrollment Actions', () => {
       const result = await updateDepositPaid('enrollment-1', false, CLASS_ID);
       expect(result.success).toBe(true);
       expect(fake.db.enrollments.find((e) => e.id === 'enrollment-1')!.deposit_paid).toBe(false);
+    });
+  });
+
+  describe('adminCancelEnrollment', () => {
+    const ADMIN_ID = 'admin-user';
+
+    it('calls promoteFromWaitlist after cancelling without refund', async () => {
+      seedFake({
+        authUserId: ADMIN_ID,
+        data: {
+          profiles: [
+            { id: ADMIN_ID, first_name: 'Admin', last_name: 'User', role: 'admin' },
+          ] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            { id: 'enr-admin-cancel', student_id: CHILD_ID, class_id: CLASS_ID, status: 'confirmed' },
+          ] as unknown as Record<string, unknown>[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await adminCancelEnrollment('enr-admin-cancel', { refund: false });
+      expect(result.success).toBe(true);
+      expect(promoteFromWaitlist).toHaveBeenCalledWith(CLASS_ID);
     });
   });
 });

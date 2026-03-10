@@ -19,7 +19,9 @@ vi.mock('@/lib/stripe', () => ({
 }));
 
 vi.mock('@/lib/actions/audit', () => ({ logAuditAction: vi.fn() }));
-vi.mock('@/lib/email', () => ({ sendWaitlistNotification: vi.fn() }));
+vi.mock('@/lib/actions/waitlist', () => ({
+  promoteFromWaitlist: vi.fn().mockResolvedValue({ success: true, data: null }),
+}));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
 // ── Seed Data ───────────────────────────────────────────────────────────────

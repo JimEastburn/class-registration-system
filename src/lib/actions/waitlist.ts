@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { sendWaitlistNotification } from '@/lib/email';
 import type { ActionResult, Enrollment } from '@/types';
 
 /**
@@ -275,10 +276,10 @@ export async function promoteFromWaitlist(
     return { success: true, data: null };
   }
 
-  // Get the first person on the waitlist
+  // Get the first person on the waitlist (with student + class data for email)
   const { data: firstInLine, error: waitlistError } = await supabase
     .from('enrollments')
-    .select('id, student_id')
+    .select('id, student_id, student:family_members(first_name, last_name, parent_id), class:classes(name, start_date)')
     .eq('class_id', classId)
     .eq('status', 'waitlisted')
     .order('waitlist_position', { ascending: true })
@@ -290,12 +291,13 @@ export async function promoteFromWaitlist(
     return { success: true, data: null };
   }
 
-  // Promote to enrolled
+  // Promote to pending (awaiting payment)
   const { error: updateError } = await supabase
     .from('enrollments')
     .update({
-      status: 'confirmed',
+      status: 'pending',
       waitlist_position: null,
+      updated_at: new Date().toISOString(),
     })
     .eq('id', firstInLine.id);
 
@@ -312,6 +314,31 @@ export async function promoteFromWaitlist(
     class_id: classId,
     student_id: firstInLine.student_id,
   });
+
+  // Send notification email to parent
+  const student = firstInLine.student as { first_name: string; last_name: string; parent_id: string } | null;
+  const classInfo = firstInLine.class as { name: string; start_date: string | null } | null;
+
+  if (student?.parent_id) {
+    const { data: parent } = await supabase
+      .from('profiles')
+      .select('email, first_name, last_name')
+      .eq('id', student.parent_id)
+      .single();
+
+    if (parent) {
+      await sendWaitlistNotification({
+        parentEmail: parent.email,
+        parentName: `${parent.first_name} ${parent.last_name}`,
+        studentName: `${student.first_name} ${student.last_name}`,
+        className: classInfo?.name || 'Unknown Class',
+        schedule: 'Check Dashboard',
+        startDate: classInfo?.start_date
+          ? new Date(classInfo.start_date).toLocaleDateString()
+          : 'TBA',
+      });
+    }
+  }
 
   revalidatePath('/parent/enrollments');
   revalidatePath(`/parent/browse/${classId}`);

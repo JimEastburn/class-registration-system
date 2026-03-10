@@ -993,6 +993,12 @@ export async function adminCancelEnrollment(
       { refund: options.refund }
     );
 
+    // Promote waitlisted student if not using refund path
+    // (refund path handles its own promotion via processRefund → promoteFromWaitlist)
+    if (!options.refund) {
+      await promoteFromWaitlist(enrollment.class_id);
+    }
+
     revalidatePath('/admin/enrollments');
     revalidatePath('/parent');
 

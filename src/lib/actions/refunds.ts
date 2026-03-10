@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
 import { logAuditAction } from '@/lib/actions/audit';
-import { sendWaitlistNotification } from '@/lib/email';
+import { promoteFromWaitlist } from '@/lib/actions/waitlist';
 import { ActionResult } from '@/types';
 import { revalidatePath } from 'next/cache';
 
@@ -71,9 +71,6 @@ export async function processRefund(
       charge: payment.transaction_id.startsWith('ch_')
         ? payment.transaction_id
         : undefined,
-      // Fallback: If it's a checkout session (cs_), we might need to look up the PI.
-      // Often we store PI in transaction_id if possible, or we need to fetch session to get PI.
-      // For now, assuming transaction_id works directly or is PI.
       amount: refundAmount,
       reason: input.reason,
     });
@@ -91,11 +88,9 @@ export async function processRefund(
       console.error('Failed to update payment status:', updateError);
     }
 
-    // Update Enrollment Status to 'cancelled' if fully refunded?
-    // Let's assume refund always cancels enrollment for now unless partial?
-    // Update Enrollment Status to 'cancelled'
+    // Cancel enrollment and promote from waitlist
     if (payment.enrollment_id) {
-      // Get class_id first to handle waitlist
+      // Get class_id first
       const { data: enrollmentData } = await supabase
         .from('enrollments')
         .select('class_id')
@@ -116,58 +111,9 @@ export async function processRefund(
         { paymentId: input.paymentId }
       );
 
-      // Capacity Handling: Promote from Waitlist
+      // Promote next waitlisted student (handles email, audit, reorder)
       if (enrollmentData?.class_id) {
-        const { data: nextWaitlisted } = await supabase
-          .from('enrollments')
-          .select('*, student:family_members(*), class:classes(*)')
-          .eq('class_id', enrollmentData.class_id)
-          .eq('status', 'waitlisted')
-          .order('waitlist_position', { ascending: true })
-          .limit(1)
-          .single();
-
-        if (nextWaitlisted) {
-          await supabase
-            .from('enrollments')
-            .update({
-              status: 'pending',
-              waitlist_position: null,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', nextWaitlisted.id);
-
-          await logAuditAction(
-            user.id,
-            'waitlist.promoted_by_refund',
-            'enrollment',
-            nextWaitlisted.id,
-            { reason: 'Refund initialized vacancy' }
-          );
-
-          // Send Email
-          if (nextWaitlisted.student?.parent_id) {
-            const { data: parent } = await supabase
-              .from('profiles')
-              .select('email, first_name, last_name')
-              .eq('id', nextWaitlisted.student.parent_id)
-              .single();
-            if (parent) {
-              await sendWaitlistNotification({
-                parentEmail: parent.email,
-                parentName: `${parent.first_name} ${parent.last_name}`,
-                studentName: `${nextWaitlisted.student.first_name} ${nextWaitlisted.student.last_name}`,
-                className: nextWaitlisted.class?.name || 'Unknown Class',
-                schedule: 'Check Dashboard', // TODO: Format schedule better if feasible
-                startDate: nextWaitlisted.class?.start_date
-                  ? new Date(
-                      nextWaitlisted.class.start_date
-                    ).toLocaleDateString()
-                  : 'TBA',
-              });
-            }
-          }
-        }
+        await promoteFromWaitlist(enrollmentData.class_id);
       }
     }
 

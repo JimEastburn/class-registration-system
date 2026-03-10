@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { promoteFromWaitlist } from '@/lib/actions/waitlist';
 import type { ClassBlock, FamilyMember, Profile } from '@/types';
 
 export interface BlockWithDetails extends ClassBlock {
@@ -89,6 +90,11 @@ export async function blockStudent(
         );
         // We don't rollback the block, but we log the error.
         // Ideally this should be a transaction.
+      }
+
+      // Promote waitlisted students for each affected class
+      for (const classId of classIds) {
+        await promoteFromWaitlist(classId);
       }
     }
 
