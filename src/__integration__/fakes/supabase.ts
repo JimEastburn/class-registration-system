@@ -84,10 +84,12 @@ interface SelectOptions {
   head?: boolean;
 }
 
-/** Parsed relation from select string, e.g. `classes!inner(name, price)` */
+/** Parsed relation from select string, e.g. `classes!inner(name, price)` or `student:family_members(id)` */
 interface ParsedRelation {
-  /** The table name (e.g. "classes") */
+  /** The table name (e.g. "classes", "family_members") */
   table: string;
+  /** Optional alias (e.g. "student" from `student:family_members(...)`) */
+  alias: string;
   /** Column(s) requested from the related table */
   columns: string;
   /** Whether !inner join semantics apply */
@@ -424,14 +426,15 @@ class FakeQueryBuilder {
    */
   private _parseRelations(query: string): ParsedRelation[] {
     const relations: ParsedRelation[] = [];
-    // Match: tableName!inner(columns) or tableName(columns)
+    // Match: alias:tableName!inner(columns) or tableName(columns)
     // Columns can include nested relations, so we need balanced paren matching
-    const regex = /(\w+)(!inner)?\(/g;
+    const regex = /(?:(\w+):)?(\w+)(!inner)?\(/g;
     let match: RegExpExecArray | null;
 
     while ((match = regex.exec(query)) !== null) {
-      const table = match[1];
-      const inner = match[2] === '!inner';
+      const alias = match[1] || match[2]; // use alias if provided, otherwise table name
+      const table = match[2];
+      const inner = match[3] === '!inner';
       const startIdx = regex.lastIndex; // position after '('
 
       // Find the matching closing paren (handle nesting)
@@ -444,7 +447,7 @@ class FakeQueryBuilder {
       }
 
       const columns = query.substring(startIdx, endIdx);
-      relations.push({ table, columns, inner });
+      relations.push({ table, alias, columns, inner });
     }
 
     return relations;
@@ -507,13 +510,13 @@ class FakeQueryBuilder {
           if (nestedRelations.length > 0) {
             const resolved = this._resolveRelations([related], nestedRelations);
             for (const nr of nestedRelations) {
-              picked[nr.table] = resolved[0]?.[nr.table] ?? null;
+              picked[nr.alias] = resolved[0]?.[nr.alias] ?? null;
             }
           }
 
-          enriched[rel.table] = picked;
+          enriched[rel.alias] = picked;
         } else {
-          enriched[rel.table] = null;
+          enriched[rel.alias] = null;
         }
       }
       return enriched;
@@ -522,7 +525,7 @@ class FakeQueryBuilder {
     // Filter out rows with null joins when !inner
     for (const rel of relations) {
       if (rel.inner) {
-        result = result.filter((row) => row[rel.table] != null);
+        result = result.filter((row) => row[rel.alias] != null);
       }
     }
 

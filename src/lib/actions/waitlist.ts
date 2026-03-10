@@ -263,12 +263,12 @@ export async function promoteFromWaitlist(
     return { success: false, error: 'Class not found' };
   }
 
-  // Count current enrollments
+  // Count current enrollments (confirmed + pending both hold a spot)
   const { count: enrolledCount } = await supabase
     .from('enrollments')
     .select('*', { count: 'exact', head: true })
     .eq('class_id', classId)
-    .eq('status', 'confirmed');
+    .in('status', ['confirmed', 'pending']);
 
   if ((enrolledCount || 0) >= classData.capacity) {
     // No capacity - nothing to do

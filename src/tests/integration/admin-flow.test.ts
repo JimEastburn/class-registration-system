@@ -20,6 +20,10 @@ vi.mock('@/lib/email', () => ({
   sendCancellationNotification: vi.fn(),
 }));
 
+vi.mock('@/lib/actions/waitlist', () => ({
+  promoteFromWaitlist: vi.fn().mockResolvedValue({ success: true, data: null }),
+}));
+
 // Mock Data Types
 type MockProfile = {
   id: string;

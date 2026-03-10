@@ -144,12 +144,12 @@ export async function getClassAvailability(classId: string): Promise<{
       };
     }
 
-    // Count confirmed enrollments
+    // Count enrollments holding a spot (confirmed + pending)
     const { count: enrolledCount, error: countError } = await supabase
       .from('enrollments')
       .select('*', { count: 'exact', head: true })
       .eq('class_id', classId)
-      .eq('status', 'confirmed');
+      .in('status', ['confirmed', 'pending']);
 
     if (countError) {
       console.error('Error counting enrollments:', countError);
@@ -1019,12 +1019,15 @@ export async function getTeacherClasses(): Promise<
         .in('status', ['confirmed', 'pending', 'waitlisted']);
 
       (enrollments || []).forEach((e) => {
-        // enrolled_count = confirmed (matches original behavior for capacity)
-        if (e.status === 'confirmed') {
+        // enrolled_count = confirmed + pending (both hold a spot)
+        if (e.status === 'confirmed' || e.status === 'pending') {
           enrolledCounts.set(
             e.class_id,
             (enrolledCounts.get(e.class_id) || 0) + 1
           );
+        }
+        // Track individual status counts
+        if (e.status === 'confirmed') {
           confirmedCounts.set(
             e.class_id,
             (confirmedCounts.get(e.class_id) || 0) + 1

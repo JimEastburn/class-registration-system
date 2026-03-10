@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { enrollStudent, updateDepositPaid } from '@/lib/actions/enrollments';
+import { enrollStudent, updateDepositPaid, cancelEnrollment } from '@/lib/actions/enrollments';
+import { promoteFromWaitlist } from '@/lib/actions/waitlist';
 import { checkStudentScheduleConflict } from '@/lib/logic/scheduling';
 import {
   seedFake,
@@ -16,6 +17,9 @@ vi.mock('@/lib/supabase/server', () => ({
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('@/lib/actions/audit', () => ({ logAuditAction: vi.fn() }));
 vi.mock('@/lib/email', () => ({ sendEnrollmentConfirmation: vi.fn() }));
+vi.mock('@/lib/actions/waitlist', () => ({
+  promoteFromWaitlist: vi.fn().mockResolvedValue({ success: true, data: null }),
+}));
 vi.mock('@/lib/logic/scheduling', () => ({
   checkStudentScheduleConflict: vi.fn().mockReturnValue(null),
 }));
@@ -87,6 +91,17 @@ describe('Enrollment Actions', () => {
       expect(result.data!.waitlist_position).toBe(1);
     });
 
+    it('waitlists if class is full with pending enrollments', async () => {
+      seed({
+        enrollments: Array.from({ length: 10 }, (_, i) => ({
+          id: `enr-${i}`, student_id: `other-${i}`, class_id: CLASS_ID, status: 'pending',
+        })) as unknown as Record<string, unknown>[],
+      });
+      const result = await enrollStudent({ classId: CLASS_ID, familyMemberId: CHILD_ID });
+      expect(result.status).toBe('waitlisted');
+      expect(result.data!.waitlist_position).toBe(1);
+    });
+
     it('blocks enrollment if student is blocked', async () => {
       seed({
         class_blocks: [
@@ -132,6 +147,27 @@ describe('Enrollment Actions', () => {
       const result = await enrollStudent({ classId: CLASS_ID, familyMemberId: CHILD_ID });
       expect(result.status).toBe('pending');
       expect(result.data).toBeDefined();
+    });
+  });
+
+  describe('cancelEnrollment', () => {
+    it('calls promoteFromWaitlist after cancelling a pending enrollment', async () => {
+      seedFake({
+        authUserId: 'admin-user',
+        data: {
+          profiles: [
+            { id: 'admin-user', first_name: 'Admin', last_name: 'User', role: 'admin' },
+          ] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            { id: 'enr-to-cancel', student_id: CHILD_ID, class_id: CLASS_ID, status: 'pending' },
+          ] as unknown as Record<string, unknown>[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+        },
+      });
+      const result = await cancelEnrollment('enr-to-cancel');
+      expect(result.success).toBe(true);
+      expect(promoteFromWaitlist).toHaveBeenCalledWith(CLASS_ID);
     });
   });
 

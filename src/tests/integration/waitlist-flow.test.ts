@@ -285,7 +285,14 @@ describe('Integration Flow: Waitlist -> Promotion', () => {
     // Apply Filters
     result = result.filter((item) => {
       for (const [key, val] of Object.entries(state.filters)) {
-        if ((item as any)[key] !== val) return false;
+        // Handle .in() filters (stored as _in_<column>)
+        if (key.startsWith('_in_')) {
+          const col = key.slice(4);
+          if (!Array.isArray(val) || !val.includes((item as any)[col])) return false;
+        } else {
+          // Handle .eq() filters
+          if ((item as any)[key] !== val) return false;
+        }
       }
       return true;
     });

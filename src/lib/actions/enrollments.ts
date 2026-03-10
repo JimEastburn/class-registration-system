@@ -13,6 +13,7 @@ import type {
 } from '@/types';
 import { sendEnrollmentConfirmation } from '@/lib/email';
 import { checkStudentScheduleConflict } from '@/lib/logic/scheduling';
+import { promoteFromWaitlist } from '@/lib/actions/waitlist';
 
 interface EnrollmentWithClass extends Enrollment {
   class: {
@@ -363,12 +364,12 @@ export async function enrollStudent(input: EnrollStudentInput): Promise<{
       };
     }
 
-    // Check capacity
+    // Check capacity (confirmed + pending both hold a spot)
     const { count: enrolledCount } = await supabase
       .from('enrollments')
       .select('*', { count: 'exact', head: true })
       .eq('class_id', input.classId)
-      .eq('status', 'confirmed');
+      .in('status', ['confirmed', 'pending']);
 
     const enrolled = enrolledCount || 0;
     const isFull = enrolled >= classData.capacity;
@@ -504,6 +505,9 @@ export async function cancelEnrollment(
 
     revalidatePath('/parent');
     revalidatePath('/parent/browse');
+
+    // Promote from waitlist if there are waitlisted students
+    await promoteFromWaitlist(enrollment.class_id);
 
     return { success: true, error: null };
   } catch (err) {
