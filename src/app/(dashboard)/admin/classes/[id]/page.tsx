@@ -120,7 +120,7 @@ export default async function AdminClassDetailPage({
             <div className="flex items-center justify-between border-b pb-2">
               <span className="text-muted-foreground">Enrolled Students:</span>
               <span className="text-xl font-bold">
-                {enrollments.length} / {cls.capacity}
+                {enrollments.filter((e) => e.status === 'confirmed' || e.status === 'pending').length} / {cls.capacity}
               </span>
             </div>
             <div className="flex items-center justify-between border-b pb-2">
