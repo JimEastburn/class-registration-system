@@ -79,7 +79,6 @@ export function ClassGrid({ classes, showSearch = false, showCalendarToggle = fa
         const block = cls.schedule_config?.block?.toLowerCase() || '';
         return (
           cls.name.toLowerCase().includes(query) ||
-          (cls.description || '').toLowerCase().includes(query) ||
           teacherName.includes(query) ||
           day.includes(query) ||
           block.includes(query)
