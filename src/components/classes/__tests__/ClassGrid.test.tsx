@@ -59,6 +59,11 @@ function makeClass(
     age_max: overrides.age_max ?? null,
     age_display_mode: overrides.age_display_mode ?? 'both',
     schedule_display_mode: overrides.schedule_display_mode ?? 'day_block',
+    show_payment_info: overrides.show_payment_info ?? true,
+    current_enrollment: overrides.current_enrollment ?? 0,
+    day_of_week: overrides.day_of_week ?? null,
+    start_time: overrides.start_time ?? null,
+    end_time: overrides.end_time ?? null,
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
   };
@@ -334,6 +339,109 @@ describe('ClassGrid age filter', () => {
     expect(ids).not.toContain('ms');     // 11-14
     expect(ids).not.toContain('hs');     // 14-18
     expect(ids).not.toContain('open-min'); // 12+
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Text search filter tests
+// ---------------------------------------------------------------------------
+
+describe('ClassGrid text search', () => {
+  beforeEach(() => {
+    mockSearchParams = new URLSearchParams();
+    mockReplace.mockClear();
+    mockPush.mockClear();
+    mockBack.mockClear();
+    mockSaveScroll.mockClear();
+  });
+
+  const SEARCH_CLASSES = [
+    makeClass({
+      id: 'art-erin',
+      name: 'Art Class',
+      teacher: { id: 't-erin', first_name: 'Erin', last_name: 'Smith' },
+    }),
+    makeClass({
+      id: 'math-bob',
+      name: 'Math Class',
+      teacher: { id: 't-bob', first_name: 'Bob', last_name: 'Jones' },
+    }),
+    makeClass({
+      id: 'science-alice',
+      name: 'Science Class',
+      teacher: { id: 't-alice', first_name: 'Alice', last_name: 'Williams' },
+    }),
+  ];
+
+  function renderSearchGrid() {
+    return render(
+      <ClassGrid classes={SEARCH_CLASSES} showSearch showCalendarToggle />
+    );
+  }
+
+  function visibleClassIds(): string[] {
+    return screen
+      .getAllByTestId(/^class-card-/)
+      .map((el) => el.getAttribute('data-testid')!.replace('class-card-', ''));
+  }
+
+  it('filters by teacher name without requiring trailing space', () => {
+    renderSearchGrid();
+    const input = screen.getByTestId('class-search-input');
+
+    // Simulate typing "Erin" without a trailing space — this should filter
+    fireEvent.change(input, { target: { value: 'Erin' } });
+
+    const ids = visibleClassIds();
+    expect(ids).toContain('art-erin');
+    expect(ids).not.toContain('math-bob');
+    expect(ids).not.toContain('science-alice');
+  });
+
+  it('filters by teacher name during an input event (composition)', () => {
+    renderSearchGrid();
+    const input = screen.getByTestId('class-search-input');
+
+    // Simulate an input event (as would fire during mobile composition)
+    fireEvent.input(input, { target: { value: 'Erin' } });
+
+    const ids = visibleClassIds();
+    expect(ids).toContain('art-erin');
+    expect(ids).not.toContain('math-bob');
+    expect(ids).not.toContain('science-alice');
+  });
+
+  it('filters by class name without trailing space', () => {
+    renderSearchGrid();
+    const input = screen.getByTestId('class-search-input');
+
+    fireEvent.change(input, { target: { value: 'Math' } });
+
+    const ids = visibleClassIds();
+    expect(ids).toContain('math-bob');
+    expect(ids).not.toContain('art-erin');
+    expect(ids).not.toContain('science-alice');
+  });
+
+  it('shows result count when search is active', () => {
+    renderSearchGrid();
+    fireEvent.change(screen.getByTestId('class-search-input'), {
+      target: { value: 'Erin' },
+    });
+    expect(screen.getByText('1 class found')).toBeInTheDocument();
+  });
+
+  it('clears search when X button is clicked', () => {
+    renderSearchGrid();
+    const input = screen.getByTestId('class-search-input');
+    fireEvent.change(input, { target: { value: 'Erin' } });
+
+    // Click the clear button
+    fireEvent.click(screen.getByLabelText('Clear search'));
+
+    // All classes should be visible again
+    const ids = visibleClassIds();
+    expect(ids).toHaveLength(3);
   });
 });
 

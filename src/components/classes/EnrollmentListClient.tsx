@@ -147,6 +147,7 @@ export function EnrollmentListClient({
               placeholder="Search by class name, teacher, day..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onInput={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
               className="border-0 bg-background pl-9 pr-9 shadow-sm"
               data-testid="enrollment-search-input"
             />
