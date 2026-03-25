@@ -82,8 +82,9 @@ export async function POST(request: Request) {
       request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL;
 
     // Create Stripe Checkout Session
+    // payment_method_types omitted so Stripe auto-selects based on customer
+    // (card, Venmo, Apple Pay, etc.) — enable methods in Stripe Dashboard
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
