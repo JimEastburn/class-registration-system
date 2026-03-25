@@ -86,3 +86,24 @@ curl -s "https://context7.com/api/v2/context?libraryId=/fastapi/fastapi&query=de
 - If the first search result is not correct, check additional results in the array
 - URL-encode query parameters containing spaces (use `+` or `%20`)
 - No API key is required for basic usage (rate-limited)
+
+## Fallback: When Context7 API is Unreachable
+
+If `context7.com` is blocked by a network proxy or the API is down:
+
+1. **Use the Context7 MCP server** (preferred): If available as an MCP tool, use `mcp_context7_resolve-library-id` and `mcp_context7_query-docs` instead of curl. The MCP server may have a different network path.
+
+2. **Check GEMINI.md for pinned library IDs**: The project configuration file contains a table of pre-resolved Context7 library IDs for core dependencies. Use these directly with the MCP tools.
+
+3. **Use `search_web`**: Search for official documentation:
+   ```
+   search_web("Next.js App Router data fetching", domain: "nextjs.org")
+   ```
+
+4. **Use `read_url_content`**: Fetch official docs directly:
+   ```
+   read_url_content("https://nextjs.org/docs/app/building-your-application/data-fetching")
+   ```
+
+5. **Check installed MCP servers**: Some documentation may be available through other MCP tools specific to the library (e.g., Supabase MCP, Stripe MCP).
+

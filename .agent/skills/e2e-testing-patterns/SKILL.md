@@ -1,11 +1,11 @@
 ---
 name: e2e-testing-patterns
-description: Master end-to-end testing with Playwright and Cypress to build reliable test suites that catch bugs, improve confidence, and enable fast deployment. Use when implementing E2E tests, debugging flaky tests, or establishing testing standards.
+description: Master end-to-end testing with Playwright to build reliable test suites that catch bugs, improve confidence, and enable fast deployment. Use when implementing E2E tests, debugging flaky tests, or establishing testing standards.
 ---
 
 # E2E Testing Patterns
 
-Build reliable, fast, and maintainable end-to-end test suites that provide confidence to ship code quickly and catch regressions before users do.
+Build reliable, fast, and maintainable end-to-end test suites with Playwright that provide confidence to ship code quickly and catch regressions before users do.
 
 ## When to Use This Skill
 
@@ -20,26 +20,22 @@ Build reliable, fast, and maintainable end-to-end test suites that provide confi
 
 ## Core Concepts
 
-### 1. E2E Testing Fundamentals
+### What to Test with E2E
 
-**What to Test with E2E:**
-
-- Critical user journeys (login, checkout, signup)
-- Complex interactions (drag-and-drop, multi-step forms)
+- Critical user journeys (login, enrollment, checkout)
+- Complex interactions (multi-step forms, role-specific flows)
 - Cross-browser compatibility
 - Real API integration
-- Authentication flows
+- Authentication flows across multiple roles
 
-**What NOT to Test with E2E:**
+### What NOT to Test with E2E
 
 - Unit-level logic (use unit tests)
 - API contracts (use integration tests)
 - Edge cases (too slow)
 - Internal implementation details
 
-### 2. Test Philosophy
-
-**The Testing Pyramid:**
+### The Testing Pyramid
 
 ```
         /\
@@ -51,17 +47,9 @@ Build reliable, fast, and maintainable end-to-end test suites that provide confi
   /────────────\
 ```
 
-**Best Practices:**
+## Playwright Setup
 
-- Test user behavior, not implementation
-- Keep tests independent
-- Make tests deterministic
-- Optimize for speed
-- Use data-testid, not CSS selectors
-
-## Playwright Patterns
-
-### Setup and Configuration
+### Configuration
 
 ```typescript
 // playwright.config.ts
@@ -93,7 +81,7 @@ export default defineConfig({
 });
 ```
 
-### Pattern 1: Page Object Model
+## Pattern 1: Page Object Model
 
 ```typescript
 // pages/LoginPage.ts
@@ -123,93 +111,146 @@ export class LoginPage {
     await this.passwordInput.fill(password);
     await this.loginButton.click();
   }
-
-  async getErrorMessage(): Promise<string> {
-    return (await this.errorMessage.textContent()) ?? '';
-  }
 }
-
-// Test using Page Object
-import { test, expect } from '@playwright/test';
-import { LoginPage } from './pages/LoginPage';
-
-test('successful login', async ({ page }) => {
-  const loginPage = new LoginPage(page);
-  await loginPage.goto();
-  await loginPage.login('user@example.com', 'password123');
-
-  await expect(page).toHaveURL('/dashboard');
-  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-});
-
-test('failed login shows error', async ({ page }) => {
-  const loginPage = new LoginPage(page);
-  await loginPage.goto();
-  await loginPage.login('invalid@example.com', 'wrong');
-
-  const error = await loginPage.getErrorMessage();
-  expect(error).toContain('Invalid credentials');
-});
 ```
 
-### Pattern 2: Fixtures for Test Data
+## Pattern 2: Auth State Management
+
+For apps with Supabase Auth, manage authentication state across tests using `storageState`:
+
+### Setup: Create Auth Fixtures per Role
 
 ```typescript
-// fixtures/test-data.ts
-import { test as base } from '@playwright/test';
+// e2e/fixtures/auth.ts
+import { test as base, type Page } from '@playwright/test';
 
-type TestData = {
-  testUser: {
-    email: string;
-    password: string;
-    name: string;
-  };
-  adminUser: {
-    email: string;
-    password: string;
-  };
+type AuthFixtures = {
+  parentPage: Page;
+  teacherPage: Page;
+  adminPage: Page;
 };
 
-export const test = base.extend<TestData>({
-  testUser: async ({}, use) => {
-    const user = {
-      email: `test-${Date.now()}@example.com`,
-      password: 'Test123!@#',
-      name: 'Test User',
-    };
-    // Setup: Create user in database
-    await createTestUser(user);
-    await use(user);
-    // Teardown: Clean up user
-    await deleteTestUser(user.email);
-  },
+async function loginAs(page: Page, email: string, password: string) {
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password').fill(password);
+  await page.getByRole('button', { name: /sign in|log in/i }).click();
+  await page.waitForURL(/\/(parent|teacher|admin|student)/);
+}
 
-  adminUser: async ({}, use) => {
-    await use({
-      email: 'admin@example.com',
-      password: process.env.ADMIN_PASSWORD!,
-    });
+export const test = base.extend<AuthFixtures>({
+  parentPage: async ({ browser }, use) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await loginAs(page, process.env.TEST_PARENT_EMAIL!, process.env.TEST_PARENT_PASSWORD!);
+    await use(page);
+    await context.close();
+  },
+  teacherPage: async ({ browser }, use) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await loginAs(page, process.env.TEST_TEACHER_EMAIL!, process.env.TEST_TEACHER_PASSWORD!);
+    await use(page);
+    await context.close();
+  },
+  adminPage: async ({ browser }, use) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await loginAs(page, process.env.TEST_ADMIN_EMAIL!, process.env.TEST_ADMIN_PASSWORD!);
+    await use(page);
+    await context.close();
   },
 });
 
-// Usage in tests
-import { test } from './fixtures/test-data';
+export { expect } from '@playwright/test';
+```
 
-test('user can update profile', async ({ page, testUser }) => {
-  await page.goto('/login');
-  await page.getByLabel('Email').fill(testUser.email);
-  await page.getByLabel('Password').fill(testUser.password);
-  await page.getByRole('button', { name: 'Login' }).click();
+### Using Auth Fixtures in Tests
 
-  await page.goto('/profile');
-  await page.getByLabel('Name').fill('Updated Name');
-  await page.getByRole('button', { name: 'Save' }).click();
+```typescript
+import { test, expect } from './fixtures/auth';
 
-  await expect(page.getByText('Profile updated')).toBeVisible();
+test('parent can view their enrolled classes', async ({ parentPage }) => {
+  await parentPage.goto('/parent/classes');
+  await expect(parentPage.getByRole('heading', { name: 'My Classes' })).toBeVisible();
+});
+
+test('admin can view all enrollments', async ({ adminPage }) => {
+  await adminPage.goto('/admin/enrollments');
+  await expect(adminPage.getByRole('table')).toBeVisible();
+});
+
+test('teacher cannot access admin portal', async ({ teacherPage }) => {
+  await teacherPage.goto('/admin');
+  // Should redirect away from admin
+  await expect(teacherPage).not.toHaveURL(/\/admin/);
 });
 ```
 
-### Pattern 3: Waiting Strategies
+## Pattern 3: Multi-Role Flow Testing
+
+Test workflows that span multiple roles (e.g., admin creates class → parent enrolls):
+
+```typescript
+import { test, expect } from './fixtures/auth';
+
+test('enrollment flow across roles', async ({ adminPage, parentPage }) => {
+  // Step 1: Admin creates a class
+  await adminPage.goto('/admin/classes/new');
+  await adminPage.getByLabel('Class Name').fill('Test Art Class');
+  await adminPage.getByRole('button', { name: 'Create' }).click();
+  await expect(adminPage.getByText('Class created')).toBeVisible();
+
+  // Step 2: Parent enrolls a child
+  await parentPage.goto('/parent/classes');
+  await parentPage.getByText('Test Art Class').click();
+  await parentPage.getByRole('button', { name: 'Enroll' }).click();
+  await expect(parentPage.getByText('Enrolled')).toBeVisible();
+});
+```
+
+## Pattern 4: Database-Backed Setup and Teardown
+
+Use Supabase client directly in tests for reliable data setup:
+
+```typescript
+// e2e/helpers/db.ts
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // Service role for test setup
+);
+
+export async function createTestClass(name: string) {
+  const { data, error } = await supabase
+    .from('classes')
+    .insert({ name, capacity: 10, status: 'active' })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function cleanupTestData(prefix: string) {
+  await supabase.from('classes').delete().like('name', `${prefix}%`);
+}
+```
+
+```typescript
+// In tests
+import { createTestClass, cleanupTestData } from './helpers/db';
+
+test.beforeAll(async () => {
+  await createTestClass('E2E-Test-Class');
+});
+
+test.afterAll(async () => {
+  await cleanupTestData('E2E-Test-');
+});
+```
+
+## Pattern 5: Waiting Strategies
 
 ```typescript
 // ❌ Bad: Fixed timeouts
@@ -218,7 +259,6 @@ await page.waitForTimeout(3000); // Flaky!
 // ✅ Good: Wait for specific conditions
 await page.waitForLoadState('networkidle');
 await page.waitForURL('/dashboard');
-await page.waitForSelector('[data-testid="user-profile"]');
 
 // ✅ Better: Auto-waiting with assertions
 await expect(page.getByText('Welcome')).toBeVisible();
@@ -230,19 +270,10 @@ const responsePromise = page.waitForResponse(
     response.url().includes('/api/users') && response.status() === 200
 );
 await page.getByRole('button', { name: 'Load Users' }).click();
-const response = await responsePromise;
-const data = await response.json();
-expect(data.users).toHaveLength(10);
-
-// Wait for multiple conditions
-await Promise.all([
-  page.waitForURL('/success'),
-  page.waitForLoadState('networkidle'),
-  expect(page.getByText('Payment successful')).toBeVisible(),
-]);
+await responsePromise;
 ```
 
-### Pattern 4: Network Mocking and Interception
+## Pattern 6: Network Mocking
 
 ```typescript
 // Mock API responses
@@ -259,140 +290,20 @@ test('displays error when API fails', async ({ page }) => {
   await expect(page.getByText('Failed to load users')).toBeVisible();
 });
 
-// Intercept and modify requests
-test('can modify API request', async ({ page }) => {
-  await page.route('**/api/users', async (route) => {
-    const request = route.request();
-    const postData = JSON.parse(request.postData() || '{}');
-
-    // Modify request
-    postData.role = 'admin';
-
-    await route.continue({
-      postData: JSON.stringify(postData),
-    });
-  });
-
-  // Test continues...
-});
-
-// Mock third-party services
+// Mock third-party services (e.g., Stripe)
 test('payment flow with mocked Stripe', async ({ page }) => {
   await page.route('**/api/stripe/**', (route) => {
     route.fulfill({
       status: 200,
-      body: JSON.stringify({
-        id: 'mock_payment_id',
-        status: 'succeeded',
-      }),
+      body: JSON.stringify({ id: 'mock_payment_id', status: 'succeeded' }),
     });
   });
-
-  // Test payment flow with mocked response
 });
 ```
 
-## Cypress Patterns
-
-### Setup and Configuration
+## Pattern 7: Visual Regression Testing
 
 ```typescript
-// cypress.config.ts
-import { defineConfig } from 'cypress';
-
-export default defineConfig({
-  e2e: {
-    baseUrl: 'http://localhost:3000',
-    viewportWidth: 1280,
-    viewportHeight: 720,
-    video: false,
-    screenshotOnRunFailure: true,
-    defaultCommandTimeout: 10000,
-    requestTimeout: 10000,
-    setupNodeEvents(on, config) {
-      // Implement node event listeners
-    },
-  },
-});
-```
-
-### Pattern 1: Custom Commands
-
-```typescript
-// cypress/support/commands.ts
-declare global {
-  namespace Cypress {
-    interface Chainable {
-      login(email: string, password: string): Chainable<void>;
-      createUser(userData: UserData): Chainable<User>;
-      dataCy(value: string): Chainable<JQuery<HTMLElement>>;
-    }
-  }
-}
-
-Cypress.Commands.add('login', (email: string, password: string) => {
-  cy.visit('/login');
-  cy.get('[data-testid="email"]').type(email);
-  cy.get('[data-testid="password"]').type(password);
-  cy.get('[data-testid="login-button"]').click();
-  cy.url().should('include', '/dashboard');
-});
-
-Cypress.Commands.add('createUser', (userData: UserData) => {
-  return cy.request('POST', '/api/users', userData).its('body');
-});
-
-Cypress.Commands.add('dataCy', (value: string) => {
-  return cy.get(`[data-cy="${value}"]`);
-});
-
-// Usage
-cy.login('user@example.com', 'password');
-cy.dataCy('submit-button').click();
-```
-
-### Pattern 2: Cypress Intercept
-
-```typescript
-// Mock API calls
-cy.intercept('GET', '/api/users', {
-  statusCode: 200,
-  body: [
-    { id: 1, name: 'John' },
-    { id: 2, name: 'Jane' },
-  ],
-}).as('getUsers');
-
-cy.visit('/users');
-cy.wait('@getUsers');
-cy.get('[data-testid="user-list"]').children().should('have.length', 2);
-
-// Modify responses
-cy.intercept('GET', '/api/users', (req) => {
-  req.reply((res) => {
-    // Modify response
-    res.body.users = res.body.users.slice(0, 5);
-    res.send();
-  });
-});
-
-// Simulate slow network
-cy.intercept('GET', '/api/data', (req) => {
-  req.reply((res) => {
-    res.delay(3000); // 3 second delay
-    res.send();
-  });
-});
-```
-
-## Advanced Patterns
-
-### Pattern 1: Visual Regression Testing
-
-```typescript
-// With Playwright
-import { test, expect } from '@playwright/test';
-
 test('homepage looks correct', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveScreenshot('homepage.png', {
@@ -400,82 +311,27 @@ test('homepage looks correct', async ({ page }) => {
     maxDiffPixels: 100,
   });
 });
-
-test('button in all states', async ({ page }) => {
-  await page.goto('/components');
-
-  const button = page.getByRole('button', { name: 'Submit' });
-
-  // Default state
-  await expect(button).toHaveScreenshot('button-default.png');
-
-  // Hover state
-  await button.hover();
-  await expect(button).toHaveScreenshot('button-hover.png');
-
-  // Disabled state
-  await button.evaluate((el) => el.setAttribute('disabled', 'true'));
-  await expect(button).toHaveScreenshot('button-disabled.png');
-});
 ```
 
-### Pattern 2: Parallel Testing with Sharding
+## Pattern 8: Accessibility Testing
 
 ```typescript
-// playwright.config.ts
-export default defineConfig({
-  projects: [
-    {
-      name: 'shard-1',
-      use: { ...devices['Desktop Chrome'] },
-      grepInvert: /@slow/,
-      shard: { current: 1, total: 4 },
-    },
-    {
-      name: 'shard-2',
-      use: { ...devices['Desktop Chrome'] },
-      shard: { current: 2, total: 4 },
-    },
-    // ... more shards
-  ],
-});
-
-// Run in CI
-// npx playwright test --shard=1/4
-// npx playwright test --shard=2/4
-```
-
-### Pattern 3: Accessibility Testing
-
-```typescript
-// Install: npm install @axe-core/playwright
-import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 test('page should not have accessibility violations', async ({ page }) => {
   await page.goto('/');
-
-  const accessibilityScanResults = await new AxeBuilder({ page })
+  const results = await new AxeBuilder({ page })
     .exclude('#third-party-widget')
     .analyze();
-
-  expect(accessibilityScanResults.violations).toEqual([]);
-});
-
-test('form is accessible', async ({ page }) => {
-  await page.goto('/signup');
-
-  const results = await new AxeBuilder({ page }).include('form').analyze();
-
   expect(results.violations).toEqual([]);
 });
 ```
 
 ## Best Practices
 
-1. **Use Data Attributes**: `data-testid` or `data-cy` for stable selectors
+1. **Use Data Attributes**: `data-testid` for stable selectors
 2. **Avoid Brittle Selectors**: Don't rely on CSS classes or DOM structure
-3. **Test User Behavior**: Click, type, see - not implementation details
+3. **Test User Behavior**: Click, type, see — not implementation details
 4. **Keep Tests Independent**: Each test should run in isolation
 5. **Clean Up Test Data**: Create and destroy test data in each test
 6. **Use Page Objects**: Encapsulate page logic
@@ -484,13 +340,13 @@ test('form is accessible', async ({ page }) => {
 
 ```typescript
 // ❌ Bad selectors
-cy.get('.btn.btn-primary.submit-button').click();
-cy.get('div > form > div:nth-child(2) > input').type('text');
+page.locator('.btn.btn-primary.submit-button').click();
+page.locator('div > form > div:nth-child(2) > input').fill('text');
 
 // ✅ Good selectors
-cy.getByRole('button', { name: 'Submit' }).click();
-cy.getByLabel('Email address').type('user@example.com');
-cy.get('[data-testid="email-input"]').type('user@example.com');
+page.getByRole('button', { name: 'Submit' }).click();
+page.getByLabel('Email address').fill('user@example.com');
+page.getByTestId('email-input').fill('user@example.com');
 ```
 
 ## Common Pitfalls
@@ -502,43 +358,35 @@ cy.get('[data-testid="email-input"]').type('user@example.com');
 - **Poor Selectors**: Avoid CSS classes and nth-child
 - **No Cleanup**: Clean up test data after each test
 - **Testing Implementation**: Test user behavior, not internals
+- **No Auth State Reuse**: Create auth fixtures instead of logging in every test
 
 ## Debugging Failing Tests
 
-```typescript
-// Playwright debugging
-// 1. Run in headed mode
+```bash
+# Run in headed mode
 npx playwright test --headed
 
-// 2. Run in debug mode
+# Run in debug mode
 npx playwright test --debug
 
-// 3. Use trace viewer
-await page.screenshot({ path: 'screenshot.png' });
-await page.video()?.saveAs('video.webm');
-
-// 4. Add test.step for better reporting
-test('checkout flow', async ({ page }) => {
-    await test.step('Add item to cart', async () => {
-        await page.goto('/products');
-        await page.getByRole('button', { name: 'Add to Cart' }).click();
-    });
-
-    await test.step('Proceed to checkout', async () => {
-        await page.goto('/cart');
-        await page.getByRole('button', { name: 'Checkout' }).click();
-    });
-});
-
-// 5. Inspect page state
-await page.pause();  // Pauses execution, opens inspector
+# Run a single test
+npx playwright test -g "test name"
 ```
 
-## Resources
+```typescript
+// Add test.step for better reporting
+test('checkout flow', async ({ page }) => {
+  await test.step('Add item to cart', async () => {
+    await page.goto('/products');
+    await page.getByRole('button', { name: 'Add to Cart' }).click();
+  });
 
-- **references/playwright-best-practices.md**: Playwright-specific patterns
-- **references/cypress-best-practices.md**: Cypress-specific patterns
-- **references/flaky-test-debugging.md**: Debugging unreliable tests
-- **assets/e2e-testing-checklist.md**: What to test with E2E
-- **assets/selector-strategies.md**: Finding reliable selectors
-- **scripts/test-analyzer.ts**: Analyze test flakiness and duration
+  await test.step('Proceed to checkout', async () => {
+    await page.goto('/cart');
+    await page.getByRole('button', { name: 'Checkout' }).click();
+  });
+});
+
+// Inspect page state mid-test
+await page.pause();
+```

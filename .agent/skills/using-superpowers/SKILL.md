@@ -82,6 +82,35 @@ When multiple skills could apply, use this order:
 
 The skill itself tells you which.
 
+## Skill Inventory
+
+Use this table to route tasks to the correct skill:
+
+| Task Type | Primary Skill | Secondary Skill |
+|-----------|--------------|-----------------|
+| Building UI components | `frontend-design` | `brand-identity` |
+| Styling / theming | `brand-identity` | `frontend-design` |
+| Writing / planning tests | `planning` (TDD gate) | `e2e-testing-patterns` |
+| Debugging failures | `systematic-debugging` | `error-handling-patterns` |
+| Refactoring / renaming | `systematic-refactoring` | `typescript-expert` |
+| Creating pull requests | `pr-creator` | `code-reviewer` |
+| Reviewing code | `code-reviewer` | — |
+| Auth / login issues | `nextjs-supabase-auth` | `systematic-debugging` |
+| Database / queries | `supabase-postgres-best-practices` | — |
+| Stripe / payments | `stripe-best-practices` | — |
+| Performance issues | `vercel-react-best-practices` | `next-best-practices` |
+| Responsive layouts | `responsive-design` | `frontend-design` |
+| Accessibility | `accessibility-compliance` | — |
+| E2E tests | `e2e-testing-patterns` | `playwright` |
+| New feature brainstorm | `brainstorming` | `planning` |
+| Multi-step implementation | `planning` | `subagent-driven-development` |
+| Browser automation | `playwright` | `agent-browser` |
+| Writing copy / messages | `brand-identity` (voice-tone) | — |
+| TypeScript type issues | `typescript-expert` | — |
+| Generating test specs | `generating-gherkin` | — |
+| Creating new skills | `gemini-skill-creator` | — |
+| Finding new skills | `find-skills` | — |
+
 ## User Instructions
 
 Instructions say WHAT, not HOW. "Add X" or "Fix Y" doesn't mean skip workflows.

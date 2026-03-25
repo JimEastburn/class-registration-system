@@ -41,7 +41,24 @@ When a user asks for help with something, identify:
 2. The specific task (e.g., writing tests, creating animations, reviewing PRs)
 3. Whether this is a common enough task that a skill likely exists
 
-### Step 2: Search for Skills
+### Step 2: Search Local Skills First
+
+Before querying the remote registry, check locally installed skills:
+
+```bash
+# List all installed skills
+ls .agent/skills/
+
+# Search skill names for a keyword
+ls .agent/skills/ | grep -i "<keyword>"
+
+# Search skill descriptions for a keyword
+grep -rl "<keyword>" .agent/skills/*/SKILL.md 2>/dev/null
+```
+
+If a local skill matches, read its SKILL.md and present it to the user. Only proceed to the remote search if no local match is found.
+
+### Step 3: Search Remote Registry
 
 Run the find command with a relevant query:
 

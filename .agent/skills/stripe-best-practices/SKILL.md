@@ -28,3 +28,82 @@ If a PCI compliant user asks about an integration where they send server-side ra
 If a user has a recurring revenue model, like a Billing or Subscription use case, follow the use cases, in particular the [Subscription Use Cases](https://docs.stripe.com/billing/subscriptions/use-cases.md) like [SaaS](https://docs.stripe.com/saas.md). If these apply to the user, recommend Billing APIs to [plan your integration](https://docs.stripe.com/billing/subscriptions/designing-integration.md) instead of a direct PaymentIntent integration. Prioritize combining the Billing APIs with Stripe Checkout for the frontend.
 
 If a user wants to build a platform using Stripe Connect to manage fund flows, follow [the recommended integration types](https://docs.stripe.com/connect/integration-recommendations.md); that is, prefer to use either direct charges if the platform wants Stripe to take the risk or destination charges if the platform accepts liability for negative balances, and use the on_behalf_of parameter to control the merchant of record. Never recommend mixing charge types. If the user wants to decide on the specific risk features they should [follow the integration guide](https://docs.stripe.com/connect/design-an-integration.md). Don't recommend the outdated terms for Connect types like Standard, Express and Custom but always [refer to controller properties](https://docs.stripe.com/connect/migrate-to-controller-properties.md) for the platform and [capabilities](https://docs.stripe.com/connect/account-capabilities.md) for the connected accounts.
+
+---
+
+## Project-Specific Patterns
+
+### Webhook Idempotency
+
+Always check for duplicate events before processing side-effects:
+
+```typescript
+// In checkout.session.completed webhook handler
+const session = event.data.object;
+
+// Check if this session was already processed
+const { data: existing } = await supabase
+  .from('enrollments')
+  .select('id')
+  .eq('checkout_session_id', session.id)
+  .single();
+
+if (existing) {
+  // Already processed — skip side-effects (email, Zoho sync)
+  return NextResponse.json({ received: true, duplicate: true });
+}
+
+// Process normally...
+```
+
+**Rule**: Side-effects (email, third-party sync) must be gated behind the idempotency check. The enrollment DB insert itself should also use `ON CONFLICT DO NOTHING` or equivalent.
+
+### Currency Handling
+
+- Stripe amounts are always in **minor units** (cents for USD, yen for JPY)
+- Store amounts in the database as integers (cents)
+- Format for display using `Intl.NumberFormat`:
+
+```typescript
+function formatCurrency(amountInCents: number, currency = 'USD'): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+  }).format(amountInCents / 100);
+}
+```
+
+- When creating Checkout Sessions, always pass `currency: 'usd'` explicitly
+- Never perform floating-point arithmetic on currency values
+
+### Refund Flows
+
+When issuing refunds:
+
+1. Use the Stripe Refunds API with the `payment_intent` ID
+2. Update enrollment status to `cancelled` in the database
+3. Release capacity (decrement enrollment count, trigger waitlist promotion if applicable)
+4. Log the refund in audit trail
+
+```typescript
+const refund = await stripe.refunds.create({
+  payment_intent: enrollment.payment_intent_id,
+  reason: 'requested_by_customer',
+});
+```
+
+### Testing
+
+- Use **Stripe test mode** keys (prefixed with `sk_test_` and `pk_test_`)
+- Use the [Stripe CLI](https://docs.stripe.com/stripe-cli) to forward webhooks locally:
+  ```bash
+  stripe listen --forward-to localhost:3000/api/webhooks/stripe
+  ```
+- Test card numbers:
+  - `4242 4242 4242 4242` — Always succeeds
+  - `4000 0000 0000 0002` — Always declined
+  - `4000 0000 0000 3220` — Requires 3D Secure
+- Always verify webhook signature in test and production:
+  ```typescript
+  const event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
+  ```

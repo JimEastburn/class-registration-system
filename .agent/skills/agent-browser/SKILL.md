@@ -6,6 +6,22 @@ allowed-tools: Bash(agent-browser:*)
 
 # Browser Automation with agent-browser
 
+## Prerequisites
+
+Before using this skill, verify the tool is installed:
+
+```bash
+which agent-browser || npm list -g @anthropic-ai/agent-browser 2>/dev/null
+```
+
+If not available, install it:
+
+```bash
+npm install -g @anthropic-ai/agent-browser
+```
+
+> **Fallback**: If `agent-browser` is unavailable in your environment, use the `playwright` skill or the built-in browser subagent for browser automation tasks.
+
 ## Core Workflow
 
 Every browser automation follows this pattern:

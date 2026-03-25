@@ -1,36 +1,171 @@
 {
   "meta": {
     "brand_name": "Austin AAC",
-    "description": "Core design tokens for UI implementation."
+    "description": "Core design tokens for UI implementation. Source of truth: src/app/globals.css"
   },
   "colors": {
     "primary": {
       "DEFAULT": "#4c7c92",
-      "hover": "#3a6174",
-      "foreground": "#FFFFFF"
+      "foreground": "#ffffff"
     },
     "secondary": {
-      "DEFAULT": "#9BBFD3",
-      "foreground": "#FFFFFF"
+      "DEFAULT": "#9bbfd3",
+      "foreground": "#ffffff"
     },
-    "background": "#F8FAF8",
+    "background": "#f8faf8",
     "foreground": "#334155",
-    "muted": "#F1F5F9",
-    "accent": "#FBBF24",
-    "destructive": "#EF4444",
-    "success": "#10B981",
-    "warning": "#F59E0B",
-    "info": "#3B82F6"
+    "card": {
+      "DEFAULT": "#ffffff",
+      "foreground": "#334155"
+    },
+    "popover": {
+      "DEFAULT": "#ffffff",
+      "foreground": "#334155"
+    },
+    "muted": {
+      "DEFAULT": "#f1f5f9",
+      "foreground": "#64748b"
+    },
+    "accent": {
+      "DEFAULT": "#fbbf24",
+      "foreground": "#4c1d95"
+    },
+    "destructive": {
+      "DEFAULT": "#ef4444",
+      "foreground": "#ffffff"
+    },
+    "border": "#e2e8f0",
+    "input": "#e2e8f0",
+    "ring": "#4c7c92",
+    "filter_bar": "#fbbf24"
+  },
+  "colors_dark": {
+    "background": "#0f172a",
+    "foreground": "#f8faf8",
+    "card": {
+      "DEFAULT": "#1e293b",
+      "foreground": "#f8faf8"
+    },
+    "popover": {
+      "DEFAULT": "#1e293b",
+      "foreground": "#f8faf8"
+    },
+    "primary": {
+      "DEFAULT": "#818cf8",
+      "foreground": "#ffffff"
+    },
+    "secondary": {
+      "DEFAULT": "#14b8a6",
+      "foreground": "#ffffff"
+    },
+    "muted": {
+      "DEFAULT": "#1e293b",
+      "foreground": "#94a3b8"
+    },
+    "accent": {
+      "DEFAULT": "#1e293b",
+      "foreground": "#f8faf8"
+    },
+    "destructive": {
+      "DEFAULT": "#ef4444",
+      "foreground": "#ffffff"
+    },
+    "border": "#1e293b",
+    "input": "#1e293b",
+    "ring": "#818cf8",
+    "filter_bar": "#1e293b"
+  },
+  "enrollment_status": {
+    "pending": {
+      "dot": "#eab308",
+      "background": "#fefce8",
+      "foreground": "#854d0e",
+      "border": "#fde68a",
+      "dark_dot": "#facc15",
+      "dark_background": "#422006",
+      "dark_foreground": "#fef08a",
+      "dark_border": "#a16207"
+    },
+    "confirmed": {
+      "dot": "#22c55e",
+      "background": "#f0fdf4",
+      "foreground": "#166534",
+      "border": "#bbf7d0",
+      "dark_dot": "#22c55e",
+      "dark_background": "#052e16",
+      "dark_foreground": "#86efac",
+      "dark_border": "#166534"
+    },
+    "waitlisted": {
+      "dot": "#f97316",
+      "background": "#fff7ed",
+      "foreground": "#9a3412",
+      "border": "#fdba74",
+      "dark_dot": "#f97316",
+      "dark_background": "#431407",
+      "dark_foreground": "#fdba74",
+      "dark_border": "#9a3412"
+    },
+    "cancelled": {
+      "dot": "#fca5a5",
+      "background": "#fff1f2",
+      "foreground": "#9f1239",
+      "border": "#fecdd3",
+      "dark_dot": "#fca5a5",
+      "dark_background": "#4c0519",
+      "dark_foreground": "#fda4af",
+      "dark_border": "#9f1239"
+    }
+  },
+  "sidebar": {
+    "DEFAULT": "#f8faf8",
+    "foreground": "#334155",
+    "primary": "#4c7c92",
+    "primary_foreground": "#ffffff",
+    "accent": "#f1f5f9",
+    "accent_foreground": "#4c7c92",
+    "border": "#e2e8f0",
+    "ring": "#4c7c92",
+    "dark": {
+      "DEFAULT": "#0f172a",
+      "foreground": "#f8faf8",
+      "primary": "#818cf8",
+      "primary_foreground": "#ffffff",
+      "accent": "#1e293b",
+      "accent_foreground": "#f8faf8",
+      "border": "#1e293b",
+      "ring": "#818cf8"
+    }
+  },
+  "chart": {
+    "1": "#4c7c92",
+    "2": "#9bbfd3",
+    "3": "#fbbf24",
+    "4": "#334155",
+    "5": "#10b981",
+    "dark": {
+      "1": "#818cf8",
+      "2": "#14b8a6",
+      "3": "#fbbf24",
+      "4": "#94a3b8",
+      "5": "#34d399"
+    }
   },
   "typography": {
-    "font_family_headings": ["Inter", "sans-serif"],
-    "font_family_body": ["Inter", "sans-serif"],
+    "font_family_sans": ["Inter", "sans-serif"],
+    "font_family_mono": ["Geist Mono", "monospace"],
     "font_weight_bold": "700",
     "font_weight_normal": "400"
   },
   "ui": {
-    "border_radius_default": "0.5rem",
-    "border_radius_small": "0.25rem",
+    "border_radius_base": "0.625rem",
+    "border_radius_sm": "calc(0.625rem - 4px)",
+    "border_radius_md": "calc(0.625rem - 2px)",
+    "border_radius_lg": "0.625rem",
+    "border_radius_xl": "calc(0.625rem + 4px)",
+    "border_radius_2xl": "calc(0.625rem + 8px)",
+    "border_radius_3xl": "calc(0.625rem + 12px)",
+    "border_radius_4xl": "calc(0.625rem + 16px)",
     "spacing_base_unit": "4px"
   }
 }

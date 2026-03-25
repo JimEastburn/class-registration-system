@@ -68,13 +68,17 @@ Before coding, commit to BOLD aesthetic direction:
 
 Bold maximalism and refined minimalism both work. Key is intentionality.
 
-## Anti-Patterns (NEVER)
+## Anti-Patterns
 
-- Overused fonts: Inter, Roboto, Arial, system fonts, Space Grotesk
-- Cliched colors: purple gradients on white
-- Predictable layouts and component patterns
-- Cookie-cutter design lacking character
-- Generic AI-generated aesthetics
+**For new/greenfield projects:**
+- Avoid defaulting to overused fonts: Inter, Roboto, Arial, system fonts, Space Grotesk
+- Avoid cliched colors: purple gradients on white
+- Avoid predictable layouts and cookie-cutter component patterns
+- Avoid generic AI-generated aesthetics
+
+**For existing projects:**
+- Always follow the project's established font choices — check `globals.css` or `@theme` configuration
+- Match the project's existing color palette and design tokens
 
 ## Best Practices
 

@@ -631,6 +631,85 @@ def process_order(order_id: str) -> Order:
 - **Returning Error Codes**: Use exceptions or Result types
 - **Ignoring Async Errors**: Unhandled promise rejections
 
+## Webhook & Event Processing Patterns
+
+### Idempotent Event Handling
+
+Always check for duplicate events before processing side-effects:
+
+```typescript
+async function handleWebhookEvent(event: StripeEvent) {
+  // Check if this event was already processed
+  const { data: existing } = await db
+    .from('processed_events')
+    .select('id')
+    .eq('event_id', event.id)
+    .single();
+
+  if (existing) {
+    return { status: 'already_processed' };
+  }
+
+  // Process the event
+  await processEvent(event);
+
+  // Record that we processed it
+  await db.from('processed_events').insert({ event_id: event.id });
+}
+```
+
+### Signature Verification
+
+Always verify webhook signatures before trusting the payload:
+
+```typescript
+// ✅ CORRECT — verify before processing
+const event = stripe.webhooks.constructEvent(
+  rawBody,
+  request.headers.get('stripe-signature')!,
+  process.env.STRIPE_WEBHOOK_SECRET!
+);
+
+// ❌ WRONG — trusting unverified payload
+const event = JSON.parse(rawBody); // DO NOT DO THIS
+```
+
+### Partial Failure Handling
+
+When a webhook triggers multiple side-effects, handle each independently:
+
+```typescript
+async function handleCheckoutCompleted(session: CheckoutSession) {
+  // Step 1: Core operation — must succeed
+  const enrollment = await createEnrollment(session);
+
+  // Step 2: Side-effects — failures should not block enrollment
+  const results = await Promise.allSettled([
+    sendConfirmationEmail(enrollment),
+    syncToZoho(enrollment),
+    notifySlack(enrollment),
+  ]);
+
+  // Log failures for retry but don't throw
+  results.forEach((result, i) => {
+    if (result.status === 'rejected') {
+      logger.error(`Side-effect ${i} failed`, { error: result.reason });
+    }
+  });
+
+  return enrollment;
+}
+```
+
+### Retry-Safe Design
+
+Design webhook handlers to be safely re-executable:
+
+- Use `INSERT ... ON CONFLICT DO NOTHING` for database operations
+- Gate side-effects behind idempotency checks
+- Make status transitions unidirectional (pending → confirmed, never backwards)
+- Store the webhook event ID alongside the processed data for audit
+
 ## Resources
 
 - **references/exception-hierarchy-design.md**: Designing error class hierarchies
