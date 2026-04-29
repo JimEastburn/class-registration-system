@@ -741,6 +741,49 @@ export async function updateDepositPaid(
   }
 }
 
+// TODO(Session A): Replace these stubs with real implementations
+export type AdminEnrollStudentInput = {
+  studentId: string;
+  classId: string;
+};
+
+export type AdminEnrollStudentResult = {
+  data: Enrollment | null;
+  status: 'pending' | 'waitlisted' | 'reactivated' | null;
+  error: string | null;
+};
+
+export type AdminEnrollmentStudentOption = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  parent_name: string;
+};
+
+export type AdminEnrollmentClassOption = {
+  id: string;
+  name: string;
+  teacher_name: string;
+};
+
+export async function adminEnrollStudent(
+  _input: AdminEnrollStudentInput
+): Promise<AdminEnrollStudentResult> {
+  return { data: null, status: null, error: 'Not implemented' };
+}
+
+export async function getAdminEnrollmentStudentOptions(
+  _search?: string
+): Promise<{ data: AdminEnrollmentStudentOption[]; error: string | null }> {
+  return { data: [], error: null };
+}
+
+export async function getAdminEnrollmentClassOptions(
+  _search?: string
+): Promise<{ data: AdminEnrollmentClassOption[]; error: string | null }> {
+  return { data: [], error: null };
+}
+
 /**
  * Admin: Force enroll a student, bypassing capacity and blocks.
  */
