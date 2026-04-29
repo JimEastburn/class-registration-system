@@ -205,7 +205,13 @@ interface EnrollStudentInput {
  */
 export async function enrollStudent(input: EnrollStudentInput): Promise<{
   data: Enrollment | null;
-  status: 'confirmed' | 'waitlisted' | 'blocked' | 'pending' | 'schedule_conflict' | null;
+  status:
+    | 'confirmed'
+    | 'waitlisted'
+    | 'blocked'
+    | 'pending'
+    | 'schedule_conflict'
+    | null;
   error: string | null;
 }> {
   try {
@@ -1062,6 +1068,452 @@ export async function adminRemoveEnrollment(
   } catch (err) {
     console.error('Unexpected error in adminRemoveEnrollment:', err);
     return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+export interface AdminEnrollStudentInput {
+  studentId: string;
+  classId: string;
+}
+
+export type AdminEnrollStudentResult = {
+  data: Enrollment | null;
+  status:
+    | 'pending'
+    | 'waitlisted'
+    | 'blocked'
+    | 'schedule_conflict'
+    | 'reactivated'
+    | 'confirmed'
+    | null;
+  error: string | null;
+};
+
+export interface AdminEnrollmentStudentOption {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  parent_name: string | null;
+}
+
+export interface AdminEnrollmentClassOption {
+  id: string;
+  name: string;
+  teacher_name: string | null;
+  day: string | null;
+  block: string | null;
+}
+
+/**
+ * Admin: Enroll a student in a class (normal flow, no force)
+ */
+export async function adminEnrollStudent(
+  input: AdminEnrollStudentInput
+): Promise<AdminEnrollStudentResult> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { data: null, status: null, error: 'Not authenticated' };
+    }
+
+    // Check admin privilege
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const isAdmin = ['admin', 'super_admin'].includes(profile?.role || '');
+    if (!isAdmin) {
+      return { data: null, status: null, error: 'Access denied' };
+    }
+
+    const adminClient = await createAdminClient();
+
+    // Verify student exists and is actually a student
+    const { data: student, error: studentError } = await adminClient
+      .from('family_members')
+      .select('id, first_name, last_name, relationship, parent_id')
+      .eq('id', input.studentId)
+      .maybeSingle();
+
+    if (studentError || !student) {
+      return { data: null, status: null, error: 'Student not found' };
+    }
+
+    if (student.relationship !== 'Student') {
+      return {
+        data: null,
+        status: null,
+        error: 'Only students can be enrolled in classes',
+      };
+    }
+
+    // Verify class exists
+    const { data: classData, error: classError } = await adminClient
+      .from('classes')
+      .select('id, name, capacity, teacher_id, schedule_config')
+      .eq('id', input.classId)
+      .maybeSingle();
+
+    if (classError || !classData) {
+      return { data: null, status: null, error: 'Class not found' };
+    }
+
+    // Check for existing enrollment
+    const { data: existingEnrollment } = await adminClient
+      .from('enrollments')
+      .select('id, status, waitlist_position')
+      .eq('student_id', input.studentId)
+      .eq('class_id', input.classId)
+      .maybeSingle();
+
+    if (existingEnrollment) {
+      const activeStatuses = ['confirmed', 'pending', 'waitlisted'];
+      if (activeStatuses.includes(existingEnrollment.status as string)) {
+        return {
+          data: null,
+          status: existingEnrollment.status as 'confirmed' | 'waitlisted',
+          error: 'Student is already enrolled in this class',
+        };
+      }
+
+      // Reactivate cancelled enrollment
+      const { count: enrolledCount } = await adminClient
+        .from('enrollments')
+        .select('*', { count: 'exact', head: true })
+        .eq('class_id', input.classId)
+        .in('status', ['confirmed', 'pending']);
+
+      const enrolled = enrolledCount || 0;
+      const isFull = enrolled >= classData.capacity;
+      const newStatus: EnrollmentStatus = isFull ? 'waitlisted' : 'pending';
+      let waitlistPosition: number | null = null;
+
+      if (isFull) {
+        const { count: waitlistCount } = await adminClient
+          .from('enrollments')
+          .select('*', { count: 'exact', head: true })
+          .eq('class_id', input.classId)
+          .eq('status', 'waitlisted');
+        waitlistPosition = (waitlistCount || 0) + 1;
+      }
+
+      const { data: updated, error: updateError } = await adminClient
+        .from('enrollments')
+        .update({
+          status: newStatus,
+          waitlist_position: waitlistPosition,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingEnrollment.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        return { data: null, status: null, error: updateError.message };
+      }
+
+      await logAuditAction(
+        user.id,
+        'admin_enroll_student',
+        'enrollment',
+        existingEnrollment.id,
+        {
+          classId: input.classId,
+          studentId: input.studentId,
+          reactivated: true,
+        }
+      );
+
+      revalidatePath('/admin/enrollments');
+      revalidatePath('/parent');
+      revalidatePath('/parent/browse');
+      revalidatePath(`/parent/browse/${input.classId}`);
+      revalidatePath(`/admin/classes/${input.classId}`);
+
+      return {
+        data: updated as Enrollment,
+        status: 'reactivated',
+        error: null,
+      };
+    }
+
+    // Check for teacher blocks
+    const { data: block } = await adminClient
+      .from('class_blocks')
+      .select('id')
+      .eq('teacher_id', classData.teacher_id)
+      .eq('student_id', input.studentId)
+      .maybeSingle();
+
+    if (block) {
+      return {
+        data: null,
+        status: 'blocked',
+        error:
+          "This student has been blocked from enrolling in this teacher's classes",
+      };
+    }
+
+    // Check for schedule conflicts
+    const { data: studentEnrollments } = await adminClient
+      .from('enrollments')
+      .select('class_id, classes:class_id (id, name, status, schedule_config)')
+      .eq('student_id', input.studentId)
+      .in('status', ['confirmed', 'pending', 'waitlisted']);
+
+    const targetConfig = classData.schedule_config as ScheduleConfig | null;
+    if (targetConfig && studentEnrollments) {
+      const enrolledClasses = studentEnrollments
+        .map((e) => {
+          const cls = e.classes as unknown as {
+            id: string;
+            name: string;
+            status: ClassStatus;
+            schedule_config: ScheduleConfig | null;
+          } | null;
+          return cls;
+        })
+        .filter(Boolean) as {
+        id: string;
+        name: string;
+        status: ClassStatus;
+        schedule_config: ScheduleConfig | null;
+      }[];
+
+      const conflict = checkStudentScheduleConflict(
+        targetConfig,
+        enrolledClasses
+      );
+      if (conflict) {
+        return {
+          data: null,
+          status: 'schedule_conflict',
+          error: `Schedule conflict: Student is already enrolled in ${conflict.name} during ${targetConfig.day} ${targetConfig.block}`,
+        };
+      }
+    }
+
+    // Check capacity (confirmed + pending both hold a spot)
+    const { count: enrolledCount } = await adminClient
+      .from('enrollments')
+      .select('*', { count: 'exact', head: true })
+      .eq('class_id', input.classId)
+      .in('status', ['confirmed', 'pending']);
+
+    const enrolled = enrolledCount || 0;
+    const isFull = enrolled >= classData.capacity;
+
+    let enrollmentStatus: EnrollmentStatus;
+    let waitlistPosition: number | null = null;
+
+    if (isFull) {
+      enrollmentStatus = 'waitlisted';
+      const { count: waitlistCount } = await adminClient
+        .from('enrollments')
+        .select('*', { count: 'exact', head: true })
+        .eq('class_id', input.classId)
+        .eq('status', 'waitlisted');
+      waitlistPosition = (waitlistCount || 0) + 1;
+    } else {
+      enrollmentStatus = 'pending';
+    }
+
+    const { data, error } = await adminClient
+      .from('enrollments')
+      .insert({
+        student_id: input.studentId,
+        class_id: input.classId,
+        status: enrollmentStatus,
+        waitlist_position: waitlistPosition,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return { data: null, status: null, error: error.message };
+    }
+
+    await logAuditAction(
+      user.id,
+      'admin_enroll_student',
+      'enrollment',
+      data.id,
+      { classId: input.classId, studentId: input.studentId }
+    );
+
+    revalidatePath('/admin/enrollments');
+    revalidatePath('/parent');
+    revalidatePath('/parent/browse');
+    revalidatePath(`/parent/browse/${input.classId}`);
+    revalidatePath(`/admin/classes/${input.classId}`);
+
+    return {
+      data: data as Enrollment,
+      status: enrollmentStatus as 'pending' | 'waitlisted',
+      error: null,
+    };
+  } catch (err) {
+    console.error('Unexpected error in adminEnrollStudent:', err);
+    return { data: null, status: null, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Admin: Get student options for enrollment dropdown
+ */
+export async function getAdminEnrollmentStudentOptions(
+  search?: string
+): Promise<{
+  data: AdminEnrollmentStudentOption[] | null;
+  error: string | null;
+}> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { data: null, error: 'Not authenticated' };
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const isAdmin = ['admin', 'super_admin'].includes(profile?.role || '');
+    if (!isAdmin) {
+      return { data: null, error: 'Access denied' };
+    }
+
+    const adminClient = await createAdminClient();
+    const { data, error } = await adminClient
+      .from('family_members')
+      .select(
+        'id, first_name, last_name, email, parent:profiles(first_name, last_name)'
+      )
+      .eq('relationship', 'Student')
+      .order('last_name', { ascending: true });
+
+    if (error) {
+      return { data: null, error: error.message };
+    }
+
+    let students = data || [];
+    if (search) {
+      const lowerSearch = search.toLowerCase();
+      students = students.filter(
+        (s: Record<string, unknown>) =>
+          String(s.first_name || '')
+            .toLowerCase()
+            .includes(lowerSearch) ||
+          String(s.last_name || '')
+            .toLowerCase()
+            .includes(lowerSearch) ||
+          String(s.email || '')
+            .toLowerCase()
+            .includes(lowerSearch)
+      );
+    }
+
+    const mapped = students.map((item: Record<string, unknown>) => {
+      const parent = item.parent as unknown as {
+        first_name: string | null;
+        last_name: string | null;
+      } | null;
+      return {
+        id: item.id as string,
+        first_name: item.first_name as string,
+        last_name: item.last_name as string,
+        email: item.email as string,
+        parent_name: parent
+          ? `${parent.first_name || ''} ${parent.last_name || ''}`.trim() ||
+            null
+          : null,
+      };
+    });
+
+    return { data: mapped, error: null };
+  } catch (err) {
+    console.error('Unexpected error in getAdminEnrollmentStudentOptions:', err);
+    return { data: null, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Admin: Get class options for enrollment dropdown
+ */
+export async function getAdminEnrollmentClassOptions(search?: string): Promise<{
+  data: AdminEnrollmentClassOption[] | null;
+  error: string | null;
+}> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { data: null, error: 'Not authenticated' };
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const isAdmin = ['admin', 'super_admin'].includes(profile?.role || '');
+    if (!isAdmin) {
+      return { data: null, error: 'Access denied' };
+    }
+
+    const adminClient = await createAdminClient();
+    let query = adminClient
+      .from('classes')
+      .select('id, name, day, block, teacher:profiles(first_name, last_name)')
+      .eq('status', 'published');
+
+    if (search) {
+      query = query.ilike('name', `%${search}%`);
+    }
+
+    const { data, error } = await query.order('name', { ascending: true });
+
+    if (error) {
+      return { data: null, error: error.message };
+    }
+
+    const mapped = (data || []).map((item: Record<string, unknown>) => {
+      const teacher = item.teacher as unknown as {
+        first_name: string | null;
+        last_name: string | null;
+      } | null;
+      return {
+        id: item.id as string,
+        name: item.name as string,
+        day: (item.day as string | null) ?? null,
+        block: (item.block as string | null) ?? null,
+        teacher_name: teacher
+          ? `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim() ||
+            null
+          : null,
+      };
+    });
+
+    return { data: mapped, error: null };
+  } catch (err) {
+    console.error('Unexpected error in getAdminEnrollmentClassOptions:', err);
+    return { data: null, error: 'An unexpected error occurred' };
   }
 }
 
