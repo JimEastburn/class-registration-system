@@ -276,6 +276,57 @@ describe('EnrollButton', () => {
     });
   });
 
+  it('allows users to join the waitlist when the class is full', async () => {
+    (enrollStudent as any).mockResolvedValue({
+      data: null,
+      status: 'waitlisted',
+      error: null,
+    });
+
+    render(
+      <EnrollButton
+        classId={mockClassId}
+        className="Test Class"
+        available={0}
+      />
+    );
+
+    const waitlistTrigger = screen.getByRole('button', {
+      name: 'Class Full - Join Waitlist',
+    });
+    expect(waitlistTrigger).not.toBeDisabled();
+    fireEvent.click(waitlistTrigger);
+
+    expect(
+      screen.getByText('Join waitlist for Test Class')
+    ).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('Loading family members...')
+      ).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('combobox'));
+    const option = await screen.findByText('John Doe');
+    fireEvent.click(option);
+
+    const joinWaitlistButton = screen.getByTestId('pay-later-button');
+    expect(joinWaitlistButton).toHaveTextContent('Join Waitlist');
+    fireEvent.click(joinWaitlistButton);
+
+    await waitFor(() => {
+      expect(enrollStudent).toHaveBeenCalledWith({
+        classId: mockClassId,
+        familyMemberId: 'member-1',
+      });
+      expect(toast.success).toHaveBeenCalledWith(
+        'Successfully joined waitlist'
+      );
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
   // ─── Pay Later flow tests ────────────────────────────────────────────────
 
   describe('Pay Later flow', () => {

@@ -1,0 +1,8 @@
+# .codex/config.toml
+[projects."/Users/jam/Documents/personal-repos/class-registration-system"]
+trusted = true
+sandbox_mode = "workspace-write"
+ask_for_approval = "on-request"
+
+[sandbox_workspace_write]
+network_access = true
