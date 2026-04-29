@@ -47,8 +47,11 @@ export function AdminEnrollStudentDialog({
         getAdminEnrollmentClassOptions(),
       ]);
 
-      if (studentRes.error || classRes.error) {
-        toast.error('Failed to load options');
+      if (studentRes.error) {
+        toast.error(`Failed to load students: ${studentRes.error}`);
+      }
+      if (classRes.error) {
+        toast.error(`Failed to load classes: ${classRes.error}`);
       }
 
       if (studentRes.data) setStudents(studentRes.data);

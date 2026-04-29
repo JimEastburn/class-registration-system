@@ -282,4 +282,44 @@ describe('AdminEnrollStudentDialog', () => {
       expect(mockRouter.refresh).toHaveBeenCalled();
     });
   });
+
+  it('shows specific error toast when student options fail to load', async () => {
+    (getAdminEnrollmentStudentOptions as Mock).mockResolvedValue({
+      data: null,
+      error: 'Ambiguous FK',
+    });
+    (getAdminEnrollmentClassOptions as Mock).mockResolvedValue({
+      data: mockClasses,
+      error: null,
+    });
+
+    render(<AdminEnrollStudentDialog />);
+
+    fireEvent.click(screen.getByRole('button', { name: /enroll student/i }));
+    await screen.findByRole('heading', { name: /enroll student/i });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to load students: Ambiguous FK');
+    });
+  });
+
+  it('shows specific error toast when class options fail to load', async () => {
+    (getAdminEnrollmentStudentOptions as Mock).mockResolvedValue({
+      data: mockStudents,
+      error: null,
+    });
+    (getAdminEnrollmentClassOptions as Mock).mockResolvedValue({
+      data: null,
+      error: 'Network error',
+    });
+
+    render(<AdminEnrollStudentDialog />);
+
+    fireEvent.click(screen.getByRole('button', { name: /enroll student/i }));
+    await screen.findByRole('heading', { name: /enroll student/i });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Failed to load classes: Network error');
+    });
+  });
 });

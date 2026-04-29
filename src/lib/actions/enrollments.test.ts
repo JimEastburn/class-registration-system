@@ -855,6 +855,65 @@ describe('Enrollment Actions', () => {
       expect(result.data!.map((s) => s.id)).toContain('s2');
     });
 
+    it('returns parent_name when a parent profile is present', async () => {
+      seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [
+            ADMIN_PROFILE,
+            {
+              id: PARENT_ID,
+              first_name: 'John',
+              last_name: 'Doe',
+              email: 'john@test.com',
+              role: 'parent',
+            },
+          ] as unknown as Record<string, unknown>[],
+          family_members: [
+            {
+              id: 's1',
+              parent_id: PARENT_ID,
+              first_name: 'Alice',
+              last_name: 'Smith',
+              email: 'alice@test.com',
+              relationship: 'Student',
+            },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+      const result = await getAdminEnrollmentStudentOptions();
+      expect(result.error).toBeNull();
+      expect(result.data).toHaveLength(1);
+      expect(result.data![0].parent_name).toBe('John Doe');
+    });
+
+    it('uses explicit family_members_parent_id_fkey FK hint in the select string', async () => {
+      const fake = seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [ADMIN_PROFILE] as unknown as Record<string, unknown>[],
+          family_members: [],
+        },
+      });
+
+      let capturedSelect: string | null = null;
+      const originalFrom = fake.from.bind(fake);
+      fake.from = vi.fn((table: string) => {
+        const qb = originalFrom(table);
+        const originalSelect = qb.select.bind(qb);
+        qb.select = vi.fn((query?: string, opts?: unknown) => {
+          capturedSelect = query ?? null;
+          return originalSelect(query, opts);
+        });
+        return qb;
+      }) as unknown as typeof fake.from;
+
+      await getAdminEnrollmentStudentOptions();
+
+      expect(fake.from).toHaveBeenCalledWith('family_members');
+      expect(capturedSelect).toContain('!family_members_parent_id_fkey');
+    });
+
     it('filters students by search query', async () => {
       seedFake({
         authUserId: ADMIN_PROFILE.id,

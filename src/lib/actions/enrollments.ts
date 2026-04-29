@@ -1226,7 +1226,7 @@ export async function getAdminEnrollmentStudentOptions(
     const { data, error } = await adminClient
       .from('family_members')
       .select(
-        'id, first_name, last_name, email, parent:profiles(first_name, last_name)'
+        'id, first_name, last_name, email, parent:profiles!family_members_parent_id_fkey(first_name, last_name)'
       )
       .eq('relationship', 'Student')
       .order('last_name', { ascending: true });

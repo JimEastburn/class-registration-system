@@ -94,6 +94,8 @@ interface ParsedRelation {
   columns: string;
   /** Whether !inner join semantics apply */
   inner: boolean;
+  /** Optional FK hint (e.g. "family_members_parent_id_fkey" from `profiles!family_members_parent_id_fkey(...)`) */
+  fkHint: string | null;
 }
 
 // ─── Query Builder ──────────────────────────────────────────────────────────
@@ -426,15 +428,16 @@ class FakeQueryBuilder {
    */
   private _parseRelations(query: string): ParsedRelation[] {
     const relations: ParsedRelation[] = [];
-    // Match: alias:tableName!inner(columns) or tableName(columns)
+    // Match: alias:tableName!inner(columns) or tableName(columns) or tableName!fk_hint(columns)
     // Columns can include nested relations, so we need balanced paren matching
-    const regex = /(?:(\w+):)?(\w+)(!inner)?\(/g;
+    const regex = /(?:(\w+):)?(\w+)(!\w+)?\(/g;
     let match: RegExpExecArray | null;
 
     while ((match = regex.exec(query)) !== null) {
       const alias = match[1] || match[2]; // use alias if provided, otherwise table name
       const table = match[2];
       const inner = match[3] === '!inner';
+      const fkHint = match[3] ? match[3].slice(1) : null;
       const startIdx = regex.lastIndex; // position after '('
 
       // Find the matching closing paren (handle nesting)
@@ -447,7 +450,7 @@ class FakeQueryBuilder {
       }
 
       const columns = query.substring(startIdx, endIdx);
-      relations.push({ table, alias, columns, inner });
+      relations.push({ table, alias, columns, inner, fkHint });
     }
 
     return relations;
