@@ -69,6 +69,42 @@ Feature: Admin Dashboard & System Management
     When I delete the class
     Then the class should be removed
 
+  # Enrollment Management (Admin Enrollment)
+  Scenario: Admin Enrolls Student with Available Seats
+    Given a student "Timmy Doe" exists
+    And a class "Math 101" exists with capacity 20 and 15 enrolled students
+    When I enroll "Timmy Doe" in "Math 101"
+    Then the enrollment should be created with status "pending"
+    And an audit action should be logged
+
+  Scenario: Admin Enrolls Student into Full Class
+    Given a student "Timmy Doe" exists
+    And a class "Math 101" exists with capacity 20 and 20 enrolled students
+    When I enroll "Timmy Doe" in "Math 101"
+    Then the enrollment should be created with status "waitlisted"
+    And the waitlist position should be 1
+
+  Scenario: Admin Reactivates Cancelled Enrollment
+    Given "Timmy Doe" has a "cancelled" enrollment in "Math 101"
+    When I enroll "Timmy Doe" in "Math 101"
+    Then the existing enrollment should be reactivated with status "pending"
+
+  Scenario: Admin Cannot Enroll Non-Student
+    Given a family member "Parent Jane" with relationship "Parent" exists
+    When I attempt to enroll "Parent Jane" in "Math 101"
+    Then the system should return an error "Only students can be enrolled in classes"
+
+  Scenario: Admin Cannot Enroll Blocked Student
+    Given a student "Timmy Doe" exists
+    And "Timmy Doe" is blocked from the teacher of "Math 101"
+    When I attempt to enroll "Timmy Doe" in "Math 101"
+    Then the system should return a "blocked" error
+
+  Scenario: Admin Cannot Create Duplicate Active Enrollment
+    Given "Timmy Doe" has a "confirmed" enrollment in "Math 101"
+    When I attempt to enroll "Timmy Doe" in "Math 101"
+    Then the system should return an error "Student is already enrolled in this class"
+
   # Enrollment Management (Force)
   Scenario: Force Cancel Enrollment
     Given "Timmy Doe" has a "confirmed" enrollment in "Math 101"
