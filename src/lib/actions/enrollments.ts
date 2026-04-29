@@ -205,7 +205,13 @@ interface EnrollStudentInput {
  */
 export async function enrollStudent(input: EnrollStudentInput): Promise<{
   data: Enrollment | null;
-  status: 'confirmed' | 'waitlisted' | 'blocked' | 'pending' | 'schedule_conflict' | null;
+  status:
+    | 'confirmed'
+    | 'waitlisted'
+    | 'blocked'
+    | 'pending'
+    | 'schedule_conflict'
+    | null;
   error: string | null;
 }> {
   try {
@@ -733,6 +739,49 @@ export async function updateDepositPaid(
     console.error('Unexpected error in updateDepositPaid:', err);
     return { success: false, error: 'An unexpected error occurred' };
   }
+}
+
+// TODO(Session A): Replace these stubs with real implementations
+export type AdminEnrollStudentInput = {
+  studentId: string;
+  classId: string;
+};
+
+export type AdminEnrollStudentResult = {
+  data: Enrollment | null;
+  status: 'pending' | 'waitlisted' | 'reactivated' | null;
+  error: string | null;
+};
+
+export type AdminEnrollmentStudentOption = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  parent_name: string;
+};
+
+export type AdminEnrollmentClassOption = {
+  id: string;
+  name: string;
+  teacher_name: string;
+};
+
+export async function adminEnrollStudent(
+  _input: AdminEnrollStudentInput
+): Promise<AdminEnrollStudentResult> {
+  return { data: null, status: null, error: 'Not implemented' };
+}
+
+export async function getAdminEnrollmentStudentOptions(
+  _search?: string
+): Promise<{ data: AdminEnrollmentStudentOption[]; error: string | null }> {
+  return { data: [], error: null };
+}
+
+export async function getAdminEnrollmentClassOptions(
+  _search?: string
+): Promise<{ data: AdminEnrollmentClassOption[]; error: string | null }> {
+  return { data: [], error: null };
 }
 
 /**

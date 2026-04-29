@@ -69,7 +69,25 @@ Feature: Admin Dashboard & System Management
     When I delete the class
     Then the class should be removed
 
-  # Enrollment Management (Force)
+  # Enrollment Management
+  Scenario: Admin Enrolls Student with Available Seats
+    Given a class "Math 101" exists with capacity 20 and 15 enrolled students
+    And "Timmy Doe" is a registered student
+    When I enroll "Timmy Doe" in "Math 101"
+    Then the enrollment should be created with status "pending"
+
+  Scenario: Admin Enrolls Student in Full Class
+    Given a class "Math 101" exists with capacity 20 and 20 enrolled students
+    And "Timmy Doe" is a registered student
+    When I enroll "Timmy Doe" in "Math 101"
+    Then the enrollment should be created with status "waitlisted"
+
+  Scenario: Admin Enroll Rejects Duplicate Active Enrollment
+    Given "Timmy Doe" has a "pending" enrollment in "Math 101"
+    When I attempt to enroll "Timmy Doe" in "Math 101"
+    Then the system should reject the request
+    And an error "already enrolled" should be returned
+
   Scenario: Force Cancel Enrollment
     Given "Timmy Doe" has a "confirmed" enrollment in "Math 101"
     When I manually update the enrollment status to "cancelled"
