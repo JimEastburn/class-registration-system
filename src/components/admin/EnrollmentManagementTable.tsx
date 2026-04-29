@@ -30,7 +30,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useState, useCallback, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { ForceEnrollDialog } from './ForceEnrollDialog';
+import { AdminEnrollStudentDialog } from './AdminEnrollStudentDialog';
 import { CancelEnrollmentDialog } from './CancelEnrollmentDialog';
 import { adminRemoveEnrollment } from '@/lib/actions/enrollments';
 
@@ -107,7 +107,9 @@ export function EnrollmentManagementTable({
 
   const handlePageChange = (newPage: number) => {
     startTransition(() => {
-      router.push(pathname + '?' + createQueryString('page', newPage.toString()));
+      router.push(
+        pathname + '?' + createQueryString('page', newPage.toString())
+      );
     });
   };
 
@@ -139,15 +141,21 @@ export function EnrollmentManagementTable({
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={() => handleSearch(search)} disabled={isPending}>
+          <Button
+            variant="outline"
+            onClick={() => handleSearch(search)}
+            disabled={isPending}
+          >
             {isPending ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Searching…</>
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Searching…
+              </>
             ) : (
               'Search'
             )}
           </Button>
         </div>
-        <ForceEnrollDialog />
+        <AdminEnrollStudentDialog />
       </div>
 
       <div className="rounded-md border">

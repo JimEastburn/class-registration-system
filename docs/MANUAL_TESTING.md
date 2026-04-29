@@ -191,8 +191,8 @@ _Goal: System-wide oversight and management._
 
 - ✅ **Admin Class Form**: Create/edit classes with teacher assignment, day/block options.
   - _Component: `AdminClassForm.test.tsx` — correct day options (Tue/Thur/Wed only, no Mon/Fri), correct block options (1-4 only, no 5-6)._
-- ✅ **Force Enrollment**: Admin can force-enroll a student bypassing capacity.
-  - _Integration: `admin-flow.test.ts` — `adminForceEnroll` succeeds despite 0 capacity._
+- ✅ **Admin Enrollment**: Admin can enroll a student through normal enrollment flow.
+  - _Component: `AdminEnrollStudentDialog.test.tsx` — `adminEnrollStudent` creates pending/waitlisted enrollment._
 - ✅ **Cancel Enrollment**: Admin can cancel confirmed enrollments.
   - _Integration: `admin-flow.test.ts` — `cancelEnrollment` by admin succeeds; non-admin blocked with "Access denied"._
 

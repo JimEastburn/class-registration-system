@@ -11,7 +11,6 @@ import type {
   Profile,
   ScheduleConfig,
 } from '@/types';
-import { sendEnrollmentConfirmation } from '@/lib/email';
 import { checkStudentScheduleConflict } from '@/lib/logic/scheduling';
 import { promoteFromWaitlist } from '@/lib/actions/waitlist';
 
@@ -51,14 +50,6 @@ export type AdminEnrollmentView = RosterEnrollment & {
     teacher_id: string;
     price: number | null;
   } | null;
-};
-
-export type ForceEnrollInput = {
-  studentId: string;
-  classId: string;
-  bypassCapacity?: boolean;
-  bypassBlocks?: boolean;
-  adminId?: string;
 };
 
 /**
@@ -738,170 +729,6 @@ export async function updateDepositPaid(
   } catch (err) {
     console.error('Unexpected error in updateDepositPaid:', err);
     return { success: false, error: 'An unexpected error occurred' };
-  }
-}
-
-/**
- * Admin: Force enroll a student, bypassing capacity and blocks.
- */
-export async function adminForceEnroll(
-  input: ForceEnrollInput
-): Promise<{ data: Enrollment | null; error: string | null }> {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { data: null, error: 'Not authenticated' };
-    }
-
-    // Check Admin privilege
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    const isAdmin = ['admin', 'super_admin'].includes(profile?.role || '');
-
-    if (!isAdmin) {
-      return { data: null, error: 'Access denied: Admin privileges required' };
-    }
-
-    // Verify users/class exist
-    // Student (Family Member)
-    const { data: student, error: studentError } = await supabase
-      .from('family_members')
-      .select(
-        '*, parent:profiles!family_members_parent_id_fkey(email, first_name, last_name)'
-      )
-      .eq('id', input.studentId)
-      .single();
-
-    if (studentError || !student) {
-      return { data: null, error: 'Student not found' };
-    }
-
-    // Class
-    const { data: classData, error: classError } = await supabase
-      .from('classes')
-      .select('*, teacher:profiles(first_name, last_name)')
-      .eq('id', input.classId)
-      .single();
-
-    if (classError || !classData) {
-      return { data: null, error: 'Class not found' };
-    }
-
-    // Check for existing enrollment
-    const { data: existingEnrollment } = await supabase
-      .from('enrollments')
-      .select('id, status')
-      .eq('student_id', input.studentId)
-      .eq('class_id', input.classId)
-      .single();
-
-    if (existingEnrollment) {
-      // If waitlisted/cancelled, we might want to update to confirmed.
-      // If confirmed, just return it.
-      if (existingEnrollment.status === 'confirmed') {
-        return {
-          data: existingEnrollment as Enrollment,
-          error: 'Student is already enrolled.',
-        };
-      }
-
-      // Update to confirmed
-      const { data: updated, error: updateError } = await supabase
-        .from('enrollments')
-        .update({ status: 'confirmed', waitlist_position: null })
-        .eq('id', existingEnrollment.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        return { data: null, error: updateError.message };
-      }
-
-      // Send Confirmation Email
-      if (student.parent) {
-        await sendEnrollmentConfirmation({
-          parentEmail: student.parent.email,
-          parentName:
-            `${student.parent.first_name || ''} ${student.parent.last_name || ''}`.trim(),
-          studentName: `${student.first_name} ${student.last_name}`,
-          className: classData.name,
-          teacherName:
-            `${classData.teacher?.first_name || 'Teacher'} ${classData.teacher?.last_name || ''}`.trim(),
-          schedule: `${classData.day || 'TBD'} ${classData.block || ''}`.trim(),
-          location: classData.location || 'Main Studio',
-          startDate: classData.start_date || 'TBD',
-          fee: classData.price || 0, // DB stores price in dollars
-        });
-      }
-
-      await logAuditAction(
-        user.id,
-        'force_enroll_update',
-        'enrollment',
-        existingEnrollment.id,
-        { reason: 'Force Enroll Update' }
-      );
-
-      revalidatePath('/parent');
-      revalidatePath('/admin/enrollments'); // Future path
-
-      return { data: updated as Enrollment, error: null };
-    }
-
-    // Create new confirmed enrollment
-    const { data, error } = await supabase
-      .from('enrollments')
-      .insert({
-        student_id: input.studentId,
-        class_id: input.classId,
-        status: 'confirmed',
-        waitlist_position: null,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error force enrolling:', error);
-      return { data: null, error: error.message };
-    }
-
-    // Send Confirmation Email
-    if (student.parent) {
-      await sendEnrollmentConfirmation({
-        parentEmail: student.parent.email,
-        parentName:
-          `${student.parent.first_name || ''} ${student.parent.last_name || ''}`.trim(),
-        studentName: `${student.first_name} ${student.last_name}`,
-        className: classData.name,
-        teacherName:
-          `${classData.teacher?.first_name || 'Teacher'} ${classData.teacher?.last_name || ''}`.trim(),
-        schedule: `${classData.day || 'TBD'} ${classData.block || ''}`.trim(),
-        location: classData.location || 'Main Studio',
-        startDate: classData.start_date || 'TBD',
-        fee: classData.price || 0, // DB stores price in dollars
-      });
-    }
-
-    await logAuditAction(user.id, 'force_enroll', 'enrollment', data.id, {
-      classId: input.classId,
-      studentId: input.studentId,
-    });
-
-    revalidatePath('/parent');
-    revalidatePath('/admin/enrollments');
-
-    return { data: data as Enrollment, error: null };
-  } catch (err) {
-    console.error('Unexpected error in adminForceEnroll:', err);
-    return { data: null, error: 'An unexpected error occurred' };
   }
 }
 

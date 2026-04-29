@@ -441,13 +441,13 @@ This document tracks the detailed development tasks for the Class Registration S
 
 ### 8.5 Admin Enrollment Management
 
-- [x] **[Action]** Implement `adminForceEnroll` action (bypass capacity/blocks) <!-- id: 8.5.1 -->
+- [x] ~~**[Action]** Implement `adminForceEnroll` action (bypass capacity/blocks)~~ <!-- id: 8.5.1 --> **REMOVED** — replaced by normal admin enrollment via `adminEnrollStudent`.
 - [x] **[Action]** Implement `adminCancelEnrollment` action with refund flag <!-- id: 8.5.2 -->
 - [x] **[Action]** Implement `adminRemoveEnrollment` action (hard delete) <!-- id: 8.5.3 -->
 - [x] **[Action]** Implement `getAllEnrollments` action with filters <!-- id: 8.5.4 -->
 - [x] **[Page]** Create `src/app/(dashboard)/admin/enrollments/page.tsx` <!-- id: 8.5.5 -->
 - [x] **[Component]** Create `src/components/admin/EnrollmentManagementTable.tsx` <!-- id: 8.5.6 -->
-- [x] **[Component]** Create `ForceEnrollDialog.tsx` <!-- id: 8.5.7 -->
+- [x] ~~**[Component]** Create `ForceEnrollDialog.tsx`~~ <!-- id: 8.5.7 --> **REMOVED** — replaced by `AdminEnrollStudentDialog`.
 - [x] **[Component]** Create `CancelEnrollmentDialog.tsx` with refund option <!-- id: 8.5.8 -->
 
 ---

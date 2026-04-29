@@ -19,6 +19,8 @@ import {
   adminEnrollStudent,
   getAdminEnrollmentStudentOptions,
   getAdminEnrollmentClassOptions,
+  type AdminEnrollmentStudentOption,
+  type AdminEnrollmentClassOption,
 } from '@/lib/actions/enrollments';
 
 interface AdminEnrollStudentDialogProps {
@@ -32,8 +34,8 @@ export function AdminEnrollStudentDialog({
   const [open, setOpen] = useState(false);
   const [studentId, setStudentId] = useState('');
   const [classId, setClassId] = useState('');
-  const [students, setStudents] = useState<{ id: string; label: string }[]>([]);
-  const [classes, setClasses] = useState<{ id: string; label: string }[]>([]);
+  const [students, setStudents] = useState<AdminEnrollmentStudentOption[]>([]);
+  const [classes, setClasses] = useState<AdminEnrollmentClassOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -127,7 +129,8 @@ export function AdminEnrollStudentDialog({
                 <option value="">Select a student</option>
                 {students.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.label}
+                    {s.first_name} {s.last_name}
+                    {s.parent_name ? ` (${s.parent_name})` : ''}
                   </option>
                 ))}
               </select>
@@ -152,7 +155,9 @@ export function AdminEnrollStudentDialog({
                 <option value="">Select a class</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.label}
+                    {c.name}
+                    {c.teacher_name ? ` - ${c.teacher_name}` : ''}
+                    {c.day && c.block ? ` (${c.day} ${c.block})` : ''}
                   </option>
                 ))}
               </select>

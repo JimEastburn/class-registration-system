@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { adminForceEnroll, cancelEnrollment } from '@/lib/actions/enrollments';
+import { cancelEnrollment } from '@/lib/actions/enrollments';
 import { createClient } from '@/lib/supabase/server';
 
 // Mock Dependencies
@@ -276,29 +276,6 @@ describe('Integration Flow: Admin Enrollment Actions', () => {
     if (table === 'enrollments') return dbEnrollments;
     return [];
   };
-
-  it('allows admin to force enroll a student despite capacity', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: { id: mockAdminId } },
-      error: null,
-    });
-
-    // Capacity is 0 (set in beforeEach)
-    const result = await adminForceEnroll({
-      classId: mockClassId,
-      studentId: mockStudentId,
-    });
-
-    expect(result.error).toBeNull();
-    expect(result.data).toBeDefined();
-
-    // Verify Confirmed Status
-    expect(result.data!.status).toBe('confirmed');
-
-    // Verify DB
-    expect(dbEnrollments).toHaveLength(1);
-    expect(dbEnrollments[0].status).toBe('confirmed');
-  });
 
   it('allows admin to cancel a confirmed enrollment', async () => {
     // Setup: Existing Confirmed Enrollment

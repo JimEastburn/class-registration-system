@@ -44,13 +44,37 @@ vi.mock('next/navigation', async () => {
 
 describe('AdminEnrollStudentDialog', () => {
   const mockStudents = [
-    { id: 'student-1', label: 'Alice Anderson' },
-    { id: 'student-2', label: 'Bob Baker' },
+    {
+      id: 'student-1',
+      first_name: 'Alice',
+      last_name: 'Anderson',
+      email: 'alice@test.com',
+      parent_name: 'Parent One',
+    },
+    {
+      id: 'student-2',
+      first_name: 'Bob',
+      last_name: 'Baker',
+      email: 'bob@test.com',
+      parent_name: null,
+    },
   ];
 
   const mockClasses = [
-    { id: 'class-1', label: 'Painting 101' },
-    { id: 'class-2', label: 'Pottery Advanced' },
+    {
+      id: 'class-1',
+      name: 'Painting 101',
+      teacher_name: 'Ms. Smith',
+      day: 'Tuesday',
+      block: '1',
+    },
+    {
+      id: 'class-2',
+      name: 'Pottery Advanced',
+      teacher_name: null,
+      day: null,
+      block: null,
+    },
   ];
 
   beforeEach(() => {
@@ -86,8 +110,12 @@ describe('AdminEnrollStudentDialog', () => {
     });
 
     // Verify options are rendered in the native selects
-    expect(await screen.findByText('Alice Anderson')).toBeInTheDocument();
-    expect(await screen.findByText('Painting 101')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Alice Anderson (Parent One)')
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText('Painting 101 - Ms. Smith (Tuesday 1)')
+    ).toBeInTheDocument();
   });
 
   it('disables submit until both student and class are selected', async () => {
