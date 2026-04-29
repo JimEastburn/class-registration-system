@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,241 +11,163 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
-import { UserPlus, ChevronDown, Search } from 'lucide-react';
+import { Loader2, UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   adminEnrollStudent,
   getAdminEnrollmentStudentOptions,
   getAdminEnrollmentClassOptions,
-  type AdminEnrollmentStudentOption,
-  type AdminEnrollmentClassOption,
 } from '@/lib/actions/enrollments';
 
-interface SearchableSelectProps<T> {
-  label: string;
-  placeholder: string;
-  value: string | null;
-  onChange: (value: string) => void;
-  options: T[];
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
-  renderOption: (option: T) => string;
-  getOptionId: (option: T) => string;
-  isLoading?: boolean;
-}
-
-function SearchableSelect<T>({
-  label,
-  placeholder,
-  value,
-  onChange,
-  options,
-  searchQuery,
-  onSearchChange,
-  renderOption,
-  getOptionId,
-  isLoading,
-}: SearchableSelectProps<T>) {
-  const [open, setOpen] = useState(false);
-  const selectedLabel = value
-    ? renderOption(options.find((o) => getOptionId(o) === value) as T)
-    : placeholder;
-
-  return (
-    <div className="grid gap-2">
-      <Label>{label}</Label>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            aria-label={label}
-            className="w-full justify-between"
-          >
-            <span className={cn('truncate', !value && 'text-muted-foreground')}>
-              {selectedLabel}
-            </span>
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-          <div className="flex items-center border-b px-3">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-            <Input
-              placeholder={`Search ${label.toLowerCase()}...`}
-              className="h-9 border-0 shadow-none focus-visible:ring-0"
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-            />
-          </div>
-          <ScrollArea className="h-60">
-            <div className="p-1">
-              {isLoading ? (
-                <div className="text-muted-foreground py-6 text-center text-sm">
-                  Loading...
-                </div>
-              ) : options.length === 0 ? (
-                <div className="text-muted-foreground py-6 text-center text-sm">
-                  No {label.toLowerCase()} found.
-                </div>
-              ) : (
-                options.map((option) => {
-                  const id = getOptionId(option);
-                  return (
-                    <button
-                      key={id}
-                      onClick={() => {
-                        onChange(id);
-                        setOpen(false);
-                        onSearchChange('');
-                      }}
-                      className={cn(
-                        'hover:bg-accent hover:text-accent-foreground relative flex w-full cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm transition-colors outline-none select-none',
-                        value === id && 'bg-accent'
-                      )}
-                    >
-                      {renderOption(option)}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </ScrollArea>
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-}
-
 interface AdminEnrollStudentDialogProps {
-  preselectedClassId?: string;
+  trigger?: React.ReactNode;
 }
 
 export function AdminEnrollStudentDialog({
-  preselectedClassId,
+  trigger,
 }: AdminEnrollStudentDialogProps) {
-  const [open, setOpen] = useState(false);
-  const [studentId, setStudentId] = useState<string | null>(null);
-  const [classId, setClassId] = useState<string | null>(
-    preselectedClassId || null
-  );
-  const [loading, setLoading] = useState(false);
-  const [students, setStudents] = useState<AdminEnrollmentStudentOption[]>([]);
-  const [classes, setClasses] = useState<AdminEnrollmentClassOption[]>([]);
-  const [studentSearch, setStudentSearch] = useState('');
-  const [classSearch, setClassSearch] = useState('');
-  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
-  const [isLoadingClasses, setIsLoadingClasses] = useState(false);
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [studentId, setStudentId] = useState('');
+  const [classId, setClassId] = useState('');
+  const [students, setStudents] = useState<{ id: string; label: string }[]>([]);
+  const [classes, setClasses] = useState<{ id: string; label: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
-
-    let cancelled = false;
-
-    async function fetchOptions() {
-      setIsLoadingStudents(true);
-      setIsLoadingClasses(true);
+  async function loadOptions() {
+    setLoading(true);
+    try {
       const [studentRes, classRes] = await Promise.all([
-        getAdminEnrollmentStudentOptions(studentSearch || undefined),
-        getAdminEnrollmentClassOptions(classSearch || undefined),
+        getAdminEnrollmentStudentOptions(),
+        getAdminEnrollmentClassOptions(),
       ]);
-      if (cancelled) return;
-      setIsLoadingStudents(false);
-      setIsLoadingClasses(false);
+
+      if (studentRes.error || classRes.error) {
+        toast.error('Failed to load options');
+      }
+
       if (studentRes.data) setStudents(studentRes.data);
       if (classRes.data) setClasses(classRes.data);
+    } catch {
+      toast.error('Failed to load options');
+    } finally {
+      setLoading(false);
     }
+  }
 
-    fetchOptions();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, studentSearch, classSearch]);
-
-  const handleEnroll = async () => {
+  async function handleSubmit() {
     if (!studentId || !classId) return;
 
-    setLoading(true);
+    setSubmitting(true);
     const result = await adminEnrollStudent({ studentId, classId });
-    setLoading(false);
+    setSubmitting(false);
 
     if (result.error) {
       toast.error(result.error);
       return;
     }
 
-    const statusMessages: Record<string, string> = {
-      pending: 'Enrollment created as pending.',
-      waitlisted: 'Student added to the waitlist.',
-      reactivated: 'Previous enrollment reactivated.',
-    };
+    if (result.status === 'waitlisted') {
+      toast.success('Student has been added to the waitlist');
+    } else if (result.status === 'reactivated') {
+      toast.success('Enrollment reactivated');
+    } else {
+      toast.success('Enrollment created as pending');
+    }
 
-    toast.success(statusMessages[result.status || ''] || 'Enrollment created.');
     setOpen(false);
-    setStudentId(null);
-    setClassId(preselectedClassId || null);
+    setStudentId('');
+    setClassId('');
     router.refresh();
-  };
-
-  const canSubmit = Boolean(studentId && classId && !loading);
+  }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        setOpen(isOpen);
+        if (isOpen) loadOptions();
+      }}
+    >
       <DialogTrigger asChild>
-        <Button>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Enroll Student
-        </Button>
+        {trigger || (
+          <Button>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Enroll Student
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Enroll Student in Class</DialogTitle>
+          <DialogTitle>Enroll Student</DialogTitle>
           <DialogDescription>
-            Choose a student and a class to create an enrollment.
+            Select a student and a class to create an enrollment.
           </DialogDescription>
         </DialogHeader>
+
         <div className="grid gap-4 py-4">
-          <SearchableSelect
-            label="Student"
-            placeholder="Select a student..."
-            value={studentId}
-            onChange={setStudentId}
-            options={students}
-            searchQuery={studentSearch}
-            onSearchChange={setStudentSearch}
-            renderOption={(s) => `${s.first_name} ${s.last_name}`}
-            getOptionId={(s) => s.id}
-            isLoading={isLoadingStudents}
-          />
-          <SearchableSelect
-            label="Class"
-            placeholder="Select a class..."
-            value={classId}
-            onChange={setClassId}
-            options={classes}
-            searchQuery={classSearch}
-            onSearchChange={setClassSearch}
-            renderOption={(c) => c.name}
-            getOptionId={(c) => c.id}
-            isLoading={isLoadingClasses}
-          />
+          <div className="space-y-2">
+            <Label htmlFor="student-select">Student</Label>
+            {loading ? (
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading students...
+              </div>
+            ) : (
+              <select
+                id="student-select"
+                value={studentId}
+                onChange={(e) => setStudentId(e.target.value)}
+                className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                data-testid="student-select"
+              >
+                <option value="">Select a student</option>
+                {students.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="class-select">Class</Label>
+            {loading ? (
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading classes...
+              </div>
+            ) : (
+              <select
+                id="class-select"
+                value={classId}
+                onChange={(e) => setClassId(e.target.value)}
+                className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                data-testid="class-select"
+              >
+                <option value="">Select a class</option>
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
         </div>
+
         <DialogFooter>
-          <Button onClick={handleEnroll} disabled={!canSubmit}>
-            {loading ? 'Enrolling...' : 'Enroll'}
+          <Button
+            type="submit"
+            onClick={handleSubmit}
+            disabled={submitting || !studentId || !classId || loading}
+          >
+            {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Enroll
           </Button>
         </DialogFooter>
       </DialogContent>

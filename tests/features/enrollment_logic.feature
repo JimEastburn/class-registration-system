@@ -46,3 +46,22 @@ Feature: Enrollment Logic & Constraints
     Given "Timmy" is on the blocked list for "Chemistry 101"
     When "Timmy" attempts to enroll
     Then the system should reject the request with a "Blocked" error
+
+  # Admin Enrollment
+  Scenario: Admin Enrolls Student with Available Seats
+    Given an admin user is logged in
+    And "Chemistry 101" has 19 enrolled students
+    When the admin enrolls "Timmy" in "Chemistry 101"
+    Then the enrollment should be created as pending
+
+  Scenario: Admin Enrolls Student when Class is Full
+    Given an admin user is logged in
+    And "Chemistry 101" has 20 enrolled students
+    When the admin enrolls "Timmy" in "Chemistry 101"
+    Then the student should be added to the waitlist
+
+  Scenario: Admin Reactivates Cancelled Enrollment
+    Given an admin user is logged in
+    And "Timmy" has a cancelled enrollment in "Chemistry 101"
+    When the admin enrolls "Timmy" in "Chemistry 101"
+    Then the cancelled enrollment should be reactivated
