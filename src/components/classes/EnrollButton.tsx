@@ -53,6 +53,7 @@ export function EnrollButton({
   const [pendingEnrollmentId, setPendingEnrollmentId] = useState<string | null>(
     null
   );
+  const isFull = available <= 0;
 
   async function loadMembers() {
     if (members.length > 0) return;
@@ -148,10 +149,7 @@ export function EnrollButton({
     setIsPayLaterLoading(true);
 
     try {
-      const {
-        status,
-        error,
-      } = await enrollStudent({
+      const { status, error } = await enrollStudent({
         classId,
         familyMemberId: selectedMember,
       });
@@ -184,7 +182,9 @@ export function EnrollButton({
       }
 
       // Pending status — redirect to enrollments page
-      toast.success('Enrolled! You can complete payment from your enrollments page.');
+      toast.success(
+        'Enrolled! You can complete payment from your enrollments page.'
+      );
       setOpen(false);
       router.push('/parent/enrollments');
     } catch (err) {
@@ -223,14 +223,6 @@ export function EnrollButton({
     }
   }
 
-  if (available <= 0) {
-    return (
-      <Button className="w-full" disabled>
-        Class Full - Join Waitlist
-      </Button>
-    );
-  }
-
   return (
     <>
       <Dialog
@@ -243,14 +235,19 @@ export function EnrollButton({
         <DialogTrigger asChild>
           <Button className="w-full" data-testid="enroll-now-button">
             <UserPlus className="mr-2 h-4 w-4" />
-            Enroll Now
+            {isFull ? 'Class Full - Join Waitlist' : 'Enroll Now'}
           </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Enroll in {className}</DialogTitle>
+            <DialogTitle>
+              {isFull
+                ? `Join waitlist for ${className}`
+                : `Enroll in ${className}`}
+            </DialogTitle>
             <DialogDescription>
-              Select a family member to enroll in this class.
+              Select a family member to{' '}
+              {isFull ? 'join the waitlist' : 'enroll'} in this class.
             </DialogDescription>
           </DialogHeader>
 
@@ -290,13 +287,17 @@ export function EnrollButton({
               )}
             </div>
 
-            <div className="bg-muted rounded-lg p-4 space-y-2">
+            <div className="bg-muted space-y-2 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Community Fee</span>
                 <span className="font-medium">$30.00</span>
               </div>
               {showPaymentInfo && (
-                <p className="text-xs text-muted-foreground">Class payment, paid directly to the teacher later, is $255 for a one day a week class per semester, and the two day a week classes are $500 per semester.</p>
+                <p className="text-muted-foreground text-xs">
+                  Class payment, paid directly to the teacher later, is $255 for
+                  a one day a week class per semester, and the two day a week
+                  classes are $500 per semester.
+                </p>
               )}
             </div>
           </div>
@@ -311,22 +312,33 @@ export function EnrollButton({
             </Button>
             <Button
               onClick={handlePayLater}
-              disabled={isLoading || isPayLaterLoading || !selectedMember || members.length === 0}
+              disabled={
+                isLoading ||
+                isPayLaterLoading ||
+                !selectedMember ||
+                members.length === 0
+              }
               data-testid="pay-later-button"
             >
-              {isPayLaterLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Enroll
+              {isPayLaterLoading && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {isFull ? 'Join Waitlist' : 'Enroll'}
             </Button>
             <Button
               className="hidden"
               onClick={handleEnroll}
-              disabled={isLoading || isPayLaterLoading || !selectedMember || members.length === 0}
+              disabled={
+                isLoading ||
+                isPayLaterLoading ||
+                !selectedMember ||
+                members.length === 0
+              }
               data-testid="proceed-to-payment-button"
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Proceed to Payment
             </Button>
-
           </DialogFooter>
         </DialogContent>
       </Dialog>
