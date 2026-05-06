@@ -11,7 +11,13 @@ import {
 } from '@/components/ui/table';
 import { EnrollmentStatusBadge } from '@/components/classes/EnrollmentStatusBadge';
 import { Button } from '@/components/ui/button';
-import { Trash2, ArrowUp } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Trash2, ArrowUp, Info } from 'lucide-react';
 import { cancelEnrollment } from '@/lib/actions/enrollments';
 import { promoteWaitlistEntryAsAdmin } from '@/lib/actions/waitlist';
 import { toast } from 'sonner';
@@ -70,27 +76,42 @@ export default function AdminRosterTable({
 
   return (
     <div className="space-y-4">
-      {hasWaitlist && (
-        <div className="flex items-center justify-between rounded-md border p-4">
-          <div>
-            <p className="font-medium">
-              {waitlisted.length} student{waitlisted.length !== 1 ? 's' : ''} on
-              waitlist
-            </p>
-            <p className="text-muted-foreground text-sm">
-              Promoting moves the next student to pending enrollment.
-            </p>
-          </div>
-          <Button
-            onClick={handlePromote}
-            disabled={isPending}
-            size="sm"
-          >
-            <ArrowUp className="mr-2 h-4 w-4" />
-            Promote Next
-          </Button>
+      <div className="flex items-center justify-between rounded-md border p-4">
+        <div>
+          <p className="font-medium">
+            {hasWaitlist
+              ? `${waitlisted.length} student${waitlisted.length !== 1 ? 's' : ''} on waitlist`
+              : 'No students on waitlist'}
+          </p>
+          <p className="text-muted-foreground text-sm">
+            Promoting moves the next student to pending enrollment.
+          </p>
         </div>
-      )}
+        <TooltipProvider>
+          <div className="flex flex-col items-end gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="text-muted-foreground h-4 w-4 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="top" align="end">
+                <p className="max-w-[240px]">
+                  If there are waitlisted students this button will allow you to
+                  click it to move the first waitlisted student into the class
+                </p>
+              </TooltipContent>
+            </Tooltip>
+            <Button
+              onClick={handlePromote}
+              disabled={!hasWaitlist || isPending}
+              size="sm"
+              className={!hasWaitlist ? 'cursor-not-allowed' : undefined}
+            >
+              <ArrowUp className="mr-2 h-4 w-4" />
+              Promote Next
+            </Button>
+          </div>
+        </TooltipProvider>
+      </div>
 
       <div className="rounded-md border">
         <Table>
