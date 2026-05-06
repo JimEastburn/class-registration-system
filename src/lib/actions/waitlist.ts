@@ -247,7 +247,8 @@ async function reorderWaitlistPositions(
  * Called when a spot opens up (e.g., someone cancels)
  */
 export async function promoteFromWaitlist(
-  classId: string
+  classId: string,
+  actorUserId: string = 'system'
 ): Promise<
   ActionResult<{ enrollmentId: string; familyMemberId: string } | null>
 > {
@@ -310,7 +311,7 @@ export async function promoteFromWaitlist(
   await reorderWaitlistPositions(classId, 1);
 
   // Log audit entry
-  await logAuditEntry('system', 'waitlist.promoted', firstInLine.id, {
+  await logAuditEntry(actorUserId, 'waitlist.promoted', firstInLine.id, {
     class_id: classId,
     student_id: firstInLine.student_id,
   });
@@ -350,6 +351,40 @@ export async function promoteFromWaitlist(
       familyMemberId: firstInLine.student_id,
     },
   };
+}
+
+/**
+ * Admin-only: promote the next waitlisted student for a class.
+ */
+export async function promoteWaitlistEntryAsAdmin(
+  classId: string
+): Promise<ActionResult<{ enrollmentId: string; familyMemberId: string } | null>> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // Verify admin or super_admin role
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  if (profileError || !profile) {
+    return { success: false, error: 'Failed to verify permissions' };
+  }
+
+  if (!['admin', 'super_admin'].includes(profile.role)) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  return promoteFromWaitlist(classId, user.id);
 }
 
 /**

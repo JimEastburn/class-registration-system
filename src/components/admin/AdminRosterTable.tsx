@@ -11,21 +11,27 @@ import {
 } from '@/components/ui/table';
 import { EnrollmentStatusBadge } from '@/components/classes/EnrollmentStatusBadge';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ArrowUp } from 'lucide-react';
 import { cancelEnrollment } from '@/lib/actions/enrollments';
+import { promoteWaitlistEntryAsAdmin } from '@/lib/actions/waitlist';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 
 interface AdminRosterTableProps {
   enrollments: RosterEnrollment[];
+  classId: string;
 }
 
 export default function AdminRosterTable({
   enrollments,
+  classId,
 }: AdminRosterTableProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+
+  const waitlisted = enrollments.filter((e) => e.status === 'waitlisted');
+  const hasWaitlist = waitlisted.length > 0;
 
   const handleCancel = (enrollmentId: string) => {
     if (!confirm('Are you sure you want to cancel this enrollment?')) return;
@@ -41,76 +47,121 @@ export default function AdminRosterTable({
     });
   };
 
+  const handlePromote = () => {
+    if (
+      !confirm(
+        'Promote the next waitlisted student to pending enrollment?'
+      )
+    )
+      return;
+
+    startTransition(async () => {
+      const res = await promoteWaitlistEntryAsAdmin(classId);
+      if (res.success && res.data) {
+        toast.success('Student promoted from waitlist');
+        router.refresh();
+      } else if (res.success && !res.data) {
+        toast.info('No waitlisted students to promote');
+      } else if (!res.success) {
+        toast.error(res.error || 'Failed to promote from waitlist');
+      }
+    });
+  };
+
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Student</TableHead>
-            <TableHead>Parent</TableHead>
-            <TableHead>Parent Contact</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Waitlist</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {enrollments.length === 0 ? (
+    <div className="space-y-4">
+      {hasWaitlist && (
+        <div className="flex items-center justify-between rounded-md border p-4">
+          <div>
+            <p className="font-medium">
+              {waitlisted.length} student{waitlisted.length !== 1 ? 's' : ''} on
+              waitlist
+            </p>
+            <p className="text-muted-foreground text-sm">
+              Promoting moves the next student to pending enrollment.
+            </p>
+          </div>
+          <Button
+            onClick={handlePromote}
+            disabled={isPending}
+            size="sm"
+          >
+            <ArrowUp className="mr-2 h-4 w-4" />
+            Promote Next
+          </Button>
+        </div>
+      )}
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell
-                colSpan={6}
-                className="text-muted-foreground h-24 text-center"
-              >
-                No students enrolled.
-              </TableCell>
+              <TableHead>Student</TableHead>
+              <TableHead>Parent</TableHead>
+              <TableHead>Parent Contact</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Waitlist</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
-          ) : (
-            enrollments.map((enrollment) => (
-              <TableRow key={enrollment.id}>
-                <TableCell className="font-medium">
-                  {enrollment.student.first_name} {enrollment.student.last_name}
-                  {enrollment.isBlocked && (
-                    <span className="text-destructive ml-2">(Blocked)</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {enrollment.student.parent
-                    ? `${enrollment.student.parent.first_name} ${enrollment.student.parent.last_name}`
-                    : 'Unknown'}
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col text-sm">
-                    <span>{enrollment.student.parent?.email}</span>
-                    <span className="text-muted-foreground">
-                      {enrollment.student.parent?.phone}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <EnrollmentStatusBadge
-                    status={enrollment.status}
-                    waitlistPosition={null}
-                  />
-                </TableCell>
-                <TableCell>{enrollment.waitlist_position || '-'}</TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleCancel(enrollment.id)}
-                    disabled={isPending}
-                    title="Cancel Enrollment"
-                  >
-                    <Trash2 className="text-destructive h-4 w-4" />
-                  </Button>
+          </TableHeader>
+          <TableBody>
+            {enrollments.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="text-muted-foreground h-24 text-center"
+                >
+                  No students enrolled.
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-      <div className="text-muted-foreground p-4 text-sm">
-        Total: {enrollments.length}
+            ) : (
+              enrollments.map((enrollment) => (
+                <TableRow key={enrollment.id}>
+                  <TableCell className="font-medium">
+                    {enrollment.student.first_name} {enrollment.student.last_name}
+                    {enrollment.isBlocked && (
+                      <span className="text-destructive ml-2">(Blocked)</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {enrollment.student.parent
+                      ? `${enrollment.student.parent.first_name} ${enrollment.student.parent.last_name}`
+                      : 'Unknown'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col text-sm">
+                      <span>{enrollment.student.parent?.email}</span>
+                      <span className="text-muted-foreground">
+                        {enrollment.student.parent?.phone}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <EnrollmentStatusBadge
+                      status={enrollment.status}
+                      waitlistPosition={enrollment.waitlist_position}
+                    />
+                  </TableCell>
+                  <TableCell>{enrollment.waitlist_position || '-'}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleCancel(enrollment.id)}
+                      disabled={isPending}
+                      title="Cancel Enrollment"
+                    >
+                      <Trash2 className="text-destructive h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+        <div className="text-muted-foreground p-4 text-sm">
+          Total: {enrollments.length}
+        </div>
       </div>
     </div>
   );

@@ -145,7 +145,7 @@ export default async function AdminClassDetailPage({
 
       <div className="space-y-4">
         <h2 className="text-2xl font-bold tracking-tight">Roster</h2>
-        <AdminRosterTable enrollments={enrollments} />
+        <AdminRosterTable enrollments={enrollments} classId={id} />
       </div>
     </div>
   );
