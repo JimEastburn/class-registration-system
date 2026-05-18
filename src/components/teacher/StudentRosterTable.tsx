@@ -366,7 +366,7 @@ export function StudentRosterTable({
               <AlertDialogDescription>
                 Are you sure you want to cancel the enrollment for{' '}
                 <strong>{selectedEnrollment?.studentName}</strong>? This will
-                remove their spot from the class and email the parent.
+                remove their spot from the class.   You should contact the parent to let them know.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
