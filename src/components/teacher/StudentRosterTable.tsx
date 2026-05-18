@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Ban,
   Unlock,
+  XCircle,
 } from 'lucide-react';
 import {
   Table,
@@ -31,10 +32,20 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import type { RosterEnrollment } from '@/lib/actions/enrollments';
-import { updateDepositPaid } from '@/lib/actions/enrollments';
+import { updateDepositPaid, teacherCancelEnrollment } from '@/lib/actions/enrollments';
 import { BlockStudentDialog } from './BlockStudentDialog';
 import { unblockStudentByStudentId } from '@/lib/actions/blocking';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface StudentRosterTableProps {
   enrollments: RosterEnrollment[];
@@ -64,6 +75,12 @@ export function StudentRosterTable({
     name: string;
   } | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
+
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [selectedEnrollment, setSelectedEnrollment] = useState<{
+    id: string;
+    studentName: string;
+  } | null>(null);
 
   // Optimistic state for deposit checkboxes
   const [depositState, setDepositState] = useState<Record<string, boolean>>(
@@ -115,6 +132,33 @@ export function StudentRosterTable({
         toast.success('Student unblocked');
       } else {
         toast.error(result.error || 'Failed to unblock');
+      }
+    } catch (_err) {
+      toast.error('Unexpected error');
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleCancelClick = (enrollment: RosterEnrollment) => {
+    setSelectedEnrollment({
+      id: enrollment.id,
+      studentName: `${enrollment.student.first_name} ${enrollment.student.last_name}`,
+    });
+    setCancelDialogOpen(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!selectedEnrollment) return;
+    setProcessing(selectedEnrollment.id);
+    try {
+      const result = await teacherCancelEnrollment(selectedEnrollment.id);
+      if (result.success) {
+        toast.success(`Cancelled enrollment for ${selectedEnrollment.studentName}`);
+        setCancelDialogOpen(false);
+        setSelectedEnrollment(null);
+      } else {
+        toast.error(result.error || 'Failed to cancel enrollment');
       }
     } catch (_err) {
       toast.error('Unexpected error');
@@ -283,6 +327,15 @@ export function StudentRosterTable({
                           )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
+                            onClick={() => handleCancelClick(enrollment)}
+                            className="text-destructive"
+                            data-testid="cancel-enrollment-button"
+                          >
+                            <XCircle className="mr-2 h-4 w-4" /> Cancel
+                            Enrollment
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
                             className="text-muted-foreground"
                             disabled
                           >
@@ -305,6 +358,33 @@ export function StudentRosterTable({
           studentName={selectedStudent?.name || ''}
           path={`/teacher/classes/${classId}`}
         />
+
+        <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cancel Enrollment</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to cancel the enrollment for{' '}
+                <strong>{selectedEnrollment?.studentName}</strong>? This will
+                remove their spot from the class and email the parent.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={!!processing}>
+                Keep Enrollment
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleCancelConfirm}
+                disabled={!!processing}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {processing === selectedEnrollment?.id
+                  ? 'Cancelling...'
+                  : 'Cancel Enrollment'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </Card>
     </>
   );

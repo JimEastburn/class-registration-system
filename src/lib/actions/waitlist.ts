@@ -285,9 +285,14 @@ export async function promoteFromWaitlist(
     .eq('status', 'waitlisted')
     .order('waitlist_position', { ascending: true })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (waitlistError || !firstInLine) {
+  if (waitlistError) {
+    console.error('Error reading waitlist:', waitlistError);
+    return { success: false, error: 'Failed to read waitlist' };
+  }
+
+  if (!firstInLine) {
     // No one on waitlist
     return { success: true, data: null };
   }

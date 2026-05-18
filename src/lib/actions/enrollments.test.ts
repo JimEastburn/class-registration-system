@@ -4,13 +4,16 @@ import {
   updateDepositPaid,
   cancelEnrollment,
   adminCancelEnrollment,
+  teacherCancelEnrollment,
   adminEnrollStudent,
   getAdminEnrollmentStudentOptions,
   getAdminEnrollmentClassOptions,
+  adminRemoveEnrollment,
 } from '@/lib/actions/enrollments';
 import { promoteFromWaitlist } from '@/lib/actions/waitlist';
 import { checkStudentScheduleConflict } from '@/lib/logic/scheduling';
 import { logAuditAction } from '@/lib/actions/audit';
+import { sendEnrollmentCancellation } from '@/lib/email';
 import {
   seedFake,
   PARENT_PROFILE,
@@ -29,7 +32,10 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('@/lib/actions/audit', () => ({
   logAuditAction: vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock('@/lib/email', () => ({ sendEnrollmentConfirmation: vi.fn() }));
+vi.mock('@/lib/email', () => ({
+  sendEnrollmentConfirmation: vi.fn(),
+  sendEnrollmentCancellation: vi.fn().mockResolvedValue({ success: true }),
+}));
 vi.mock('@/lib/actions/waitlist', () => ({
   promoteFromWaitlist: vi.fn().mockResolvedValue({ success: true, data: null }),
 }));
@@ -1030,6 +1036,254 @@ describe('Enrollment Actions', () => {
       const result = await getAdminEnrollmentClassOptions();
       expect(result.data).toBeNull();
       expect(result.error).toBe('Access denied');
+    });
+  });
+
+  describe('teacherCancelEnrollment', () => {
+    const OTHER_TEACHER_ID = 'other-teacher';
+
+    it('rejects unauthenticated user', async () => {
+      seedFake({ authUserId: null });
+      const result = await teacherCancelEnrollment('enr-1');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Not authenticated');
+    });
+
+    it('rejects non-teacher non-admin user', async () => {
+      seedFake({
+        authUserId: PARENT_ID,
+        data: {
+          profiles: [PARENT_PROFILE] as unknown as Record<string, unknown>[],
+        },
+      });
+      const result = await teacherCancelEnrollment('enr-1');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Access denied');
+    });
+
+    it('rejects teacher who does not own the class', async () => {
+      seedFake({
+        authUserId: OTHER_TEACHER_ID,
+        data: {
+          profiles: [
+            {
+              id: OTHER_TEACHER_ID,
+              first_name: 'Other',
+              last_name: 'Teacher',
+              role: 'teacher',
+            },
+          ] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            {
+              id: 'enr-teacher-cancel',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+            },
+          ] as unknown as Record<string, unknown>[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+        },
+      });
+      const result = await teacherCancelEnrollment('enr-teacher-cancel');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Access denied: You are not the teacher of this class');
+    });
+
+    it('returns error if enrollment already cancelled', async () => {
+      seedFake({
+        authUserId: TEACHER_ID,
+        data: {
+          profiles: [TEACHER_PROFILE] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            {
+              id: 'enr-teacher-cancel',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'cancelled',
+            },
+          ] as unknown as Record<string, unknown>[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+        },
+      });
+      const result = await teacherCancelEnrollment('enr-teacher-cancel');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Enrollment is already cancelled');
+    });
+
+    it('cancels enrollment when user is the teacher', async () => {
+      const fake = seedFake({
+        authUserId: TEACHER_ID,
+        data: {
+          profiles: [
+            TEACHER_PROFILE,
+            PARENT_PROFILE,
+          ] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            {
+              id: 'enr-teacher-cancel',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+            },
+          ] as unknown as Record<string, unknown>[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+        },
+      });
+      const result = await teacherCancelEnrollment('enr-teacher-cancel');
+      expect(result.success).toBe(true);
+      const enrollment = fake.db.enrollments.find(
+        (e) => e.id === 'enr-teacher-cancel'
+      );
+      expect(enrollment!.status).toBe('cancelled');
+      expect(promoteFromWaitlist).toHaveBeenCalledWith(CLASS_ID);
+    });
+
+    it('cancels enrollment when user is an admin', async () => {
+      const fake = seedFake({
+        authUserId: 'admin-user',
+        data: {
+          profiles: [
+            {
+              id: 'admin-user',
+              first_name: 'Admin',
+              last_name: 'User',
+              role: 'admin',
+            },
+            TEACHER_PROFILE,
+            PARENT_PROFILE,
+          ] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            {
+              id: 'enr-teacher-cancel',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+            },
+          ] as unknown as Record<string, unknown>[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+        },
+      });
+      const result = await teacherCancelEnrollment('enr-teacher-cancel');
+      expect(result.success).toBe(true);
+      const enrollment = fake.db.enrollments.find(
+        (e) => e.id === 'enr-teacher-cancel'
+      );
+      expect(enrollment!.status).toBe('cancelled');
+    });
+
+    it('returns error when enrollment not found', async () => {
+      seedFake({
+        authUserId: TEACHER_ID,
+        data: {
+          profiles: [TEACHER_PROFILE] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+        },
+      });
+      const result = await teacherCancelEnrollment('nonexistent-enr');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Enrollment not found');
+    });
+
+    it('rejects when enrollment has a completed payment', async () => {
+      seedFake({
+        authUserId: TEACHER_ID,
+        data: {
+          profiles: [TEACHER_PROFILE, PARENT_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            {
+              id: 'enr-teacher-cancel',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+            },
+          ] as unknown as Record<string, unknown>[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+          payments: [
+            {
+              id: 'pay-1',
+              enrollment_id: 'enr-teacher-cancel',
+              status: 'completed',
+              amount: 50,
+              parent_id: PARENT_ID,
+            },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+      const result = await teacherCancelEnrollment('enr-teacher-cancel');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe(
+        'Cannot cancel a paid enrollment — please ask an admin to issue a refund'
+      );
+    });
+
+    it('sends cancellation email to parent on success', async () => {
+      seedFake({
+        authUserId: TEACHER_ID,
+        data: {
+          profiles: [
+            TEACHER_PROFILE,
+            PARENT_PROFILE,
+          ] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            {
+              id: 'enr-teacher-cancel',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+            },
+          ] as unknown as Record<string, unknown>[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+        },
+      });
+      const result = await teacherCancelEnrollment('enr-teacher-cancel');
+      expect(result.success).toBe(true);
+      expect(sendEnrollmentCancellation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parentEmail: PARENT_PROFILE.email,
+          studentName: 'Kid Test',
+          className: 'Art 101',
+        })
+      );
+    });
+  });
+
+  describe('adminRemoveEnrollment', () => {
+    it('rejects hard delete in production', async () => {
+      const originalEnv = process.env.VERCEL_ENV;
+      process.env.VERCEL_ENV = 'production';
+
+      seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [ADMIN_PROFILE] as unknown as Record<string, unknown>[],
+          enrollments: [
+            {
+              id: 'enr-delete',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+            },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await adminRemoveEnrollment('enr-delete');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Hard delete is disabled in production');
+
+      process.env.VERCEL_ENV = originalEnv;
     });
   });
 });

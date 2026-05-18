@@ -72,6 +72,66 @@ describe('promoteFromWaitlist', () => {
       })
     );
   });
+
+  it('returns success with null data when no one is on the waitlist', async () => {
+    seedFake({
+      authUserId: PARENT_ID,
+      data: {
+        profiles: [PARENT_PROFILE, TEACHER_PROFILE] as unknown as Record<string, unknown>[],
+        family_members: [mockMember] as unknown as Record<string, unknown>[],
+        classes: [mockClass] as unknown as Record<string, unknown>[],
+        enrollments: [] as unknown as Record<string, unknown>[],
+      },
+    });
+
+    const result = await promoteFromWaitlist(CLASS_ID);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toBeNull();
+    }
+  });
+
+  it('returns error when waitlist lookup fails', async () => {
+    const fake = seedFake({
+      authUserId: PARENT_ID,
+      data: {
+        profiles: [PARENT_PROFILE, TEACHER_PROFILE] as unknown as Record<string, unknown>[],
+        family_members: [mockMember] as unknown as Record<string, unknown>[],
+        classes: [mockClass] as unknown as Record<string, unknown>[],
+        enrollments: [] as unknown as Record<string, unknown>[],
+      },
+    });
+
+    // Intercept the waitlist lookup query and force a DB error
+    const originalFrom = fake.from.bind(fake);
+    fake.from = vi.fn((table: string) => {
+      if (table === 'enrollments') {
+        const qb = originalFrom(table);
+        const originalThen = qb.then.bind(qb);
+        qb.then = (
+          resolve: (result: { data: unknown; error: unknown }) => void,
+          reject?: (err: unknown) => void
+        ) => {
+          // Detect the waitlist-first-in-line query by its select shape
+          if ((qb as unknown as { selectQuery?: string }).selectQuery?.includes('student:family_members')) {
+            resolve({ data: null, error: { message: 'DB blip' } });
+            return;
+          }
+          return originalThen(resolve, reject);
+        };
+        return qb;
+      }
+      return originalFrom(table);
+    }) as unknown as typeof fake.from;
+
+    const result = await promoteFromWaitlist(CLASS_ID);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toBe('Failed to read waitlist');
+    }
+  });
 });
 
 describe('promoteWaitlistEntryAsAdmin', () => {

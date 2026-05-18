@@ -235,12 +235,14 @@ export function EnrollmentManagementTable({
                         >
                           <XCircle className="mr-2 h-4 w-4" /> Cancel
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={() => handleDelete(enrollment.id)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" /> Hard Delete
-                        </DropdownMenuItem>
+                        {process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production' && (
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={() => handleDelete(enrollment.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Hard Delete
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

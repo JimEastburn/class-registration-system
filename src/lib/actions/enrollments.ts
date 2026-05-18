@@ -13,6 +13,7 @@ import type {
 } from '@/types';
 import { checkStudentScheduleConflict } from '@/lib/logic/scheduling';
 import { promoteFromWaitlist } from '@/lib/actions/waitlist';
+import { sendEnrollmentCancellation } from '@/lib/email';
 
 interface EnrollmentWithClass extends Enrollment {
   class: {
@@ -842,6 +843,143 @@ export async function adminCancelEnrollment(
   }
 }
 
+export async function teacherCancelEnrollment(
+  enrollmentId: string
+): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Verify user is a teacher (or admin)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const isTeacher = profile?.role === 'teacher';
+    // class_scheduler is intentionally omitted — they do not manage enrollments
+    const isAdmin = ['admin', 'super_admin'].includes(profile?.role || '');
+
+    if (!isTeacher && !isAdmin) {
+      return { success: false, error: 'Access denied' };
+    }
+
+    interface TeacherCancelClassJoin {
+      id: string;
+      name: string;
+      teacher_id: string;
+    }
+
+    // Get enrollment with class details
+    const { data: enrollment, error: fetchError } = await supabase
+      .from('enrollments')
+      .select(
+        `
+        id, status, class_id, student_id,
+        class:classes!inner(id, name, teacher_id)
+      `
+      )
+      .eq('id', enrollmentId)
+      .single();
+
+    if (fetchError || !enrollment) {
+      return { success: false, error: 'Enrollment not found' };
+    }
+
+    // Verify teacher owns the class (or is admin)
+    const classData = enrollment.class as TeacherCancelClassJoin;
+    if (classData.teacher_id !== user.id && !isAdmin) {
+      return { success: false, error: 'Access denied: You are not the teacher of this class' };
+    }
+
+    // Prevent cancelling already cancelled enrollments
+    if (enrollment.status === 'cancelled') {
+      return { success: false, error: 'Enrollment is already cancelled' };
+    }
+
+    // Block cancellation if a completed payment exists
+    const { data: completedPayment } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('enrollment_id', enrollmentId)
+      .eq('status', 'completed')
+      .maybeSingle();
+
+    if (completedPayment) {
+      return {
+        success: false,
+        error: 'Cannot cancel a paid enrollment — please ask an admin to issue a refund',
+      };
+    }
+
+    // Use admin client for update (RLS does not allow teacher updates on enrollments)
+    const adminClient = await createAdminClient();
+
+    const { error: updateError } = await adminClient
+      .from('enrollments')
+      .update({ status: 'cancelled', waitlist_position: null })
+      .eq('id', enrollmentId);
+
+    if (updateError) {
+      return { success: false, error: updateError.message };
+    }
+
+    await logAuditAction(
+      user.id,
+      'teacher_cancel_enrollment',
+      'enrollment',
+      enrollmentId,
+      { class_id: classData.id }
+    );
+
+    // Promote waitlisted student
+    await promoteFromWaitlist(classData.id);
+
+    // Notify parent — fire-and-forget, must not block cancellation
+    try {
+      const { data: studentWithParent } = await adminClient
+        .from('family_members')
+        .select('first_name, last_name, parent:profiles!family_members_parent_id_fkey(email, first_name, last_name)')
+        .eq('id', enrollment.student_id)
+        .single();
+
+      if (studentWithParent) {
+        const parent = studentWithParent.parent as {
+          email: string;
+          first_name: string | null;
+          last_name: string | null;
+        };
+        await sendEnrollmentCancellation({
+          parentEmail: parent.email,
+          parentName: `${parent.first_name ?? ''} ${parent.last_name ?? ''}`.trim() || 'Parent',
+          studentName: `${studentWithParent.first_name ?? ''} ${studentWithParent.last_name ?? ''}`.trim(),
+          className: classData.name,
+        });
+      }
+    } catch (emailErr) {
+      console.error('Failed to send enrollment cancellation email:', emailErr);
+    }
+
+    revalidatePath('/teacher/classes');
+    revalidatePath(`/teacher/classes/${classData.id}`);
+    revalidatePath('/parent');
+    revalidatePath('/parent/enrollments');
+    revalidatePath('/admin/enrollments');
+
+    return { success: true, error: null };
+  } catch (err) {
+    console.error('Unexpected error in teacherCancelEnrollment:', err);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
 /**
  * Admin: Hard remove (delete) an enrollment.
  */
@@ -869,6 +1007,10 @@ export async function adminRemoveEnrollment(
 
     if (!isAdmin) {
       return { success: false, error: 'Access denied' };
+    }
+
+    if (process.env.VERCEL_ENV === 'production') {
+      return { success: false, error: 'Hard delete is disabled in production' };
     }
 
     // Hard delete
