@@ -1,7 +1,7 @@
 # Plan: Real-Time Full-Text Search for /admin/classes
 
 ## Goal
-Replace the manual "Search classes..." button/Enter-key search on `/admin/classes` with a debounced, auto-triggering full-text search that matches any visible field after typing 3+ characters.
+Replace the manual "Search classes..." button/Enter-key search on `/admin/classes` with a debounced, auto-triggering full-text search that matches any visible field after typing 1+ characters.
 
 ## Current State
 - **Page**: `src/app/(dashboard)/admin/classes/page.tsx` — Server Component, passes `search` param to `getAllClasses()`
@@ -29,9 +29,7 @@ teacher.first_name.ilike.%term%,teacher.last_name.ilike.%term%
 - Remove the requirement to click the "Search" button or press Enter
 - Keep the Search input and its current icon/styling
 - Add `useEffect` + `setTimeout` (300ms debounce) on the `search` state
-- Only trigger URL update when:
-  - Search is empty (show all), OR
-  - Search has ≥ 3 characters
+- Trigger URL update on every keystroke (≥ 1 character), or when cleared to empty
 - Reset `page` to 1 on every new search term
 - Use `useTransition` to show a loading spinner on the input during server roundtrips
 - Optionally convert the "Search" button to a "Clear" (×) button that appears when text is entered
