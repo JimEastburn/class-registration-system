@@ -32,11 +32,11 @@ teacher.first_name.ilike.%term%,teacher.last_name.ilike.%term%
 - Trigger URL update on every keystroke (≥ 1 character), or when cleared to empty
 - Reset `page` to 1 on every new search term
 - Use `useTransition` to show a loading spinner on the input during server roundtrips
-- Optionally convert the "Search" button to a "Clear" (×) button that appears when text is entered
+- Convert the "Search" button to a "Clear" (×) button that appears when text is entered; clicking it clears the input and resets results
 
 ### 3. Tests
 - Update `src/app/(dashboard)/admin/classes/__tests__/page.test.tsx` if search param handling changes
-- Add/update component tests for `AdminClassTable` verifying debounce behavior, ≥3-char threshold, and clearing
+- Add/update component tests for `AdminClassTable` verifying debounce behavior, ≥1-char threshold, and clearing
 
 ## Approach Notes
 - **Server-side filtering** is required because the user explicitly wants this to "work across pagination"

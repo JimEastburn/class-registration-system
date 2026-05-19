@@ -574,6 +574,10 @@ export type Database = {
         Args: { check_student_id: string }
         Returns: boolean
       }
+      search_class_ids: {
+        Args: { search_term: string }
+        Returns: { id: string }[]
+      }
     }
     Enums: {
       ClassStatus: "draft" | "published" | "completed" | "cancelled"

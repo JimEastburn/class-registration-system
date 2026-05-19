@@ -1,6 +1,6 @@
 'use server';
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient, createClient } from '@/lib/supabase/server';
 import type { ClassStatus, ClassWithTeacher, ScheduleConfig } from '@/types';
 import {
   checkScheduleConflict,
@@ -425,9 +425,12 @@ export async function updateClass(
     if (input.location !== undefined) updateData.location = input.location;
     if (input.ageMin !== undefined) updateData.age_min = input.ageMin;
     if (input.ageMax !== undefined) updateData.age_max = input.ageMax;
-    if (input.ageDisplayMode !== undefined) updateData.age_display_mode = input.ageDisplayMode;
-    if (input.scheduleDisplayMode !== undefined) updateData.schedule_display_mode = input.scheduleDisplayMode;
-    if (input.showPaymentInfo !== undefined) updateData.show_payment_info = input.showPaymentInfo;
+    if (input.ageDisplayMode !== undefined)
+      updateData.age_display_mode = input.ageDisplayMode;
+    if (input.scheduleDisplayMode !== undefined)
+      updateData.schedule_display_mode = input.scheduleDisplayMode;
+    if (input.showPaymentInfo !== undefined)
+      updateData.show_payment_info = input.showPaymentInfo;
     if (input.teacherId !== undefined && isAdmin)
       updateData.teacher_id = input.teacherId;
     if (input.status !== undefined && isAdmin) updateData.status = input.status; // Allow admin to force status
@@ -1115,10 +1118,22 @@ export async function getAllClasses(
     }
 
     if (filters?.search) {
-      // Search by class name or description
-      query = query.or(
-        `name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
-      );
+      const term = filters.search.replace(/[%_]/g, '');
+      if (term) {
+        // Use the admin client because search_class_ids is REVOKE'd from anon/
+        // authenticated and joins RLS-protected profiles. The role check at the
+        // top of this action already gates who can reach this path.
+        const adminClient = await createAdminClient();
+        const { data: searchResults } = await adminClient.rpc(
+          'search_class_ids',
+          { search_term: term }
+        );
+        const ids = (searchResults ?? []).map((r) => r.id);
+        if (ids.length === 0) {
+          return { success: true, data: { classes: [], total: 0 } };
+        }
+        query = query.in('id', ids);
+      }
     }
 
     // Sort by created_at desc by default
@@ -1210,8 +1225,10 @@ export async function adminUpdateClass(
     if (input.location !== undefined) updateData.location = input.location;
     if (input.ageMin !== undefined) updateData.age_min = input.ageMin;
     if (input.ageMax !== undefined) updateData.age_max = input.ageMax;
-    if (input.ageDisplayMode !== undefined) updateData.age_display_mode = input.ageDisplayMode;
-    if (input.scheduleDisplayMode !== undefined) updateData.schedule_display_mode = input.scheduleDisplayMode;
+    if (input.ageDisplayMode !== undefined)
+      updateData.age_display_mode = input.ageDisplayMode;
+    if (input.scheduleDisplayMode !== undefined)
+      updateData.schedule_display_mode = input.scheduleDisplayMode;
     if (input.teacherId !== undefined) updateData.teacher_id = input.teacherId;
     if (input.status !== undefined) updateData.status = input.status;
 

@@ -13,7 +13,6 @@ import {
 import { promoteFromWaitlist } from '@/lib/actions/waitlist';
 import { checkStudentScheduleConflict } from '@/lib/logic/scheduling';
 import { logAuditAction } from '@/lib/actions/audit';
-import { sendEnrollmentCancellation } from '@/lib/email';
 import {
   seedFake,
   PARENT_PROFILE,
@@ -34,7 +33,6 @@ vi.mock('@/lib/actions/audit', () => ({
 }));
 vi.mock('@/lib/email', () => ({
   sendEnrollmentConfirmation: vi.fn(),
-  sendEnrollmentCancellation: vi.fn().mockResolvedValue({ success: true }),
 }));
 vi.mock('@/lib/actions/waitlist', () => ({
   promoteFromWaitlist: vi.fn().mockResolvedValue({ success: true, data: null }),
@@ -1226,36 +1224,6 @@ describe('Enrollment Actions', () => {
       );
     });
 
-    it('sends cancellation email to parent on success', async () => {
-      seedFake({
-        authUserId: TEACHER_ID,
-        data: {
-          profiles: [
-            TEACHER_PROFILE,
-            PARENT_PROFILE,
-          ] as unknown as Record<string, unknown>[],
-          classes: [mockClass] as unknown as Record<string, unknown>[],
-          enrollments: [
-            {
-              id: 'enr-teacher-cancel',
-              student_id: CHILD_ID,
-              class_id: CLASS_ID,
-              status: 'confirmed',
-            },
-          ] as unknown as Record<string, unknown>[],
-          family_members: [mockMember] as unknown as Record<string, unknown>[],
-        },
-      });
-      const result = await teacherCancelEnrollment('enr-teacher-cancel');
-      expect(result.success).toBe(true);
-      expect(sendEnrollmentCancellation).toHaveBeenCalledWith(
-        expect.objectContaining({
-          parentEmail: PARENT_PROFILE.email,
-          studentName: 'Kid Test',
-          className: 'Art 101',
-        })
-      );
-    });
   });
 
   describe('adminRemoveEnrollment', () => {

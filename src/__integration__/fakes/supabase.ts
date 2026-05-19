@@ -71,6 +71,20 @@ export class SupabaseFake {
     return new FakeQueryBuilder(this.db[table] || [], table, this);
   }
 
+  /* RPC stubs — tests register handlers per function name */
+  private rpcHandlers = new Map<string, (args: Record<string, unknown>) => unknown>();
+
+  setRpcHandler(fn: string, handler: (args: Record<string, unknown>) => unknown) {
+    this.rpcHandlers.set(fn, handler);
+  }
+
+  async rpc(fn: string, args: Record<string, unknown> = {}) {
+    const handler = this.rpcHandlers.get(fn);
+    if (!handler) return { data: null, error: null };
+    const data = handler(args);
+    return { data, error: null };
+  }
+
   /* Test Helpers */
   dump() {
     return this.db;

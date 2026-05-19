@@ -1,12 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createClass, updateClass, publishClass } from '@/lib/actions/classes';
+import {
+  createClass,
+  updateClass,
+  publishClass,
+  getAllClasses,
+} from '@/lib/actions/classes';
 import {
   seedFake,
   TEACHER_PROFILE,
+  ADMIN_PROFILE,
   type SeedClass,
 } from '@/__integration__/fakes/fixtures';
 
-vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn() }));
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(),
+  createAdminClient: vi.fn(),
+}));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('@/lib/actions/audit', () => ({ logAuditAction: vi.fn() }));
 vi.mock('@/lib/email', () => ({
@@ -142,6 +151,27 @@ describe('Class Actions', () => {
       const result = await publishClass('class-1');
       expect(result.success).toBe(true);
       expect(fake.db.classes.find((c) => c.id === 'class-1')!.status).toBe('published');
+    });
+  });
+
+  describe('getAllClasses', () => {
+    it('returns empty result when search has no matches', async () => {
+      const fake = seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [ADMIN_PROFILE] as unknown as Record<string, unknown>[],
+          classes: [existingClass] as unknown as Record<string, unknown>[],
+        },
+      });
+      // Stub the RPC to simulate "no matching class IDs" from Postgres
+      fake.setRpcHandler('search_class_ids', () => []);
+
+      const result = await getAllClasses({ search: 'no-such-term', page: 1, limit: 20 });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.classes).toEqual([]);
+        expect(result.data.total).toBe(0);
+      }
     });
   });
 });

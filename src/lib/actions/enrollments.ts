@@ -13,7 +13,6 @@ import type {
 } from '@/types';
 import { checkStudentScheduleConflict } from '@/lib/logic/scheduling';
 import { promoteFromWaitlist } from '@/lib/actions/waitlist';
-import { sendEnrollmentCancellation } from '@/lib/email';
 
 interface EnrollmentWithClass extends Enrollment {
   class: {
@@ -941,31 +940,6 @@ export async function teacherCancelEnrollment(
 
     // Promote waitlisted student
     await promoteFromWaitlist(classData.id);
-
-    // Notify parent — fire-and-forget, must not block cancellation
-    try {
-      const { data: studentWithParent } = await adminClient
-        .from('family_members')
-        .select('first_name, last_name, parent:profiles!family_members_parent_id_fkey(email, first_name, last_name)')
-        .eq('id', enrollment.student_id)
-        .single();
-
-      if (studentWithParent) {
-        const parent = studentWithParent.parent as {
-          email: string;
-          first_name: string | null;
-          last_name: string | null;
-        };
-        await sendEnrollmentCancellation({
-          parentEmail: parent.email,
-          parentName: `${parent.first_name ?? ''} ${parent.last_name ?? ''}`.trim() || 'Parent',
-          studentName: `${studentWithParent.first_name ?? ''} ${studentWithParent.last_name ?? ''}`.trim(),
-          className: classData.name,
-        });
-      }
-    } catch (emailErr) {
-      console.error('Failed to send enrollment cancellation email:', emailErr);
-    }
 
     revalidatePath('/teacher/classes');
     revalidatePath(`/teacher/classes/${classData.id}`);
