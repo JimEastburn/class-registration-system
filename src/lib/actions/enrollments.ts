@@ -1096,40 +1096,19 @@ export async function adminEnrollStudent(
         };
       }
 
-      // Reactivate cancelled enrollment
-      const { count: enrolledCount } = await adminClient
-        .from('enrollments')
-        .select('*', { count: 'exact', head: true })
-        .eq('class_id', input.classId)
-        .in('status', ['confirmed', 'pending']);
+      // Reactivate the cancelled enrollment atomically via the RPC, which
+      // capacity-checks and upserts (ON CONFLICT) under a row lock on the class.
+      const { data: updated, error: updateError } = await adminClient.rpc(
+        'enroll_student',
+        { p_student_id: input.studentId, p_class_id: input.classId }
+      );
 
-      const enrolled = enrolledCount || 0;
-      const isFull = enrolled >= classData.capacity;
-      const newStatus: EnrollmentStatus = isFull ? 'waitlisted' : 'pending';
-      let waitlistPosition: number | null = null;
-
-      if (isFull) {
-        const { count: waitlistCount } = await adminClient
-          .from('enrollments')
-          .select('*', { count: 'exact', head: true })
-          .eq('class_id', input.classId)
-          .eq('status', 'waitlisted');
-        waitlistPosition = (waitlistCount || 0) + 1;
-      }
-
-      const { data: updated, error: updateError } = await adminClient
-        .from('enrollments')
-        .update({
-          status: newStatus,
-          waitlist_position: waitlistPosition,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', existingEnrollment.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        return { data: null, status: null, error: updateError.message };
+      if (updateError || !updated) {
+        return {
+          data: null,
+          status: null,
+          error: updateError?.message ?? 'An unexpected error occurred',
+        };
       }
 
       await logAuditAction(

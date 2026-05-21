@@ -58,6 +58,18 @@ export class SupabaseFake {
             (e) => e.class_id === classId && e.status === 'waitlisted'
           ).length + 1;
       }
+      // Mirror ON CONFLICT (student_id, class_id): reactivate a cancelled row,
+      // or reject an active duplicate.
+      const existing = enrollments.find(
+        (e) => e.student_id === studentId && e.class_id === classId
+      );
+      if (existing) {
+        if (existing.status !== 'cancelled') return null;
+        existing.status = status;
+        existing.waitlist_position = waitlistPosition;
+        existing.updated_at = new Date().toISOString();
+        return existing;
+      }
       const row = {
         id: crypto.randomUUID(),
         student_id: studentId,

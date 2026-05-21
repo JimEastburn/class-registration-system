@@ -65,9 +65,21 @@ BEGIN
     v_position := NULL;
   END IF;
 
+  -- Insert a new enrollment, or atomically reactivate a previously cancelled
+  -- one for the same (student, class). The WHERE guard rejects an active
+  -- duplicate (callers also pre-check) so it surfaces as a clear error rather
+  -- than silently overwriting a confirmed/pending/waitlisted row.
   INSERT INTO public.enrollments (student_id, class_id, status, waitlist_position)
   VALUES (p_student_id, p_class_id, v_status, v_position)
+  ON CONFLICT (student_id, class_id) DO UPDATE
+    SET status = EXCLUDED.status,
+        waitlist_position = EXCLUDED.waitlist_position
+    WHERE enrollments.status = 'cancelled'
   RETURNING * INTO v_row;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Student is already enrolled in this class';
+  END IF;
 
   RETURN v_row;
 END;

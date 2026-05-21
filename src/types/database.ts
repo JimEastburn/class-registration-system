@@ -553,7 +553,7 @@ export type Database = {
     }
     Functions: {
       enroll_student: {
-        Args: { p_student_id: string; p_class_id: string }
+        Args: { p_class_id: string; p_student_id: string }
         Returns: {
           class_id: string
           created_at: string
@@ -563,6 +563,12 @@ export type Database = {
           student_id: string
           updated_at: string
           waitlist_position: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "enrollments"
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
       generate_schedule_text: {
@@ -589,7 +595,9 @@ export type Database = {
       }
       search_class_ids: {
         Args: { search_term: string }
-        Returns: { id: string }[]
+        Returns: {
+          id: string
+        }[]
       }
     }
     Enums: {
