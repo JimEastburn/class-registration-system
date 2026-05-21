@@ -28,6 +28,49 @@ export class SupabaseFake {
 
   constructor(initialData: Record<string, Record<string, unknown>[]> = {}) {
     this.db = JSON.parse(JSON.stringify(initialData));
+    this.registerBuiltinRpcs();
+  }
+
+  /**
+   * Built-in RPC handlers that mirror real database functions, so action tests
+   * that exercise those functions work without per-test wiring.
+   */
+  private registerBuiltinRpcs() {
+    // Mirrors public.enroll_student(): capacity-aware, waitlist-on-full insert.
+    this.setRpcHandler('enroll_student', (args) => {
+      const studentId = args.p_student_id as string;
+      const classId = args.p_class_id as string;
+      const cls = (this.db['classes'] || []).find((c) => c.id === classId);
+      if (!cls) return null;
+      if (!this.db['enrollments']) this.db['enrollments'] = [];
+      const enrollments = this.db['enrollments'];
+      const seatsTaken = enrollments.filter(
+        (e) =>
+          e.class_id === classId &&
+          (e.status === 'confirmed' || e.status === 'pending')
+      ).length;
+      let status = 'pending';
+      let waitlistPosition: number | null = null;
+      if (seatsTaken >= (cls.capacity as number)) {
+        status = 'waitlisted';
+        waitlistPosition =
+          enrollments.filter(
+            (e) => e.class_id === classId && e.status === 'waitlisted'
+          ).length + 1;
+      }
+      const row = {
+        id: crypto.randomUUID(),
+        student_id: studentId,
+        class_id: classId,
+        status,
+        waitlist_position: waitlistPosition,
+        deposit_paid: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      enrollments.push(row);
+      return row;
+    });
   }
 
   /* Auth Helpers */

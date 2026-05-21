@@ -361,51 +361,21 @@ export async function enrollStudent(input: EnrollStudentInput): Promise<{
       };
     }
 
-    // Check capacity (confirmed + pending both hold a spot)
-    const { count: enrolledCount } = await supabase
-      .from('enrollments')
-      .select('*', { count: 'exact', head: true })
-      .eq('class_id', input.classId)
-      .in('status', ['confirmed', 'pending']);
+    // Atomic, RLS-safe capacity check + insert. The enroll_student function counts
+    // seats with definer rights (so it sees the whole class, not just this parent's
+    // rows) and decides pending vs. waitlisted under a row lock on the class.
+    const { data, error } = await supabase.rpc('enroll_student', {
+      p_student_id: input.familyMemberId,
+      p_class_id: input.classId,
+    });
 
-    const enrolled = enrolledCount || 0;
-    const isFull = enrolled >= classData.capacity;
-
-    let enrollmentStatus: EnrollmentStatus;
-    let waitlistPosition: number | null = null;
-
-    if (isFull) {
-      // Add to waitlist
-      enrollmentStatus = 'waitlisted';
-
-      // Get next waitlist position
-      const { count: waitlistCount } = await supabase
-        .from('enrollments')
-        .select('*', { count: 'exact', head: true })
-        .eq('class_id', input.classId)
-        .eq('status', 'waitlisted');
-
-      waitlistPosition = (waitlistCount || 0) + 1;
-    } else {
-      // Confirm enrollment (pending payment)
-      enrollmentStatus = 'pending';
-    }
-
-    // Create enrollment
-    const { data, error } = await supabase
-      .from('enrollments')
-      .insert({
-        student_id: input.familyMemberId,
-        class_id: input.classId,
-        status: enrollmentStatus,
-        waitlist_position: waitlistPosition,
-      })
-      .select()
-      .single();
-
-    if (error) {
+    if (error || !data) {
       console.error('Error creating enrollment:', error);
-      return { data: null, status: null, error: error.message };
+      return {
+        data: null,
+        status: null,
+        error: error?.message ?? 'An unexpected error occurred',
+      };
     }
 
     revalidatePath('/parent');
@@ -414,7 +384,7 @@ export async function enrollStudent(input: EnrollStudentInput): Promise<{
 
     return {
       data,
-      status: enrollmentStatus as 'confirmed' | 'waitlisted' | 'blocked',
+      status: data.status as 'pending' | 'waitlisted',
       error: null,
     };
   } catch (err) {
@@ -1243,44 +1213,20 @@ export async function adminEnrollStudent(
       }
     }
 
-    // Check capacity (confirmed + pending both hold a spot)
-    const { count: enrolledCount } = await adminClient
-      .from('enrollments')
-      .select('*', { count: 'exact', head: true })
-      .eq('class_id', input.classId)
-      .in('status', ['confirmed', 'pending']);
+    // Atomic, RLS-safe capacity check + insert. The enroll_student function decides
+    // pending vs. waitlisted under a row lock on the class. The admin client runs as
+    // service_role, so the function skips its family-ownership check.
+    const { data, error } = await adminClient.rpc('enroll_student', {
+      p_student_id: input.studentId,
+      p_class_id: input.classId,
+    });
 
-    const enrolled = enrolledCount || 0;
-    const isFull = enrolled >= classData.capacity;
-
-    let enrollmentStatus: EnrollmentStatus;
-    let waitlistPosition: number | null = null;
-
-    if (isFull) {
-      enrollmentStatus = 'waitlisted';
-      const { count: waitlistCount } = await adminClient
-        .from('enrollments')
-        .select('*', { count: 'exact', head: true })
-        .eq('class_id', input.classId)
-        .eq('status', 'waitlisted');
-      waitlistPosition = (waitlistCount || 0) + 1;
-    } else {
-      enrollmentStatus = 'pending';
-    }
-
-    const { data, error } = await adminClient
-      .from('enrollments')
-      .insert({
-        student_id: input.studentId,
-        class_id: input.classId,
-        status: enrollmentStatus,
-        waitlist_position: waitlistPosition,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      return { data: null, status: null, error: error.message };
+    if (error || !data) {
+      return {
+        data: null,
+        status: null,
+        error: error?.message ?? 'An unexpected error occurred',
+      };
     }
 
     await logAuditAction(
@@ -1299,7 +1245,7 @@ export async function adminEnrollStudent(
 
     return {
       data: data as Enrollment,
-      status: enrollmentStatus as 'pending' | 'waitlisted',
+      status: data.status as 'pending' | 'waitlisted',
       error: null,
     };
   } catch (err) {

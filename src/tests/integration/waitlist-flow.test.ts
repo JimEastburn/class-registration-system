@@ -90,6 +90,34 @@ describe('Integration Flow: Waitlist -> Promotion', () => {
       getUser: vi.fn(),
     },
     from: vi.fn(),
+    // Mirrors public.enroll_student(): capacity-aware, waitlist-on-full insert.
+    rpc: vi.fn().mockImplementation(
+      async (fn: string, args: Record<string, unknown>) => {
+        if (fn !== 'enroll_student') return { data: null, error: null };
+        const classId = args.p_class_id as string;
+        const cls = dbClasses.find((c) => c.id === classId);
+        if (!cls) return { data: null, error: { message: 'Class not found' } };
+        const seatsTaken = dbEnrollments.filter(
+          (e) =>
+            e.class_id === classId &&
+            (e.status === 'confirmed' || e.status === 'pending')
+        ).length;
+        const isFull = seatsTaken >= cls.capacity;
+        const record: MockEnrollment = {
+          id: `enr-${dbEnrollments.length + 1}`,
+          student_id: args.p_student_id as string,
+          class_id: classId,
+          status: isFull ? 'waitlisted' : 'pending',
+          waitlist_position: isFull
+            ? dbEnrollments.filter(
+                (e) => e.class_id === classId && e.status === 'waitlisted'
+              ).length + 1
+            : null,
+        };
+        dbEnrollments.push(record);
+        return { data: record, error: null };
+      }
+    ),
   };
 
   beforeEach(() => {

@@ -552,6 +552,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      enroll_student: {
+        Args: { p_student_id: string; p_class_id: string }
+        Returns: {
+          class_id: string
+          created_at: string
+          deposit_paid: boolean
+          id: string
+          status: Database["public"]["Enums"]["EnrollmentStatus"]
+          student_id: string
+          updated_at: string
+          waitlist_position: number | null
+        }
+      }
       generate_schedule_text: {
         Args: {
           p_recurrence_days: string[]

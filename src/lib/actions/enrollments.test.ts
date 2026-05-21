@@ -149,6 +149,32 @@ describe('Enrollment Actions', () => {
       expect(result.data!.waitlist_position).toBe(1);
     });
 
+    it('assigns the next waitlist position when others are already waitlisted', async () => {
+      seed({
+        enrollments: [
+          ...Array.from({ length: 10 }, (_, i) => ({
+            id: `enr-${i}`,
+            student_id: `other-${i}`,
+            class_id: CLASS_ID,
+            status: 'confirmed',
+          })),
+          {
+            id: 'enr-wait-1',
+            student_id: 'other-wait',
+            class_id: CLASS_ID,
+            status: 'waitlisted',
+            waitlist_position: 1,
+          },
+        ] as unknown as Record<string, unknown>[],
+      });
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+      expect(result.status).toBe('waitlisted');
+      expect(result.data!.waitlist_position).toBe(2);
+    });
+
     it('blocks enrollment if student is blocked', async () => {
       seed({
         class_blocks: [
