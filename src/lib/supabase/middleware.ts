@@ -37,6 +37,7 @@ const PUBLIC_PATHS = [
   '/reset-password',
   '/auth/callback',
   '/auth/confirm',
+  '/teachers',
 ];
 
 /**
