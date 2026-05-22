@@ -9,6 +9,11 @@ import {
   getAdminEnrollmentStudentOptions,
   getAdminEnrollmentClassOptions,
   adminRemoveEnrollment,
+  getEnrollmentsForFamilyMember,
+  getEnrollmentsForFamily,
+  getActiveEnrollmentCount,
+  getClassRoster,
+  getAllEnrollments,
 } from '@/lib/actions/enrollments';
 import { promoteFromWaitlist } from '@/lib/actions/waitlist';
 import { checkStudentScheduleConflict } from '@/lib/logic/scheduling';
@@ -253,6 +258,164 @@ describe('Enrollment Actions', () => {
       });
       expect(result.status).toBe('pending');
       expect(result.data).toBeDefined();
+    });
+
+    // ── P3: parent-path edge case branches ────────────────────────────────
+
+    it('returns an error when registration is closed (system setting)', async () => {
+      seed({
+        system_settings: [
+          {
+            key: 'registration_settings',
+            value: { registrationOpen: false },
+          },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+
+      expect(result.error).toContain('Registration is currently closed');
+      expect(result.data).toBeNull();
+    });
+
+    it('returns an error when the current date is outside the semester window', async () => {
+      seed({
+        system_settings: [
+          {
+            key: 'registration_settings',
+            value: {
+              registrationOpen: true,
+              // Window ends well before "now"; current code rejects when now > end.
+              semesterStart: '2020-01-01',
+              semesterEnd: '2020-12-31',
+            },
+          },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+
+      expect(result.error).toContain('outside the current semester');
+      expect(result.data).toBeNull();
+    });
+
+    it('rejects when the student already has an active enrollment in this class', async () => {
+      seed({
+        enrollments: [
+          {
+            id: 'already',
+            student_id: CHILD_ID,
+            class_id: CLASS_ID,
+            status: 'pending',
+          },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+
+      expect(result.data).toBeNull();
+      expect(result.error).toContain('already enrolled');
+    });
+
+    it('reactivates the parent\'s own cancelled enrollment via the atomic RPC (Part 3)', async () => {
+      // Pre-existing cancelled enrollment for the same (student, class) —
+      // the parent re-enrolls. The RPC's ON CONFLICT upsert should reactivate
+      // the row in place (same id) as pending. Pre-Part-3 this hit a UNIQUE
+      // violation; this test guards the new behaviour.
+      const fake = seed({
+        enrollments: [
+          {
+            id: 'previously-cancelled',
+            student_id: CHILD_ID,
+            class_id: CLASS_ID,
+            status: 'cancelled',
+            waitlist_position: null,
+          },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+
+      expect(result.status).toBe('pending');
+      expect(result.error).toBeNull();
+      // Same row reactivated in place (mirror of ON CONFLICT DO UPDATE).
+      const row = fake.db.enrollments.find(
+        (e) => e.id === 'previously-cancelled'
+      );
+      expect(row?.status).toBe('pending');
+      // No duplicate row was pushed.
+      const all = fake.db.enrollments.filter(
+        (e) => e.student_id === CHILD_ID && e.class_id === CLASS_ID
+      );
+      expect(all).toHaveLength(1);
+    });
+
+    it('rejects when the family member does not belong to the caller', async () => {
+      seedFake({
+        authUserId: PARENT_ID,
+        data: {
+          profiles: [PARENT_PROFILE, TEACHER_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
+          // Student belongs to a different parent.
+          family_members: [
+            {
+              ...mockMember,
+              parent_id: 'someone-else',
+            },
+          ] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+
+      expect(result.data).toBeNull();
+      expect(result.error).toContain('Family member not found');
+    });
+
+    it('rejects when the family member is not a student (e.g., a Parent/Guardian record)', async () => {
+      seed({
+        family_members: [
+          { ...mockMember, relationship: 'Parent/Guardian' },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+
+      expect(result.data).toBeNull();
+      expect(result.error).toContain('Only students can be enrolled');
+    });
+
+    it('rejects when the class does not exist', async () => {
+      seed({ classes: [] });
+
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBe('Class not found');
     });
   });
 
@@ -842,6 +1005,142 @@ describe('Enrollment Actions', () => {
         })
       );
     });
+
+    // ── P4: reactivation permutations ───────────────────────────────────
+
+    it('reactivates a cancelled enrollment into a FULL class → row becomes waitlisted while function returns "reactivated"', async () => {
+      // The existing reactivation test uses an empty class. This permutation
+      // verifies: when reactivating into a class already at capacity, the
+      // row goes onto the waitlist with the next position, but the function
+      // still labels the response status as 'reactivated' (admin-UX
+      // distinction kept after Part 3).
+      const fake = seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [ADMIN_PROFILE, TEACHER_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
+          classes: [ADMIN_CLASS] as unknown as Record<string, unknown>[],
+          family_members: [STUDENT_MEMBER] as unknown as Record<
+            string,
+            unknown
+          >[],
+          enrollments: [
+            // Class capacity is 3; fill all seats with other students.
+            { id: 'fill-1', student_id: 'other-1', class_id: ADMIN_CLASS.id, status: 'confirmed' },
+            { id: 'fill-2', student_id: 'other-2', class_id: ADMIN_CLASS.id, status: 'pending' },
+            { id: 'fill-3', student_id: 'other-3', class_id: ADMIN_CLASS.id, status: 'confirmed' },
+            // The target student has a prior CANCELLED enrollment.
+            {
+              id: 'cancelled-row',
+              student_id: STUDENT_MEMBER.id,
+              class_id: ADMIN_CLASS.id,
+              status: 'cancelled',
+              waitlist_position: null,
+            },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await adminEnrollStudent({
+        studentId: STUDENT_MEMBER.id,
+        classId: ADMIN_CLASS.id,
+      });
+
+      // Function response status remains 'reactivated' (admin UX label).
+      expect(result.error).toBeNull();
+      expect(result.status).toBe('reactivated');
+
+      // The actual row landed on the waitlist (since the class was full).
+      const reactivatedRow = fake.db.enrollments.find(
+        (e) => e.id === 'cancelled-row'
+      );
+      expect(reactivatedRow?.status).toBe('waitlisted');
+      expect(reactivatedRow?.waitlist_position).toBe(1);
+    });
+  });
+
+  // ── P4: enrollStudent permutations (mirror of the RPC's count logic) ───
+
+  describe('enrollStudent (P4 permutations)', () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+      vi.mocked(checkStudentScheduleConflict).mockReturnValue(null);
+    });
+
+    it('excludes cancelled rows from the capacity count', async () => {
+      // Class capacity 2. Mix: 2 pending + 5 cancelled. Capacity is *full*
+      // (2 of 2 seats taken). Cancelled rows must NOT count, so the new
+      // enrollment should waitlist — not pend.
+      seed({
+        enrollments: [
+          { id: 'p1', student_id: 'p-1', class_id: CLASS_ID, status: 'pending' },
+          { id: 'p2', student_id: 'p-2', class_id: CLASS_ID, status: 'pending' },
+          { id: 'c1', student_id: 'c-1', class_id: CLASS_ID, status: 'cancelled' },
+          { id: 'c2', student_id: 'c-2', class_id: CLASS_ID, status: 'cancelled' },
+          { id: 'c3', student_id: 'c-3', class_id: CLASS_ID, status: 'cancelled' },
+          { id: 'c4', student_id: 'c-4', class_id: CLASS_ID, status: 'cancelled' },
+          { id: 'c5', student_id: 'c-5', class_id: CLASS_ID, status: 'cancelled' },
+        ] as unknown as Record<string, unknown>[],
+        classes: [{ ...mockClass, capacity: 2 }] as unknown as Record<
+          string,
+          unknown
+        >[],
+      });
+
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+
+      expect(result.status).toBe('waitlisted');
+      expect(result.data!.waitlist_position).toBe(1);
+    });
+
+    it('enrolls as pending when exactly one seat remains (boundary: cap-1)', async () => {
+      // Class capacity 3, 2 pending → one seat left → next enroll = pending.
+      seed({
+        classes: [{ ...mockClass, capacity: 3 }] as unknown as Record<
+          string,
+          unknown
+        >[],
+        enrollments: [
+          { id: 'p1', student_id: 'p-1', class_id: CLASS_ID, status: 'pending' },
+          { id: 'p2', student_id: 'p-2', class_id: CLASS_ID, status: 'pending' },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+
+      expect(result.status).toBe('pending');
+    });
+
+    it('waitlists at the exact capacity boundary (cap seats taken)', async () => {
+      // Class capacity 3, 3 pending → at capacity → next enroll = waitlisted.
+      seed({
+        classes: [{ ...mockClass, capacity: 3 }] as unknown as Record<
+          string,
+          unknown
+        >[],
+        enrollments: [
+          { id: 'p1', student_id: 'p-1', class_id: CLASS_ID, status: 'pending' },
+          { id: 'p2', student_id: 'p-2', class_id: CLASS_ID, status: 'pending' },
+          { id: 'p3', student_id: 'p-3', class_id: CLASS_ID, status: 'pending' },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+
+      expect(result.status).toBe('waitlisted');
+      expect(result.data!.waitlist_position).toBe(1);
+    });
   });
 
   describe('getAdminEnrollmentStudentOptions', () => {
@@ -1278,6 +1577,319 @@ describe('Enrollment Actions', () => {
       expect(result.error).toBe('Hard delete is disabled in production');
 
       process.env.VERCEL_ENV = originalEnv;
+    });
+  });
+
+  // ── P5: Read-path coverage ─────────────────────────────────────────────
+
+  describe('getEnrollmentsForFamilyMember', () => {
+    it('returns enrollments for the caller\'s own student', async () => {
+      seed({
+        enrollments: [
+          { id: 'e-1', student_id: CHILD_ID, class_id: CLASS_ID, status: 'pending' },
+          // Another student's enrollment must NOT be returned.
+          { id: 'e-2', student_id: 'other-kid', class_id: CLASS_ID, status: 'confirmed' },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+      const result = await getEnrollmentsForFamilyMember(CHILD_ID);
+
+      expect(result.error).toBeNull();
+      expect(result.data?.map((e) => e.id)).toEqual(['e-1']);
+    });
+
+    it('rejects when the family member does not belong to the caller', async () => {
+      seedFake({
+        authUserId: PARENT_ID,
+        data: {
+          profiles: [PARENT_PROFILE] as unknown as Record<string, unknown>[],
+          family_members: [
+            { ...mockMember, parent_id: 'someone-else' },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getEnrollmentsForFamilyMember(CHILD_ID);
+
+      expect(result.data).toBeNull();
+      expect(result.error).toContain('Family member not found');
+    });
+
+    it('rejects when not authenticated', async () => {
+      seedFake({ authUserId: null });
+      const result = await getEnrollmentsForFamilyMember(CHILD_ID);
+      expect(result.data).toBeNull();
+      expect(result.error).toBe('Not authenticated');
+    });
+  });
+
+  describe('getEnrollmentsForFamily', () => {
+    it('returns enrollments for all children of the parent', async () => {
+      const sibling: SeedFamilyMember = {
+        id: 'sibling-1',
+        parent_id: PARENT_ID,
+        first_name: 'Sib',
+        last_name: 'Test',
+        email: 'sib@test.com',
+        relationship: 'Student',
+      };
+      seedFake({
+        authUserId: PARENT_ID,
+        data: {
+          profiles: [PARENT_PROFILE, TEACHER_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
+          family_members: [mockMember, sibling] as unknown as Record<
+            string,
+            unknown
+          >[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            { id: 'e-kid', student_id: CHILD_ID, class_id: CLASS_ID, status: 'pending' },
+            { id: 'e-sib', student_id: 'sibling-1', class_id: CLASS_ID, status: 'confirmed' },
+            // Outside the family — must not appear.
+            { id: 'e-out', student_id: 'stranger', class_id: CLASS_ID, status: 'confirmed' },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getEnrollmentsForFamily();
+
+      expect(result.error).toBeNull();
+      const ids = (result.data ?? []).map((e) => e.id).sort();
+      expect(ids).toEqual(['e-kid', 'e-sib']);
+    });
+
+    it('returns an empty array when the parent has no family members', async () => {
+      seedFake({
+        authUserId: PARENT_ID,
+        data: {
+          profiles: [PARENT_PROFILE] as unknown as Record<string, unknown>[],
+          family_members: [] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getEnrollmentsForFamily();
+
+      expect(result.error).toBeNull();
+      expect(result.data).toEqual([]);
+    });
+
+    it('rejects when not authenticated', async () => {
+      seedFake({ authUserId: null });
+      const result = await getEnrollmentsForFamily();
+      expect(result.data).toBeNull();
+      expect(result.error).toBe('Not authenticated');
+    });
+  });
+
+  describe('getActiveEnrollmentCount', () => {
+    it('counts only confirmed enrollments across the family', async () => {
+      const sibling: SeedFamilyMember = {
+        id: 'sibling-2',
+        parent_id: PARENT_ID,
+        first_name: 'Sib2',
+        last_name: 'Test',
+        email: 'sib2@test.com',
+        relationship: 'Student',
+      };
+      seedFake({
+        authUserId: PARENT_ID,
+        data: {
+          profiles: [PARENT_PROFILE, TEACHER_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
+          family_members: [mockMember, sibling] as unknown as Record<
+            string,
+            unknown
+          >[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            { id: 'c1', student_id: CHILD_ID, class_id: CLASS_ID, status: 'confirmed' },
+            { id: 'c2', student_id: 'sibling-2', class_id: CLASS_ID, status: 'confirmed' },
+            // Non-confirmed statuses must NOT count.
+            { id: 'p1', student_id: CHILD_ID, class_id: 'other', status: 'pending' },
+            { id: 'w1', student_id: CHILD_ID, class_id: 'other', status: 'waitlisted' },
+            { id: 'x1', student_id: CHILD_ID, class_id: 'other', status: 'cancelled' },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getActiveEnrollmentCount();
+
+      expect(result.error).toBeNull();
+      expect(result.count).toBe(2);
+    });
+
+    it('returns 0 when the family has no children', async () => {
+      seedFake({
+        authUserId: PARENT_ID,
+        data: {
+          profiles: [PARENT_PROFILE] as unknown as Record<string, unknown>[],
+          family_members: [] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getActiveEnrollmentCount();
+
+      expect(result.error).toBeNull();
+      expect(result.count).toBe(0);
+    });
+
+    it('rejects when not authenticated', async () => {
+      seedFake({ authUserId: null });
+      const result = await getActiveEnrollmentCount();
+      expect(result.error).toBe('Not authenticated');
+      expect(result.count).toBe(0);
+    });
+  });
+
+  describe('getClassRoster', () => {
+    // This powers the admin class-detail page — the exact page that surfaced
+    // the original "15/14" issue. The page filters the roster by status to
+    // derive enrolled/waitlisted counts, so the roster must return all three
+    // active statuses (pending, confirmed, waitlisted) and exclude cancelled.
+
+    it('returns confirmed + pending + waitlisted, excludes cancelled, for the class teacher', async () => {
+      seedFake({
+        authUserId: TEACHER_ID,
+        data: {
+          profiles: [PARENT_PROFILE, TEACHER_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            { id: 'r-conf', student_id: 'a', class_id: CLASS_ID, status: 'confirmed', created_at: '2026-01-01' },
+            { id: 'r-pend', student_id: 'b', class_id: CLASS_ID, status: 'pending', created_at: '2026-01-02' },
+            { id: 'r-wait', student_id: 'c', class_id: CLASS_ID, status: 'waitlisted', waitlist_position: 1, created_at: '2026-01-03' },
+            { id: 'r-cxl', student_id: 'd', class_id: CLASS_ID, status: 'cancelled', created_at: '2026-01-04' },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getClassRoster(CLASS_ID);
+
+      expect(result.error).toBeNull();
+      const ids = (result.data ?? []).map((e) => e.id).sort();
+      expect(ids).toEqual(['r-conf', 'r-pend', 'r-wait']);
+    });
+
+    it('grants access to admins even when not the teacher', async () => {
+      seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [
+            ADMIN_PROFILE,
+            PARENT_PROFILE,
+            TEACHER_PROFILE,
+          ] as unknown as Record<string, unknown>[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            { id: 'r-1', student_id: 'x', class_id: CLASS_ID, status: 'confirmed', created_at: '2026-01-01' },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getClassRoster(CLASS_ID);
+
+      expect(result.error).toBeNull();
+      expect(result.data?.length).toBe(1);
+    });
+
+    it('rejects when the caller is neither the teacher nor an admin', async () => {
+      seedFake({
+        authUserId: PARENT_ID,
+        data: {
+          profiles: [PARENT_PROFILE, TEACHER_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getClassRoster(CLASS_ID);
+
+      expect(result.data).toBeNull();
+      expect(result.error).toContain('Access denied');
+    });
+
+    it('returns "Class not found" for a non-existent class id', async () => {
+      seedFake({
+        authUserId: TEACHER_ID,
+        data: {
+          profiles: [PARENT_PROFILE, TEACHER_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
+          classes: [] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getClassRoster('nope');
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBe('Class not found');
+    });
+
+    it('rejects when not authenticated', async () => {
+      seedFake({ authUserId: null });
+      const result = await getClassRoster(CLASS_ID);
+      expect(result.data).toBeNull();
+      expect(result.error).toBe('Not authenticated');
+    });
+  });
+
+  describe('getAllEnrollments', () => {
+    it('returns paginated enrollments for an admin caller', async () => {
+      seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [
+            ADMIN_PROFILE,
+            PARENT_PROFILE,
+            TEACHER_PROFILE,
+          ] as unknown as Record<string, unknown>[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            { id: 'a-1', student_id: CHILD_ID, class_id: CLASS_ID, status: 'pending' },
+            { id: 'a-2', student_id: CHILD_ID, class_id: CLASS_ID, status: 'confirmed' },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getAllEnrollments();
+
+      expect(result.error).toBeNull();
+      expect(result.data).not.toBeNull();
+      expect(result.data?.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('rejects non-admin users with Access denied', async () => {
+      seedFake({
+        authUserId: PARENT_ID,
+        data: {
+          profiles: [PARENT_PROFILE] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getAllEnrollments();
+
+      expect(result.data).toBeNull();
+      expect(result.error).toBe('Access denied');
+    });
+
+    it('rejects when not authenticated', async () => {
+      seedFake({ authUserId: null });
+      const result = await getAllEnrollments();
+      expect(result.data).toBeNull();
+      expect(result.error).toBe('Not authenticated');
     });
   });
 });
