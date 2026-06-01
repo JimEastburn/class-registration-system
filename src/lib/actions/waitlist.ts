@@ -6,21 +6,32 @@ import { sendWaitlistNotification } from '@/lib/email';
 import type { ActionResult, Enrollment } from '@/types';
 
 /**
- * Get the next waitlist position for a class
+ * Map a stable HINT from add_to_waitlist (or related waitlist RPCs) to a
+ * user-facing error message. Falls back to the raw message if the hint is
+ * absent or unrecognized.
  */
-async function getNextWaitlistPosition(classId: string): Promise<number> {
-  const supabase = await createClient();
-
-  const { data } = await supabase
-    .from('enrollments')
-    .select('waitlist_position')
-    .eq('class_id', classId)
-    .eq('status', 'waitlisted')
-    .order('waitlist_position', { ascending: false })
-    .limit(1)
-    .single();
-
-  return (data?.waitlist_position || 0) + 1;
+function mapAddToWaitlistError(err: {
+  message?: string;
+  hint?: string | null;
+}): string {
+  switch (err.hint) {
+    case 'WL_NOT_AUTHORIZED':
+      return 'You do not have permission for this family member';
+    case 'WL_CLASS_NOT_FOUND':
+      return 'Class not found';
+    case 'WL_NOT_PUBLISHED':
+      return 'This class is not available for enrollment';
+    case 'WL_BLOCKED':
+      return "This student has been blocked from the teacher's classes";
+    case 'WL_SEATS_OPEN':
+      return 'This class has open seats — please enroll directly';
+    case 'WL_DUPLICATE_WAITLISTED':
+      return 'This student is already on the waitlist for this class';
+    case 'WL_DUPLICATE_ACTIVE':
+      return 'This student is already enrolled in this class';
+    default:
+      return err.message || 'Failed to add to waitlist';
+  }
 }
 
 /**
@@ -47,7 +58,14 @@ async function logAuditEntry(
 }
 
 /**
- * Add a student to the waitlist for a class
+ * Add a student to the waitlist for a class.
+ *
+ * Auth (cookie-based) is checked at the app layer for a clean error. The
+ * heavy lifting — family ownership, class-publication gate, teacher-block
+ * gate, capacity check (must be full), duplicate rejection, and position
+ * assignment — happens atomically inside the add_to_waitlist RPC under a
+ * FOR UPDATE lock on the class row. See migration
+ * 20260523200000_atomic_add_to_waitlist.sql.
  */
 export async function addToWaitlist(
   classId: string,
@@ -63,10 +81,12 @@ export async function addToWaitlist(
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Verify family member ownership
+  // Pre-check existence + ownership at the app layer so we can return
+  // distinct, friendly errors. The RPC re-checks ownership via auth.uid() for
+  // defense in depth.
   const { data: familyMember, error: familyError } = await supabase
     .from('family_members')
-    .select('id, parent_id, first_name, last_name')
+    .select('id, parent_id')
     .eq('id', familyMemberId)
     .single();
 
@@ -81,47 +101,24 @@ export async function addToWaitlist(
     };
   }
 
-  // Check if already enrolled or waitlisted
-  const { data: existingEnrollment } = await supabase
-    .from('enrollments')
-    .select('id, status')
-    .eq('class_id', classId)
-    .eq('student_id', familyMemberId)
-    .in('status', ['confirmed', 'waitlisted'])
-    .single();
+  const { data: enrollment, error: rpcError } = await supabase.rpc(
+    'add_to_waitlist',
+    { p_class_id: classId, p_student_id: familyMemberId }
+  );
 
-  if (existingEnrollment) {
-    const status =
-      existingEnrollment.status === 'confirmed'
-        ? 'enrolled'
-        : 'already on the waitlist';
+  if (rpcError) {
     return {
       success: false,
-      error: `This student is already ${status} for this class`,
+      error: mapAddToWaitlistError(rpcError),
     };
   }
 
-  // Get the next waitlist position
-  const position = await getNextWaitlistPosition(classId);
-
-  // Create waitlist enrollment
-  const { data: enrollment, error: insertError } = await supabase
-    .from('enrollments')
-    .insert({
-      class_id: classId,
-      student_id: familyMemberId,
-      status: 'waitlisted',
-      waitlist_position: position,
-    })
-    .select()
-    .single();
-
-  if (insertError) {
-    console.error('Error adding to waitlist:', insertError);
+  if (!enrollment) {
     return { success: false, error: 'Failed to add to waitlist' };
   }
 
-  // Log audit entry
+  const position = enrollment.waitlist_position ?? 0;
+
   await logAuditEntry(user.id, 'waitlist.added', enrollment.id, {
     class_id: classId,
     family_member_id: familyMemberId,
@@ -254,82 +251,50 @@ export async function promoteFromWaitlist(
 > {
   const supabase = await createClient();
 
-  // Check if there's capacity (in case this was called manually)
-  const { data: classData, error: classError } = await supabase
-    .from('classes')
-    .select('capacity')
-    .eq('id', classId)
-    .single();
+  // Atomic capacity-aware promotion: the SQL function locks the class row
+  // (FOR UPDATE) and performs the seat-count check, the waitlist UPDATE, and
+  // the position reorder under that lock — serializes with enroll_student()
+  // and with concurrent promote_waitlist_one() calls. See migration
+  // 20260522200000_atomic_promote_waitlist.sql.
+  const { data: promoted, error: rpcError } = await supabase.rpc(
+    'promote_waitlist_one',
+    { p_class_id: classId }
+  );
 
-  if (classError || !classData) {
-    return { success: false, error: 'Class not found' };
-  }
-
-  // Count current enrollments (confirmed + pending both hold a spot)
-  const { count: enrolledCount } = await supabase
-    .from('enrollments')
-    .select('*', { count: 'exact', head: true })
-    .eq('class_id', classId)
-    .in('status', ['confirmed', 'pending']);
-
-  if ((enrolledCount || 0) >= classData.capacity) {
-    // No capacity - nothing to do
-    return { success: true, data: null };
-  }
-
-  // Get the first person on the waitlist (with student + class data for email)
-  const { data: firstInLine, error: waitlistError } = await supabase
-    .from('enrollments')
-    .select('id, student_id, student:family_members(first_name, last_name, parent_id), class:classes(name, start_date)')
-    .eq('class_id', classId)
-    .eq('status', 'waitlisted')
-    .order('waitlist_position', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (waitlistError) {
-    console.error('Error reading waitlist:', waitlistError);
-    return { success: false, error: 'Failed to read waitlist' };
-  }
-
-  if (!firstInLine) {
-    // No one on waitlist
-    return { success: true, data: null };
-  }
-
-  // Promote to pending (awaiting payment)
-  const { error: updateError } = await supabase
-    .from('enrollments')
-    .update({
-      status: 'pending',
-      waitlist_position: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', firstInLine.id);
-
-  if (updateError) {
-    console.error('Error promoting from waitlist:', updateError);
+  if (rpcError) {
+    console.error('Error promoting from waitlist:', rpcError);
     return { success: false, error: 'Failed to promote from waitlist' };
   }
 
-  // Reorder remaining waitlist
-  await reorderWaitlistPositions(classId, 1);
+  if (!promoted) {
+    // No capacity, or no one on the waitlist — caller treats this as a no-op.
+    return { success: true, data: null };
+  }
 
-  // Log audit entry
-  await logAuditEntry(actorUserId, 'waitlist.promoted', firstInLine.id, {
+  // Audit log
+  await logAuditEntry(actorUserId, 'waitlist.promoted', promoted.id, {
     class_id: classId,
-    student_id: firstInLine.student_id,
+    student_id: promoted.student_id,
   });
 
-  // Send notification email to parent
-  const student = firstInLine.student as { first_name: string; last_name: string; parent_id: string } | null;
-  const classInfo = firstInLine.class as { name: string; start_date: string | null } | null;
+  // Notification email — fetch student + parent + class for the message.
+  const { data: student } = await supabase
+    .from('family_members')
+    .select('first_name, last_name, parent_id')
+    .eq('id', promoted.student_id)
+    .single();
 
   if (student?.parent_id) {
     const { data: parent } = await supabase
       .from('profiles')
       .select('email, first_name, last_name')
       .eq('id', student.parent_id)
+      .single();
+
+    const { data: classInfo } = await supabase
+      .from('classes')
+      .select('name, start_date')
+      .eq('id', classId)
       .single();
 
     if (parent) {
@@ -352,8 +317,8 @@ export async function promoteFromWaitlist(
   return {
     success: true,
     data: {
-      enrollmentId: firstInLine.id,
-      familyMemberId: firstInLine.student_id,
+      enrollmentId: promoted.id,
+      familyMemberId: promoted.student_id,
     },
   };
 }

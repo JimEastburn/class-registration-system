@@ -13,6 +13,17 @@
  * - Dot-path filters on joins: .gte('classes.start_date', '2026-01-01')
  */
 
+/**
+ * Build an error matching Supabase's RPC error shape (message, code, hint).
+ * RPC handlers throw this to simulate Postgres RAISE EXCEPTION ... USING HINT.
+ */
+function makeRpcError(message: string, hint: string, code = 'P0001'): Error {
+  const err = new Error(message) as Error & { hint?: string; code?: string };
+  err.hint = hint;
+  err.code = code;
+  return err;
+}
+
 /** Naive singularizer for FK column derivation: classes→class, profiles→profile */
 function singularize(tableName: string): string {
   if (tableName.endsWith('ies')) return tableName.slice(0, -3) + 'y';
@@ -83,6 +94,145 @@ export class SupabaseFake {
       enrollments.push(row);
       return row;
     });
+
+    // Mirrors public.promote_waitlist_one(): atomic, capacity-aware waitlist
+    // promotion. Returns the promoted row (mutated in place) or null when
+    // there is no room or no one waitlisted.
+    this.setRpcHandler('promote_waitlist_one', (args) => {
+      const classId = args.p_class_id as string;
+      const cls = (this.db['classes'] || []).find((c) => c.id === classId);
+      if (!cls) return null;
+      if (!this.db['enrollments']) this.db['enrollments'] = [];
+      const enrollments = this.db['enrollments'];
+      const seatsTaken = enrollments.filter(
+        (e) =>
+          e.class_id === classId &&
+          (e.status === 'confirmed' || e.status === 'pending')
+      ).length;
+      if (seatsTaken >= (cls.capacity as number)) return null;
+      // Lowest waitlist_position, tiebreak by created_at.
+      const waitlistedForClass = enrollments
+        .filter((e) => e.class_id === classId && e.status === 'waitlisted')
+        .sort((a, b) => {
+          const pa = (a.waitlist_position as number | null) ?? Infinity;
+          const pb = (b.waitlist_position as number | null) ?? Infinity;
+          if (pa !== pb) return pa - pb;
+          return String(a.created_at ?? '').localeCompare(
+            String(b.created_at ?? '')
+          );
+        });
+      const target = waitlistedForClass[0];
+      if (!target) return null;
+      const oldPosition = target.waitlist_position as number | null;
+      target.status = 'pending';
+      target.waitlist_position = null;
+      target.updated_at = new Date().toISOString();
+      // Shift remaining waitlisted positions down by one. Bump updated_at so
+      // audit trails reflect the shift (mirrors the SQL function).
+      if (oldPosition != null) {
+        const now = new Date().toISOString();
+        for (const e of enrollments) {
+          if (e.class_id === classId && e.status === 'waitlisted') {
+            const pos = e.waitlist_position as number | null;
+            if (pos != null && pos > oldPosition) {
+              e.waitlist_position = pos - 1;
+              e.updated_at = now;
+            }
+          }
+        }
+      }
+      return target;
+    });
+
+    // Mirrors public.add_to_waitlist(): atomic, capacity-aware, gated by class
+    // publication and teacher blocks. Throws (translated to error response by
+    // rpc()) for the rejected paths; returns the inserted/reactivated row on
+    // success. See migration 20260523200000_atomic_add_to_waitlist.sql.
+    this.setRpcHandler('add_to_waitlist', (args) => {
+      const classId = args.p_class_id as string;
+      const studentId = args.p_student_id as string;
+
+      const cls = (this.db['classes'] || []).find((c) => c.id === classId);
+      if (!cls) throw makeRpcError('Class not found', 'WL_CLASS_NOT_FOUND');
+
+      if (cls.status !== 'published') {
+        throw makeRpcError(
+          'Class is not available for enrollment',
+          'WL_NOT_PUBLISHED'
+        );
+      }
+
+      const teacherId = cls.teacher_id as string | null;
+      const blocked = (this.db['class_blocks'] || []).some(
+        (b) => b.teacher_id === teacherId && b.student_id === studentId
+      );
+      if (blocked) {
+        throw makeRpcError(
+          "This student has been blocked from the teacher's classes",
+          'WL_BLOCKED'
+        );
+      }
+
+      if (!this.db['enrollments']) this.db['enrollments'] = [];
+      const enrollments = this.db['enrollments'];
+
+      const seatsTaken = enrollments.filter(
+        (e) =>
+          e.class_id === classId &&
+          (e.status === 'confirmed' || e.status === 'pending')
+      ).length;
+
+      if (seatsTaken < (cls.capacity as number)) {
+        throw makeRpcError(
+          'Class has open seats — use enroll_student instead',
+          'WL_SEATS_OPEN'
+        );
+      }
+
+      const existing = enrollments.find(
+        (e) => e.student_id === studentId && e.class_id === classId
+      );
+      if (existing && existing.status !== 'cancelled') {
+        if (existing.status === 'waitlisted') {
+          throw makeRpcError(
+            'Student is already on the waitlist',
+            'WL_DUPLICATE_WAITLISTED'
+          );
+        }
+        throw makeRpcError(
+          'Student is already enrolled in this class',
+          'WL_DUPLICATE_ACTIVE'
+        );
+      }
+
+      const maxPos = enrollments
+        .filter((e) => e.class_id === classId && e.status === 'waitlisted')
+        .reduce(
+          (acc, e) => Math.max(acc, (e.waitlist_position as number) ?? 0),
+          0
+        );
+      const position = maxPos + 1;
+
+      const now = new Date().toISOString();
+      if (existing) {
+        existing.status = 'waitlisted';
+        existing.waitlist_position = position;
+        existing.updated_at = now;
+        return existing;
+      }
+      const row = {
+        id: crypto.randomUUID(),
+        student_id: studentId,
+        class_id: classId,
+        status: 'waitlisted',
+        waitlist_position: position,
+        deposit_paid: false,
+        created_at: now,
+        updated_at: now,
+      };
+      enrollments.push(row);
+      return row;
+    });
   }
 
   /* Auth Helpers */
@@ -136,8 +286,21 @@ export class SupabaseFake {
   async rpc(fn: string, args: Record<string, unknown> = {}) {
     const handler = this.rpcHandlers.get(fn);
     if (!handler) return { data: null, error: null };
-    const data = handler(args);
-    return { data, error: null };
+    try {
+      const data = handler(args);
+      return { data, error: null };
+    } catch (e: unknown) {
+      const err = e as Error & { hint?: string; code?: string; details?: string };
+      return {
+        data: null,
+        error: {
+          message: err.message,
+          code: err.code ?? 'P0001',
+          hint: err.hint ?? null,
+          details: err.details ?? null,
+        },
+      };
+    }
   }
 
   /* Test Helpers */

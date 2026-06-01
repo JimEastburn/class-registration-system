@@ -90,32 +90,72 @@ describe('Integration Flow: Waitlist -> Promotion', () => {
       getUser: vi.fn(),
     },
     from: vi.fn(),
-    // Mirrors public.enroll_student(): capacity-aware, waitlist-on-full insert.
+    // Mirrors public.enroll_student() and public.promote_waitlist_one().
     rpc: vi.fn().mockImplementation(
       async (fn: string, args: Record<string, unknown>) => {
-        if (fn !== 'enroll_student') return { data: null, error: null };
-        const classId = args.p_class_id as string;
-        const cls = dbClasses.find((c) => c.id === classId);
-        if (!cls) return { data: null, error: { message: 'Class not found' } };
-        const seatsTaken = dbEnrollments.filter(
-          (e) =>
-            e.class_id === classId &&
-            (e.status === 'confirmed' || e.status === 'pending')
-        ).length;
-        const isFull = seatsTaken >= cls.capacity;
-        const record: MockEnrollment = {
-          id: `enr-${dbEnrollments.length + 1}`,
-          student_id: args.p_student_id as string,
-          class_id: classId,
-          status: isFull ? 'waitlisted' : 'pending',
-          waitlist_position: isFull
-            ? dbEnrollments.filter(
-                (e) => e.class_id === classId && e.status === 'waitlisted'
-              ).length + 1
-            : null,
-        };
-        dbEnrollments.push(record);
-        return { data: record, error: null };
+        if (fn === 'enroll_student') {
+          const classId = args.p_class_id as string;
+          const cls = dbClasses.find((c) => c.id === classId);
+          if (!cls)
+            return { data: null, error: { message: 'Class not found' } };
+          const seatsTaken = dbEnrollments.filter(
+            (e) =>
+              e.class_id === classId &&
+              (e.status === 'confirmed' || e.status === 'pending')
+          ).length;
+          const isFull = seatsTaken >= cls.capacity;
+          const record: MockEnrollment = {
+            id: `enr-${dbEnrollments.length + 1}`,
+            student_id: args.p_student_id as string,
+            class_id: classId,
+            status: isFull ? 'waitlisted' : 'pending',
+            waitlist_position: isFull
+              ? dbEnrollments.filter(
+                  (e) => e.class_id === classId && e.status === 'waitlisted'
+                ).length + 1
+              : null,
+          };
+          dbEnrollments.push(record);
+          return { data: record, error: null };
+        }
+        if (fn === 'promote_waitlist_one') {
+          const classId = args.p_class_id as string;
+          const cls = dbClasses.find((c) => c.id === classId);
+          if (!cls)
+            return { data: null, error: { message: 'Class not found' } };
+          const seatsTaken = dbEnrollments.filter(
+            (e) =>
+              e.class_id === classId &&
+              (e.status === 'confirmed' || e.status === 'pending')
+          ).length;
+          if (seatsTaken >= cls.capacity) return { data: null, error: null };
+          const waitlistedForClass = dbEnrollments
+            .filter((e) => e.class_id === classId && e.status === 'waitlisted')
+            .sort(
+              (a, b) =>
+                (a.waitlist_position ?? Infinity) -
+                (b.waitlist_position ?? Infinity)
+            );
+          const target = waitlistedForClass[0];
+          if (!target) return { data: null, error: null };
+          const oldPosition = target.waitlist_position ?? null;
+          target.status = 'pending';
+          target.waitlist_position = null;
+          if (oldPosition != null) {
+            for (const e of dbEnrollments) {
+              if (
+                e.class_id === classId &&
+                e.status === 'waitlisted' &&
+                e.waitlist_position != null &&
+                e.waitlist_position > oldPosition
+              ) {
+                e.waitlist_position = e.waitlist_position - 1;
+              }
+            }
+          }
+          return { data: target, error: null };
+        }
+        return { data: null, error: null };
       }
     ),
   };

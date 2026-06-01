@@ -552,6 +552,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_to_waitlist: {
+        Args: { p_class_id: string; p_student_id: string }
+        Returns: {
+          class_id: string
+          created_at: string
+          deposit_paid: boolean
+          id: string
+          status: Database["public"]["Enums"]["EnrollmentStatus"]
+          student_id: string
+          updated_at: string
+          waitlist_position: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "enrollments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       enroll_student: {
         Args: { p_class_id: string; p_student_id: string }
         Returns: {
@@ -592,6 +611,25 @@ export type Database = {
       is_teacher_of_student: {
         Args: { check_student_id: string }
         Returns: boolean
+      }
+      promote_waitlist_one: {
+        Args: { p_class_id: string }
+        Returns: {
+          class_id: string
+          created_at: string
+          deposit_paid: boolean
+          id: string
+          status: Database["public"]["Enums"]["EnrollmentStatus"]
+          student_id: string
+          updated_at: string
+          waitlist_position: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "enrollments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       search_class_ids: {
         Args: { search_term: string }

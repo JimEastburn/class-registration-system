@@ -99,7 +99,10 @@ describe('promoteFromWaitlist', () => {
     }
   });
 
-  it('returns error when waitlist lookup fails', async () => {
+  it('returns "Failed to promote from waitlist" when the RPC errors', async () => {
+    // The capacity check, waitlist lookup, and UPDATE all happen inside the
+    // promote_waitlist_one RPC now. To simulate a DB-level failure, override
+    // the fake's rpc dispatch to return an error for that function.
     const fake = seedFake({
       authUserId: PARENT_ID,
       data: {
@@ -110,33 +113,19 @@ describe('promoteFromWaitlist', () => {
       },
     });
 
-    // Intercept the waitlist lookup query and force a DB error
-    const originalFrom = fake.from.bind(fake);
-    fake.from = vi.fn((table: string) => {
-      if (table === 'enrollments') {
-        const qb = originalFrom(table);
-        const originalThen = qb.then.bind(qb);
-        qb.then = (
-          resolve: (result: { data: unknown; error: unknown }) => void,
-          reject?: (err: unknown) => void
-        ) => {
-          // Detect the waitlist-first-in-line query by its select shape
-          if ((qb as unknown as { selectQuery?: string }).selectQuery?.includes('student:family_members')) {
-            resolve({ data: null, error: { message: 'DB blip' } });
-            return;
-          }
-          return originalThen(resolve, reject);
-        };
-        return qb;
+    const originalRpc = fake.rpc.bind(fake);
+    fake.rpc = (async (fn: string, args: Record<string, unknown> = {}) => {
+      if (fn === 'promote_waitlist_one') {
+        return { data: null, error: { message: 'simulated RPC failure' } };
       }
-      return originalFrom(table);
-    }) as unknown as typeof fake.from;
+      return originalRpc(fn, args);
+    }) as unknown as typeof fake.rpc;
 
     const result = await promoteFromWaitlist(CLASS_ID);
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toBe('Failed to read waitlist');
+      expect(result.error).toBe('Failed to promote from waitlist');
     }
   });
 });
@@ -255,6 +244,17 @@ describe('addToWaitlist', () => {
     vi.clearAllMocks();
   });
 
+  // A "filler" confirmed enrollment so capacity=1 is taken and the next caller
+  // legitimately needs to join the waitlist. Without this, the new RPC
+  // correctly rejects with WL_SEATS_OPEN.
+  const FILLER_ENROLLMENT = {
+    id: 'filler-confirmed',
+    student_id: 'other-confirmed-child',
+    class_id: CLASS_ID,
+    status: 'confirmed',
+    waitlist_position: null,
+  };
+
   const seed = (extra: Record<string, Record<string, unknown>[]> = {}) =>
     seedFake({
       authUserId: PARENT_ID,
@@ -262,7 +262,7 @@ describe('addToWaitlist', () => {
         profiles: [PARENT_PROFILE, TEACHER_PROFILE] as unknown as Record<string, unknown>[],
         family_members: [mockMember] as unknown as Record<string, unknown>[],
         classes: [mockClass] as unknown as Record<string, unknown>[],
-        enrollments: [] as unknown as Record<string, unknown>[],
+        enrollments: [FILLER_ENROLLMENT] as unknown as Record<string, unknown>[],
         ...extra,
       },
     });
@@ -283,6 +283,7 @@ describe('addToWaitlist', () => {
   it('appends at max+1 when others are already waitlisted', async () => {
     seed({
       enrollments: [
+        FILLER_ENROLLMENT,
         { id: 'w1', student_id: 'other-1', class_id: CLASS_ID, status: 'waitlisted', waitlist_position: 1 },
         { id: 'w2', student_id: 'other-2', class_id: CLASS_ID, status: 'waitlisted', waitlist_position: 2 },
       ] as unknown as Record<string, unknown>[],
@@ -333,7 +334,24 @@ describe('addToWaitlist', () => {
   it('rejects when the student is already confirmed in the class', async () => {
     seed({
       enrollments: [
+        FILLER_ENROLLMENT,
         { id: 'already', student_id: CHILD_ID, class_id: CLASS_ID, status: 'confirmed' },
+      ] as unknown as Record<string, unknown>[],
+    });
+
+    const result = await addToWaitlist(CLASS_ID, CHILD_ID);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain('already enrolled');
+    }
+  });
+
+  it('rejects when the student is already pending in the class (P0-4)', async () => {
+    seed({
+      enrollments: [
+        FILLER_ENROLLMENT,
+        { id: 'pending-row', student_id: CHILD_ID, class_id: CLASS_ID, status: 'pending', waitlist_position: null },
       ] as unknown as Record<string, unknown>[],
     });
 
@@ -348,6 +366,7 @@ describe('addToWaitlist', () => {
   it('rejects when the student is already on the waitlist', async () => {
     seed({
       enrollments: [
+        FILLER_ENROLLMENT,
         { id: 'already-w', student_id: CHILD_ID, class_id: CLASS_ID, status: 'waitlisted', waitlist_position: 1 },
       ] as unknown as Record<string, unknown>[],
     });
@@ -358,6 +377,67 @@ describe('addToWaitlist', () => {
     if (!result.success) {
       expect(result.error).toContain('already on the waitlist');
     }
+  });
+
+  it('rejects when the class is not published (P1-4)', async () => {
+    seed({
+      classes: [{ ...mockClass, status: 'draft' }] as unknown as Record<string, unknown>[],
+      // No filler needed — the publication gate fires before capacity.
+      enrollments: [] as unknown as Record<string, unknown>[],
+    });
+
+    const result = await addToWaitlist(CLASS_ID, CHILD_ID);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain('not available');
+    }
+  });
+
+  it('rejects when the teacher has blocked the student (P1-5)', async () => {
+    seed({
+      class_blocks: [
+        { id: 'blk-1', teacher_id: TEACHER_ID, student_id: CHILD_ID },
+      ] as unknown as Record<string, unknown>[],
+    });
+
+    const result = await addToWaitlist(CLASS_ID, CHILD_ID);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain('blocked');
+    }
+  });
+
+  it('rejects when the class still has open seats (P0-5)', async () => {
+    // No filler — capacity=1, zero seats taken, seats are open.
+    seed({ enrollments: [] as unknown as Record<string, unknown>[] });
+
+    const result = await addToWaitlist(CLASS_ID, CHILD_ID);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain('open seats');
+    }
+  });
+
+  it('reactivates a previously-cancelled enrollment as waitlisted', async () => {
+    const fake = seed({
+      enrollments: [
+        FILLER_ENROLLMENT,
+        { id: 'cancelled-row', student_id: CHILD_ID, class_id: CLASS_ID, status: 'cancelled', waitlist_position: null },
+      ] as unknown as Record<string, unknown>[],
+    });
+
+    const result = await addToWaitlist(CLASS_ID, CHILD_ID);
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.position).toBe(1);
+    }
+    const row = fake.db.enrollments.find((e) => e.id === 'cancelled-row');
+    expect(row?.status).toBe('waitlisted');
+    expect(row?.waitlist_position).toBe(1);
   });
 });
 
