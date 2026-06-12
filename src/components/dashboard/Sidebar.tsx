@@ -85,6 +85,12 @@ const navItems: NavItem[] = [
     roles: ['teacher', 'super_admin'],
   },
   {
+    href: '/teacher/all-aac-enrollments',
+    label: 'All AAC Enrollments',
+    icon: UserCheck,
+    roles: ['teacher', 'admin', 'super_admin'],
+  },
+  {
     href: '/teacher/profile',
     label: 'Profile',
     icon: User,

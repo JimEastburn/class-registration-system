@@ -17,6 +17,65 @@ interface ClassFilters {
   dayOfWeek?: string;
 }
 
+export interface AllAacEnrollmentReportRow {
+  id: string;
+  className: string;
+  teacherName: string;
+  capacity: number;
+  enrolledCount: number;
+  waitlistedCount: number;
+  block: string;
+  daysOffered: string;
+}
+
+function getScheduleConfigValue(
+  scheduleConfig: unknown,
+  key: 'day' | 'block'
+): string | null {
+  if (
+    scheduleConfig &&
+    typeof scheduleConfig === 'object' &&
+    key in scheduleConfig
+  ) {
+    const value = (scheduleConfig as Record<string, unknown>)[key];
+    return typeof value === 'string' && value.trim() ? value : null;
+  }
+
+  return null;
+}
+
+function formatDaysOffered(day: string | null | undefined): string {
+  switch (day) {
+    case 'Tuesday/Thursday':
+      return 'Tuesday/Thursday';
+    case 'Tuesday':
+      return 'Tuesday only';
+    case 'Thursday':
+      return 'Thursday only';
+    case 'Wednesday':
+      return 'Wednesday only';
+    default:
+      return 'To Be Announced';
+  }
+}
+
+function formatTeacherName(
+  teacher:
+    | {
+        first_name: string | null;
+        last_name: string | null;
+        email: string | null;
+      }
+    | null
+    | undefined
+): string {
+  if (!teacher) return 'Unknown';
+
+  const fullName =
+    `${teacher.first_name ?? ''} ${teacher.last_name ?? ''}`.trim();
+  return fullName || teacher.email || 'Unknown';
+}
+
 /**
  * Get all published classes for browsing
  */
@@ -1062,6 +1121,125 @@ export async function getTeacherClasses(): Promise<
     return { success: true, data: classesWithCounts };
   } catch (err) {
     console.error('Unexpected error in getTeacherClasses:', err);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Get published AAC enrollment totals for teacher/admin read-only reporting.
+ */
+export async function getAllAacEnrollmentReport(): Promise<
+  ActionResult<AllAacEnrollmentReportRow[]>
+> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const allowedRoles = ['teacher', 'admin', 'super_admin'];
+    if (!profile || !allowedRoles.includes(profile.role)) {
+      return { success: false, error: 'Not authorized' };
+    }
+
+    const adminClient = await createAdminClient();
+    const { data: classes, error: classesError } = await adminClient
+      .from('classes')
+      .select(
+        `
+        id,
+        name,
+        capacity,
+        day,
+        block,
+        schedule_config,
+        teacher:profiles!teacher_id (
+          first_name,
+          last_name,
+          email
+        )
+      `
+      )
+      .eq('status', 'published')
+      .order('name', { ascending: true });
+
+    if (classesError) {
+      console.error(
+        'Error fetching AAC enrollment report classes:',
+        classesError
+      );
+      return { success: false, error: classesError.message };
+    }
+
+    const classIds = (classes || []).map((c) => c.id);
+    const enrolledCounts = new Map<string, number>();
+    const waitlistedCounts = new Map<string, number>();
+
+    if (classIds.length > 0) {
+      const { data: enrollments, error: enrollmentsError } = await adminClient
+        .from('enrollments')
+        .select('class_id, status')
+        .in('class_id', classIds)
+        .in('status', ['confirmed', 'pending', 'waitlisted']);
+
+      if (enrollmentsError) {
+        console.error(
+          'Error fetching AAC enrollment report enrollments:',
+          enrollmentsError
+        );
+        return { success: false, error: enrollmentsError.message };
+      }
+
+      (enrollments || []).forEach((enrollment) => {
+        if (
+          enrollment.status === 'confirmed' ||
+          enrollment.status === 'pending'
+        ) {
+          enrolledCounts.set(
+            enrollment.class_id,
+            (enrolledCounts.get(enrollment.class_id) || 0) + 1
+          );
+        } else if (enrollment.status === 'waitlisted') {
+          waitlistedCounts.set(
+            enrollment.class_id,
+            (waitlistedCounts.get(enrollment.class_id) || 0) + 1
+          );
+        }
+      });
+    }
+
+    const rows: AllAacEnrollmentReportRow[] = (classes || []).map((cls) => {
+      const scheduleDay =
+        cls.day || getScheduleConfigValue(cls.schedule_config, 'day');
+      const scheduleBlock =
+        cls.block || getScheduleConfigValue(cls.schedule_config, 'block');
+      const teacher = Array.isArray(cls.teacher) ? cls.teacher[0] : cls.teacher;
+
+      return {
+        id: cls.id,
+        className: cls.name || 'Untitled',
+        teacherName: formatTeacherName(teacher),
+        capacity: cls.capacity || 0,
+        enrolledCount: enrolledCounts.get(cls.id) || 0,
+        waitlistedCount: waitlistedCounts.get(cls.id) || 0,
+        block: scheduleBlock || 'To Be Announced',
+        daysOffered: formatDaysOffered(scheduleDay),
+      };
+    });
+
+    return { success: true, data: rows };
+  } catch (err) {
+    console.error('Unexpected error in getAllAacEnrollmentReport:', err);
     return { success: false, error: 'An unexpected error occurred' };
   }
 }

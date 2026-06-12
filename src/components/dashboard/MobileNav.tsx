@@ -31,6 +31,7 @@ const navItemsByRole: Record<UserRole, NavItem[]> = {
   teacher: [
     { href: '/teacher', label: 'Dashboard' },
     { href: '/teacher/classes', label: 'My Classes' },
+    { href: '/teacher/all-aac-enrollments', label: 'All AAC Enrollments' },
     // Parent View removed - added dynamically if isParent
   ],
   student: [
@@ -41,6 +42,7 @@ const navItemsByRole: Record<UserRole, NavItem[]> = {
     { href: '/admin', label: 'Dashboard' },
     { href: '/admin/classes', label: 'Classes' },
     { href: '/admin/enrollments', label: 'Enrollments' },
+    { href: '/teacher/all-aac-enrollments', label: 'All AAC Enrollments' },
     // Parent View removed - added dynamically if isParent
   ],
   class_scheduler: [
@@ -51,6 +53,7 @@ const navItemsByRole: Record<UserRole, NavItem[]> = {
     { href: '/admin', label: 'Admin' },
     { href: '/class-scheduler', label: 'Scheduler' },
     { href: '/teacher', label: 'Teacher' },
+    { href: '/teacher/all-aac-enrollments', label: 'All AAC Enrollments' },
     { href: '/parent', label: 'Parent' },
   ],
 };
