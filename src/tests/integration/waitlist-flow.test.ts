@@ -31,6 +31,11 @@ vi.mock('@/lib/email', () => ({
   sendWaitlistNotification: vi.fn(),
 }));
 
+vi.mock('@/lib/notifications/teacher-enrollment', () => ({
+  notifyTeacherOfEnrollment: vi.fn().mockResolvedValue(undefined),
+  notifyTeacherOfUnenrollment: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Simple types for mock DB
 type MockProfile = {
   id: string;

@@ -532,3 +532,171 @@ export async function sendScheduleChangeNotification(
     return { success: false, error };
   }
 }
+
+export interface TeacherEnrollmentEmailData {
+  teacherEmail: string;
+  teacherName: string;
+  studentName: string;
+  className: string;
+}
+
+export async function sendTeacherEnrollmentNotification(
+  data: TeacherEnrollmentEmailData
+) {
+  if (!resend) {
+    console.log('Email not configured - skipping teacher enrollment notification');
+    return { success: false, error: 'Email not configured' };
+  }
+
+  try {
+    const result = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: data.teacherEmail,
+      subject: `New Enrollment: ${data.studentName} joined ${data.className}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f4f4f5; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .card { background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+            .header { text-align: center; margin-bottom: 24px; }
+            .header h1 { color: #16a34a; margin: 0; font-size: 24px; }
+            .success-badge { display: inline-block; background: #dcfce7; color: #16a34a; padding: 8px 16px; border-radius: 20px; font-weight: 600; margin-top: 12px; }
+            .details { background: #f9fafb; border-radius: 8px; padding: 20px; margin: 24px 0; }
+            .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+            .detail-row:last-child { border-bottom: none; }
+            .detail-label { color: #6b7280; }
+            .detail-value { font-weight: 600; color: #1f2937; }
+            .footer { text-align: center; color: #9ca3af; font-size: 14px; margin-top: 24px; }
+            .cta { display: inline-block; background: linear-gradient(to right, #16a34a, #4C7C92); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 16px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="card">
+              <div class="header">
+                <h1>${APP_NAME}</h1>
+                <div class="success-badge">New Enrollment</div>
+              </div>
+
+              <p>Hi ${data.teacherName},</p>
+              <p><strong>${data.studentName}</strong> has enrolled in your class <strong>${data.className}</strong>.</p>
+
+              <div class="details">
+                <div class="detail-row">
+                  <span class="detail-label">Student</span>
+                  <span class="detail-value">${data.studentName}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Class</span>
+                  <span class="detail-value">${data.className}</span>
+                </div>
+              </div>
+
+              <div style="text-align: center;">
+                <a href="${process.env.NEXT_PUBLIC_APP_URL}/teacher/classes" class="cta">View Roster</a>
+              </div>
+            </div>
+
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} ${APP_NAME}. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Failed to send teacher enrollment notification:', error);
+    return { success: false, error };
+  }
+}
+
+export interface TeacherUnenrollmentEmailData {
+  teacherEmail: string;
+  teacherName: string;
+  studentName: string;
+  className: string;
+}
+
+export async function sendTeacherUnenrollmentNotification(
+  data: TeacherUnenrollmentEmailData
+) {
+  if (!resend) {
+    console.log('Email not configured - skipping teacher unenrollment notification');
+    return { success: false, error: 'Email not configured' };
+  }
+
+  try {
+    const result = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      to: data.teacherEmail,
+      subject: `Enrollment Removed: ${data.studentName} left ${data.className}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f4f4f5; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .card { background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+            .header { text-align: center; margin-bottom: 24px; }
+            .header h1 { color: #d97706; margin: 0; font-size: 24px; }
+            .alert-badge { display: inline-block; background: #fef3c7; color: #d97706; padding: 8px 16px; border-radius: 20px; font-weight: 600; margin-top: 12px; }
+            .details { background: #f9fafb; border-radius: 8px; padding: 20px; margin: 24px 0; }
+            .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+            .detail-row:last-child { border-bottom: none; }
+            .detail-label { color: #6b7280; }
+            .detail-value { font-weight: 600; color: #1f2937; }
+            .footer { text-align: center; color: #9ca3af; font-size: 14px; margin-top: 24px; }
+            .cta { display: inline-block; background: linear-gradient(to right, #d97706, #4C7C92); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 16px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="card">
+              <div class="header">
+                <h1>${APP_NAME}</h1>
+                <div class="alert-badge">Enrollment Removed</div>
+              </div>
+
+              <p>Hi ${data.teacherName},</p>
+              <p><strong>${data.studentName}</strong> is no longer enrolled in your class <strong>${data.className}</strong>.</p>
+
+              <div class="details">
+                <div class="detail-row">
+                  <span class="detail-label">Student</span>
+                  <span class="detail-value">${data.studentName}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Class</span>
+                  <span class="detail-value">${data.className}</span>
+                </div>
+              </div>
+
+              <div style="text-align: center;">
+                <a href="${process.env.NEXT_PUBLIC_APP_URL}/teacher/classes" class="cta">View Roster</a>
+              </div>
+            </div>
+
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} ${APP_NAME}. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    });
+
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Failed to send teacher unenrollment notification:', error);
+    return { success: false, error };
+  }
+}

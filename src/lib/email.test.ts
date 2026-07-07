@@ -145,4 +145,82 @@ describe('Email Templates', () => {
       );
     });
   });
+
+  describe('sendTeacherEnrollmentNotification', () => {
+    const data = {
+      teacherEmail: 'teacher@test.com',
+      teacherName: 'Ms. Rivera',
+      studentName: 'Kid Test',
+      className: 'Art 101',
+    };
+
+    it('emails the teacher with the student and class', async () => {
+      const { sendTeacherEnrollmentNotification } = await import('./email');
+
+      const result = await sendTeacherEnrollmentNotification(data);
+
+      expect(result.success).toBe(true);
+      expect(mockSend).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: data.teacherEmail,
+          subject: 'New Enrollment: Kid Test joined Art 101',
+        })
+      );
+      const htmlCall = mockSend.mock.calls[0][0].html;
+      expect(htmlCall).toContain('Kid Test');
+      expect(htmlCall).toContain('Art 101');
+      expect(htmlCall).toContain('Ms. Rivera');
+    });
+
+    it('handles missing API key', async () => {
+      vi.resetModules();
+      delete process.env.RESEND_API_KEY;
+
+      const { sendTeacherEnrollmentNotification } = await import('./email');
+
+      const result = await sendTeacherEnrollmentNotification(data);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Email not configured');
+      expect(mockSend).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('sendTeacherUnenrollmentNotification', () => {
+    const data = {
+      teacherEmail: 'teacher@test.com',
+      teacherName: 'Ms. Rivera',
+      studentName: 'Kid Test',
+      className: 'Art 101',
+    };
+
+    it('emails the teacher about the removal', async () => {
+      const { sendTeacherUnenrollmentNotification } = await import('./email');
+
+      const result = await sendTeacherUnenrollmentNotification(data);
+
+      expect(result.success).toBe(true);
+      expect(mockSend).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: data.teacherEmail,
+          subject: 'Enrollment Removed: Kid Test left Art 101',
+        })
+      );
+      const htmlCall = mockSend.mock.calls[0][0].html;
+      expect(htmlCall).toContain('Kid Test');
+      expect(htmlCall).toContain('Art 101');
+      expect(htmlCall).toContain('no longer enrolled');
+    });
+
+    it('handles missing API key', async () => {
+      vi.resetModules();
+      delete process.env.RESEND_API_KEY;
+
+      const { sendTeacherUnenrollmentNotification } = await import('./email');
+
+      const result = await sendTeacherUnenrollmentNotification(data);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Email not configured');
+      expect(mockSend).not.toHaveBeenCalled();
+    });
+  });
 });

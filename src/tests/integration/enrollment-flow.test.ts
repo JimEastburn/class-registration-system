@@ -23,6 +23,13 @@ vi.mock('@/lib/email', () => ({
   sendWaitlistNotification: vi.fn(),
 }));
 
+// Mock teacher notifications (referenced in enrollments); avoids constructing a
+// real Supabase client for the fire-and-forget notification.
+vi.mock('@/lib/notifications/teacher-enrollment', () => ({
+  notifyTeacherOfEnrollment: vi.fn().mockResolvedValue(undefined),
+  notifyTeacherOfUnenrollment: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Simple types for mock DB
 type MockProfile = {
   id: string;

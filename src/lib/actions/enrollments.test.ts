@@ -19,6 +19,10 @@ import { promoteFromWaitlist } from '@/lib/actions/waitlist';
 import { checkStudentScheduleConflict } from '@/lib/logic/scheduling';
 import { logAuditAction } from '@/lib/actions/audit';
 import {
+  notifyTeacherOfEnrollment,
+  notifyTeacherOfUnenrollment,
+} from '@/lib/notifications/teacher-enrollment';
+import {
   seedFake,
   PARENT_PROFILE,
   TEACHER_PROFILE,
@@ -38,6 +42,10 @@ vi.mock('@/lib/actions/audit', () => ({
 }));
 vi.mock('@/lib/email', () => ({
   sendEnrollmentConfirmation: vi.fn(),
+}));
+vi.mock('@/lib/notifications/teacher-enrollment', () => ({
+  notifyTeacherOfEnrollment: vi.fn().mockResolvedValue(undefined),
+  notifyTeacherOfUnenrollment: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('@/lib/actions/waitlist', () => ({
   promoteFromWaitlist: vi.fn().mockResolvedValue({ success: true, data: null }),
@@ -118,6 +126,29 @@ describe('Enrollment Actions', () => {
       );
       expect(newEnrollment).toBeDefined();
       expect(newEnrollment!.status).toBe('pending');
+    });
+
+    it('notifies the teacher when a pending seat is created', async () => {
+      seed();
+      await enrollStudent({ classId: CLASS_ID, familyMemberId: CHILD_ID });
+      expect(notifyTeacherOfEnrollment).toHaveBeenCalledWith(CLASS_ID, CHILD_ID);
+    });
+
+    it('does not notify the teacher when the student is waitlisted', async () => {
+      seed({
+        enrollments: Array.from({ length: 10 }, (_, i) => ({
+          id: `enr-${i}`,
+          student_id: `other-${i}`,
+          class_id: CLASS_ID,
+          status: 'confirmed',
+        })) as unknown as Record<string, unknown>[],
+      });
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+      expect(result.status).toBe('waitlisted');
+      expect(notifyTeacherOfEnrollment).not.toHaveBeenCalled();
     });
 
     it('waitlists if class is full', async () => {
@@ -448,6 +479,61 @@ describe('Enrollment Actions', () => {
       expect(result.success).toBe(true);
       expect(promoteFromWaitlist).toHaveBeenCalledWith(CLASS_ID);
     });
+
+    it('logs the un-enrollment and notifies the teacher when a parent cancels a pending seat', async () => {
+      seed({
+        enrollments: [
+          {
+            id: 'enr-cxl',
+            student_id: CHILD_ID,
+            class_id: CLASS_ID,
+            status: 'pending',
+          },
+        ] as unknown as Record<string, unknown>[],
+      });
+      const result = await cancelEnrollment('enr-cxl');
+      expect(result.success).toBe(true);
+      // The hard-delete path has no DB trigger, so the action must log it itself.
+      expect(logAuditAction).toHaveBeenCalledWith(
+        PARENT_ID,
+        'parent_cancel_enrollment',
+        'enrollment',
+        'enr-cxl',
+        expect.objectContaining({
+          student_id: CHILD_ID,
+          class_id: CLASS_ID,
+          previous_status: 'pending',
+        })
+      );
+      expect(notifyTeacherOfUnenrollment).toHaveBeenCalledWith(
+        CLASS_ID,
+        CHILD_ID
+      );
+    });
+
+    it('logs but does not email the teacher when a waitlisted seat is cancelled', async () => {
+      seed({
+        enrollments: [
+          {
+            id: 'enr-wl',
+            student_id: CHILD_ID,
+            class_id: CLASS_ID,
+            status: 'waitlisted',
+            waitlist_position: 1,
+          },
+        ] as unknown as Record<string, unknown>[],
+      });
+      const result = await cancelEnrollment('enr-wl');
+      expect(result.success).toBe(true);
+      expect(logAuditAction).toHaveBeenCalledWith(
+        PARENT_ID,
+        'parent_cancel_enrollment',
+        'enrollment',
+        'enr-wl',
+        expect.objectContaining({ previous_status: 'waitlisted' })
+      );
+      expect(notifyTeacherOfUnenrollment).not.toHaveBeenCalled();
+    });
   });
 
   describe('updateDepositPaid', () => {
@@ -571,6 +657,41 @@ describe('Enrollment Actions', () => {
       });
       expect(result.success).toBe(true);
       expect(promoteFromWaitlist).toHaveBeenCalledWith(CLASS_ID);
+    });
+
+    it('notifies the teacher when cancelling a confirmed seat', async () => {
+      seedFake({
+        authUserId: ADMIN_ID,
+        data: {
+          profiles: [
+            {
+              id: ADMIN_ID,
+              first_name: 'Admin',
+              last_name: 'User',
+              role: 'admin',
+            },
+          ] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            {
+              id: 'enr-admin-cancel',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+            },
+          ] as unknown as Record<string, unknown>[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await adminCancelEnrollment('enr-admin-cancel', {
+        refund: false,
+      });
+      expect(result.success).toBe(true);
+      expect(notifyTeacherOfUnenrollment).toHaveBeenCalledWith(
+        CLASS_ID,
+        CHILD_ID
+      );
     });
   });
 

@@ -20,6 +20,11 @@ vi.mock('@/lib/email', () => ({
   sendCancellationNotification: vi.fn(),
 }));
 
+vi.mock('@/lib/notifications/teacher-enrollment', () => ({
+  notifyTeacherOfEnrollment: vi.fn().mockResolvedValue(undefined),
+  notifyTeacherOfUnenrollment: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('@/lib/actions/waitlist', () => ({
   promoteFromWaitlist: vi.fn().mockResolvedValue({ success: true, data: null }),
 }));

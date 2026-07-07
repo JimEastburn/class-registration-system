@@ -3,6 +3,10 @@
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logAuditAction } from '@/lib/actions/audit';
+import {
+  notifyTeacherOfEnrollment,
+  notifyTeacherOfUnenrollment,
+} from '@/lib/notifications/teacher-enrollment';
 import type {
   ClassStatus,
   Enrollment,
@@ -382,6 +386,14 @@ export async function enrollStudent(input: EnrollStudentInput): Promise<{
     revalidatePath('/parent/browse');
     revalidatePath(`/parent/browse/${input.classId}`);
 
+    // Notify the teacher that a student joined their class. Creation (status
+    // 'pending') is the real "enrolled" signal here — payment confirmation is
+    // not in use — so we notify on the seat, not on the waitlist. Best-effort:
+    // failures are swallowed inside the helper and never block enrollment.
+    if (data.status === 'pending') {
+      await notifyTeacherOfEnrollment(input.classId, input.familyMemberId);
+    }
+
     return {
       data,
       status: data.status as 'pending' | 'waitlisted',
@@ -418,9 +430,7 @@ export async function cancelEnrollment(
                 status,
                 class_id,
                 student_id,
-                family_member:family_members (
-                    parent_id
-                )
+                family_member:family_members(parent_id)
             `
       )
       .eq('id', enrollmentId)
@@ -472,6 +482,30 @@ export async function cancelEnrollment(
 
     revalidatePath('/parent');
     revalidatePath('/parent/browse');
+
+    // Record the un-enrollment. This path hard-deletes the row, and no
+    // status-change trigger fires on DELETE, so without this log parent
+    // self-cancellations are invisible and permanently uncountable.
+    await logAuditAction(
+      user.id,
+      'parent_cancel_enrollment',
+      'enrollment',
+      enrollmentId,
+      {
+        student_id: enrollment.student_id,
+        class_id: enrollment.class_id,
+        previous_status: enrollment.status,
+      }
+    );
+
+    // Notify the teacher of the removal — only for an actual seat, not a
+    // waitlist withdrawal. Best-effort; failures never block cancellation.
+    if (enrollment.status === 'pending' || enrollment.status === 'confirmed') {
+      await notifyTeacherOfUnenrollment(
+        enrollment.class_id,
+        enrollment.student_id
+      );
+    }
 
     // Promote from waitlist if there are waitlisted students
     await promoteFromWaitlist(enrollment.class_id);
@@ -795,6 +829,15 @@ export async function adminCancelEnrollment(
       enrollmentId,
       { refund: options.refund }
     );
+
+    // Notify the teacher of the removal — only for an actual seat, not a
+    // waitlist withdrawal. Best-effort; never blocks the cancellation.
+    if (enrollment.status === 'pending' || enrollment.status === 'confirmed') {
+      await notifyTeacherOfUnenrollment(
+        enrollment.class_id,
+        enrollment.student_id
+      );
+    }
 
     // Promote waitlisted student if not using refund path
     // (refund path handles its own promotion via processRefund → promoteFromWaitlist)
@@ -1129,6 +1172,10 @@ export async function adminEnrollStudent(
       revalidatePath(`/parent/browse/${input.classId}`);
       revalidatePath(`/admin/classes/${input.classId}`);
 
+      if ((updated as Enrollment).status === 'pending') {
+        await notifyTeacherOfEnrollment(input.classId, input.studentId);
+      }
+
       return {
         data: updated as Enrollment,
         status: 'reactivated',
@@ -1221,6 +1268,10 @@ export async function adminEnrollStudent(
     revalidatePath('/parent/browse');
     revalidatePath(`/parent/browse/${input.classId}`);
     revalidatePath(`/admin/classes/${input.classId}`);
+
+    if (data.status === 'pending') {
+      await notifyTeacherOfEnrollment(input.classId, input.studentId);
+    }
 
     return {
       data: data as Enrollment,

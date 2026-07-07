@@ -8,6 +8,7 @@ import {
   sendEnrollmentConfirmation,
   sendWaitlistNotification,
 } from '@/lib/email';
+import { notifyTeacherOfUnenrollment } from '@/lib/notifications/teacher-enrollment';
 import { format } from 'date-fns';
 
 // Create admin client lazily to avoid build-time errors
@@ -231,10 +232,10 @@ export async function POST(request: Request) {
 
         // Cancel Enrollment and Handle Waitlist
         if (payment.enrollment_id) {
-          // Get class_id first
+          // Get class_id and student_id first
           const { data: enrollmentData } = await supabaseAdmin
             .from('enrollments')
-            .select('class_id')
+            .select('class_id, student_id')
             .eq('id', payment.enrollment_id)
             .single();
 
@@ -242,6 +243,14 @@ export async function POST(request: Request) {
             .from('enrollments')
             .update({ status: 'cancelled' })
             .eq('id', payment.enrollment_id);
+
+          // Notify the teacher that a paid student was removed via refund.
+          if (enrollmentData?.class_id && enrollmentData.student_id) {
+            await notifyTeacherOfUnenrollment(
+              enrollmentData.class_id,
+              enrollmentData.student_id
+            );
+          }
 
           // Promote from Waitlist (Duplicate logic from refunds.ts, but handled by system/webhook)
           if (enrollmentData?.class_id) {

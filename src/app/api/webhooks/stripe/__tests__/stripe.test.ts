@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { POST } from '../route';
 import { stripe } from '@/lib/stripe';
 import { sendPaymentReceipt } from '@/lib/email';
+import { notifyTeacherOfUnenrollment } from '@/lib/notifications/teacher-enrollment';
 import { createClient } from '@supabase/supabase-js';
 
 // Mock the dependencies
@@ -26,6 +27,10 @@ vi.mock('@/lib/zoho', () => ({
 vi.mock('@/lib/email', () => ({
   sendPaymentReceipt: vi.fn().mockResolvedValue({ success: true }),
   sendEnrollmentConfirmation: vi.fn().mockResolvedValue({ success: true }),
+}));
+
+vi.mock('@/lib/notifications/teacher-enrollment', () => ({
+  notifyTeacherOfUnenrollment: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('next/headers', () => ({
@@ -281,6 +286,7 @@ describe('Stripe Webhook API Route', () => {
           id: 'enroll123',
           status: 'confirmed',
           class_id: 'class1',
+          student_id: 'student1',
         },
       ],
       profiles: [],
@@ -299,6 +305,12 @@ describe('Stripe Webhook API Route', () => {
     expect(data.received).toBe(true);
     expect(fakeSupabase.getTable('payments')[0].status).toBe('refunded');
     expect(fakeSupabase.getTable('enrollments')[0].status).toBe('cancelled');
+
+    // The teacher is notified that a paid student was removed via refund.
+    expect(notifyTeacherOfUnenrollment).toHaveBeenCalledWith(
+      'class1',
+      'student1'
+    );
 
     // Verify Zoho refund sync was triggered
     const { syncRefundToZoho } = await import('@/lib/zoho');
