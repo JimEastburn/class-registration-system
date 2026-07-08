@@ -20,7 +20,6 @@ import {
 import { Trash2, ArrowUp, Info } from 'lucide-react';
 import { cancelEnrollment } from '@/lib/actions/enrollments';
 import { promoteWaitlistEntryAsAdmin } from '@/lib/actions/waitlist';
-import { calculateAge } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
@@ -119,7 +118,7 @@ export default function AdminRosterTable({
           <TableHeader>
             <TableRow>
               <TableHead>Student</TableHead>
-              <TableHead>Age</TableHead>
+              <TableHead>Grade</TableHead>
               <TableHead>Parent</TableHead>
               <TableHead>Parent Contact</TableHead>
               <TableHead>Status</TableHead>
@@ -146,10 +145,8 @@ export default function AdminRosterTable({
                       <span className="text-destructive ml-2">(Blocked)</span>
                     )}
                   </TableCell>
-                  <TableCell>
-                    {enrollment.student.dob
-                      ? calculateAge(enrollment.student.dob)
-                      : '—'}
+                  <TableCell className="capitalize">
+                    {enrollment.student.grade ?? '—'}
                   </TableCell>
                   <TableCell>
                     {enrollment.student.parent
