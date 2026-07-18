@@ -26,6 +26,8 @@ CREATE TABLE public.volunteer_roles (
   CONSTRAINT volunteer_roles_name_trimmed CHECK (name = btrim(name) AND length(name) > 0)
 );
 
+ALTER TABLE public.volunteer_roles ENABLE ROW LEVEL SECURITY;
+
 CREATE UNIQUE INDEX volunteer_roles_name_lower_key
 ON public.volunteer_roles (lower(name));
 
@@ -41,6 +43,8 @@ CREATE TABLE public.volunteer_blocks (
   CONSTRAINT volunteer_blocks_name_trimmed CHECK (name = btrim(name) AND length(name) > 0)
 );
 
+ALTER TABLE public.volunteer_blocks ENABLE ROW LEVEL SECURITY;
+
 CREATE UNIQUE INDEX volunteer_blocks_name_lower_key
 ON public.volunteer_blocks (lower(name));
 
@@ -55,6 +59,8 @@ CREATE TABLE public.volunteer_slots (
   UNIQUE (role_id, block_id),
   UNIQUE (id, block_id)
 );
+
+ALTER TABLE public.volunteer_slots ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX volunteer_slots_role_id_idx
 ON public.volunteer_slots (role_id);
@@ -77,6 +83,8 @@ CREATE TABLE public.volunteer_signups (
   UNIQUE (slot_id),
   UNIQUE (user_id, block_id)
 );
+
+ALTER TABLE public.volunteer_signups ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX volunteer_signups_user_id_idx
 ON public.volunteer_signups (user_id);
@@ -331,11 +339,6 @@ BEGIN
   WHERE id = adjacent_id;
 END;
 $function$;
-
-ALTER TABLE public.volunteer_roles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.volunteer_blocks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.volunteer_slots ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.volunteer_signups ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Authenticated users can read volunteer roles"
 ON public.volunteer_roles FOR SELECT
