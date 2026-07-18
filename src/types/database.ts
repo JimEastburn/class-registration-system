@@ -515,6 +515,132 @@ export type Database = {
         }
         Relationships: []
       }
+      volunteer_blocks: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      volunteer_roles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      volunteer_signups: {
+        Row: {
+          block_id: string
+          created_at: string
+          display_name: string
+          id: string
+          slot_id: string
+          user_id: string
+        }
+        Insert: {
+          block_id?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          slot_id: string
+          user_id?: string
+        }
+        Update: {
+          block_id?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          slot_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_signups_slot_block_fkey"
+            columns: ["slot_id", "block_id"]
+            isOneToOne: false
+            referencedRelation: "volunteer_slots"
+            referencedColumns: ["id", "block_id"]
+          },
+          {
+            foreignKeyName: "volunteer_signups_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      volunteer_slots: {
+        Row: {
+          block_id: string
+          created_at: string
+          id: string
+          role_id: string
+        }
+        Insert: {
+          block_id: string
+          created_at?: string
+          id?: string
+          role_id: string
+        }
+        Update: {
+          block_id?: string
+          created_at?: string
+          id?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_slots_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "volunteer_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_slots_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "volunteer_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           description: string | null
@@ -608,6 +734,15 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_volunteer_admin: { Args: never; Returns: boolean }
+      move_volunteer_block: {
+        Args: { p_block_id: string; p_direction: string }
+        Returns: undefined
+      }
+      move_volunteer_role: {
+        Args: { p_direction: string; p_role_id: string }
+        Returns: undefined
+      }
       is_teacher_of_student: {
         Args: { check_student_id: string }
         Returns: boolean

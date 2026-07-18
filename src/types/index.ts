@@ -110,8 +110,10 @@ export interface ScheduleConfig {
  */
 type ClassRow = Database['public']['Tables']['classes']['Row'];
 
-export interface Class
-  extends Omit<ClassRow, 'schedule_config' | 'status' | 'age_display_mode' | 'schedule_display_mode'> {
+export interface Class extends Omit<
+  ClassRow,
+  'schedule_config' | 'status' | 'age_display_mode' | 'schedule_display_mode'
+> {
   schedule_config: ScheduleConfig | null;
   status: ClassStatus;
   age_display_mode: 'age_range' | 'pills' | 'both';
@@ -238,6 +240,50 @@ export interface EnrollmentWithDetails extends Enrollment {
  */
 export interface FamilyMemberWithEnrollments extends FamilyMember {
   enrollments: Enrollment[];
+}
+
+// =============================================================================
+// Volunteer Board Types
+// =============================================================================
+
+export interface VolunteerRole {
+  id: string;
+  name: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VolunteerBlock {
+  id: string;
+  name: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VolunteerSlot {
+  id: string;
+  role_id: string;
+  block_id: string;
+  created_at: string;
+}
+
+export interface VolunteerSignup {
+  id: string;
+  slot_id: string;
+  block_id: string;
+  user_id: string;
+  display_name: string;
+  created_at: string;
+}
+
+export interface VolunteerBoardData {
+  roles: VolunteerRole[];
+  blocks: VolunteerBlock[];
+  slots: VolunteerSlot[];
+  signups: VolunteerSignup[];
+  currentUserId: string;
 }
 
 // =============================================================================

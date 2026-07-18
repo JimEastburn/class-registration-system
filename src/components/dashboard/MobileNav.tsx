@@ -23,34 +23,42 @@ interface NavItem {
  */
 const navItemsByRole: Record<UserRole, NavItem[]> = {
   parent: [
+    { href: '/volunteer', label: 'Volunteer Board' },
     { href: '/parent', label: 'Dashboard' },
     { href: '/parent/family', label: 'My Family' },
     { href: '/parent/browse', label: 'Browse Classes' },
     { href: '/parent/enrollments', label: 'Enrollments' },
   ],
   teacher: [
+    { href: '/volunteer', label: 'Volunteer Board' },
     { href: '/teacher', label: 'Dashboard' },
     { href: '/teacher/classes', label: 'My Classes' },
     { href: '/teacher/all-aac-enrollments', label: 'All AAC Enrollments' },
     // Parent View removed - added dynamically if isParent
   ],
   student: [
+    { href: '/volunteer', label: 'Volunteer Board' },
     { href: '/student', label: 'Dashboard' },
     { href: '/student/schedule', label: 'My Schedule' },
   ],
   admin: [
+    { href: '/volunteer', label: 'Volunteer Board' },
     { href: '/admin', label: 'Dashboard' },
     { href: '/admin/classes', label: 'Classes' },
     { href: '/admin/enrollments', label: 'Enrollments' },
+    { href: '/admin/volunteers', label: 'Volunteer Config' },
     { href: '/teacher/all-aac-enrollments', label: 'All AAC Enrollments' },
     // Parent View removed - added dynamically if isParent
   ],
   class_scheduler: [
+    { href: '/volunteer', label: 'Volunteer Board' },
     { href: '/class-scheduler', label: 'Dashboard' },
     { href: '/class-scheduler/calendar', label: 'Calendar' },
   ],
   super_admin: [
+    { href: '/volunteer', label: 'Volunteer Board' },
     { href: '/admin', label: 'Admin' },
+    { href: '/admin/volunteers', label: 'Volunteer Config' },
     { href: '/class-scheduler', label: 'Scheduler' },
     { href: '/teacher', label: 'Teacher' },
     { href: '/teacher/all-aac-enrollments', label: 'All AAC Enrollments' },

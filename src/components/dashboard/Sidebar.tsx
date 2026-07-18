@@ -15,6 +15,7 @@ import {
   Shield,
   CalendarClock,
   User,
+  HeartHandshake,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { UserRole } from '@/types';
@@ -37,6 +38,22 @@ interface NavItem {
  * Each item specifies which roles can see it.
  */
 const navItems: NavItem[] = [
+  // Shared Volunteer Items
+  {
+    href: '/volunteer',
+    label: 'Volunteer Board',
+    icon: HeartHandshake,
+    roles: [
+      'parent',
+      'teacher',
+      'student',
+      'admin',
+      'class_scheduler',
+      'super_admin',
+    ],
+    exact: true,
+  },
+
   // Parent Portal Items
   {
     href: '/parent',
@@ -163,6 +180,12 @@ const navItems: NavItem[] = [
     roles: ['admin', 'super_admin'],
   },
   {
+    href: '/admin/volunteers',
+    label: 'Volunteer Configuration',
+    icon: HeartHandshake,
+    roles: ['admin', 'super_admin'],
+  },
+  {
     href: '/admin/profile',
     label: 'Profile',
     icon: User,
@@ -230,6 +253,9 @@ export function Sidebar({
   const schedulerItems = filteredNavItems.filter((item) =>
     item.href.startsWith('/class-scheduler')
   );
+  const volunteerItems = filteredNavItems.filter((item) =>
+    item.href.startsWith('/volunteer')
+  );
 
   return (
     <aside
@@ -250,6 +276,15 @@ export function Sidebar({
         className="flex-1 overflow-y-auto px-3 py-4"
         data-testid="sidebar-nav"
       >
+        {/* Volunteer Section */}
+        {volunteerItems.length > 0 && (
+          <NavSection
+            title="Volunteer"
+            items={volunteerItems}
+            pathname={pathname}
+          />
+        )}
+
         {/* Parent Portal Section */}
         {parentItems.length > 0 && (
           <NavSection
