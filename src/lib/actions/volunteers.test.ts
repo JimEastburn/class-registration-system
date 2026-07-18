@@ -4,6 +4,7 @@ import {
   claimVolunteerSlot,
   createVolunteerRole,
   deleteVolunteerRole,
+  getVolunteerBoard,
   releaseVolunteerSignup,
   renameVolunteerRole,
   setVolunteerSlotRequired,
@@ -12,6 +13,7 @@ import {
   ADMIN_PROFILE,
   PARENT_PROFILE,
   SCHEDULER_PROFILE,
+  TEACHER_PROFILE,
   seedFake,
 } from '@/__integration__/fakes/fixtures';
 
@@ -38,6 +40,7 @@ function seedVolunteerFake(authUserId: string | null = ADMIN_PROFILE.id) {
         ADMIN_PROFILE,
         PARENT_PROFILE,
         SCHEDULER_PROFILE,
+        TEACHER_PROFILE,
       ] as unknown as Record<string, unknown>[],
       volunteer_roles: [
         {
@@ -105,6 +108,17 @@ describe('volunteer actions', () => {
     expect(result.error).toBe('Unauthorized');
   });
 
+  it('limits volunteer board access to teachers and admins during the pilot', async () => {
+    seedVolunteerFake(PARENT_PROFILE.id);
+    const parentResult = await getVolunteerBoard();
+    expect(parentResult.success).toBe(false);
+    expect(parentResult.error).toBe('Unauthorized');
+
+    seedVolunteerFake(TEACHER_PROFILE.id);
+    const teacherResult = await getVolunteerBoard();
+    expect(teacherResult.success).toBe(true);
+  });
+
   it('trims new role names, rejects duplicates, and appends to the end', async () => {
     const fake = seedVolunteerFake();
 
@@ -170,8 +184,8 @@ describe('volunteer actions', () => {
     expect(disabled.error).toContain('cannot be disabled');
   });
 
-  it('lets a user claim a slot and blocks a second role in the same block', async () => {
-    const fake = seedVolunteerFake(PARENT_PROFILE.id);
+  it('lets a teacher claim a slot and blocks a second role in the same block', async () => {
+    const fake = seedVolunteerFake(TEACHER_PROFILE.id);
 
     const claimed = await claimVolunteerSlot(SLOT_1);
     const secondClaim = await claimVolunteerSlot(SLOT_2);
@@ -182,11 +196,20 @@ describe('volunteer actions', () => {
     expect(fake.db.volunteer_signups[0]).toMatchObject({
       slot_id: SLOT_1,
       block_id: BLOCK_1,
-      user_id: PARENT_PROFILE.id,
-      display_name: 'Parent User',
+      user_id: TEACHER_PROFILE.id,
+      display_name: 'Teacher Smith',
     });
     expect(revalidatePath).toHaveBeenCalledWith('/volunteer');
     expect(revalidatePath).toHaveBeenCalledWith('/admin/volunteers');
+  });
+
+  it('prevents parents from claiming volunteer slots during the pilot', async () => {
+    seedVolunteerFake(PARENT_PROFILE.id);
+
+    const result = await claimVolunteerSlot(SLOT_1);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Unauthorized');
   });
 
   it('only lets the owner release their own signup', async () => {
@@ -195,8 +218,8 @@ describe('volunteer actions', () => {
       id: SIGNUP_1,
       slot_id: SLOT_1,
       block_id: BLOCK_1,
-      user_id: PARENT_PROFILE.id,
-      display_name: 'Parent User',
+      user_id: TEACHER_PROFILE.id,
+      display_name: 'Teacher Smith',
       created_at: '2026-01-01T00:00:00Z',
     });
 
@@ -206,7 +229,7 @@ describe('volunteer actions', () => {
     expect(denied.error).toContain('only remove your own');
 
     const ownerFake = seedFake({
-      authUserId: PARENT_PROFILE.id,
+      authUserId: TEACHER_PROFILE.id,
       data: fake.db,
     });
 

@@ -7,14 +7,8 @@ import type { UserRole } from '@/types';
  * Maps route prefixes to allowed roles
  */
 const ROUTE_ROLE_MAP: Record<string, UserRole[]> = {
-  '/volunteer': [
-    'parent',
-    'teacher',
-    'student',
-    'admin',
-    'class_scheduler',
-    'super_admin',
-  ],
+  // Temporarily limited to staff testers while the volunteer board is piloted.
+  '/volunteer': ['teacher', 'admin', 'super_admin'],
   '/parent': ['parent', 'teacher', 'admin', 'class_scheduler', 'super_admin'],
   '/teacher': ['teacher', 'super_admin'],
   '/student': ['student'],

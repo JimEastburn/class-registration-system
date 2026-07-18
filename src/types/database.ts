@@ -735,6 +735,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_volunteer_admin: { Args: never; Returns: boolean }
+      is_volunteer_tester: { Args: never; Returns: boolean }
       move_volunteer_block: {
         Args: { p_block_id: string; p_direction: string }
         Returns: undefined

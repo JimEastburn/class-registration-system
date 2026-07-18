@@ -23,7 +23,6 @@ interface NavItem {
  */
 const navItemsByRole: Record<UserRole, NavItem[]> = {
   parent: [
-    { href: '/volunteer', label: 'Volunteer Board' },
     { href: '/parent', label: 'Dashboard' },
     { href: '/parent/family', label: 'My Family' },
     { href: '/parent/browse', label: 'Browse Classes' },
@@ -37,7 +36,6 @@ const navItemsByRole: Record<UserRole, NavItem[]> = {
     // Parent View removed - added dynamically if isParent
   ],
   student: [
-    { href: '/volunteer', label: 'Volunteer Board' },
     { href: '/student', label: 'Dashboard' },
     { href: '/student/schedule', label: 'My Schedule' },
   ],
@@ -51,7 +49,6 @@ const navItemsByRole: Record<UserRole, NavItem[]> = {
     // Parent View removed - added dynamically if isParent
   ],
   class_scheduler: [
-    { href: '/volunteer', label: 'Volunteer Board' },
     { href: '/class-scheduler', label: 'Dashboard' },
     { href: '/class-scheduler/calendar', label: 'Calendar' },
   ],

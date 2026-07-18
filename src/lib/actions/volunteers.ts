@@ -37,6 +37,10 @@ function isExactVolunteerAdmin(role: UserRole | string | null | undefined) {
   return role === 'admin' || role === 'super_admin';
 }
 
+function isVolunteerTester(role: UserRole | string | null | undefined) {
+  return role === 'teacher' || role === 'admin' || role === 'super_admin';
+}
+
 function formatDisplayName(profile: {
   first_name?: string | null;
   last_name?: string | null;
@@ -116,6 +120,15 @@ async function requireVolunteerAdmin() {
   return context;
 }
 
+async function requireVolunteerTester() {
+  const context = await requireAuthenticated();
+  if (context.error) return context;
+  if (!isVolunteerTester(context.profile?.role)) {
+    return { ...context, error: 'Unauthorized' };
+  }
+  return context;
+}
+
 async function getNextSortOrder(item: VolunteerAdminItem) {
   const supabase = await createClient();
   const table = item === 'role' ? 'volunteer_roles' : 'volunteer_blocks';
@@ -180,7 +193,7 @@ export async function getVolunteerBoard(): Promise<
   ActionResult<VolunteerBoardData>
 > {
   try {
-    const context = await requireAuthenticated();
+    const context = await requireVolunteerTester();
     if (context.error || !context.user) {
       return { success: false, error: context.error ?? 'Not authenticated' };
     }
@@ -511,7 +524,7 @@ export async function claimVolunteerSlot(
   slotId: string
 ): Promise<ActionResult<VolunteerSignup>> {
   try {
-    const context = await requireAuthenticated();
+    const context = await requireVolunteerTester();
     if (context.error || !context.user || !context.profile) {
       return { success: false, error: context.error ?? 'Not authenticated' };
     }
@@ -591,7 +604,7 @@ export async function releaseVolunteerSignup(
   signupId: string
 ): Promise<ActionResult> {
   try {
-    const context = await requireAuthenticated();
+    const context = await requireVolunteerTester();
     if (context.error || !context.user) {
       return { success: false, error: context.error ?? 'Not authenticated' };
     }
