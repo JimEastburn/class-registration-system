@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useMemo, useState, useTransition } from 'react';
+import { FormEvent, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, Users } from 'lucide-react';
@@ -297,11 +297,31 @@ export function AdminVolunteerConfig({ board }: AdminVolunteerConfigProps) {
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState | null>(
     null
   );
+  const [optimisticSlots, setOptimisticSlots] = useState<Map<string, boolean>>(
+    () => new Map()
+  );
   const [, startTransition] = useTransition();
   const { slotsByCell, signupsBySlot } = useMemo(
     () => buildSlotMaps(board.slots, board.signups),
     [board.slots, board.signups]
   );
+
+  useEffect(() => {
+    setOptimisticSlots((current) => {
+      let changed = false;
+      const next = new Map(current);
+
+      for (const [cellKey, optimisticChecked] of current) {
+        const serverChecked = slotsByCell.has(cellKey);
+        if (serverChecked === optimisticChecked) {
+          next.delete(cellKey);
+          changed = true;
+        }
+      }
+
+      return changed ? next : current;
+    });
+  }, [slotsByCell]);
 
   function runAction<T>(
     key: string,
@@ -376,11 +396,39 @@ export function AdminVolunteerConfig({ board }: AdminVolunteerConfigProps) {
     block: VolunteerBlock,
     checked: boolean
   ) {
-    runAction(
-      `slot:${role.id}:${block.id}`,
-      () => setVolunteerSlotRequired(role.id, block.id, checked),
-      checked ? 'Slot enabled' : 'Slot disabled'
-    );
+    const cellKey = keyFor(role.id, block.id);
+    const pendingSlotKey = `slot:${role.id}:${block.id}`;
+
+    setOptimisticSlots((current) => {
+      const next = new Map(current);
+      next.set(cellKey, checked);
+      return next;
+    });
+
+    setPendingKey(pendingSlotKey);
+    startTransition(async () => {
+      try {
+        const result = await setVolunteerSlotRequired(
+          role.id,
+          block.id,
+          checked
+        );
+        if (!result.success) {
+          setOptimisticSlots((current) => {
+            const next = new Map(current);
+            next.delete(cellKey);
+            return next;
+          });
+          toast.error(result.error);
+          return;
+        }
+
+        toast.success(checked ? 'Slot enabled' : 'Slot disabled');
+        router.refresh();
+      } finally {
+        setPendingKey(null);
+      }
+    });
   }
 
   return (
@@ -444,25 +492,28 @@ export function AdminVolunteerConfig({ board }: AdminVolunteerConfigProps) {
                     {role.name}
                   </th>
                   {board.blocks.map((block) => {
-                    const slot = slotsByCell.get(keyFor(role.id, block.id));
+                    const cellKey = keyFor(role.id, block.id);
+                    const slot = slotsByCell.get(cellKey);
                     const signup = slot
                       ? signupsBySlot.get(slot.id)
                       : undefined;
                     const pending =
                       pendingKey === `slot:${role.id}:${block.id}`;
                     const disabled = Boolean(signup) || pending;
+                    const checked =
+                      optimisticSlots.get(cellKey) ?? Boolean(slot);
 
                     return (
                       <td
                         key={block.id}
                         className={cn(
                           'h-24 min-w-36 border-l px-3 py-3 text-center align-middle',
-                          !slot && 'bg-muted/20'
+                          !checked && 'bg-muted/20'
                         )}
                       >
                         <div className="flex flex-col items-center gap-2">
                           <Checkbox
-                            checked={Boolean(slot)}
+                            checked={checked}
                             disabled={disabled}
                             aria-label={`${role.name} during ${block.name}`}
                             title={
