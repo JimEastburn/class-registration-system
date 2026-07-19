@@ -42,6 +42,27 @@ function buildSlotMaps(slots: VolunteerSlot[], signups: VolunteerSignup[]) {
   return { slotsByCell, signupsBySlot };
 }
 
+function VolunteerNameChip({
+  displayName,
+  isMine,
+}: {
+  displayName: string;
+  isMine: boolean;
+}) {
+  return (
+    <Badge
+      variant={isMine ? 'outline' : 'secondary'}
+      className={cn(
+        'max-w-44 text-center whitespace-normal',
+        isMine &&
+          'border-amber-400 bg-amber-200 px-3 py-1.5 text-sm font-bold text-slate-900 shadow-sm ring-2 ring-amber-300/60'
+      )}
+    >
+      {isMine ? `You: ${displayName}` : displayName}
+    </Badge>
+  );
+}
+
 function SignupCell({
   slot,
   signup,
@@ -85,12 +106,7 @@ function SignupCell({
 
   return (
     <div className="flex min-w-36 flex-col items-center gap-2">
-      <Badge
-        variant={isMine ? 'default' : 'secondary'}
-        className="max-w-44 text-center whitespace-normal"
-      >
-        {signup.display_name}
-      </Badge>
+      <VolunteerNameChip displayName={signup.display_name} isMine={isMine} />
       {isMine && (
         <Button
           type="button"
@@ -143,9 +159,12 @@ function MobileRoleCard({
               <div className="min-w-0">
                 <p className="text-sm font-medium">{blockName}</p>
                 {signup && (
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    {signup.display_name}
-                  </p>
+                  <div className="mt-2">
+                    <VolunteerNameChip
+                      displayName={signup.display_name}
+                      isMine={isMine}
+                    />
+                  </div>
                 )}
               </div>
               {!signup ? (
