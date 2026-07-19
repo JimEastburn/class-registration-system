@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { toast } from 'sonner';
-import { UserPlus, X } from 'lucide-react';
+import { ClipboardCheck, UserPlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -23,23 +23,33 @@ interface VolunteerBoardClientProps {
   board: VolunteerBoardData;
 }
 
+type VolunteerCommitment = {
+  signupId: string;
+  blockName: string;
+  blockSortOrder: number;
+  roleName: string;
+  roleSortOrder: number;
+};
+
 function keyFor(roleId: string, blockId: string) {
   return `${roleId}:${blockId}`;
 }
 
 function buildSlotMaps(slots: VolunteerSlot[], signups: VolunteerSignup[]) {
   const slotsByCell = new Map<string, VolunteerSlot>();
+  const slotsById = new Map<string, VolunteerSlot>();
   const signupsBySlot = new Map<string, VolunteerSignup>();
 
   for (const slot of slots) {
     slotsByCell.set(keyFor(slot.role_id, slot.block_id), slot);
+    slotsById.set(slot.id, slot);
   }
 
   for (const signup of signups) {
     signupsBySlot.set(signup.slot_id, signup);
   }
 
-  return { slotsByCell, signupsBySlot };
+  return { slotsByCell, slotsById, signupsBySlot };
 }
 
 function VolunteerNameChip({
@@ -124,6 +134,80 @@ function SignupCell({
   );
 }
 
+function MyVolunteerSummary({
+  commitments,
+  pendingKey,
+  onRelease,
+}: {
+  commitments: VolunteerCommitment[];
+  pendingKey: string | null;
+  onRelease: (signupId: string) => void;
+}) {
+  return (
+    <section className="rounded-xl border border-amber-300/70 bg-amber-50/70 p-4 shadow-xs dark:border-amber-500/40 dark:bg-amber-950/20">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-200 text-slate-900">
+            <ClipboardCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold">Your volunteer spots</h2>
+            <p className="text-muted-foreground text-sm">
+              A quick summary of every block where you have volunteered.
+            </p>
+          </div>
+        </div>
+        <Badge
+          variant="outline"
+          className="w-fit border-amber-400 bg-amber-200 text-slate-900"
+        >
+          {commitments.length}{' '}
+          {commitments.length === 1 ? 'commitment' : 'commitments'}
+        </Badge>
+      </div>
+
+      {commitments.length === 0 ? (
+        <div className="bg-background/70 mt-4 rounded-lg border border-dashed border-amber-300 p-4">
+          <p className="text-sm font-medium">No volunteer spots yet</p>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Use the board below to choose a role and block. Anything you claim
+            will appear here.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {commitments.map((commitment) => (
+            <article
+              key={commitment.signupId}
+              className="bg-background flex flex-col justify-between gap-4 rounded-lg border border-amber-200 p-4 shadow-xs"
+            >
+              <div>
+                <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                  {commitment.blockName}
+                </p>
+                <p className="mt-1 text-base font-semibold">
+                  {commitment.roleName}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-fit"
+                isLoading={pendingKey === `release:${commitment.signupId}`}
+                onClick={() => onRelease(commitment.signupId)}
+              >
+                <X className="h-3.5 w-3.5" />
+                Remove
+              </Button>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function MobileRoleCard({
   role,
   enabledSlots,
@@ -201,10 +285,46 @@ export function VolunteerBoardClient({ board }: VolunteerBoardClientProps) {
   const router = useRouter();
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [, startTransition] = useTransition();
-  const { slotsByCell, signupsBySlot } = useMemo(
+  const { slotsByCell, slotsById, signupsBySlot } = useMemo(
     () => buildSlotMaps(board.slots, board.signups),
     [board.slots, board.signups]
   );
+  const myCommitments = useMemo(() => {
+    const rolesById = new Map(board.roles.map((role) => [role.id, role]));
+    const blocksById = new Map(board.blocks.map((block) => [block.id, block]));
+
+    return board.signups
+      .filter((signup) => signup.user_id === board.currentUserId)
+      .map((signup) => {
+        const slot = slotsById.get(signup.slot_id);
+        const role = slot ? rolesById.get(slot.role_id) : undefined;
+        const block = slot ? blocksById.get(slot.block_id) : undefined;
+
+        if (!slot || !role || !block) return null;
+
+        return {
+          signupId: signup.id,
+          blockName: block.name,
+          blockSortOrder: block.sort_order,
+          roleName: role.name,
+          roleSortOrder: role.sort_order,
+        };
+      })
+      .filter(
+        (commitment): commitment is VolunteerCommitment => commitment !== null
+      )
+      .sort(
+        (first, second) =>
+          first.blockSortOrder - second.blockSortOrder ||
+          first.roleSortOrder - second.roleSortOrder
+      );
+  }, [
+    board.blocks,
+    board.currentUserId,
+    board.roles,
+    board.signups,
+    slotsById,
+  ]);
 
   const enabledSlots = board.slots.length;
 
@@ -259,6 +379,12 @@ export function VolunteerBoardClient({ board }: VolunteerBoardClientProps) {
 
   return (
     <div className="space-y-6">
+      <MyVolunteerSummary
+        commitments={myCommitments}
+        pendingKey={pendingKey}
+        onRelease={handleRelease}
+      />
+
       <VolunteerGridScrollArea className="hidden md:block">
         <table className="w-full border-separate border-spacing-0 text-sm">
           <thead>
