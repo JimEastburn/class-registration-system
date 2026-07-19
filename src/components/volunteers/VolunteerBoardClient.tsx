@@ -145,25 +145,16 @@ function MyVolunteerSummary({
 }) {
   return (
     <section className="rounded-xl border border-amber-300/70 bg-amber-50/70 p-4 shadow-xs dark:border-amber-500/40 dark:bg-amber-950/20">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-200 text-slate-900">
-            <ClipboardCheck className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold">Your volunteer spots</h2>
-            <p className="text-muted-foreground text-sm">
-              A quick summary of every block where you have volunteered.
-            </p>
-          </div>
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-200 text-slate-900">
+          <ClipboardCheck className="h-5 w-5" />
         </div>
-        <Badge
-          variant="outline"
-          className="w-fit border-amber-400 bg-amber-200 text-slate-900"
-        >
-          {commitments.length}{' '}
-          {commitments.length === 1 ? 'commitment' : 'commitments'}
-        </Badge>
+        <div>
+          <h2 className="text-lg font-semibold">Your volunteer spots</h2>
+          <p className="text-muted-foreground text-sm">
+            A quick summary of every block where you have volunteered.
+          </p>
+        </div>
       </div>
 
       {commitments.length === 0 ? (
