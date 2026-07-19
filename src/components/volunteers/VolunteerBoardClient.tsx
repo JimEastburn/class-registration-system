@@ -239,17 +239,17 @@ export function VolunteerBoardClient({ board }: VolunteerBoardClientProps) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-background hidden overflow-x-auto rounded-lg border md:block">
-        <table className="w-full border-collapse text-sm">
+      <div className="bg-background hidden max-h-[calc(100vh-12rem)] overflow-auto rounded-lg border md:block">
+        <table className="w-full border-separate border-spacing-0 text-sm">
           <thead>
             <tr>
-              <th className="bg-muted sticky left-0 z-20 min-w-56 border-b px-4 py-3 text-left font-semibold">
+              <th className="bg-muted sticky top-0 left-0 z-30 min-w-56 border-b px-4 py-3 text-left font-semibold">
                 Role
               </th>
               {board.blocks.map((block) => (
                 <th
                   key={block.id}
-                  className="bg-muted min-w-44 border-b border-l px-3 py-3 text-center font-semibold"
+                  className="bg-muted sticky top-0 z-20 min-w-44 border-b border-l px-3 py-3 text-center font-semibold"
                 >
                   {block.name}
                 </th>
