@@ -17,6 +17,7 @@ import type {
 } from '@/types';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { VolunteerGridScrollArea } from './VolunteerGridScrollArea';
 
 interface VolunteerBoardClientProps {
   board: VolunteerBoardData;
@@ -239,7 +240,7 @@ export function VolunteerBoardClient({ board }: VolunteerBoardClientProps) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-background hidden max-h-[calc(100vh-12rem)] overflow-auto rounded-lg border md:block">
+      <VolunteerGridScrollArea className="hidden md:block">
         <table className="w-full border-separate border-spacing-0 text-sm">
           <thead>
             <tr>
@@ -289,7 +290,7 @@ export function VolunteerBoardClient({ board }: VolunteerBoardClientProps) {
             ))}
           </tbody>
         </table>
-      </div>
+      </VolunteerGridScrollArea>
 
       <div className="space-y-4 md:hidden">
         {board.roles.map((role) => {

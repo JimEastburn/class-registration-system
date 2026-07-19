@@ -45,6 +45,7 @@ import type {
   VolunteerSlot,
 } from '@/types';
 import { cn } from '@/lib/utils';
+import { VolunteerGridScrollArea } from './VolunteerGridScrollArea';
 
 type ItemKind = 'role' | 'block';
 type EditableItem = VolunteerRole | VolunteerBlock;
@@ -419,7 +420,7 @@ export function AdminVolunteerConfig({ board }: AdminVolunteerConfigProps) {
           </div>
         </div>
 
-        <div className="bg-background max-h-[calc(100vh-12rem)] overflow-auto rounded-lg border">
+        <VolunteerGridScrollArea>
           <table className="w-full border-separate border-spacing-0 text-sm">
             <thead>
               <tr>
@@ -486,7 +487,7 @@ export function AdminVolunteerConfig({ board }: AdminVolunteerConfigProps) {
               ))}
             </tbody>
           </table>
-        </div>
+        </VolunteerGridScrollArea>
       </section>
 
       <ItemDialog
