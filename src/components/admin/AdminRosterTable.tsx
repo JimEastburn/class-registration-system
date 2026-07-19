@@ -20,6 +20,7 @@ import {
 import { Trash2, ArrowUp, Info } from 'lucide-react';
 import { cancelEnrollment } from '@/lib/actions/enrollments';
 import { promoteWaitlistEntryAsAdmin } from '@/lib/actions/waitlist';
+import { calculateAge } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
@@ -54,11 +55,7 @@ export default function AdminRosterTable({
   };
 
   const handlePromote = () => {
-    if (
-      !confirm(
-        'Promote the next waitlisted student to pending enrollment?'
-      )
-    )
+    if (!confirm('Promote the next waitlisted student to pending enrollment?'))
       return;
 
     startTransition(async () => {
@@ -118,7 +115,7 @@ export default function AdminRosterTable({
           <TableHeader>
             <TableRow>
               <TableHead>Student</TableHead>
-              <TableHead>Grade</TableHead>
+              <TableHead>Age</TableHead>
               <TableHead>Parent</TableHead>
               <TableHead>Parent Contact</TableHead>
               <TableHead>Status</TableHead>
@@ -140,13 +137,16 @@ export default function AdminRosterTable({
               enrollments.map((enrollment) => (
                 <TableRow key={enrollment.id}>
                   <TableCell className="font-medium">
-                    {enrollment.student.first_name} {enrollment.student.last_name}
+                    {enrollment.student.first_name}{' '}
+                    {enrollment.student.last_name}
                     {enrollment.isBlocked && (
                       <span className="text-destructive ml-2">(Blocked)</span>
                     )}
                   </TableCell>
-                  <TableCell className="capitalize">
-                    {enrollment.student.grade ?? '—'}
+                  <TableCell>
+                    {enrollment.student.dob
+                      ? calculateAge(enrollment.student.dob)
+                      : '—'}
                   </TableCell>
                   <TableCell>
                     {enrollment.student.parent

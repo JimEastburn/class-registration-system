@@ -306,11 +306,8 @@ describe('Stripe Webhook API Route', () => {
     expect(fakeSupabase.getTable('payments')[0].status).toBe('refunded');
     expect(fakeSupabase.getTable('enrollments')[0].status).toBe('cancelled');
 
-    // The teacher is notified that a paid student was removed via refund.
-    expect(notifyTeacherOfUnenrollment).toHaveBeenCalledWith(
-      'class1',
-      'student1'
-    );
+    // Teacher notification emails are temporarily paused.
+    expect(notifyTeacherOfUnenrollment).not.toHaveBeenCalled();
 
     // Verify Zoho refund sync was triggered
     const { syncRefundToZoho } = await import('@/lib/zoho');

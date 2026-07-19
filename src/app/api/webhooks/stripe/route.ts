@@ -8,7 +8,6 @@ import {
   sendEnrollmentConfirmation,
   sendWaitlistNotification,
 } from '@/lib/email';
-import { notifyTeacherOfUnenrollment } from '@/lib/notifications/teacher-enrollment';
 import { format } from 'date-fns';
 
 // Create admin client lazily to avoid build-time errors
@@ -244,13 +243,15 @@ export async function POST(request: Request) {
             .update({ status: 'cancelled' })
             .eq('id', payment.enrollment_id);
 
-          // Notify the teacher that a paid student was removed via refund.
-          if (enrollmentData?.class_id && enrollmentData.student_id) {
-            await notifyTeacherOfUnenrollment(
-              enrollmentData.class_id,
-              enrollmentData.student_id
-            );
-          }
+          // Teacher refund unenrollment notification temporarily disabled. Keep
+          // the helper in src/lib/notifications/teacher-enrollment.ts so this
+          // can be restored later.
+          // if (enrollmentData?.class_id && enrollmentData.student_id) {
+          //   await notifyTeacherOfUnenrollment(
+          //     enrollmentData.class_id,
+          //     enrollmentData.student_id
+          //   );
+          // }
 
           // Promote from Waitlist (Duplicate logic from refunds.ts, but handled by system/webhook)
           if (enrollmentData?.class_id) {

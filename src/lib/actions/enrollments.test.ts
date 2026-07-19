@@ -128,10 +128,10 @@ describe('Enrollment Actions', () => {
       expect(newEnrollment!.status).toBe('pending');
     });
 
-    it('notifies the teacher when a pending seat is created', async () => {
+    it('does not notify the teacher when pending seat notifications are paused', async () => {
       seed();
       await enrollStudent({ classId: CLASS_ID, familyMemberId: CHILD_ID });
-      expect(notifyTeacherOfEnrollment).toHaveBeenCalledWith(CLASS_ID, CHILD_ID);
+      expect(notifyTeacherOfEnrollment).not.toHaveBeenCalled();
     });
 
     it('does not notify the teacher when the student is waitlisted', async () => {
@@ -357,7 +357,7 @@ describe('Enrollment Actions', () => {
       expect(result.error).toContain('already enrolled');
     });
 
-    it('reactivates the parent\'s own cancelled enrollment via the atomic RPC (Part 3)', async () => {
+    it("reactivates the parent's own cancelled enrollment via the atomic RPC (Part 3)", async () => {
       // Pre-existing cancelled enrollment for the same (student, class) —
       // the parent re-enrolls. The RPC's ON CONFLICT upsert should reactivate
       // the row in place (same id) as pending. Pre-Part-3 this hit a UNIQUE
@@ -480,7 +480,7 @@ describe('Enrollment Actions', () => {
       expect(promoteFromWaitlist).toHaveBeenCalledWith(CLASS_ID);
     });
 
-    it('logs the un-enrollment and notifies the teacher when a parent cancels a pending seat', async () => {
+    it('logs the un-enrollment but does not notify the teacher while notifications are paused', async () => {
       seed({
         enrollments: [
           {
@@ -505,10 +505,7 @@ describe('Enrollment Actions', () => {
           previous_status: 'pending',
         })
       );
-      expect(notifyTeacherOfUnenrollment).toHaveBeenCalledWith(
-        CLASS_ID,
-        CHILD_ID
-      );
+      expect(notifyTeacherOfUnenrollment).not.toHaveBeenCalled();
     });
 
     it('logs but does not email the teacher when a waitlisted seat is cancelled', async () => {
@@ -659,7 +656,7 @@ describe('Enrollment Actions', () => {
       expect(promoteFromWaitlist).toHaveBeenCalledWith(CLASS_ID);
     });
 
-    it('notifies the teacher when cancelling a confirmed seat', async () => {
+    it('does not notify the teacher when cancelling a confirmed seat while notifications are paused', async () => {
       seedFake({
         authUserId: ADMIN_ID,
         data: {
@@ -688,10 +685,7 @@ describe('Enrollment Actions', () => {
         refund: false,
       });
       expect(result.success).toBe(true);
-      expect(notifyTeacherOfUnenrollment).toHaveBeenCalledWith(
-        CLASS_ID,
-        CHILD_ID
-      );
+      expect(notifyTeacherOfUnenrollment).not.toHaveBeenCalled();
     });
   });
 
@@ -1149,9 +1143,24 @@ describe('Enrollment Actions', () => {
           >[],
           enrollments: [
             // Class capacity is 3; fill all seats with other students.
-            { id: 'fill-1', student_id: 'other-1', class_id: ADMIN_CLASS.id, status: 'confirmed' },
-            { id: 'fill-2', student_id: 'other-2', class_id: ADMIN_CLASS.id, status: 'pending' },
-            { id: 'fill-3', student_id: 'other-3', class_id: ADMIN_CLASS.id, status: 'confirmed' },
+            {
+              id: 'fill-1',
+              student_id: 'other-1',
+              class_id: ADMIN_CLASS.id,
+              status: 'confirmed',
+            },
+            {
+              id: 'fill-2',
+              student_id: 'other-2',
+              class_id: ADMIN_CLASS.id,
+              status: 'pending',
+            },
+            {
+              id: 'fill-3',
+              student_id: 'other-3',
+              class_id: ADMIN_CLASS.id,
+              status: 'confirmed',
+            },
             // The target student has a prior CANCELLED enrollment.
             {
               id: 'cancelled-row',
@@ -1196,13 +1205,48 @@ describe('Enrollment Actions', () => {
       // enrollment should waitlist — not pend.
       seed({
         enrollments: [
-          { id: 'p1', student_id: 'p-1', class_id: CLASS_ID, status: 'pending' },
-          { id: 'p2', student_id: 'p-2', class_id: CLASS_ID, status: 'pending' },
-          { id: 'c1', student_id: 'c-1', class_id: CLASS_ID, status: 'cancelled' },
-          { id: 'c2', student_id: 'c-2', class_id: CLASS_ID, status: 'cancelled' },
-          { id: 'c3', student_id: 'c-3', class_id: CLASS_ID, status: 'cancelled' },
-          { id: 'c4', student_id: 'c-4', class_id: CLASS_ID, status: 'cancelled' },
-          { id: 'c5', student_id: 'c-5', class_id: CLASS_ID, status: 'cancelled' },
+          {
+            id: 'p1',
+            student_id: 'p-1',
+            class_id: CLASS_ID,
+            status: 'pending',
+          },
+          {
+            id: 'p2',
+            student_id: 'p-2',
+            class_id: CLASS_ID,
+            status: 'pending',
+          },
+          {
+            id: 'c1',
+            student_id: 'c-1',
+            class_id: CLASS_ID,
+            status: 'cancelled',
+          },
+          {
+            id: 'c2',
+            student_id: 'c-2',
+            class_id: CLASS_ID,
+            status: 'cancelled',
+          },
+          {
+            id: 'c3',
+            student_id: 'c-3',
+            class_id: CLASS_ID,
+            status: 'cancelled',
+          },
+          {
+            id: 'c4',
+            student_id: 'c-4',
+            class_id: CLASS_ID,
+            status: 'cancelled',
+          },
+          {
+            id: 'c5',
+            student_id: 'c-5',
+            class_id: CLASS_ID,
+            status: 'cancelled',
+          },
         ] as unknown as Record<string, unknown>[],
         classes: [{ ...mockClass, capacity: 2 }] as unknown as Record<
           string,
@@ -1227,8 +1271,18 @@ describe('Enrollment Actions', () => {
           unknown
         >[],
         enrollments: [
-          { id: 'p1', student_id: 'p-1', class_id: CLASS_ID, status: 'pending' },
-          { id: 'p2', student_id: 'p-2', class_id: CLASS_ID, status: 'pending' },
+          {
+            id: 'p1',
+            student_id: 'p-1',
+            class_id: CLASS_ID,
+            status: 'pending',
+          },
+          {
+            id: 'p2',
+            student_id: 'p-2',
+            class_id: CLASS_ID,
+            status: 'pending',
+          },
         ] as unknown as Record<string, unknown>[],
       });
 
@@ -1248,9 +1302,24 @@ describe('Enrollment Actions', () => {
           unknown
         >[],
         enrollments: [
-          { id: 'p1', student_id: 'p-1', class_id: CLASS_ID, status: 'pending' },
-          { id: 'p2', student_id: 'p-2', class_id: CLASS_ID, status: 'pending' },
-          { id: 'p3', student_id: 'p-3', class_id: CLASS_ID, status: 'pending' },
+          {
+            id: 'p1',
+            student_id: 'p-1',
+            class_id: CLASS_ID,
+            status: 'pending',
+          },
+          {
+            id: 'p2',
+            student_id: 'p-2',
+            class_id: CLASS_ID,
+            status: 'pending',
+          },
+          {
+            id: 'p3',
+            student_id: 'p-3',
+            class_id: CLASS_ID,
+            status: 'pending',
+          },
         ] as unknown as Record<string, unknown>[],
       });
 
@@ -1531,7 +1600,9 @@ describe('Enrollment Actions', () => {
       });
       const result = await teacherCancelEnrollment('enr-teacher-cancel');
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Access denied: You are not the teacher of this class');
+      expect(result.error).toBe(
+        'Access denied: You are not the teacher of this class'
+      );
     });
 
     it('returns error if enrollment already cancelled', async () => {
@@ -1560,10 +1631,10 @@ describe('Enrollment Actions', () => {
       const fake = seedFake({
         authUserId: TEACHER_ID,
         data: {
-          profiles: [
-            TEACHER_PROFILE,
-            PARENT_PROFILE,
-          ] as unknown as Record<string, unknown>[],
+          profiles: [TEACHER_PROFILE, PARENT_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
           classes: [mockClass] as unknown as Record<string, unknown>[],
           enrollments: [
             {
@@ -1669,7 +1740,6 @@ describe('Enrollment Actions', () => {
         'Cannot cancel a paid enrollment — please ask an admin to issue a refund'
       );
     });
-
   });
 
   describe('adminRemoveEnrollment', () => {
@@ -1704,12 +1774,22 @@ describe('Enrollment Actions', () => {
   // ── P5: Read-path coverage ─────────────────────────────────────────────
 
   describe('getEnrollmentsForFamilyMember', () => {
-    it('returns enrollments for the caller\'s own student', async () => {
+    it("returns enrollments for the caller's own student", async () => {
       seed({
         enrollments: [
-          { id: 'e-1', student_id: CHILD_ID, class_id: CLASS_ID, status: 'pending' },
+          {
+            id: 'e-1',
+            student_id: CHILD_ID,
+            class_id: CLASS_ID,
+            status: 'pending',
+          },
           // Another student's enrollment must NOT be returned.
-          { id: 'e-2', student_id: 'other-kid', class_id: CLASS_ID, status: 'confirmed' },
+          {
+            id: 'e-2',
+            student_id: 'other-kid',
+            class_id: CLASS_ID,
+            status: 'confirmed',
+          },
         ] as unknown as Record<string, unknown>[],
       });
 
@@ -1767,10 +1847,25 @@ describe('Enrollment Actions', () => {
           >[],
           classes: [mockClass] as unknown as Record<string, unknown>[],
           enrollments: [
-            { id: 'e-kid', student_id: CHILD_ID, class_id: CLASS_ID, status: 'pending' },
-            { id: 'e-sib', student_id: 'sibling-1', class_id: CLASS_ID, status: 'confirmed' },
+            {
+              id: 'e-kid',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'pending',
+            },
+            {
+              id: 'e-sib',
+              student_id: 'sibling-1',
+              class_id: CLASS_ID,
+              status: 'confirmed',
+            },
             // Outside the family — must not appear.
-            { id: 'e-out', student_id: 'stranger', class_id: CLASS_ID, status: 'confirmed' },
+            {
+              id: 'e-out',
+              student_id: 'stranger',
+              class_id: CLASS_ID,
+              status: 'confirmed',
+            },
           ] as unknown as Record<string, unknown>[],
         },
       });
@@ -1828,12 +1923,37 @@ describe('Enrollment Actions', () => {
           >[],
           classes: [mockClass] as unknown as Record<string, unknown>[],
           enrollments: [
-            { id: 'c1', student_id: CHILD_ID, class_id: CLASS_ID, status: 'confirmed' },
-            { id: 'c2', student_id: 'sibling-2', class_id: CLASS_ID, status: 'confirmed' },
+            {
+              id: 'c1',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+            },
+            {
+              id: 'c2',
+              student_id: 'sibling-2',
+              class_id: CLASS_ID,
+              status: 'confirmed',
+            },
             // Non-confirmed statuses must NOT count.
-            { id: 'p1', student_id: CHILD_ID, class_id: 'other', status: 'pending' },
-            { id: 'w1', student_id: CHILD_ID, class_id: 'other', status: 'waitlisted' },
-            { id: 'x1', student_id: CHILD_ID, class_id: 'other', status: 'cancelled' },
+            {
+              id: 'p1',
+              student_id: CHILD_ID,
+              class_id: 'other',
+              status: 'pending',
+            },
+            {
+              id: 'w1',
+              student_id: CHILD_ID,
+              class_id: 'other',
+              status: 'waitlisted',
+            },
+            {
+              id: 'x1',
+              student_id: CHILD_ID,
+              class_id: 'other',
+              status: 'cancelled',
+            },
           ] as unknown as Record<string, unknown>[],
         },
       });
@@ -1884,10 +2004,35 @@ describe('Enrollment Actions', () => {
           family_members: [mockMember] as unknown as Record<string, unknown>[],
           classes: [mockClass] as unknown as Record<string, unknown>[],
           enrollments: [
-            { id: 'r-conf', student_id: 'a', class_id: CLASS_ID, status: 'confirmed', created_at: '2026-01-01' },
-            { id: 'r-pend', student_id: 'b', class_id: CLASS_ID, status: 'pending', created_at: '2026-01-02' },
-            { id: 'r-wait', student_id: 'c', class_id: CLASS_ID, status: 'waitlisted', waitlist_position: 1, created_at: '2026-01-03' },
-            { id: 'r-cxl', student_id: 'd', class_id: CLASS_ID, status: 'cancelled', created_at: '2026-01-04' },
+            {
+              id: 'r-conf',
+              student_id: 'a',
+              class_id: CLASS_ID,
+              status: 'confirmed',
+              created_at: '2026-01-01',
+            },
+            {
+              id: 'r-pend',
+              student_id: 'b',
+              class_id: CLASS_ID,
+              status: 'pending',
+              created_at: '2026-01-02',
+            },
+            {
+              id: 'r-wait',
+              student_id: 'c',
+              class_id: CLASS_ID,
+              status: 'waitlisted',
+              waitlist_position: 1,
+              created_at: '2026-01-03',
+            },
+            {
+              id: 'r-cxl',
+              student_id: 'd',
+              class_id: CLASS_ID,
+              status: 'cancelled',
+              created_at: '2026-01-04',
+            },
           ] as unknown as Record<string, unknown>[],
         },
       });
@@ -1911,7 +2056,13 @@ describe('Enrollment Actions', () => {
           family_members: [mockMember] as unknown as Record<string, unknown>[],
           classes: [mockClass] as unknown as Record<string, unknown>[],
           enrollments: [
-            { id: 'r-1', student_id: 'x', class_id: CLASS_ID, status: 'confirmed', created_at: '2026-01-01' },
+            {
+              id: 'r-1',
+              student_id: 'x',
+              class_id: CLASS_ID,
+              status: 'confirmed',
+              created_at: '2026-01-01',
+            },
           ] as unknown as Record<string, unknown>[],
         },
       });
@@ -1979,8 +2130,18 @@ describe('Enrollment Actions', () => {
           family_members: [mockMember] as unknown as Record<string, unknown>[],
           classes: [mockClass] as unknown as Record<string, unknown>[],
           enrollments: [
-            { id: 'a-1', student_id: CHILD_ID, class_id: CLASS_ID, status: 'pending' },
-            { id: 'a-2', student_id: CHILD_ID, class_id: CLASS_ID, status: 'confirmed' },
+            {
+              id: 'a-1',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'pending',
+            },
+            {
+              id: 'a-2',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+            },
           ] as unknown as Record<string, unknown>[],
         },
       });

@@ -3,10 +3,6 @@
 import { createAdminClient, createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logAuditAction } from '@/lib/actions/audit';
-import {
-  notifyTeacherOfEnrollment,
-  notifyTeacherOfUnenrollment,
-} from '@/lib/notifications/teacher-enrollment';
 import type {
   ClassStatus,
   Enrollment,
@@ -386,13 +382,11 @@ export async function enrollStudent(input: EnrollStudentInput): Promise<{
     revalidatePath('/parent/browse');
     revalidatePath(`/parent/browse/${input.classId}`);
 
-    // Notify the teacher that a student joined their class. Creation (status
-    // 'pending') is the real "enrolled" signal here — payment confirmation is
-    // not in use — so we notify on the seat, not on the waitlist. Best-effort:
-    // failures are swallowed inside the helper and never block enrollment.
-    if (data.status === 'pending') {
-      await notifyTeacherOfEnrollment(input.classId, input.familyMemberId);
-    }
+    // Teacher enrollment notification temporarily disabled. Keep the helper in
+    // src/lib/notifications/teacher-enrollment.ts so this can be restored later.
+    // if (data.status === 'pending') {
+    //   await notifyTeacherOfEnrollment(input.classId, input.familyMemberId);
+    // }
 
     return {
       data,
@@ -498,14 +492,14 @@ export async function cancelEnrollment(
       }
     );
 
-    // Notify the teacher of the removal — only for an actual seat, not a
-    // waitlist withdrawal. Best-effort; failures never block cancellation.
-    if (enrollment.status === 'pending' || enrollment.status === 'confirmed') {
-      await notifyTeacherOfUnenrollment(
-        enrollment.class_id,
-        enrollment.student_id
-      );
-    }
+    // Teacher unenrollment notification temporarily disabled. Keep the helper in
+    // src/lib/notifications/teacher-enrollment.ts so this can be restored later.
+    // if (enrollment.status === 'pending' || enrollment.status === 'confirmed') {
+    //   await notifyTeacherOfUnenrollment(
+    //     enrollment.class_id,
+    //     enrollment.student_id
+    //   );
+    // }
 
     // Promote from waitlist if there are waitlisted students
     await promoteFromWaitlist(enrollment.class_id);
@@ -830,14 +824,14 @@ export async function adminCancelEnrollment(
       { refund: options.refund }
     );
 
-    // Notify the teacher of the removal — only for an actual seat, not a
-    // waitlist withdrawal. Best-effort; never blocks the cancellation.
-    if (enrollment.status === 'pending' || enrollment.status === 'confirmed') {
-      await notifyTeacherOfUnenrollment(
-        enrollment.class_id,
-        enrollment.student_id
-      );
-    }
+    // Teacher unenrollment notification temporarily disabled. Keep the helper in
+    // src/lib/notifications/teacher-enrollment.ts so this can be restored later.
+    // if (enrollment.status === 'pending' || enrollment.status === 'confirmed') {
+    //   await notifyTeacherOfUnenrollment(
+    //     enrollment.class_id,
+    //     enrollment.student_id
+    //   );
+    // }
 
     // Promote waitlisted student if not using refund path
     // (refund path handles its own promotion via processRefund → promoteFromWaitlist)
@@ -908,7 +902,10 @@ export async function teacherCancelEnrollment(
     // Verify teacher owns the class (or is admin)
     const classData = enrollment.class as TeacherCancelClassJoin;
     if (classData.teacher_id !== user.id && !isAdmin) {
-      return { success: false, error: 'Access denied: You are not the teacher of this class' };
+      return {
+        success: false,
+        error: 'Access denied: You are not the teacher of this class',
+      };
     }
 
     // Prevent cancelling already cancelled enrollments
@@ -927,7 +924,8 @@ export async function teacherCancelEnrollment(
     if (completedPayment) {
       return {
         success: false,
-        error: 'Cannot cancel a paid enrollment — please ask an admin to issue a refund',
+        error:
+          'Cannot cancel a paid enrollment — please ask an admin to issue a refund',
       };
     }
 
@@ -1172,9 +1170,11 @@ export async function adminEnrollStudent(
       revalidatePath(`/parent/browse/${input.classId}`);
       revalidatePath(`/admin/classes/${input.classId}`);
 
-      if ((updated as Enrollment).status === 'pending') {
-        await notifyTeacherOfEnrollment(input.classId, input.studentId);
-      }
+      // Teacher enrollment notification temporarily disabled. Keep the helper in
+      // src/lib/notifications/teacher-enrollment.ts so this can be restored later.
+      // if ((updated as Enrollment).status === 'pending') {
+      //   await notifyTeacherOfEnrollment(input.classId, input.studentId);
+      // }
 
       return {
         data: updated as Enrollment,
@@ -1269,9 +1269,11 @@ export async function adminEnrollStudent(
     revalidatePath(`/parent/browse/${input.classId}`);
     revalidatePath(`/admin/classes/${input.classId}`);
 
-    if (data.status === 'pending') {
-      await notifyTeacherOfEnrollment(input.classId, input.studentId);
-    }
+    // Teacher enrollment notification temporarily disabled. Keep the helper in
+    // src/lib/notifications/teacher-enrollment.ts so this can be restored later.
+    // if (data.status === 'pending') {
+    //   await notifyTeacherOfEnrollment(input.classId, input.studentId);
+    // }
 
     return {
       data: data as Enrollment,
