@@ -30,6 +30,8 @@ export type VolunteerGridHeaderSegment =
 export function getVolunteerBlockDay(
   blockName: string
 ): CollapsibleVolunteerDay | null {
+  if (blockName.includes(' - once')) return null;
+
   return (
     COLLAPSIBLE_VOLUNTEER_DAYS.find((day) => blockName.startsWith(`${day} `)) ??
     null

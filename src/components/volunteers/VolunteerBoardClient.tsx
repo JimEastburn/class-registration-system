@@ -463,18 +463,9 @@ export function VolunteerBoardClient({ board }: VolunteerBoardClientProps) {
                 ) : (
                   <th
                     key={`collapsed-${column.day}`}
-                    className="bg-muted sticky top-11 z-20 min-w-32 border-b border-l px-3 py-3 text-center font-semibold"
-                  >
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={() => toggleCollapsedDay(column.day)}
-                    >
-                      Show {column.blocks.length}
-                    </Button>
-                  </th>
+                    className="bg-muted sticky top-11 z-20 min-w-16 border-b border-l px-2 py-3"
+                    aria-label={`${column.day} volunteer columns collapsed`}
+                  />
                 )
               )}
             </tr>
@@ -490,12 +481,9 @@ export function VolunteerBoardClient({ board }: VolunteerBoardClientProps) {
                     return (
                       <td
                         key={`collapsed-${column.day}`}
-                        className="bg-muted/20 h-24 min-w-32 border-l px-3 py-3 text-center align-middle"
-                      >
-                        <span className="text-muted-foreground text-xs">
-                          {column.day} hidden
-                        </span>
-                      </td>
+                        className="bg-muted/20 h-24 min-w-16 border-l px-2 py-3"
+                        aria-label={`${column.day} volunteer columns collapsed`}
+                      />
                     );
                   }
 
