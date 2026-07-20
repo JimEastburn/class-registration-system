@@ -159,7 +159,6 @@ function MyVolunteerSummary({
 
       {commitments.length === 0 ? (
         <div className="bg-background/70 mt-4 rounded-lg border border-dashed border-amber-300 p-4">
-          <p className="text-sm font-medium">No volunteer spots yet</p>
           <p className="text-muted-foreground mt-1 text-sm">
             Use the board below to choose a role and block. Anything you claim
             will appear here.
