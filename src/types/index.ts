@@ -278,6 +278,30 @@ export interface VolunteerSignup {
   created_at: string;
 }
 
+export type VolunteerActivityAction = 'claim' | 'removal';
+
+export interface VolunteerActivityLog {
+  id: string;
+  action: VolunteerActivityAction;
+  signup_id: string;
+  slot_id: string;
+  user_id: string | null;
+  display_name: string;
+  role_id: string | null;
+  role_name: string;
+  block_id: string | null;
+  block_name: string;
+  created_at: string;
+}
+
+export interface VolunteerActivityLogPage {
+  entries: VolunteerActivityLog[];
+  totalCount: number;
+  currentPage: number;
+  totalPages: number;
+  limit: number;
+}
+
 export interface VolunteerBoardData {
   roles: VolunteerRole[];
   blocks: VolunteerBlock[];

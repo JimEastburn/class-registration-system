@@ -4,6 +4,7 @@ import {
   claimVolunteerSlot,
   createVolunteerRole,
   deleteVolunteerRole,
+  getVolunteerActivityLog,
   getVolunteerBoard,
   releaseVolunteerSignup,
   renameVolunteerRole,
@@ -89,6 +90,34 @@ function seedVolunteerFake(authUserId: string | null = ADMIN_PROFILE.id) {
         },
       ],
       volunteer_signups: [],
+      volunteer_activity_log: [
+        {
+          id: '00000000-0000-4000-8000-000000000401',
+          action: 'claim',
+          signup_id: SIGNUP_1,
+          slot_id: SLOT_1,
+          user_id: TEACHER_PROFILE.id,
+          display_name: 'Teacher Smith',
+          role_id: ROLE_1,
+          role_name: 'Door Monitor',
+          block_id: BLOCK_1,
+          block_name: 'Tuesday Block 1',
+          created_at: '2026-01-02T00:00:00Z',
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000402',
+          action: 'removal',
+          signup_id: SIGNUP_1,
+          slot_id: SLOT_1,
+          user_id: TEACHER_PROFILE.id,
+          display_name: 'Teacher Smith',
+          role_id: ROLE_1,
+          role_name: 'Door Monitor',
+          block_id: BLOCK_1,
+          block_name: 'Tuesday Block 1',
+          created_at: '2026-01-03T00:00:00Z',
+        },
+      ],
       audit_logs: [],
     },
   });
@@ -117,6 +146,30 @@ describe('volunteer actions', () => {
     seedVolunteerFake(TEACHER_PROFILE.id);
     const teacherResult = await getVolunteerBoard();
     expect(teacherResult.success).toBe(true);
+  });
+
+  it('lets volunteer admins read the paginated activity log', async () => {
+    seedVolunteerFake(ADMIN_PROFILE.id);
+
+    const result = await getVolunteerActivityLog(1);
+
+    expect(result.success).toBe(true);
+    expect(result.data.entries).toHaveLength(2);
+    expect(result.data.entries[0]).toMatchObject({
+      action: 'removal',
+      display_name: 'Teacher Smith',
+      block_name: 'Tuesday Block 1',
+      role_name: 'Door Monitor',
+    });
+  });
+
+  it('blocks non-admins from reading the volunteer activity log', async () => {
+    seedVolunteerFake(TEACHER_PROFILE.id);
+
+    const result = await getVolunteerActivityLog(1);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Unauthorized');
   });
 
   it('trims new role names, rejects duplicates, and appends to the end', async () => {

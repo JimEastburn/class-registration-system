@@ -1,12 +1,21 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, Users } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -38,6 +47,7 @@ import {
 } from '@/lib/actions/volunteers';
 import type {
   ActionResult,
+  VolunteerActivityLogPage,
   VolunteerBlock,
   VolunteerBoardData,
   VolunteerRole,
@@ -56,6 +66,8 @@ type DeleteDialogState = { kind: ItemKind; item: EditableItem };
 
 interface AdminVolunteerConfigProps {
   board: VolunteerBoardData;
+  activityLog: VolunteerActivityLogPage | null;
+  activityLogError: string | null;
 }
 
 function keyFor(roleId: string, blockId: string) {
@@ -290,7 +302,130 @@ function ItemList({
   );
 }
 
-export function AdminVolunteerConfig({ board }: AdminVolunteerConfigProps) {
+function VolunteerActivityLog({
+  activityLog,
+  activityLogError,
+}: {
+  activityLog: VolunteerActivityLogPage | null;
+  activityLogError: string | null;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+
+  function handlePageChange(page: number) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('volunteerLogPage', String(page));
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`);
+    });
+  }
+
+  return (
+    <section className="space-y-3">
+      <div>
+        <h2 className="text-xl font-semibold">Volunteer Activity Log</h2>
+        <p className="text-muted-foreground text-sm">
+          Claim and removal history from the volunteer board.
+        </p>
+      </div>
+
+      {activityLogError ? (
+        <div className="border-destructive/30 bg-destructive/5 text-destructive rounded-lg border p-4 text-sm">
+          {activityLogError}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Person</TableHead>
+                  <TableHead>Block</TableHead>
+                  <TableHead>Volunteer Role</TableHead>
+                  <TableHead className="text-right">Date / Time</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {!activityLog || activityLog.entries.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="text-muted-foreground h-24 text-center"
+                    >
+                      No volunteer activity yet.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  activityLog.entries.map((entry) => (
+                    <TableRow key={entry.id}>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            entry.action === 'claim' ? 'default' : 'secondary'
+                          }
+                          className="capitalize"
+                        >
+                          {entry.action}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {entry.display_name}
+                      </TableCell>
+                      <TableCell>{entry.block_name}</TableCell>
+                      <TableCell>{entry.role_name}</TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        {new Date(entry.created_at).toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {activityLog && (
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={activityLog.currentPage <= 1 || isPending}
+                onClick={() => handlePageChange(activityLog.currentPage - 1)}
+              >
+                Previous
+              </Button>
+              <div className="text-sm font-medium">
+                Page {activityLog.currentPage} of{' '}
+                {Math.max(1, activityLog.totalPages)} (Total:{' '}
+                {activityLog.totalCount})
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={
+                  activityLog.currentPage >= activityLog.totalPages || isPending
+                }
+                onClick={() => handlePageChange(activityLog.currentPage + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+export function AdminVolunteerConfig({
+  board,
+  activityLog,
+  activityLogError,
+}: AdminVolunteerConfigProps) {
   const router = useRouter();
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [itemDialog, setItemDialog] = useState<ItemDialogState | null>(null);
@@ -540,6 +675,11 @@ export function AdminVolunteerConfig({ board }: AdminVolunteerConfigProps) {
           </table>
         </VolunteerGridScrollArea>
       </section>
+
+      <VolunteerActivityLog
+        activityLog={activityLog}
+        activityLogError={activityLogError}
+      />
 
       <ItemDialog
         state={itemDialog}

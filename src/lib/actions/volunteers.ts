@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import type {
   ActionResult,
+  VolunteerActivityLog,
+  VolunteerActivityLogPage,
   VolunteerBlock,
   VolunteerBoardData,
   VolunteerRole,
@@ -24,6 +26,7 @@ const nameSchema = z
 
 const idSchema = z.string().uuid('Invalid id');
 const directionSchema = z.enum(['up', 'down']);
+const VOLUNTEER_ACTIVITY_LIMIT = 20;
 
 const VOLUNTEER_PATHS = ['/volunteer', '/admin/volunteers'];
 
@@ -233,6 +236,54 @@ export async function getVolunteerBoard(): Promise<
     };
   } catch (error) {
     console.error('Error in getVolunteerBoard:', error);
+    return { success: false, error: 'Internal server error' };
+  }
+}
+
+export async function getVolunteerActivityLog(
+  page = 1
+): Promise<ActionResult<VolunteerActivityLogPage>> {
+  try {
+    const context = await requireVolunteerAdmin();
+    if (context.error) return { success: false, error: context.error };
+
+    const currentPage =
+      Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const from = (currentPage - 1) * VOLUNTEER_ACTIVITY_LIMIT;
+    const to = from + VOLUNTEER_ACTIVITY_LIMIT - 1;
+
+    const { data, error, count } = await context.supabase
+      .from('volunteer_activity_log')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      console.error('Error fetching volunteer activity log:', error);
+      return {
+        success: false,
+        error: 'Failed to fetch volunteer activity log',
+      };
+    }
+
+    const totalCount = count ?? 0;
+    const totalPages = Math.max(
+      1,
+      Math.ceil(totalCount / VOLUNTEER_ACTIVITY_LIMIT)
+    );
+
+    return {
+      success: true,
+      data: {
+        entries: (data ?? []) as VolunteerActivityLog[],
+        totalCount,
+        currentPage,
+        totalPages,
+        limit: VOLUNTEER_ACTIVITY_LIMIT,
+      },
+    };
+  } catch (error) {
+    console.error('Error in getVolunteerActivityLog:', error);
     return { success: false, error: 'Internal server error' };
   }
 }
