@@ -2,7 +2,13 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { toast } from 'sonner';
-import { ClipboardCheck, UserPlus, X } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  ClipboardCheck,
+  UserPlus,
+  X,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -18,6 +24,10 @@ import type {
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { VolunteerGridScrollArea } from './VolunteerGridScrollArea';
+import {
+  buildVolunteerColumnLayout,
+  type CollapsibleVolunteerDay,
+} from './volunteerColumnGroups';
 
 interface VolunteerBoardClientProps {
   board: VolunteerBoardData;
@@ -274,10 +284,17 @@ function MobileRoleCard({
 export function VolunteerBoardClient({ board }: VolunteerBoardClientProps) {
   const router = useRouter();
   const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [collapsedDays, setCollapsedDays] = useState<
+    Set<CollapsibleVolunteerDay>
+  >(() => new Set());
   const [, startTransition] = useTransition();
   const { slotsByCell, slotsById, signupsBySlot } = useMemo(
     () => buildSlotMaps(board.slots, board.signups),
     [board.slots, board.signups]
+  );
+  const { columns, headerSegments } = useMemo(
+    () => buildVolunteerColumnLayout(board.blocks, collapsedDays),
+    [board.blocks, collapsedDays]
   );
   const myCommitments = useMemo(() => {
     const rolesById = new Map(board.roles.map((role) => [role.id, role]));
@@ -355,6 +372,18 @@ export function VolunteerBoardClient({ board }: VolunteerBoardClientProps) {
     );
   }
 
+  function toggleCollapsedDay(day: CollapsibleVolunteerDay) {
+    setCollapsedDays((current) => {
+      const next = new Set(current);
+      if (next.has(day)) {
+        next.delete(day);
+      } else {
+        next.add(day);
+      }
+      return next;
+    });
+  }
+
   if (enabledSlots === 0) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
@@ -379,17 +408,75 @@ export function VolunteerBoardClient({ board }: VolunteerBoardClientProps) {
         <table className="w-full border-separate border-spacing-0 text-sm">
           <thead>
             <tr>
-              <th className="bg-muted sticky top-0 left-0 z-30 min-w-56 border-b px-4 py-3 text-left font-semibold">
+              <th
+                rowSpan={2}
+                className="bg-muted sticky top-0 left-0 z-30 min-w-56 border-b px-4 py-3 text-left align-middle font-semibold"
+              >
                 Role
               </th>
-              {board.blocks.map((block) => (
-                <th
-                  key={block.id}
-                  className="bg-muted sticky top-0 z-20 min-w-44 border-b border-l px-3 py-3 text-center font-semibold"
-                >
-                  {block.name}
-                </th>
-              ))}
+              {headerSegments.map((segment, index) =>
+                segment.kind === 'day' ? (
+                  <th
+                    key={segment.day}
+                    colSpan={segment.colSpan}
+                    className="bg-muted sticky top-0 z-20 h-11 border-b border-l px-3 py-2 text-center"
+                  >
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs font-bold tracking-wide uppercase"
+                      aria-label={`${segment.collapsed ? 'Expand' : 'Collapse'} ${segment.day} volunteer columns`}
+                      title={`${segment.collapsed ? 'Expand' : 'Collapse'} ${segment.day} columns`}
+                      onClick={() => toggleCollapsedDay(segment.day)}
+                    >
+                      {segment.collapsed ? (
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      )}
+                      {segment.day.toUpperCase()}
+                      <span className="text-muted-foreground normal-case">
+                        {segment.collapsed ? 'Expand' : 'Collapse'}
+                      </span>
+                    </Button>
+                  </th>
+                ) : (
+                  <th
+                    key={`ungrouped-${index}`}
+                    colSpan={segment.colSpan}
+                    className="bg-muted sticky top-0 z-20 h-11 border-b border-l px-3 py-2"
+                    aria-label="Other volunteer blocks"
+                  />
+                )
+              )}
+            </tr>
+            <tr>
+              {columns.map((column) =>
+                column.kind === 'block' ? (
+                  <th
+                    key={column.block.id}
+                    className="bg-muted sticky top-11 z-20 min-w-44 border-b border-l px-3 py-3 text-center font-semibold"
+                  >
+                    {column.block.name}
+                  </th>
+                ) : (
+                  <th
+                    key={`collapsed-${column.day}`}
+                    className="bg-muted sticky top-11 z-20 min-w-32 border-b border-l px-3 py-3 text-center font-semibold"
+                  >
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => toggleCollapsedDay(column.day)}
+                    >
+                      Show {column.blocks.length}
+                    </Button>
+                  </th>
+                )
+              )}
             </tr>
           </thead>
           <tbody>
@@ -398,13 +485,28 @@ export function VolunteerBoardClient({ board }: VolunteerBoardClientProps) {
                 <th className="bg-background sticky left-0 z-10 min-w-56 px-4 py-3 text-left align-middle font-medium">
                   {role.name}
                 </th>
-                {board.blocks.map((block) => {
-                  const slot = slotsByCell.get(keyFor(role.id, block.id));
+                {columns.map((column) => {
+                  if (column.kind === 'collapsed-day') {
+                    return (
+                      <td
+                        key={`collapsed-${column.day}`}
+                        className="bg-muted/20 h-24 min-w-32 border-l px-3 py-3 text-center align-middle"
+                      >
+                        <span className="text-muted-foreground text-xs">
+                          {column.day} hidden
+                        </span>
+                      </td>
+                    );
+                  }
+
+                  const slot = slotsByCell.get(
+                    keyFor(role.id, column.block.id)
+                  );
                   const signup = slot ? signupsBySlot.get(slot.id) : undefined;
 
                   return (
                     <td
-                      key={block.id}
+                      key={column.block.id}
                       className={cn(
                         'h-24 min-w-44 border-l px-3 py-3 text-center align-middle',
                         !slot && 'bg-muted/30'

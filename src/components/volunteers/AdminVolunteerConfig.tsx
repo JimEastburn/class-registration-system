@@ -3,7 +3,16 @@
 import { FormEvent, useEffect, useMemo, useState, useTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, Users } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Trash2,
+  Users,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -56,6 +65,10 @@ import type {
 } from '@/types';
 import { cn } from '@/lib/utils';
 import { VolunteerGridScrollArea } from './VolunteerGridScrollArea';
+import {
+  buildVolunteerColumnLayout,
+  type CollapsibleVolunteerDay,
+} from './volunteerColumnGroups';
 
 type ItemKind = 'role' | 'block';
 type EditableItem = VolunteerRole | VolunteerBlock;
@@ -435,10 +448,17 @@ export function AdminVolunteerConfig({
   const [optimisticSlots, setOptimisticSlots] = useState<Map<string, boolean>>(
     () => new Map()
   );
+  const [collapsedDays, setCollapsedDays] = useState<
+    Set<CollapsibleVolunteerDay>
+  >(() => new Set());
   const [, startTransition] = useTransition();
   const { slotsByCell, signupsBySlot } = useMemo(
     () => buildSlotMaps(board.slots, board.signups),
     [board.slots, board.signups]
+  );
+  const { columns, headerSegments } = useMemo(
+    () => buildVolunteerColumnLayout(board.blocks, collapsedDays),
+    [board.blocks, collapsedDays]
   );
 
   useEffect(() => {
@@ -566,6 +586,18 @@ export function AdminVolunteerConfig({
     });
   }
 
+  function toggleCollapsedDay(day: CollapsibleVolunteerDay) {
+    setCollapsedDays((current) => {
+      const next = new Set(current);
+      if (next.has(day)) {
+        next.delete(day);
+      } else {
+        next.add(day);
+      }
+      return next;
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 lg:grid-cols-2">
@@ -607,17 +639,75 @@ export function AdminVolunteerConfig({
           <table className="w-full border-separate border-spacing-0 text-sm">
             <thead>
               <tr>
-                <th className="bg-muted sticky top-0 left-0 z-30 min-w-64 border-b px-4 py-3 text-left font-semibold">
+                <th
+                  rowSpan={2}
+                  className="bg-muted sticky top-0 left-0 z-30 min-w-64 border-b px-4 py-3 text-left align-middle font-semibold"
+                >
                   Role
                 </th>
-                {board.blocks.map((block) => (
-                  <th
-                    key={block.id}
-                    className="bg-muted sticky top-0 z-20 min-w-36 border-b border-l px-3 py-3 text-center font-semibold"
-                  >
-                    {block.name}
-                  </th>
-                ))}
+                {headerSegments.map((segment, index) =>
+                  segment.kind === 'day' ? (
+                    <th
+                      key={segment.day}
+                      colSpan={segment.colSpan}
+                      className="bg-muted sticky top-0 z-20 h-11 border-b border-l px-3 py-2 text-center"
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs font-bold tracking-wide uppercase"
+                        aria-label={`${segment.collapsed ? 'Expand' : 'Collapse'} ${segment.day} volunteer columns`}
+                        title={`${segment.collapsed ? 'Expand' : 'Collapse'} ${segment.day} columns`}
+                        onClick={() => toggleCollapsedDay(segment.day)}
+                      >
+                        {segment.collapsed ? (
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        ) : (
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        )}
+                        {segment.day.toUpperCase()}
+                        <span className="text-muted-foreground normal-case">
+                          {segment.collapsed ? 'Expand' : 'Collapse'}
+                        </span>
+                      </Button>
+                    </th>
+                  ) : (
+                    <th
+                      key={`ungrouped-${index}`}
+                      colSpan={segment.colSpan}
+                      className="bg-muted sticky top-0 z-20 h-11 border-b border-l px-3 py-2"
+                      aria-label="Other volunteer blocks"
+                    />
+                  )
+                )}
+              </tr>
+              <tr>
+                {columns.map((column) =>
+                  column.kind === 'block' ? (
+                    <th
+                      key={column.block.id}
+                      className="bg-muted sticky top-11 z-20 min-w-36 border-b border-l px-3 py-3 text-center font-semibold"
+                    >
+                      {column.block.name}
+                    </th>
+                  ) : (
+                    <th
+                      key={`collapsed-${column.day}`}
+                      className="bg-muted sticky top-11 z-20 min-w-32 border-b border-l px-3 py-3 text-center font-semibold"
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => toggleCollapsedDay(column.day)}
+                      >
+                        Show {column.blocks.length}
+                      </Button>
+                    </th>
+                  )
+                )}
               </tr>
             </thead>
             <tbody>
@@ -626,21 +716,34 @@ export function AdminVolunteerConfig({
                   <th className="bg-background sticky left-0 z-10 min-w-64 px-4 py-3 text-left align-middle font-medium">
                     {role.name}
                   </th>
-                  {board.blocks.map((block) => {
-                    const cellKey = keyFor(role.id, block.id);
+                  {columns.map((column) => {
+                    if (column.kind === 'collapsed-day') {
+                      return (
+                        <td
+                          key={`collapsed-${column.day}`}
+                          className="bg-muted/20 h-24 min-w-32 border-l px-3 py-3 text-center align-middle"
+                        >
+                          <span className="text-muted-foreground text-xs">
+                            {column.day} hidden
+                          </span>
+                        </td>
+                      );
+                    }
+
+                    const cellKey = keyFor(role.id, column.block.id);
                     const slot = slotsByCell.get(cellKey);
                     const signup = slot
                       ? signupsBySlot.get(slot.id)
                       : undefined;
                     const pending =
-                      pendingKey === `slot:${role.id}:${block.id}`;
+                      pendingKey === `slot:${role.id}:${column.block.id}`;
                     const disabled = Boolean(signup) || pending;
                     const checked =
                       optimisticSlots.get(cellKey) ?? Boolean(slot);
 
                     return (
                       <td
-                        key={block.id}
+                        key={column.block.id}
                         className={cn(
                           'h-24 min-w-36 border-l px-3 py-3 text-center align-middle',
                           !checked && 'bg-muted/20'
@@ -650,14 +753,18 @@ export function AdminVolunteerConfig({
                           <Checkbox
                             checked={checked}
                             disabled={disabled}
-                            aria-label={`${role.name} during ${block.name}`}
+                            aria-label={`${role.name} during ${column.block.name}`}
                             title={
                               signup
                                 ? `Occupied by ${signup.display_name}; remove the signup before disabling this slot.`
                                 : undefined
                             }
                             onCheckedChange={(value) =>
-                              handleSlotChange(role, block, value === true)
+                              handleSlotChange(
+                                role,
+                                column.block,
+                                value === true
+                              )
                             }
                           />
                           {signup && (
