@@ -6,11 +6,19 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardCheck,
+  Info,
   UserPlus,
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   claimVolunteerSlot,
   releaseVolunteerSignup,
@@ -208,6 +216,50 @@ function MyVolunteerSummary({
   );
 }
 
+function VolunteerRoleInfoTrigger({
+  role,
+  onOpen,
+}: {
+  role: VolunteerRole;
+  onOpen: (role: VolunteerRole) => void;
+}) {
+  const hasDescription = Boolean(role.description?.trim());
+  const unavailableTitle = hasDescription
+    ? undefined
+    : 'No description is available for this role';
+
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        className={cn(
+          'focus-visible:ring-ring rounded-sm text-left font-semibold focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+          hasDescription
+            ? 'cursor-pointer hover:underline'
+            : 'cursor-not-allowed opacity-60'
+        )}
+        disabled={!hasDescription}
+        title={unavailableTitle}
+        onClick={() => onOpen(role)}
+      >
+        {role.name}
+      </button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="shrink-0"
+        aria-label={`Information about ${role.name}`}
+        disabled={!hasDescription}
+        title={unavailableTitle}
+        onClick={() => onOpen(role)}
+      >
+        <Info className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
 function MobileRoleCard({
   role,
   enabledSlots,
@@ -216,6 +268,7 @@ function MobileRoleCard({
   pendingKey,
   onClaim,
   onRelease,
+  onOpenRole,
 }: {
   role: VolunteerRole;
   enabledSlots: Array<{ blockName: string; slot: VolunteerSlot }>;
@@ -224,12 +277,13 @@ function MobileRoleCard({
   pendingKey: string | null;
   onClaim: (slotId: string) => void;
   onRelease: (signupId: string) => void;
+  onOpenRole: (role: VolunteerRole) => void;
 }) {
   if (enabledSlots.length === 0) return null;
 
   return (
     <section className="bg-background rounded-lg border p-4 shadow-xs">
-      <h2 className="text-base font-semibold">{role.name}</h2>
+      <VolunteerRoleInfoTrigger role={role} onOpen={onOpenRole} />
       <div className="mt-3 space-y-3">
         {enabledSlots.map(({ blockName, slot }) => {
           const signup = signupsBySlot.get(slot.id);
@@ -284,6 +338,7 @@ function MobileRoleCard({
 export function VolunteerBoardClient({ board }: VolunteerBoardClientProps) {
   const router = useRouter();
   const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<VolunteerRole | null>(null);
   const [collapsedDays, setCollapsedDays] = useState<
     Set<CollapsibleVolunteerDay>
   >(() => new Set());
@@ -474,7 +529,10 @@ export function VolunteerBoardClient({ board }: VolunteerBoardClientProps) {
             {board.roles.map((role) => (
               <tr key={role.id} className="border-b last:border-b-0">
                 <th className="bg-background sticky left-0 z-10 min-w-56 px-4 py-3 text-left align-middle font-medium">
-                  {role.name}
+                  <VolunteerRoleInfoTrigger
+                    role={role}
+                    onOpen={setSelectedRole}
+                  />
                 </th>
                 {columns.map((column) => {
                   if (column.kind === 'collapsed-day') {
@@ -539,10 +597,27 @@ export function VolunteerBoardClient({ board }: VolunteerBoardClientProps) {
               pendingKey={pendingKey}
               onClaim={handleClaim}
               onRelease={handleRelease}
+              onOpenRole={setSelectedRole}
             />
           );
         })}
       </div>
+
+      <Dialog
+        open={Boolean(selectedRole)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedRole(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedRole?.name}</DialogTitle>
+            <DialogDescription className="text-left leading-6 whitespace-pre-wrap">
+              {selectedRole?.description}
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -58,6 +58,7 @@ function seedVolunteerFake(authUserId: string | null = ADMIN_PROFILE.id) {
         {
           id: ROLE_1,
           name: 'Door Monitor',
+          description: null,
           sort_order: 1,
           created_at: '2026-01-01T00:00:00Z',
           updated_at: '2026-01-01T00:00:00Z',
@@ -65,6 +66,7 @@ function seedVolunteerFake(authUserId: string | null = ADMIN_PROFILE.id) {
         {
           id: ROLE_2,
           name: 'Park Monitor',
+          description: null,
           sort_order: 2,
           created_at: '2026-01-01T00:00:00Z',
           updated_at: '2026-01-01T00:00:00Z',
@@ -212,6 +214,51 @@ describe('volunteer actions', () => {
     expect(fake.db.volunteer_roles.at(-1)).toMatchObject({
       name: 'Crossing Guard',
       sort_order: 3,
+    });
+  });
+
+  it('creates and edits optional multiline role descriptions', async () => {
+    const fake = seedVolunteerFake();
+
+    const created = await createVolunteerRole(
+      'Crossing Guard',
+      'Watch the main crossing.\nHelp families cross safely.'
+    );
+    const updated = await renameVolunteerRole(
+      ROLE_2,
+      'Park Monitor',
+      'Monitor the park entrance.\nReport concerns to staff.'
+    );
+
+    expect(created.success).toBe(true);
+    expect(updated.success).toBe(true);
+    expect(fake.db.volunteer_roles.at(-1)).toMatchObject({
+      name: 'Crossing Guard',
+      description: 'Watch the main crossing.\nHelp families cross safely.',
+    });
+    expect(
+      fake.db.volunteer_roles.find((role) => role.id === ROLE_2)
+    ).toMatchObject({
+      description: 'Monitor the park entrance.\nReport concerns to staff.',
+    });
+  });
+
+  it('stores blank descriptions as null and rejects descriptions over 1,000 characters', async () => {
+    const fake = seedVolunteerFake();
+
+    const blank = await renameVolunteerRole(ROLE_1, 'Door Monitor', '   ');
+    const tooLong = await createVolunteerRole(
+      'Crossing Guard',
+      'x'.repeat(1001)
+    );
+
+    expect(blank.success).toBe(true);
+    expect(
+      fake.db.volunteer_roles.find((role) => role.id === ROLE_1)
+    ).toMatchObject({ description: null });
+    expect(tooLong).toMatchObject({
+      success: false,
+      error: 'Description must be 1,000 characters or fewer',
     });
   });
 

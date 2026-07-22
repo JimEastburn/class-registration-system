@@ -24,6 +24,14 @@ const nameSchema = z
   .min(1, 'Name is required')
   .max(120, 'Name must be 120 characters or fewer');
 
+const descriptionSchema = z
+  .string()
+  .max(1000, 'Description must be 1,000 characters or fewer')
+  .transform((description) => {
+    const trimmed = description.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  });
+
 const idSchema = z.string().uuid('Invalid id');
 const directionSchema = z.enum(['up', 'down']);
 const VOLUNTEER_ACTIVITY_LIMIT = 20;
@@ -324,7 +332,8 @@ export async function getVolunteerActivityLog(
 
 async function createVolunteerItem<T extends VolunteerRole | VolunteerBlock>(
   item: VolunteerAdminItem,
-  rawName: string
+  rawName: string,
+  rawDescription?: string | null
 ): Promise<ActionResult<T>> {
   try {
     const context = await requireVolunteerAdmin();
@@ -339,13 +348,32 @@ async function createVolunteerItem<T extends VolunteerRole | VolunteerBlock>(
       return { success: false, error: `That ${item} already exists` };
     }
 
-    const table = item === 'role' ? 'volunteer_roles' : 'volunteer_blocks';
+    const descriptionParsed = descriptionSchema.safeParse(rawDescription ?? '');
+    if (item === 'role' && !descriptionParsed.success) {
+      return {
+        success: false,
+        error: descriptionParsed.error.issues[0].message,
+      };
+    }
+
     const sortOrder = await getNextSortOrder(item);
-    const { data, error } = await context.supabase
-      .from(table)
-      .insert({ name: parsed.data, sort_order: sortOrder })
-      .select('*')
-      .single();
+    const query =
+      item === 'role'
+        ? context.supabase
+            .from('volunteer_roles')
+            .insert({
+              name: parsed.data,
+              description: descriptionParsed.success
+                ? descriptionParsed.data
+                : null,
+              sort_order: sortOrder,
+            })
+            .select('*')
+        : context.supabase
+            .from('volunteer_blocks')
+            .insert({ name: parsed.data, sort_order: sortOrder })
+            .select('*');
+    const { data, error } = await query.single();
 
     if (error) {
       return {
@@ -365,7 +393,8 @@ async function createVolunteerItem<T extends VolunteerRole | VolunteerBlock>(
 async function renameVolunteerItem<T extends VolunteerRole | VolunteerBlock>(
   item: VolunteerAdminItem,
   id: string,
-  rawName: string
+  rawName: string,
+  rawDescription?: string | null
 ): Promise<ActionResult<T>> {
   try {
     const context = await requireVolunteerAdmin();
@@ -383,13 +412,32 @@ async function renameVolunteerItem<T extends VolunteerRole | VolunteerBlock>(
       return { success: false, error: `That ${item} already exists` };
     }
 
-    const table = item === 'role' ? 'volunteer_roles' : 'volunteer_blocks';
-    const { data, error } = await context.supabase
-      .from(table)
-      .update({ name: nameParsed.data })
-      .eq('id', id)
-      .select('*')
-      .single();
+    const descriptionParsed = descriptionSchema.safeParse(rawDescription ?? '');
+    if (item === 'role' && !descriptionParsed.success) {
+      return {
+        success: false,
+        error: descriptionParsed.error.issues[0].message,
+      };
+    }
+
+    const query =
+      item === 'role'
+        ? context.supabase
+            .from('volunteer_roles')
+            .update({
+              name: nameParsed.data,
+              description: descriptionParsed.success
+                ? descriptionParsed.data
+                : null,
+            })
+            .eq('id', id)
+            .select('*')
+        : context.supabase
+            .from('volunteer_blocks')
+            .update({ name: nameParsed.data })
+            .eq('id', id)
+            .select('*');
+    const { data, error } = await query.single();
 
     if (error) {
       return {
@@ -494,12 +542,19 @@ async function moveVolunteerItem(
   }
 }
 
-export async function createVolunteerRole(name: string) {
-  return createVolunteerItem<VolunteerRole>('role', name);
+export async function createVolunteerRole(
+  name: string,
+  description?: string | null
+) {
+  return createVolunteerItem<VolunteerRole>('role', name, description);
 }
 
-export async function renameVolunteerRole(id: string, name: string) {
-  return renameVolunteerItem<VolunteerRole>('role', id, name);
+export async function renameVolunteerRole(
+  id: string,
+  name: string,
+  description?: string | null
+) {
+  return renameVolunteerItem<VolunteerRole>('role', id, name, description);
 }
 
 export async function deleteVolunteerRole(id: string) {

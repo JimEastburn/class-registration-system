@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -122,33 +123,25 @@ function ItemDialog({
   onOpenChange,
   onSubmit,
 }: {
-  state: ItemDialogState | null;
+  state: ItemDialogState;
   pending: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (name: string) => void;
+  onSubmit: (name: string, description: string) => void;
 }) {
-  const [name, setName] = useState('');
-
-  if (!state) return null;
-
   const label = itemLabel(state.kind);
   const title =
-    state.mode === 'create' ? `Add volunteer ${label}` : `Rename ${label}`;
+    state.mode === 'create' ? `Add volunteer ${label}` : `Edit ${label}`;
   const defaultName = state.mode === 'edit' ? state.item.name : '';
+  const defaultDescription =
+    state.kind === 'role' && state.mode === 'edit'
+      ? ((state.item as VolunteerRole).description ?? '')
+      : '';
+  const [name, setName] = useState(defaultName);
+  const [description, setDescription] = useState(defaultDescription);
 
   return (
-    <Dialog
-      open={Boolean(state)}
-      onOpenChange={(open) => {
-        if (open) setName(defaultName);
-        onOpenChange(open);
-      }}
-    >
-      <DialogContent
-        onOpenAutoFocus={() => {
-          setName(defaultName);
-        }}
-      >
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
@@ -159,7 +152,7 @@ function ItemDialog({
           className="space-y-4"
           onSubmit={(event: FormEvent<HTMLFormElement>) => {
             event.preventDefault();
-            onSubmit(name);
+            onSubmit(name, description);
           }}
         >
           <Input
@@ -169,6 +162,29 @@ function ItemDialog({
             aria-label={`Volunteer ${label} name`}
             autoFocus
           />
+          {state.kind === 'role' && (
+            <div className="space-y-2">
+              <label
+                htmlFor="volunteer-role-description"
+                className="text-sm font-medium"
+              >
+                Description{' '}
+                <span className="text-muted-foreground">(optional)</span>
+              </label>
+              <Textarea
+                id="volunteer-role-description"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                maxLength={1000}
+                rows={6}
+                placeholder="Explain the responsibilities for this volunteer role."
+                aria-label="Volunteer role description"
+              />
+              <p className="text-muted-foreground text-right text-xs">
+                {description.length}/1,000
+              </p>
+            </div>
+          )}
           <DialogFooter>
             <Button
               type="button"
@@ -644,7 +660,7 @@ export function AdminVolunteerConfig({
     });
   }
 
-  function handleItemSubmit(name: string) {
+  function handleItemSubmit(name: string, description: string) {
     if (!itemDialog) return;
 
     const { kind, mode } = itemDialog;
@@ -656,8 +672,8 @@ export function AdminVolunteerConfig({
     const action =
       kind === 'role'
         ? mode === 'create'
-          ? () => createVolunteerRole(name)
-          : () => renameVolunteerRole(itemDialog.item.id, name)
+          ? () => createVolunteerRole(name, description)
+          : () => renameVolunteerRole(itemDialog.item.id, name, description)
         : mode === 'create'
           ? () => createVolunteerBlock(name)
           : () => renameVolunteerBlock(itemDialog.item.id, name);
@@ -965,14 +981,21 @@ export function AdminVolunteerConfig({
         activityLogError={activityLogError}
       />
 
-      <ItemDialog
-        state={itemDialog}
-        pending={Boolean(pendingKey)}
-        onOpenChange={(open) => {
-          if (!open) setItemDialog(null);
-        }}
-        onSubmit={handleItemSubmit}
-      />
+      {itemDialog && (
+        <ItemDialog
+          key={
+            itemDialog.mode === 'create'
+              ? `${itemDialog.kind}:create`
+              : `${itemDialog.kind}:edit:${itemDialog.item.id}`
+          }
+          state={itemDialog}
+          pending={Boolean(pendingKey)}
+          onOpenChange={(open) => {
+            if (!open) setItemDialog(null);
+          }}
+          onSubmit={handleItemSubmit}
+        />
+      )}
       <DeleteDialog
         state={deleteDialog}
         pending={Boolean(pendingKey)}

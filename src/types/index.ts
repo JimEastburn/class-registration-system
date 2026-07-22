@@ -250,6 +250,7 @@ export interface FamilyMemberWithEnrollments extends FamilyMember {
 export interface VolunteerRole {
   id: string;
   name: string;
+  description: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;

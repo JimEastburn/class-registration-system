@@ -19,10 +19,16 @@ vi.mock('sonner', () => ({
   },
 }));
 
-function role(id: string, name: string, sortOrder: number): VolunteerRole {
+function role(
+  id: string,
+  name: string,
+  sortOrder: number,
+  description: string | null = null
+): VolunteerRole {
   return {
     id,
     name,
+    description,
     sort_order: sortOrder,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
@@ -49,7 +55,14 @@ const tuesdayBlocks = [
 ];
 
 const board: VolunteerBoardData = {
-  roles: [role('r1', 'Door Monitor', 1)],
+  roles: [
+    role(
+      'r1',
+      'Door Monitor',
+      1,
+      'Welcome arriving families.\nKeep the entrance clear.'
+    ),
+  ],
   blocks: [
     ...tuesdayBlocks,
     block('w1', 'Wednesday Block 1', 7),
@@ -136,5 +149,54 @@ describe('VolunteerBoardClient day column groups', () => {
 
     const row = screen.getByRole('row', { name: /Door Monitor/i });
     expect(within(row).getByText('Door Monitor')).toBeInTheDocument();
+  });
+
+  it('opens the role description from the role name or information icon', () => {
+    render(<VolunteerBoardClient board={board} />);
+
+    const roleNameButtons = screen.getAllByRole('button', {
+      name: 'Door Monitor',
+    });
+    const infoButtons = screen.getAllByRole('button', {
+      name: 'Information about Door Monitor',
+    });
+
+    expect(roleNameButtons).toHaveLength(2);
+    expect(infoButtons).toHaveLength(2);
+
+    fireEvent.click(roleNameButtons[0]);
+
+    const dialog = screen.getByRole('dialog');
+    expect(
+      within(dialog).getByRole('heading', { name: 'Door Monitor' })
+    ).toBeInTheDocument();
+    expect(dialog).toHaveTextContent(
+      'Welcome arriving families. Keep the entrance clear.'
+    );
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    fireEvent.click(infoButtons[1]);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('disables role names and information icons when no description exists', () => {
+    render(
+      <VolunteerBoardClient
+        board={{ ...board, roles: [role('r1', 'Door Monitor', 1)] }}
+      />
+    );
+
+    for (const button of screen.getAllByRole('button', {
+      name: 'Door Monitor',
+    })) {
+      expect(button).toBeDisabled();
+    }
+    for (const button of screen.getAllByRole('button', {
+      name: 'Information about Door Monitor',
+    })) {
+      expect(button).toBeDisabled();
+    }
   });
 });
