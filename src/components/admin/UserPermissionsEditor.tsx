@@ -6,7 +6,10 @@ import { ChangeRoleDialog } from './ChangeRoleDialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
-import { updateParentStatus } from '@/lib/actions/admin';
+import {
+  updateParentStatus,
+  updateVolunteerAdminStatus,
+} from '@/lib/actions/admin';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
@@ -14,23 +17,56 @@ interface UserPermissionsEditorProps {
   userId: string;
   currentRole: UserRole;
   isParent: boolean;
+  isVolunteerAdmin: boolean;
 }
 
 export function UserPermissionsEditor({
   userId,
   currentRole,
   isParent,
+  isVolunteerAdmin,
 }: UserPermissionsEditorProps) {
   const router = useRouter();
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
   const [parentToggleLoading, setParentToggleLoading] = useState(false);
   const [localIsParent, setLocalIsParent] = useState(isParent);
+  const [volunteerAdminToggleLoading, setVolunteerAdminToggleLoading] =
+    useState(false);
+  const [localIsVolunteerAdmin, setLocalIsVolunteerAdmin] =
+    useState(isVolunteerAdmin);
 
   const handleRoleChange = (newRole: UserRole) => {
     if (newRole === currentRole) return;
     setPendingRole(newRole);
     setRoleDialogOpen(true);
+  };
+
+  const handleVolunteerAdminToggle = async (checked: boolean) => {
+    setVolunteerAdminToggleLoading(true);
+    setLocalIsVolunteerAdmin(checked);
+    try {
+      const { success, error } = await updateVolunteerAdminStatus(
+        userId,
+        checked
+      );
+      if (success) {
+        toast.success(
+          checked
+            ? 'Volunteer administrator access enabled'
+            : 'Volunteer administrator access disabled'
+        );
+        router.refresh();
+      } else {
+        setLocalIsVolunteerAdmin(!checked);
+        toast.error(error || 'Failed to update volunteer administrator access');
+      }
+    } catch {
+      setLocalIsVolunteerAdmin(!checked);
+      toast.error('An unexpected error occurred');
+    } finally {
+      setVolunteerAdminToggleLoading(false);
+    }
   };
 
   const handleParentToggle = async (checked: boolean) => {
@@ -89,6 +125,28 @@ export function UserPermissionsEditor({
           />
         </div>
       )}
+
+      <div className="flex items-center justify-between border-b pb-2">
+        <div className="space-y-0.5">
+          <Label
+            htmlFor="volunteer-admin-toggle"
+            className="text-sm font-medium"
+          >
+            Volunteer Administrator Access
+          </Label>
+          <p className="text-muted-foreground text-xs">
+            Allow this user to configure the volunteer board and manage
+            volunteer signups
+          </p>
+        </div>
+        <Switch
+          id="volunteer-admin-toggle"
+          checked={localIsVolunteerAdmin}
+          onCheckedChange={handleVolunteerAdminToggle}
+          disabled={volunteerAdminToggleLoading}
+          data-testid="volunteer-admin-access-toggle"
+        />
+      </div>
 
       {/* Role change confirmation dialog */}
       {pendingRole && (

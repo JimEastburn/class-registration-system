@@ -64,6 +64,7 @@ export interface Profile {
   updated_at: string;
   code_of_conduct_agreed_at: string | null;
   is_parent: boolean;
+  is_volunteer_admin: boolean;
   address_line1: string | null;
   address_line2: string | null;
   city: string | null;

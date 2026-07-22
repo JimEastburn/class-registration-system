@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   updateUserRole,
   updateParentStatus,
+  updateVolunteerAdminStatus,
   deleteUser,
   getSystemStats,
   getAllUsers,
@@ -142,6 +143,40 @@ describe('Admin Actions', () => {
       const result = await updateParentStatus(TARGET_ID, true);
       expect(result.success).toBe(false);
       expect(result.error).toContain('Not authenticated');
+    });
+  });
+
+  describe('updateVolunteerAdminStatus', () => {
+    it('lets an admin grant additive volunteer administration access', async () => {
+      const fake = seed();
+
+      const result = await updateVolunteerAdminStatus(TARGET_ID, true);
+
+      expect(result.success).toBe(true);
+      expect(
+        fake.db.profiles.find((profile) => profile.id === TARGET_ID)
+      ).toMatchObject({ role: 'parent', is_volunteer_admin: true });
+      expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
+    });
+
+    it('denies non-admin users', async () => {
+      seedFake({
+        authUserId: 'teacher-1',
+        data: {
+          profiles: [
+            {
+              id: 'teacher-1',
+              first_name: 'Teacher',
+              last_name: 'User',
+              role: 'teacher',
+            },
+          ],
+        },
+      });
+
+      const result = await updateVolunteerAdminStatus(TARGET_ID, true);
+
+      expect(result).toMatchObject({ success: false, error: 'Unauthorized' });
     });
   });
 

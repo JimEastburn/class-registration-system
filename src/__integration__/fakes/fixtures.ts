@@ -17,7 +17,7 @@ import type { Tables } from '@/types/database';
 export type SeedProfile = Pick<
   Profile,
   'id' | 'first_name' | 'last_name' | 'role' | 'email'
-> & { is_parent?: boolean };
+> & { is_parent?: boolean; is_volunteer_admin?: boolean };
 
 export type SeedFamilyMember = Pick<
   FamilyMember,

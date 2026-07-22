@@ -140,7 +140,7 @@ export async function getAllUsers(
 
     const offset = (page - 1) * limit;
 
-    let query = db.from('profiles').select('*', { count: 'exact' }).neq('is_banned', true);
+    let query = db.from('profiles').select('*, is_volunteer_admin', { count: 'exact' }).neq('is_banned', true);
 
     if (search) {
       query = query.or(
@@ -299,6 +299,57 @@ export async function updateParentStatus(
   } catch (err) {
     console.error(err);
     return { success: false, error: 'Failed to update parent status' };
+  }
+}
+
+export async function updateVolunteerAdminStatus(
+  targetUserId: string,
+  isVolunteerAdmin: boolean
+): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    const { data: adminProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    if (
+      !adminProfile ||
+      !['admin', 'super_admin'].includes(adminProfile.role)
+    ) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const db = await createAdminClient();
+    const { error } = await db
+      .from('profiles')
+      .update({ is_volunteer_admin: isVolunteerAdmin })
+      .eq('id', targetUserId);
+    if (error) throw error;
+
+    await logAuditAction(
+      user.id,
+      'update_volunteer_admin_status',
+      'profile',
+      targetUserId,
+      { is_volunteer_admin: isVolunteerAdmin }
+    );
+
+    revalidatePath('/admin/users');
+    revalidatePath(`/admin/users/${targetUserId}`);
+    revalidatePath('/', 'layout');
+    return { success: true, error: null };
+  } catch (err) {
+    console.error('Error updating volunteer admin status:', err);
+    return {
+      success: false,
+      error: 'Failed to update volunteer administrator access',
+    };
   }
 }
 

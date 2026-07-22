@@ -24,7 +24,9 @@ export default async function DashboardLayout({
   // Get user profile with role
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, email, first_name, last_name, role, avatar_url, is_parent')
+    .select(
+      'id, email, first_name, last_name, role, avatar_url, is_parent, is_volunteer_admin'
+    )
     .eq('id', user.id)
     .single();
 
@@ -41,6 +43,7 @@ export default async function DashboardLayout({
       <Sidebar
         userRole={userRole}
         isParent={profile.is_parent === true}
+        isVolunteerAdmin={profile.is_volunteer_admin === true}
         className="hidden lg:flex"
       />
 
@@ -59,7 +62,11 @@ export default async function DashboardLayout({
         />
 
         {/* Mobile navigation - visible only on mobile */}
-        <MobileNav userRole={userRole} isParent={profile.is_parent === true} />
+        <MobileNav
+          userRole={userRole}
+          isParent={profile.is_parent === true}
+          isVolunteerAdmin={profile.is_volunteer_admin === true}
+        />
 
         {/* Main content */}
         <main className="flex-1 p-4 lg:p-6">{children}</main>

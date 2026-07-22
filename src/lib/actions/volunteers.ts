@@ -40,8 +40,20 @@ function isExactVolunteerAdmin(role: UserRole | string | null | undefined) {
   return role === 'admin' || role === 'super_admin';
 }
 
-function isVolunteerTester(role: UserRole | string | null | undefined) {
-  return role === 'teacher' || role === 'admin' || role === 'super_admin';
+function hasVolunteerAdminAccess(profile: {
+  role?: UserRole | string | null;
+  is_volunteer_admin?: boolean | null;
+}) {
+  return (
+    isExactVolunteerAdmin(profile.role) || profile.is_volunteer_admin === true
+  );
+}
+
+function isVolunteerTester(profile: {
+  role?: UserRole | string | null;
+  is_volunteer_admin?: boolean | null;
+}) {
+  return profile.role === 'teacher' || hasVolunteerAdminAccess(profile);
 }
 
 function formatDisplayName(profile: {
@@ -59,6 +71,12 @@ function friendlyError(error: unknown, fallback: string) {
   const text = `${err.message ?? ''} ${err.hint ?? ''}`.toLowerCase();
 
   if (err.code === '23505' || text.includes('duplicate key')) {
+    if (text.includes('volunteer_slot_occupied')) {
+      return 'This slot was just claimed';
+    }
+    if (text.includes('volunteer_block_conflict')) {
+      return 'This volunteer already has a signup during that block';
+    }
     if (text.includes('volunteer_signups_slot_id_key')) {
       return 'This slot was just claimed';
     }
@@ -80,6 +98,22 @@ function friendlyError(error: unknown, fallback: string) {
     return 'Unauthorized';
   }
 
+  if (text.includes('volunteer_signup_not_found')) {
+    return 'Volunteer signup not found';
+  }
+
+  if (text.includes('volunteer_slot_not_found')) {
+    return 'Volunteer slot not found';
+  }
+
+  if (text.includes('volunteer_slot_occupied')) {
+    return 'This slot was just claimed';
+  }
+
+  if (text.includes('volunteer_block_conflict')) {
+    return 'This volunteer already has a signup during that block';
+  }
+
   return fallback;
 }
 
@@ -95,7 +129,7 @@ async function getCurrentProfile() {
 
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('id, role, first_name, last_name')
+    .select('id, role, first_name, last_name, is_volunteer_admin')
     .eq('id', user.id)
     .single();
 
@@ -117,7 +151,7 @@ async function requireAuthenticated() {
 async function requireVolunteerAdmin() {
   const context = await requireAuthenticated();
   if (context.error) return context;
-  if (!isExactVolunteerAdmin(context.profile?.role)) {
+  if (!context.profile || !hasVolunteerAdminAccess(context.profile)) {
     return { ...context, error: 'Unauthorized' };
   }
   return context;
@@ -126,7 +160,7 @@ async function requireVolunteerAdmin() {
 async function requireVolunteerTester() {
   const context = await requireAuthenticated();
   if (context.error) return context;
-  if (!isVolunteerTester(context.profile?.role)) {
+  if (!context.profile || !isVolunteerTester(context.profile)) {
     return { ...context, error: 'Unauthorized' };
   }
   return context;
@@ -697,6 +731,77 @@ export async function releaseVolunteerSignup(
     return { success: true, data: undefined };
   } catch (error) {
     console.error('Error releasing volunteer signup:', error);
+    return { success: false, error: 'Internal server error' };
+  }
+}
+
+export async function moveVolunteerSignup(
+  signupId: string,
+  slotId: string
+): Promise<ActionResult<VolunteerSignup>> {
+  try {
+    const context = await requireVolunteerAdmin();
+    if (context.error) return { success: false, error: context.error };
+
+    const signupParsed = idSchema.safeParse(signupId);
+    const slotParsed = idSchema.safeParse(slotId);
+    if (!signupParsed.success || !slotParsed.success) {
+      return { success: false, error: 'Invalid id' };
+    }
+
+    const { data, error } = await context.supabase.rpc(
+      'move_volunteer_signup',
+      {
+        p_signup_id: signupId,
+        p_slot_id: slotId,
+      }
+    );
+
+    if (error) {
+      return {
+        success: false,
+        error: friendlyError(error, 'Failed to move volunteer signup'),
+      };
+    }
+
+    if (!data) {
+      return { success: false, error: 'Volunteer signup not found' };
+    }
+
+    revalidateVolunteerPaths();
+    return { success: true, data: data as VolunteerSignup };
+  } catch (error) {
+    console.error('Error moving volunteer signup:', error);
+    return { success: false, error: 'Internal server error' };
+  }
+}
+
+export async function removeVolunteerSignupAsAdmin(
+  signupId: string
+): Promise<ActionResult> {
+  try {
+    const context = await requireVolunteerAdmin();
+    if (context.error) return { success: false, error: context.error };
+
+    const parsed = idSchema.safeParse(signupId);
+    if (!parsed.success) return { success: false, error: 'Invalid id' };
+
+    const { error } = await context.supabase.rpc(
+      'remove_volunteer_signup_as_admin',
+      { p_signup_id: signupId }
+    );
+
+    if (error) {
+      return {
+        success: false,
+        error: friendlyError(error, 'Failed to remove volunteer signup'),
+      };
+    }
+
+    revalidateVolunteerPaths();
+    return { success: true, data: undefined };
+  } catch (error) {
+    console.error('Error removing volunteer signup as admin:', error);
     return { success: false, error: 'Internal server error' };
   }
 }

@@ -12,6 +12,9 @@ const ROUTE_ROLE_MAP: Record<string, UserRole[]> = {
   '/parent': ['parent', 'teacher', 'admin', 'class_scheduler', 'super_admin'],
   '/teacher': ['teacher', 'super_admin'],
   '/student': ['student'],
+  // Keep the narrow volunteer route before /admin so it can grant additive
+  // volunteer-admin access without opening the rest of the admin portal.
+  '/admin/volunteers': ['admin', 'super_admin'],
   '/admin': ['admin', 'super_admin'],
   '/class-scheduler': ['class_scheduler', 'super_admin'],
 };
@@ -66,7 +69,18 @@ function getProtectedRoutePrefix(pathname: string): string | null {
 /**
  * Check if a user role has access to a route
  */
-function hasRouteAccess(routePrefix: string, userRole: UserRole): boolean {
+export function hasRouteAccess(
+  routePrefix: string,
+  userRole: UserRole,
+  isVolunteerAdmin = false
+): boolean {
+  if (
+    isVolunteerAdmin &&
+    (routePrefix === '/volunteer' || routePrefix === '/admin/volunteers')
+  ) {
+    return true;
+  }
+
   const allowedRoles = ROUTE_ROLE_MAP[routePrefix];
   return allowedRoles ? allowedRoles.includes(userRole) : false;
 }
@@ -139,7 +153,7 @@ export async function updateSession(request: NextRequest) {
     // Fetch user profile to get role
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role, is_parent')
+      .select('role, is_parent, is_volunteer_admin')
       .eq('id', user.id)
       .single();
 
@@ -152,9 +166,10 @@ export async function updateSession(request: NextRequest) {
 
     const userRole = profile.role as UserRole;
     const isParent = Boolean(profile.is_parent);
+    const isVolunteerAdmin = Boolean(profile.is_volunteer_admin);
 
     // Check if user has access to this route
-    if (!hasRouteAccess(routePrefix, userRole)) {
+    if (!hasRouteAccess(routePrefix, userRole, isVolunteerAdmin)) {
       // User doesn't have permission, redirect to their default dashboard
       const url = request.nextUrl.clone();
       url.pathname = getDefaultPathForRole(userRole);

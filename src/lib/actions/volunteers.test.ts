@@ -6,6 +6,8 @@ import {
   deleteVolunteerRole,
   getVolunteerActivityLog,
   getVolunteerBoard,
+  moveVolunteerSignup,
+  removeVolunteerSignupAsAdmin,
   releaseVolunteerSignup,
   renameVolunteerRole,
   setVolunteerSlotRequired,
@@ -33,6 +35,14 @@ const SLOT_1 = '00000000-0000-4000-8000-000000000201';
 const SLOT_2 = '00000000-0000-4000-8000-000000000202';
 const SIGNUP_1 = '00000000-0000-4000-8000-000000000301';
 
+const VOLUNTEER_ADMIN_PARENT = {
+  ...PARENT_PROFILE,
+  id: 'volunteer-admin-parent-123',
+  email: 'volunteer-admin-parent@test.com',
+  is_parent: true,
+  is_volunteer_admin: true,
+};
+
 function seedVolunteerFake(authUserId: string | null = ADMIN_PROFILE.id) {
   return seedFake({
     authUserId,
@@ -42,6 +52,7 @@ function seedVolunteerFake(authUserId: string | null = ADMIN_PROFILE.id) {
         PARENT_PROFILE,
         SCHEDULER_PROFILE,
         TEACHER_PROFILE,
+        VOLUNTEER_ADMIN_PARENT,
       ] as unknown as Record<string, unknown>[],
       volunteer_roles: [
         {
@@ -135,6 +146,23 @@ describe('volunteer actions', () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe('Unauthorized');
+  });
+
+  it('lets an additive volunteer admin configure the board without changing their primary role', async () => {
+    const fake = seedVolunteerFake(VOLUNTEER_ADMIN_PARENT.id);
+
+    const boardResult = await getVolunteerBoard();
+    const createResult = await createVolunteerRole('Crossing Guard');
+    const activityResult = await getVolunteerActivityLog(1);
+
+    expect(boardResult.success).toBe(true);
+    expect(createResult.success).toBe(true);
+    expect(activityResult.success).toBe(true);
+    expect(
+      fake.db.profiles.find(
+        (profile) => profile.id === VOLUNTEER_ADMIN_PARENT.id
+      )
+    ).toMatchObject({ role: 'parent', is_volunteer_admin: true });
   });
 
   it('limits volunteer board access to teachers and admins during the pilot', async () => {
@@ -290,5 +318,81 @@ describe('volunteer actions', () => {
 
     expect(released.success).toBe(true);
     expect(ownerFake.db.volunteer_signups).toHaveLength(0);
+  });
+
+  it('lets a volunteer admin move another user to an available slot', async () => {
+    const fake = seedVolunteerFake(VOLUNTEER_ADMIN_PARENT.id);
+    fake.db.volunteer_signups.push({
+      id: SIGNUP_1,
+      slot_id: SLOT_1,
+      block_id: BLOCK_1,
+      user_id: TEACHER_PROFILE.id,
+      display_name: 'Teacher Smith',
+      created_at: '2026-01-01T00:00:00Z',
+    });
+    fake.setRpcHandler(
+      'move_volunteer_signup',
+      ({ p_signup_id, p_slot_id }) => {
+        const signup = fake.db.volunteer_signups.find(
+          (row) => row.id === p_signup_id
+        );
+        const slot = fake.db.volunteer_slots.find(
+          (row) => row.id === p_slot_id
+        );
+        if (!signup || !slot) return null;
+        signup.slot_id = slot.id;
+        signup.block_id = slot.block_id;
+        return signup;
+      }
+    );
+
+    const result = await moveVolunteerSignup(SIGNUP_1, SLOT_2);
+
+    expect(result.success).toBe(true);
+    expect(fake.db.volunteer_signups[0]).toMatchObject({
+      id: SIGNUP_1,
+      slot_id: SLOT_2,
+      block_id: BLOCK_1,
+      user_id: TEACHER_PROFILE.id,
+    });
+  });
+
+  it('lets a volunteer admin remove another user signup', async () => {
+    const fake = seedVolunteerFake(VOLUNTEER_ADMIN_PARENT.id);
+    fake.db.volunteer_signups.push({
+      id: SIGNUP_1,
+      slot_id: SLOT_1,
+      block_id: BLOCK_1,
+      user_id: TEACHER_PROFILE.id,
+      display_name: 'Teacher Smith',
+      created_at: '2026-01-01T00:00:00Z',
+    });
+    fake.setRpcHandler(
+      'remove_volunteer_signup_as_admin',
+      ({ p_signup_id }) => {
+        fake.db.volunteer_signups = fake.db.volunteer_signups.filter(
+          (row) => row.id !== p_signup_id
+        );
+        return null;
+      }
+    );
+
+    const result = await removeVolunteerSignupAsAdmin(SIGNUP_1);
+
+    expect(result.success).toBe(true);
+    expect(fake.db.volunteer_signups).toHaveLength(0);
+  });
+
+  it('blocks ordinary parents from managing other users signups', async () => {
+    seedVolunteerFake(PARENT_PROFILE.id);
+
+    const moveResult = await moveVolunteerSignup(SIGNUP_1, SLOT_2);
+    const removeResult = await removeVolunteerSignupAsAdmin(SIGNUP_1);
+
+    expect(moveResult).toMatchObject({ success: false, error: 'Unauthorized' });
+    expect(removeResult).toMatchObject({
+      success: false,
+      error: 'Unauthorized',
+    });
   });
 });

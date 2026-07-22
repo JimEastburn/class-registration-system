@@ -50,6 +50,8 @@ import {
   deleteVolunteerRole,
   moveVolunteerBlock,
   moveVolunteerRole,
+  moveVolunteerSignup,
+  removeVolunteerSignupAsAdmin,
   renameVolunteerBlock,
   renameVolunteerRole,
   setVolunteerSlotRequired,
@@ -64,6 +66,13 @@ import type {
   VolunteerSlot,
 } from '@/types';
 import { cn } from '@/lib/utils';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { VolunteerGridScrollArea } from './VolunteerGridScrollArea';
 import {
   buildVolunteerColumnLayout,
@@ -76,6 +85,7 @@ type ItemDialogState =
   | { kind: ItemKind; mode: 'create'; item?: undefined }
   | { kind: ItemKind; mode: 'edit'; item: EditableItem };
 type DeleteDialogState = { kind: ItemKind; item: EditableItem };
+type SignupDialogState = { signup: VolunteerSignup };
 
 interface AdminVolunteerConfigProps {
   board: VolunteerBoardData;
@@ -210,6 +220,136 @@ function DeleteDialog({
             disabled={pending}
           >
             Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function MoveSignupDialog({
+  state,
+  board,
+  pending,
+  onOpenChange,
+  onSubmit,
+}: {
+  state: SignupDialogState;
+  board: VolunteerBoardData;
+  pending: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (slotId: string) => void;
+}) {
+  const [slotId, setSlotId] = useState(state.signup.slot_id);
+
+  const roleNames = new Map(board.roles.map((role) => [role.id, role.name]));
+  const blockNames = new Map(
+    board.blocks.map((block) => [block.id, block.name])
+  );
+  const occupiedSlotIds = new Set(
+    board.signups
+      .filter((signup) => signup.id !== state.signup.id)
+      .map((signup) => signup.slot_id)
+  );
+  const userBlockIds = new Set(
+    board.signups
+      .filter(
+        (signup) =>
+          signup.id !== state.signup.id &&
+          signup.user_id === state.signup.user_id
+      )
+      .map((signup) => signup.block_id)
+  );
+  const availableSlots = board.slots.filter(
+    (slot) =>
+      slot.id === state.signup.slot_id ||
+      (!occupiedSlotIds.has(slot.id) && !userBlockIds.has(slot.block_id))
+  );
+
+  return (
+    <Dialog open onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Move volunteer signup</DialogTitle>
+          <DialogDescription>
+            Choose a new volunteer role and block for{' '}
+            {state.signup.display_name}.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+          <label
+            htmlFor="volunteer-signup-slot"
+            className="text-sm font-medium"
+          >
+            Volunteer slot
+          </label>
+          <Select value={slotId} onValueChange={setSlotId}>
+            <SelectTrigger id="volunteer-signup-slot">
+              <SelectValue placeholder="Select a volunteer slot" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableSlots.map((slot) => (
+                <SelectItem key={slot.id} value={slot.id}>
+                  {roleNames.get(slot.role_id) ?? 'Unknown role'} —{' '}
+                  {blockNames.get(slot.block_id) ?? 'Unknown block'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={!slotId || slotId === state.signup.slot_id || pending}
+            isLoading={pending}
+            onClick={() => onSubmit(slotId)}
+          >
+            Move signup
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RemoveSignupDialog({
+  state,
+  pending,
+  onOpenChange,
+  onConfirm,
+}: {
+  state: SignupDialogState | null;
+  pending: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+}) {
+  if (!state) return null;
+
+  return (
+    <AlertDialog open onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remove volunteer signup?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This removes {state.signup.display_name} from this volunteer slot.
+            They can claim an available slot again later.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            disabled={pending}
+            onClick={onConfirm}
+          >
+            Remove signup
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -445,6 +585,11 @@ export function AdminVolunteerConfig({
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState | null>(
     null
   );
+  const [signupDialog, setSignupDialog] = useState<SignupDialogState | null>(
+    null
+  );
+  const [removeSignupDialog, setRemoveSignupDialog] =
+    useState<SignupDialogState | null>(null);
   const [optimisticSlots, setOptimisticSlots] = useState<Map<string, boolean>>(
     () => new Map()
   );
@@ -596,6 +741,28 @@ export function AdminVolunteerConfig({
       }
       return next;
     });
+  }
+
+  function handleSignupMove(slotId: string) {
+    if (!signupDialog) return;
+    const { signup } = signupDialog;
+    runAction(
+      `signup:move:${signup.id}`,
+      () => moveVolunteerSignup(signup.id, slotId),
+      'Volunteer signup moved'
+    );
+    setSignupDialog(null);
+  }
+
+  function handleSignupRemove() {
+    if (!removeSignupDialog) return;
+    const { signup } = removeSignupDialog;
+    runAction(
+      `signup:remove:${signup.id}`,
+      () => removeVolunteerSignupAsAdmin(signup.id),
+      'Volunteer signup removed'
+    );
+    setRemoveSignupDialog(null);
   }
 
   return (
@@ -756,9 +923,31 @@ export function AdminVolunteerConfig({
                             }
                           />
                           {signup && (
-                            <span className="text-muted-foreground max-w-32 text-xs">
-                              {signup.display_name}
-                            </span>
+                            <div className="flex max-w-32 items-center gap-1">
+                              <span className="text-muted-foreground min-w-0 truncate text-xs">
+                                {signup.display_name}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={`Move ${signup.display_name}`}
+                                onClick={() => setSignupDialog({ signup })}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={`Remove ${signup.display_name}`}
+                                onClick={() =>
+                                  setRemoveSignupDialog({ signup })
+                                }
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                           )}
                         </div>
                       </td>
@@ -791,6 +980,26 @@ export function AdminVolunteerConfig({
           if (!open) setDeleteDialog(null);
         }}
         onConfirm={handleDeleteConfirm}
+      />
+      {signupDialog && (
+        <MoveSignupDialog
+          key={signupDialog.signup.id}
+          state={signupDialog}
+          board={board}
+          pending={Boolean(pendingKey)}
+          onOpenChange={(open) => {
+            if (!open) setSignupDialog(null);
+          }}
+          onSubmit={handleSignupMove}
+        />
+      )}
+      <RemoveSignupDialog
+        state={removeSignupDialog}
+        pending={Boolean(pendingKey)}
+        onOpenChange={(open) => {
+          if (!open) setRemoveSignupDialog(null);
+        }}
+        onConfirm={handleSignupRemove}
       />
     </div>
   );

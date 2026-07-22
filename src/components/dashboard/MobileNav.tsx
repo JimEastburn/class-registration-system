@@ -11,6 +11,7 @@ import type { UserRole } from '@/types';
 interface MobileNavProps {
   userRole: UserRole;
   isParent: boolean;
+  isVolunteerAdmin: boolean;
 }
 
 interface NavItem {
@@ -63,12 +64,28 @@ const navItemsByRole: Record<UserRole, NavItem[]> = {
   ],
 };
 
-export function MobileNav({ userRole, isParent }: MobileNavProps) {
+export function MobileNav({
+  userRole,
+  isParent,
+  isVolunteerAdmin,
+}: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
   // Determine nav items dynamically
   const navItems = [...(navItemsByRole[userRole] || navItemsByRole.parent)];
+
+  if (isVolunteerAdmin) {
+    if (!navItems.some((item) => item.href === '/volunteer')) {
+      navItems.unshift({ href: '/volunteer', label: 'Volunteer Board' });
+    }
+    if (!navItems.some((item) => item.href === '/admin/volunteers')) {
+      navItems.push({
+        href: '/admin/volunteers',
+        label: 'Volunteer Configuration',
+      });
+    }
+  }
 
   // Add Parent Link if user is also a parent (and not already seeing parent view as primary)
   if (isParent && userRole !== 'parent' && userRole !== 'super_admin') {

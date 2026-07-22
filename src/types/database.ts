@@ -461,6 +461,7 @@ export type Database = {
           id: string;
           is_banned: boolean;
           is_parent: boolean;
+          is_volunteer_admin: boolean;
           last_name: string;
           phone: string | null;
           role: Database['public']['Enums']['UserRole'];
@@ -483,6 +484,7 @@ export type Database = {
           id: string;
           is_banned?: boolean;
           is_parent?: boolean;
+          is_volunteer_admin?: boolean;
           last_name?: string;
           phone?: string | null;
           role?: Database['public']['Enums']['UserRole'];
@@ -505,6 +507,7 @@ export type Database = {
           id?: string;
           is_banned?: boolean;
           is_parent?: boolean;
+          is_volunteer_admin?: boolean;
           last_name?: string;
           phone?: string | null;
           role?: Database['public']['Enums']['UserRole'];
@@ -792,6 +795,21 @@ export type Database = {
       };
       move_volunteer_role: {
         Args: { p_direction: string; p_role_id: string };
+        Returns: undefined;
+      };
+      move_volunteer_signup: {
+        Args: { p_signup_id: string; p_slot_id: string };
+        Returns: {
+          block_id: string;
+          created_at: string;
+          display_name: string;
+          id: string;
+          slot_id: string;
+          user_id: string;
+        };
+      };
+      remove_volunteer_signup_as_admin: {
+        Args: { p_signup_id: string };
         Returns: undefined;
       };
       is_teacher_of_student: {

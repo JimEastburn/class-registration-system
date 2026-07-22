@@ -22,6 +22,8 @@ import type { UserRole } from '@/types';
 
 interface SidebarProps {
   userRole: UserRole;
+  isParent: boolean;
+  isVolunteerAdmin: boolean;
   className?: string;
 }
 
@@ -211,13 +213,24 @@ const navItems: NavItem[] = [
 /**
  * Filter nav items based on user role
  */
-function getNavItemsForRole(role: UserRole, isParent: boolean): NavItem[] {
+function getNavItemsForRole(
+  role: UserRole,
+  isParent: boolean,
+  isVolunteerAdmin: boolean
+): NavItem[] {
   return navItems.filter((item) => {
     // Check if role is explicitly allowed
     if (item.roles.includes(role)) return true;
 
     // Check if user is also a parent and this is a parent item
     if (isParent && item.href.startsWith('/parent')) return true;
+
+    if (
+      isVolunteerAdmin &&
+      (item.href === '/volunteer' || item.href === '/admin/volunteers')
+    ) {
+      return true;
+    }
 
     return false;
   });
@@ -226,10 +239,15 @@ function getNavItemsForRole(role: UserRole, isParent: boolean): NavItem[] {
 export function Sidebar({
   userRole,
   isParent,
+  isVolunteerAdmin,
   className,
-}: SidebarProps & { isParent: boolean }) {
+}: SidebarProps) {
   const pathname = usePathname();
-  const filteredNavItems = getNavItemsForRole(userRole, isParent);
+  const filteredNavItems = getNavItemsForRole(
+    userRole,
+    isParent,
+    isVolunteerAdmin
+  );
 
   // Group items by portal
   const parentItems = filteredNavItems.filter((item) =>
