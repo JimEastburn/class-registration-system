@@ -216,6 +216,9 @@ function MyVolunteerSummary({
   );
 }
 
+const NO_DESCRIPTION_MESSAGE =
+  'No description is available for this role, please text Jim Eastburn at 512-689-6860';
+
 function VolunteerRoleInfoTrigger({
   role,
   onOpen,
@@ -224,38 +227,32 @@ function VolunteerRoleInfoTrigger({
   onOpen: (role: VolunteerRole) => void;
 }) {
   const hasDescription = Boolean(role.description?.trim());
-  const unavailableTitle = hasDescription
-    ? undefined
-    : 'No description is available for this role';
 
   return (
     <div className="flex items-center gap-1">
       <button
         type="button"
-        className={cn(
-          'focus-visible:ring-ring rounded-sm text-left font-semibold focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
-          hasDescription
-            ? 'cursor-pointer hover:underline'
-            : 'cursor-not-allowed opacity-60'
-        )}
-        disabled={!hasDescription}
-        title={unavailableTitle}
+        className="focus-visible:ring-ring cursor-pointer rounded-sm text-left font-semibold hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
         onClick={() => onOpen(role)}
       >
         {role.name}
       </button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        className="shrink-0"
-        aria-label={`Information about ${role.name}`}
-        disabled={!hasDescription}
-        title={unavailableTitle}
-        onClick={() => onOpen(role)}
+      <span
+        className={cn('shrink-0', !hasDescription && 'cursor-not-allowed')}
+        title={hasDescription ? undefined : NO_DESCRIPTION_MESSAGE}
       >
-        <Info className="h-4 w-4" />
-      </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="shrink-0"
+          aria-label={`Information about ${role.name}`}
+          disabled={!hasDescription}
+          onClick={() => onOpen(role)}
+        >
+          <Info className="h-4 w-4" />
+        </Button>
+      </span>
     </div>
   );
 }
@@ -613,7 +610,7 @@ export function VolunteerBoardClient({ board }: VolunteerBoardClientProps) {
           <DialogHeader>
             <DialogTitle>{selectedRole?.name}</DialogTitle>
             <DialogDescription className="text-left leading-6 whitespace-pre-wrap">
-              {selectedRole?.description}
+              {selectedRole?.description?.trim() || NO_DESCRIPTION_MESSAGE}
             </DialogDescription>
           </DialogHeader>
         </DialogContent>

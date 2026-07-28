@@ -181,7 +181,7 @@ describe('VolunteerBoardClient day column groups', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
-  it('disables role names and information icons when no description exists', () => {
+  it('keeps role names enabled but disables information icons when no description exists', () => {
     render(
       <VolunteerBoardClient
         board={{ ...board, roles: [role('r1', 'Door Monitor', 1)] }}
@@ -191,12 +191,18 @@ describe('VolunteerBoardClient day column groups', () => {
     for (const button of screen.getAllByRole('button', {
       name: 'Door Monitor',
     })) {
-      expect(button).toBeDisabled();
+      expect(button).not.toBeDisabled();
     }
     for (const button of screen.getAllByRole('button', {
       name: 'Information about Door Monitor',
     })) {
       expect(button).toBeDisabled();
+      expect(button.className).not.toMatch(/cursor-not-allowed/);
+      expect(button.parentElement).toHaveAttribute(
+        'title',
+        'No description is available for this role, please text Jim Eastburn at 512-689-6860'
+      );
+      expect(button.parentElement).toHaveClass('cursor-not-allowed');
     }
   });
 });
