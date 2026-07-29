@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { VolunteerBoardClient } from '../VolunteerBoardClient';
+import { NO_DESCRIPTION_MESSAGE } from '../VolunteerBoardShared';
 import type {
   VolunteerBlock,
   VolunteerBoardData,
@@ -200,7 +201,7 @@ describe('VolunteerBoardClient day column groups', () => {
       expect(button.className).not.toMatch(/cursor-not-allowed/);
       expect(button.parentElement).toHaveAttribute(
         'title',
-        'No description is available for this role, please text Jim Eastburn at 512-689-6860'
+        NO_DESCRIPTION_MESSAGE
       );
       expect(button.parentElement).toHaveClass('cursor-not-allowed');
     }

@@ -1,0 +1,181 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { UserPlus, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import type {
+  VolunteerBoardData,
+  VolunteerRole,
+  VolunteerSignup,
+} from '@/types';
+import { VolunteerGridScrollArea } from './VolunteerGridScrollArea';
+import {
+  buildVolunteerDayColumns,
+  type VolunteerColumnEntry,
+} from './volunteerDayColumns';
+import {
+  buildSlotMaps,
+  buildVolunteerCommitments,
+  MyVolunteerSummary,
+  useVolunteerBoardActions,
+  VolunteerNameChip,
+  VolunteerRoleDialog,
+  VolunteerRoleInfoTrigger,
+} from './VolunteerBoardShared';
+
+interface VolunteerBoardV2ClientProps {
+  board: VolunteerBoardData;
+}
+
+function VolunteerEntryRow({
+  entry,
+  signup,
+  currentUserId,
+  pendingKey,
+  onClaim,
+  onRelease,
+  onOpenRole,
+}: {
+  entry: VolunteerColumnEntry;
+  signup: VolunteerSignup | undefined;
+  currentUserId: string;
+  pendingKey: string | null;
+  onClaim: (slotId: string) => void;
+  onRelease: (signupId: string) => void;
+  onOpenRole: (role: VolunteerRole) => void;
+}) {
+  const isMine = signup?.user_id === currentUserId;
+
+  return (
+    <li className="border-t px-3 py-3 first:border-t-0">
+      <VolunteerRoleInfoTrigger
+        role={entry.role}
+        label={entry.label}
+        onOpen={onOpenRole}
+      />
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        {!signup ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8"
+            isLoading={pendingKey === `claim:${entry.slot.id}`}
+            onClick={() => onClaim(entry.slot.id)}
+          >
+            <UserPlus className="h-4 w-4" />
+            Volunteer
+          </Button>
+        ) : (
+          <>
+            <VolunteerNameChip
+              displayName={signup.display_name}
+              isMine={isMine}
+            />
+            {isMine && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                isLoading={pendingKey === `release:${signup.id}`}
+                onClick={() => onRelease(signup.id)}
+              >
+                <X className="h-3.5 w-3.5" />
+                Remove
+              </Button>
+            )}
+          </>
+        )}
+      </div>
+    </li>
+  );
+}
+
+export function VolunteerBoardV2Client({ board }: VolunteerBoardV2ClientProps) {
+  const [selectedRole, setSelectedRole] = useState<VolunteerRole | null>(null);
+  const { pendingKey, handleClaim, handleRelease } = useVolunteerBoardActions();
+  const { slotsById, signupsBySlot } = useMemo(
+    () => buildSlotMaps(board.slots, board.signups),
+    [board.slots, board.signups]
+  );
+  const columns = useMemo(
+    () => buildVolunteerDayColumns(board.blocks, board.roles, board.slots),
+    [board.blocks, board.roles, board.slots]
+  );
+  const myCommitments = useMemo(
+    () => buildVolunteerCommitments(board, slotsById),
+    [board, slotsById]
+  );
+
+  if (board.slots.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed p-8 text-center">
+        <h2 className="text-lg font-semibold">No volunteer slots yet</h2>
+        <p className="text-muted-foreground mt-2 text-sm">
+          Volunteer opportunities will appear here after an admin configures the
+          board.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <MyVolunteerSummary
+        commitments={myCommitments}
+        pendingKey={pendingKey}
+        onRelease={handleRelease}
+      />
+
+      <VolunteerGridScrollArea>
+        <div className="flex min-w-max items-stretch">
+          {columns.map((column) => (
+            <section
+              key={column.key}
+              className="w-72 shrink-0 border-l first:border-l-0"
+              aria-label={`${column.key} volunteer roles`}
+            >
+              <h2 className="bg-muted sticky top-0 z-20 border-b px-3 py-3 text-center text-sm font-bold tracking-wide uppercase">
+                {column.key}
+              </h2>
+
+              {column.sections.length === 0 ? (
+                <p className="text-muted-foreground px-3 py-6 text-center text-sm">
+                  No volunteer roles
+                </p>
+              ) : (
+                column.sections.map((section) => (
+                  <div key={section.block.id}>
+                    <h3 className="bg-muted/50 text-muted-foreground border-b px-3 py-1.5 text-xs font-semibold tracking-wide uppercase">
+                      {section.blockLabel}
+                    </h3>
+                    <ul>
+                      {section.entries.map((entry) => (
+                        <VolunteerEntryRow
+                          key={entry.slot.id}
+                          entry={entry}
+                          signup={signupsBySlot.get(entry.slot.id)}
+                          currentUserId={board.currentUserId}
+                          pendingKey={pendingKey}
+                          onClaim={handleClaim}
+                          onRelease={handleRelease}
+                          onOpenRole={setSelectedRole}
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                ))
+              )}
+            </section>
+          ))}
+        </div>
+      </VolunteerGridScrollArea>
+
+      <VolunteerRoleDialog
+        role={selectedRole}
+        onClose={() => setSelectedRole(null)}
+      />
+    </div>
+  );
+}

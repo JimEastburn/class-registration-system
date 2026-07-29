@@ -9,6 +9,9 @@ import type { UserRole } from '@/types';
 const ROUTE_ROLE_MAP: Record<string, UserRole[]> = {
   // Temporarily limited to staff testers while the volunteer board is piloted.
   '/volunteer': ['teacher', 'admin', 'super_admin'],
+  // Alternate layout of the same board; `/volunteer` is not a prefix of it, so
+  // it needs its own entry to stay behind the same gate.
+  '/volunteer-version-2': ['teacher', 'admin', 'super_admin'],
   '/parent': ['parent', 'teacher', 'admin', 'class_scheduler', 'super_admin'],
   '/teacher': ['teacher', 'super_admin'],
   '/student': ['student'],
@@ -18,6 +21,16 @@ const ROUTE_ROLE_MAP: Record<string, UserRole[]> = {
   '/admin': ['admin', 'super_admin'],
   '/class-scheduler': ['class_scheduler', 'super_admin'],
 };
+
+/**
+ * Routes an additive `is_volunteer_admin` flag unlocks on its own, without
+ * granting the rest of the portal those roles normally imply.
+ */
+const VOLUNTEER_ADMIN_ROUTES = [
+  '/volunteer',
+  '/volunteer-version-2',
+  '/admin/volunteers',
+];
 
 /**
  * Default redirect paths based on user role
@@ -74,10 +87,7 @@ export function hasRouteAccess(
   userRole: UserRole,
   isVolunteerAdmin = false
 ): boolean {
-  if (
-    isVolunteerAdmin &&
-    (routePrefix === '/volunteer' || routePrefix === '/admin/volunteers')
-  ) {
+  if (isVolunteerAdmin && VOLUNTEER_ADMIN_ROUTES.includes(routePrefix)) {
     return true;
   }
 

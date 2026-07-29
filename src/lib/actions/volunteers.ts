@@ -36,7 +36,11 @@ const idSchema = z.string().uuid('Invalid id');
 const directionSchema = z.enum(['up', 'down']);
 const VOLUNTEER_ACTIVITY_LIMIT = 20;
 
-const VOLUNTEER_PATHS = ['/volunteer', '/admin/volunteers'];
+const VOLUNTEER_PATHS = [
+  '/volunteer',
+  '/volunteer-version-2',
+  '/admin/volunteers',
+];
 
 function revalidateVolunteerPaths() {
   for (const path of VOLUNTEER_PATHS) {
