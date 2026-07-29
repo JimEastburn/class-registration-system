@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { VolunteerBoardV2Client } from '../VolunteerBoardV2Client';
 import type {
@@ -168,6 +168,45 @@ describe('VolunteerBoardV2Client', () => {
         .getAllByRole('heading', { level: 3 })
         .map((heading) => heading.textContent)
     ).toEqual(['before Block 1', 'Block 1', 'once']);
+  });
+
+  it('collapses and re-expands a block section when its sub-header is clicked', () => {
+    render(<VolunteerBoardV2Client board={board} />);
+
+    const tuesday = screen.getByRole('region', {
+      name: 'Tuesday volunteer roles',
+    });
+    const entryName = 'Opening YC Team - 1st Member [before Block 1]';
+
+    expect(
+      within(tuesday).getByRole('button', { name: entryName })
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(tuesday).getByRole('button', {
+        name: 'Collapse before Block 1 roles',
+      })
+    );
+
+    expect(
+      within(tuesday).queryByRole('button', { name: entryName })
+    ).not.toBeInTheDocument();
+    // Other sections stay open; only the clicked one collapses.
+    expect(
+      within(tuesday).getByRole('button', {
+        name: 'Door Monitor Gym [Block 1]',
+      })
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(tuesday).getByRole('button', {
+        name: 'Expand before Block 1 roles',
+      })
+    );
+
+    expect(
+      within(tuesday).getByRole('button', { name: entryName })
+    ).toBeInTheDocument();
   });
 
   it('offers a Volunteer button for open slots and Remove for the current user', () => {

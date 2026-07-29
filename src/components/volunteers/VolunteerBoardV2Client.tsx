@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { UserPlus, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, UserPlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type {
   VolunteerBoardData,
@@ -94,6 +94,9 @@ function VolunteerEntryRow({
 
 export function VolunteerBoardV2Client({ board }: VolunteerBoardV2ClientProps) {
   const [selectedRole, setSelectedRole] = useState<VolunteerRole | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
+    () => new Set()
+  );
   const { pendingKey, handleClaim, handleRelease } = useVolunteerBoardActions();
   const { slotsById, signupsBySlot } = useMemo(
     () => buildSlotMaps(board.slots, board.signups),
@@ -107,6 +110,18 @@ export function VolunteerBoardV2Client({ board }: VolunteerBoardV2ClientProps) {
     () => buildVolunteerCommitments(board, slotsById),
     [board, slotsById]
   );
+
+  function toggleSection(blockId: string) {
+    setCollapsedSections((current) => {
+      const next = new Set(current);
+      if (next.has(blockId)) {
+        next.delete(blockId);
+      } else {
+        next.add(blockId);
+      }
+      return next;
+    });
+  }
 
   if (board.slots.length === 0) {
     return (
@@ -145,27 +160,46 @@ export function VolunteerBoardV2Client({ board }: VolunteerBoardV2ClientProps) {
                   No volunteer roles
                 </p>
               ) : (
-                column.sections.map((section) => (
-                  <div key={section.block.id}>
-                    <h3 className="bg-muted/50 text-muted-foreground border-b px-3 py-1.5 text-xs font-semibold tracking-wide uppercase">
-                      {section.blockLabel}
-                    </h3>
-                    <ul>
-                      {section.entries.map((entry) => (
-                        <VolunteerEntryRow
-                          key={entry.slot.id}
-                          entry={entry}
-                          signup={signupsBySlot.get(entry.slot.id)}
-                          currentUserId={board.currentUserId}
-                          pendingKey={pendingKey}
-                          onClaim={handleClaim}
-                          onRelease={handleRelease}
-                          onOpenRole={setSelectedRole}
-                        />
-                      ))}
-                    </ul>
-                  </div>
-                ))
+                column.sections.map((section) => {
+                  const collapsed = collapsedSections.has(section.block.id);
+
+                  return (
+                    <div key={section.block.id}>
+                      <h3>
+                        <button
+                          type="button"
+                          onClick={() => toggleSection(section.block.id)}
+                          aria-expanded={!collapsed}
+                          aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${section.blockLabel} roles`}
+                          className="hover:bg-muted flex w-full items-center gap-1.5 border-b bg-amber-100/70 px-3 py-1.5 text-xs font-semibold tracking-wide text-amber-700 uppercase transition-colors dark:bg-amber-950/30 dark:text-amber-300"
+                        >
+                          {collapsed ? (
+                            <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                          )}
+                          {section.blockLabel}
+                        </button>
+                      </h3>
+                      {!collapsed && (
+                        <ul>
+                          {section.entries.map((entry) => (
+                            <VolunteerEntryRow
+                              key={entry.slot.id}
+                              entry={entry}
+                              signup={signupsBySlot.get(entry.slot.id)}
+                              currentUserId={board.currentUserId}
+                              pendingKey={pendingKey}
+                              onClaim={handleClaim}
+                              onRelease={handleRelease}
+                              onOpenRole={setSelectedRole}
+                            />
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </section>
           ))}
