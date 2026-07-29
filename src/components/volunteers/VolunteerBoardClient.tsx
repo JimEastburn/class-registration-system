@@ -217,7 +217,7 @@ function MyVolunteerSummary({
 }
 
 const NO_DESCRIPTION_MESSAGE =
-  'No description is available for this role, please text Jim Eastburn at 512-689-6860';
+  'No description is available for this role. Please text Jim Eastburn at 512-689-6860 if you have questions or would like more information about this role.';
 
 function VolunteerRoleInfoTrigger({
   role,
