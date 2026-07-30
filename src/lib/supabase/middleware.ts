@@ -9,9 +9,12 @@ import type { UserRole } from '@/types';
 const ROUTE_ROLE_MAP: Record<string, UserRole[]> = {
   // Temporarily limited to staff testers while the volunteer board is piloted.
   '/volunteer': ['teacher', 'admin', 'super_admin'],
-  // Alternate layout of the same board; `/volunteer` is not a prefix of it, so
-  // it needs its own entry to stay behind the same gate.
+  // Alternate layouts of the same board; `/volunteer` is not a prefix of these,
+  // so each needs its own entry to stay behind the same gate.
   '/volunteer-version-2': ['teacher', 'admin', 'super_admin'],
+  '/volunteer-version-3': ['teacher', 'admin', 'super_admin'],
+  '/volunteer-version-4': ['teacher', 'admin', 'super_admin'],
+  '/volunteer-version-5': ['teacher', 'admin', 'super_admin'],
   '/parent': ['parent', 'teacher', 'admin', 'class_scheduler', 'super_admin'],
   '/teacher': ['teacher', 'super_admin'],
   '/student': ['student'],
@@ -29,6 +32,9 @@ const ROUTE_ROLE_MAP: Record<string, UserRole[]> = {
 const VOLUNTEER_ADMIN_ROUTES = [
   '/volunteer',
   '/volunteer-version-2',
+  '/volunteer-version-3',
+  '/volunteer-version-4',
+  '/volunteer-version-5',
   '/admin/volunteers',
 ];
 

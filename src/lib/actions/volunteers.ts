@@ -39,6 +39,9 @@ const VOLUNTEER_ACTIVITY_LIMIT = 20;
 const VOLUNTEER_PATHS = [
   '/volunteer',
   '/volunteer-version-2',
+  '/volunteer-version-3',
+  '/volunteer-version-4',
+  '/volunteer-version-5',
   '/admin/volunteers',
 ];
 

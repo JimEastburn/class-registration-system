@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ClipboardCheck, Info, X } from 'lucide-react';
+import { ClipboardCheck, Info, UserPlus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -265,6 +265,72 @@ export function VolunteerRoleInfoTrigger({
           <Info className="h-4 w-4" />
         </Button>
       </span>
+    </div>
+  );
+}
+
+/**
+ * One role inside a grid cell: its name (opens the info dialog) plus the
+ * claim/name/remove control. Used by the block-row matrix layouts, where the
+ * row and column already say which block and day this is.
+ */
+export function VolunteerCellEntry({
+  role,
+  slot,
+  signup,
+  currentUserId,
+  pendingKey,
+  onClaim,
+  onRelease,
+  onOpenRole,
+}: {
+  role: VolunteerRole;
+  slot: VolunteerSlot;
+  signup: VolunteerSignup | undefined;
+  currentUserId: string;
+  pendingKey: string | null;
+  onClaim: (slotId: string) => void;
+  onRelease: (signupId: string) => void;
+  onOpenRole: (role: VolunteerRole) => void;
+}) {
+  const isMine = signup?.user_id === currentUserId;
+
+  return (
+    <div className="space-y-1.5">
+      <VolunteerRoleInfoTrigger role={role} onOpen={onOpenRole} />
+      {!signup ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8"
+          isLoading={pendingKey === `claim:${slot.id}`}
+          onClick={() => onClaim(slot.id)}
+        >
+          <UserPlus className="h-4 w-4" />
+          Volunteer
+        </Button>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          <VolunteerNameChip
+            displayName={signup.display_name}
+            isMine={isMine}
+          />
+          {isMine && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              isLoading={pendingKey === `release:${signup.id}`}
+              onClick={() => onRelease(signup.id)}
+            >
+              <X className="h-3.5 w-3.5" />
+              Remove
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
