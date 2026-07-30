@@ -1,5 +1,5 @@
 import { getVolunteerBoard } from '@/lib/actions/volunteers';
-import { VolunteerBoardClient } from '@/components/volunteers/VolunteerBoardClient';
+import { VolunteerBoardV2Client } from '@/components/volunteers/VolunteerBoardV2Client';
 
 export const metadata = {
   title: 'Volunteer Board',
@@ -32,7 +32,7 @@ export default async function VolunteerPage() {
       </div>
 
       {result.success ? (
-        <VolunteerBoardClient board={result.data} />
+        <VolunteerBoardV2Client board={result.data} />
       ) : (
         <div className="border-destructive/30 bg-destructive/5 text-destructive rounded-lg border p-6 text-sm">
           {result.error}

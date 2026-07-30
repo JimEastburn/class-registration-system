@@ -10,8 +10,8 @@ import {
   ChevronRight,
   Pencil,
   Plus,
+  Search,
   Trash2,
-  Users,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -590,6 +590,36 @@ function VolunteerActivityLog({
   );
 }
 
+function SummaryStats({ board }: { board: VolunteerBoardData }) {
+  const enabledSlots = board.slots.length;
+  const filled = board.signups.length;
+  const open = Math.max(0, enabledSlots - filled);
+
+  const stats = [
+    { label: 'Roles', value: board.roles.length },
+    { label: 'Blocks', value: board.blocks.length },
+    { label: 'Slots on board', value: enabledSlots },
+    { label: 'Filled', value: filled },
+    { label: 'Open', value: open },
+  ];
+
+  return (
+    <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      {stats.map((stat) => (
+        <div
+          key={stat.label}
+          className="bg-background rounded-lg border p-3 text-center"
+        >
+          <p className="text-2xl font-bold tabular-nums">{stat.value}</p>
+          <p className="text-muted-foreground text-xs font-medium">
+            {stat.label}
+          </p>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 export function AdminVolunteerConfig({
   board,
   activityLog,
@@ -612,6 +642,7 @@ export function AdminVolunteerConfig({
   const [collapsedDays, setCollapsedDays] = useState<
     Set<CollapsibleVolunteerDay>
   >(() => new Set());
+  const [roleFilter, setRoleFilter] = useState('');
   const [, startTransition] = useTransition();
   const { slotsByCell, signupsBySlot } = useMemo(
     () => buildSlotMaps(board.slots, board.signups),
@@ -621,6 +652,12 @@ export function AdminVolunteerConfig({
     () => buildVolunteerColumnLayout(board.blocks, collapsedDays),
     [board.blocks, collapsedDays]
   );
+  const normalizedRoleFilter = roleFilter.trim().toLowerCase();
+  const visibleRoles = normalizedRoleFilter
+    ? board.roles.filter((role) =>
+        role.name.toLowerCase().includes(normalizedRoleFilter)
+      )
+    : board.roles;
 
   useEffect(() => {
     setOptimisticSlots((current) => {
@@ -783,6 +820,8 @@ export function AdminVolunteerConfig({
 
   return (
     <div className="space-y-6">
+      <SummaryStats board={board} />
+
       <div className="grid gap-4 lg:grid-cols-2">
         <ItemList
           kind="role"
@@ -805,17 +844,39 @@ export function AdminVolunteerConfig({
       </div>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="text-xl font-semibold">Required Slots</h2>
+            <h2 className="text-xl font-semibold">
+              Which roles are needed for each block
+            </h2>
             <p className="text-muted-foreground text-sm">
-              Checked cells appear on the volunteer board.
+              Check a box to add that role to a block — checked slots show up on
+              the volunteer board for families to claim.
             </p>
           </div>
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-            <Users className="h-4 w-4" />
-            {board.signups.length} filled
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+            <Input
+              value={roleFilter}
+              onChange={(event) => setRoleFilter(event.target.value)}
+              placeholder="Filter roles…"
+              aria-label="Filter roles"
+              className="pl-9"
+            />
           </div>
+        </div>
+
+        <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 text-xs">
+          <span>
+            <span className="font-medium">Checked</span> = needed for that block
+          </span>
+          <span>
+            <span className="font-medium">Shaded</span> = not on the board
+          </span>
+          <span>
+            <span className="font-medium">A name</span> = someone signed up (use
+            the icons to move or remove them)
+          </span>
         </div>
 
         <VolunteerGridScrollArea>
@@ -885,7 +946,17 @@ export function AdminVolunteerConfig({
               </tr>
             </thead>
             <tbody>
-              {board.roles.map((role) => (
+              {visibleRoles.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={columns.length + 1}
+                    className="text-muted-foreground h-24 border-b px-4 text-center text-sm"
+                  >
+                    No roles match “{roleFilter}”.
+                  </td>
+                </tr>
+              )}
+              {visibleRoles.map((role) => (
                 <tr key={role.id} className="border-b last:border-b-0">
                   <th className="bg-background sticky left-0 z-10 min-w-64 px-4 py-3 text-left align-middle font-medium">
                     {role.name}

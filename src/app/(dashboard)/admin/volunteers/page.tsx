@@ -30,7 +30,10 @@ export default async function AdminVolunteersPage({
           Volunteer Configuration
         </h1>
         <p className="text-muted-foreground mt-2">
-          Configure volunteer roles, blocks, and the required role/block slots.
+          Set up the volunteer board that families see at{' '}
+          <span className="font-medium">/volunteer</span>. Add your roles and
+          time blocks, check which roles are needed during each block, and
+          manage who has signed up.
         </p>
       </div>
 
