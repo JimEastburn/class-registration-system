@@ -1,7 +1,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight, UserPlus, X } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronsLeftRight,
+  ChevronsRightLeft,
+  UserPlus,
+  X,
+} from 'lucide-react';
+import type { VolunteerColumnKey } from './volunteerDayColumns';
 import { Button } from '@/components/ui/button';
 import type {
   VolunteerBoardData,
@@ -97,6 +105,9 @@ export function VolunteerBoardV2Client({ board }: VolunteerBoardV2ClientProps) {
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     () => new Set()
   );
+  const [collapsedColumns, setCollapsedColumns] = useState<
+    Set<VolunteerColumnKey>
+  >(() => new Set());
   const { pendingKey, handleClaim, handleRelease } = useVolunteerBoardActions();
   const { slotsById, signupsBySlot } = useMemo(
     () => buildSlotMaps(board.slots, board.signups),
@@ -118,6 +129,18 @@ export function VolunteerBoardV2Client({ board }: VolunteerBoardV2ClientProps) {
         next.delete(blockId);
       } else {
         next.add(blockId);
+      }
+      return next;
+    });
+  }
+
+  function toggleColumn(key: VolunteerColumnKey) {
+    setCollapsedColumns((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
       }
       return next;
     });
@@ -145,64 +168,102 @@ export function VolunteerBoardV2Client({ board }: VolunteerBoardV2ClientProps) {
 
       <VolunteerGridScrollArea>
         <div className="flex min-w-max items-stretch">
-          {columns.map((column) => (
-            <section
-              key={column.key}
-              className="w-72 shrink-0 border-l first:border-l-0"
-              aria-label={`${column.key} volunteer roles`}
-            >
-              <h2 className="bg-muted sticky top-0 z-20 border-b px-3 py-3 text-center text-sm font-bold tracking-wide uppercase">
-                {column.key}
-              </h2>
+          {columns.map((column) => {
+            if (collapsedColumns.has(column.key)) {
+              return (
+                <section
+                  key={column.key}
+                  className="bg-muted/30 w-12 shrink-0 border-l first:border-l-0"
+                  aria-label={`${column.key} volunteer roles`}
+                >
+                  <h2 className="sticky top-0 z-20">
+                    <button
+                      type="button"
+                      onClick={() => toggleColumn(column.key)}
+                      aria-expanded={false}
+                      aria-label={`Expand ${column.key} column`}
+                      title={`Expand ${column.key}`}
+                      className="bg-muted hover:bg-muted/80 flex w-full flex-col items-center gap-3 border-b px-1 py-3 transition-colors"
+                    >
+                      <ChevronsLeftRight className="h-4 w-4 shrink-0" />
+                      <span className="text-sm font-bold tracking-wide uppercase [writing-mode:vertical-rl]">
+                        {column.key}
+                      </span>
+                    </button>
+                  </h2>
+                </section>
+              );
+            }
 
-              {column.sections.length === 0 ? (
-                <p className="text-muted-foreground px-3 py-6 text-center text-sm">
-                  No volunteer roles
-                </p>
-              ) : (
-                column.sections.map((section) => {
-                  const collapsed = collapsedSections.has(section.block.id);
+            return (
+              <section
+                key={column.key}
+                className="w-72 shrink-0 border-l first:border-l-0"
+                aria-label={`${column.key} volunteer roles`}
+              >
+                <h2 className="sticky top-0 z-20">
+                  <button
+                    type="button"
+                    onClick={() => toggleColumn(column.key)}
+                    aria-expanded={true}
+                    aria-label={`Collapse ${column.key} column`}
+                    title={`Collapse ${column.key}`}
+                    className="bg-muted hover:bg-muted/80 flex w-full items-center justify-center gap-1.5 border-b px-3 py-3 text-sm font-bold tracking-wide uppercase transition-colors"
+                  >
+                    {column.key}
+                    <ChevronsRightLeft className="h-3.5 w-3.5 shrink-0" />
+                  </button>
+                </h2>
 
-                  return (
-                    <div key={section.block.id}>
-                      <h3>
-                        <button
-                          type="button"
-                          onClick={() => toggleSection(section.block.id)}
-                          aria-expanded={!collapsed}
-                          aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${section.blockLabel} roles`}
-                          className="hover:bg-muted flex w-full items-center gap-1.5 border-b bg-amber-100/70 px-3 py-1.5 text-xs font-semibold tracking-wide text-amber-700 uppercase transition-colors dark:bg-amber-950/30 dark:text-amber-300"
-                        >
-                          {collapsed ? (
-                            <ChevronRight className="h-3.5 w-3.5 shrink-0" />
-                          ) : (
-                            <ChevronDown className="h-3.5 w-3.5 shrink-0" />
-                          )}
-                          {section.blockLabel}
-                        </button>
-                      </h3>
-                      {!collapsed && (
-                        <ul>
-                          {section.entries.map((entry) => (
-                            <VolunteerEntryRow
-                              key={entry.slot.id}
-                              entry={entry}
-                              signup={signupsBySlot.get(entry.slot.id)}
-                              currentUserId={board.currentUserId}
-                              pendingKey={pendingKey}
-                              onClaim={handleClaim}
-                              onRelease={handleRelease}
-                              onOpenRole={setSelectedRole}
-                            />
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </section>
-          ))}
+                {column.sections.length === 0 ? (
+                  <p className="text-muted-foreground px-3 py-6 text-center text-sm">
+                    No volunteer roles
+                  </p>
+                ) : (
+                  column.sections.map((section) => {
+                    const collapsed = collapsedSections.has(section.block.id);
+
+                    return (
+                      <div key={section.block.id}>
+                        <h3>
+                          <button
+                            type="button"
+                            onClick={() => toggleSection(section.block.id)}
+                            aria-expanded={!collapsed}
+                            aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${section.blockLabel} roles`}
+                            className="hover:bg-muted flex w-full items-center gap-1.5 border-b bg-amber-100/70 px-3 py-1.5 text-xs font-semibold tracking-wide text-amber-700 uppercase transition-colors dark:bg-amber-950/30 dark:text-amber-300"
+                          >
+                            {collapsed ? (
+                              <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                            ) : (
+                              <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                            )}
+                            {section.blockLabel}
+                          </button>
+                        </h3>
+                        {!collapsed && (
+                          <ul>
+                            {section.entries.map((entry) => (
+                              <VolunteerEntryRow
+                                key={entry.slot.id}
+                                entry={entry}
+                                signup={signupsBySlot.get(entry.slot.id)}
+                                currentUserId={board.currentUserId}
+                                pendingKey={pendingKey}
+                                onClaim={handleClaim}
+                                onRelease={handleRelease}
+                                onOpenRole={setSelectedRole}
+                              />
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </section>
+            );
+          })}
         </div>
       </VolunteerGridScrollArea>
 

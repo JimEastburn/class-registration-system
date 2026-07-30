@@ -1,7 +1,6 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { VolunteerBoardClient } from '../VolunteerBoardClient';
-import { NO_DESCRIPTION_MESSAGE } from '../VolunteerBoardShared';
 import type {
   VolunteerBlock,
   VolunteerBoardData,
@@ -182,28 +181,28 @@ describe('VolunteerBoardClient day column groups', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
-  it('keeps role names enabled but disables information icons when no description exists', () => {
+  it('keeps information icons clickable even when a role has no description', () => {
     render(
       <VolunteerBoardClient
         board={{ ...board, roles: [role('r1', 'Door Monitor', 1)] }}
       />
     );
 
-    for (const button of screen.getAllByRole('button', {
-      name: 'Door Monitor',
-    })) {
+    const infoButtons = screen.getAllByRole('button', {
+      name: 'Information about Door Monitor',
+    });
+    expect(infoButtons.length).toBeGreaterThan(0);
+    for (const button of infoButtons) {
       expect(button).not.toBeDisabled();
     }
-    for (const button of screen.getAllByRole('button', {
-      name: 'Information about Door Monitor',
-    })) {
-      expect(button).toBeDisabled();
-      expect(button.className).not.toMatch(/cursor-not-allowed/);
-      expect(button.parentElement).toHaveAttribute(
-        'title',
-        NO_DESCRIPTION_MESSAGE
-      );
-      expect(button.parentElement).toHaveClass('cursor-not-allowed');
-    }
+
+    fireEvent.click(infoButtons[0]);
+
+    const dialog = screen.getByRole('dialog');
+    expect(
+      within(dialog).getByRole('heading', { name: 'Door Monitor' })
+    ).toBeInTheDocument();
+    // The old hard-coded contact message must not reappear anywhere.
+    expect(dialog).not.toHaveTextContent(/text Jim Eastburn/i);
   });
 });

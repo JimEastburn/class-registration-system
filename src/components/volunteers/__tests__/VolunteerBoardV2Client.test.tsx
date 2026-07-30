@@ -209,6 +209,50 @@ describe('VolunteerBoardV2Client', () => {
     ).toBeInTheDocument();
   });
 
+  it('collapses and re-expands a whole day column', () => {
+    render(<VolunteerBoardV2Client board={board} />);
+
+    expect(
+      within(
+        screen.getByRole('region', { name: 'Tuesday volunteer roles' })
+      ).getAllByRole('heading', { level: 3 }).length
+    ).toBeGreaterThan(0);
+
+    fireEvent.click(
+      within(
+        screen.getByRole('region', { name: 'Tuesday volunteer roles' })
+      ).getByRole('button', { name: 'Collapse Tuesday column' })
+    );
+
+    const collapsed = screen.getByRole('region', {
+      name: 'Tuesday volunteer roles',
+    });
+    expect(
+      within(collapsed).queryAllByRole('heading', { level: 3 })
+    ).toHaveLength(0);
+    expect(
+      within(collapsed).getByRole('button', { name: 'Expand Tuesday column' })
+    ).toBeInTheDocument();
+
+    // Other columns are unaffected.
+    expect(
+      within(
+        screen.getByRole('region', { name: 'Wednesday volunteer roles' })
+      ).getByRole('button', { name: 'Collapse Wednesday column' })
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      within(
+        screen.getByRole('region', { name: 'Tuesday volunteer roles' })
+      ).getByRole('button', { name: 'Expand Tuesday column' })
+    );
+    expect(
+      within(
+        screen.getByRole('region', { name: 'Tuesday volunteer roles' })
+      ).getAllByRole('heading', { level: 3 }).length
+    ).toBeGreaterThan(0);
+  });
+
   it('offers a Volunteer button for open slots and Remove for the current user', () => {
     render(<VolunteerBoardV2Client board={board} />);
 

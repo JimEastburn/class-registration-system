@@ -25,9 +25,6 @@ import type {
 } from '@/types';
 import { cn } from '@/lib/utils';
 
-export const NO_DESCRIPTION_MESSAGE =
-  'No description is available for this role. Please text Jim Eastburn at 512-689-6860 if you have questions or would like more information about this role.';
-
 export type VolunteerCommitment = {
   signupId: string;
   blockName: string;
@@ -238,8 +235,6 @@ export function VolunteerRoleInfoTrigger({
   label?: string;
   onOpen: (role: VolunteerRole) => void;
 }) {
-  const hasDescription = Boolean(role.description?.trim());
-
   return (
     <div className="flex items-center gap-1">
       <button
@@ -249,22 +244,16 @@ export function VolunteerRoleInfoTrigger({
       >
         {label ?? role.name}
       </button>
-      <span
-        className={cn('shrink-0', !hasDescription && 'cursor-not-allowed')}
-        title={hasDescription ? undefined : NO_DESCRIPTION_MESSAGE}
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="shrink-0"
+        aria-label={`Information about ${role.name}`}
+        onClick={() => onOpen(role)}
       >
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="shrink-0"
-          aria-label={`Information about ${role.name}`}
-          disabled={!hasDescription}
-          onClick={() => onOpen(role)}
-        >
-          <Info className="h-4 w-4" />
-        </Button>
-      </span>
+        <Info className="h-4 w-4" />
+      </Button>
     </div>
   );
 }
@@ -353,7 +342,7 @@ export function VolunteerRoleDialog({
         <DialogHeader>
           <DialogTitle>{role?.name}</DialogTitle>
           <DialogDescription className="text-left leading-6 whitespace-pre-wrap">
-            {role?.description?.trim() || NO_DESCRIPTION_MESSAGE}
+            {role?.description?.trim() || 'No description provided.'}
           </DialogDescription>
         </DialogHeader>
       </DialogContent>
