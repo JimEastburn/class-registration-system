@@ -154,6 +154,9 @@ export const familyMemberSchema = z
     }),
     grade: z.enum(['elementary', 'middle school', 'high school']).optional(),
     dob: z.string().optional(), // ISO date string
+    // Required for students only - teachers use it to confirm class content
+    // is age-appropriate
+    age: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -166,7 +169,28 @@ export const familyMemberSchema = z
       message: 'Grade is required for students',
       path: ['grade'],
     }
-  );
+  )
+  .superRefine((data, ctx) => {
+    if (data.relationship !== 'Student') return;
+
+    if (!data.age?.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Age is required',
+        path: ['age'],
+      });
+      return;
+    }
+
+    const age = Number(data.age);
+    if (!Number.isInteger(age) || age < 1 || age > 120) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Please enter a valid age',
+        path: ['age'],
+      });
+    }
+  });
 
 export type FamilyMemberFormData = z.infer<typeof familyMemberSchema>;
 

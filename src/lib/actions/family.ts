@@ -117,6 +117,7 @@ interface CreateFamilyMemberInput {
   relationship: 'Student' | 'Parent/Guardian';
   dob?: string;
   grade?: string;
+  age?: number;
 }
 
 /**
@@ -145,6 +146,7 @@ export async function createFamilyMember(
         relationship: input.relationship,
         dob: input.dob || null,
         grade: input.grade || null,
+        age: input.age ?? null,
       })
       .select()
       .single();
@@ -186,6 +188,7 @@ interface UpdateFamilyMemberInput {
   relationship?: 'Student' | 'Parent/Guardian';
   dob?: string | null;
   grade?: string | null;
+  age?: number | null;
 }
 
 /**
@@ -231,6 +234,7 @@ export async function updateFamilyMember(
     }
     if (input.dob !== undefined) updateData.dob = input.dob;
     if (input.grade !== undefined) updateData.grade = input.grade;
+    if (input.age !== undefined) updateData.age = input.age;
 
     const { data, error } = await supabase
       .from('family_members')

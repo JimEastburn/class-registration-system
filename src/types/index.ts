@@ -57,6 +57,7 @@ export interface Profile {
   first_name: string;
   last_name: string;
   phone: string | null;
+  age: number | null; // Collected at registration for students
   avatar_url: string | null;
   bio: string | null;
   specializations: string[] | null;
@@ -87,6 +88,7 @@ export interface FamilyMember {
   relationship: 'Student' | 'Parent/Guardian';
   grade: string | null;
   dob: string | null; // ISO date string
+  age: number | null; // Required for Student members
   created_at: string;
   updated_at: string;
 }

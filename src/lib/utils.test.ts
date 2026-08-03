@@ -7,6 +7,7 @@ import {
   formatDateTime,
   generateInvoiceNumber,
   calculateAge,
+  resolveStudentAge,
   validateGradeLevel,
   calculateSpotsLeft,
   isClassFull,
@@ -70,6 +71,37 @@ describe('utils', () => {
         today.getDate()
       ).toISOString();
       expect(calculateAge(tenYearsAgo)).toBe(10);
+    });
+  });
+
+  describe('resolveStudentAge', () => {
+    it('uses the age a parent entered on the family member', () => {
+      expect(resolveStudentAge({ age: 14 })).toBe(14);
+    });
+
+    it('falls back to the age from the linked student account', () => {
+      expect(resolveStudentAge({ age: null, student_user: { age: 16 } })).toBe(
+        16
+      );
+    });
+
+    it('prefers the family member age over the linked account age', () => {
+      expect(resolveStudentAge({ age: 14, student_user: { age: 16 } })).toBe(
+        14
+      );
+    });
+
+    it('returns null when no age is on record', () => {
+      expect(resolveStudentAge({})).toBeNull();
+      expect(resolveStudentAge({ age: null })).toBeNull();
+      expect(resolveStudentAge({ age: null, student_user: null })).toBeNull();
+      expect(
+        resolveStudentAge({ age: null, student_user: { age: null } })
+      ).toBeNull();
+    });
+
+    it('keeps an age of 0 rather than treating it as missing', () => {
+      expect(resolveStudentAge({ age: 0 })).toBe(0);
     });
   });
 

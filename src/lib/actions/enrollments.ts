@@ -39,6 +39,8 @@ export interface RosterEnrollment extends Enrollment {
       Profile,
       'first_name' | 'last_name' | 'email' | 'phone'
     > | null;
+    /** Set when the student self-registered and was linked to this record */
+    student_user: Pick<Profile, 'age'> | null;
   };
   isBlocked?: boolean;
 }
@@ -624,6 +626,9 @@ export async function getClassRoster(
                         last_name,
                         email,
                         phone
+                    ),
+                    student_user:profiles!family_members_student_user_id_fkey (
+                        age
                     )
                 )
             `

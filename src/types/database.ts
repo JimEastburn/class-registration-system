@@ -332,6 +332,7 @@ export type Database = {
       };
       family_members: {
         Row: {
+          age: number | null;
           created_at: string;
           dob: string | null;
           email: string;
@@ -345,6 +346,7 @@ export type Database = {
           updated_at: string | null;
         };
         Insert: {
+          age?: number | null;
           created_at?: string;
           dob?: string | null;
           email: string;
@@ -358,6 +360,7 @@ export type Database = {
           updated_at?: string | null;
         };
         Update: {
+          age?: number | null;
           created_at?: string;
           dob?: string | null;
           email?: string;

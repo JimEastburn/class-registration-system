@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 import { updateFamilyMember } from '@/lib/actions/family';
 import { familyMemberSchema } from '@/lib/validations';
 import { Loader2 } from 'lucide-react';
@@ -62,6 +63,7 @@ export function EditFamilyMemberDialog({
       grade:
         (member.grade as 'elementary' | 'middle school' | 'high school') ||
         undefined,
+      age: member.age?.toString() || '',
     },
   });
 
@@ -79,6 +81,7 @@ export function EditFamilyMemberDialog({
         relationship: values.relationship,
         dob: values.dob || null,
         grade: values.grade || null,
+        age: values.age ? Number(values.age) : null,
       });
 
       if (error) {
@@ -205,6 +208,41 @@ export function EditFamilyMemberDialog({
                         <SelectItem value="high school">High School</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {relationship === 'Student' && (
+              <FormField
+                control={form.control}
+                name="age"
+                render={({ field }) => (
+                  <FormItem>
+                    {/* relative: anchors the info bubble to the field width */}
+                    <div className="relative flex items-center gap-1.5">
+                      <FormLabel>Age</FormLabel>
+                      <InfoTooltip
+                        label="Why is age necessary?"
+                        title="Why is this necessary?"
+                        testId="family-age-info"
+                      >
+                        Teachers need to know the age of a student to make sure
+                        class content is appropriate.
+                      </InfoTooltip>
+                    </div>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={120}
+                        placeholder="e.g. 14"
+                        {...field}
+                        data-testid="family-age-input"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

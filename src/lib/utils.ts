@@ -71,6 +71,21 @@ export function calculateAge(birthDate: string): number {
 }
 
 /**
+ * Resolve a student's age. Age is entered on the family member by a parent, or
+ * on the student's own account at registration. Date of birth is not a source -
+ * it is never collected, and the only records that carry one are seed data.
+ */
+export function resolveStudentAge(student: {
+  age?: number | null;
+  student_user?: { age: number | null } | null;
+}): number | null {
+  if (student.age != null) {
+    return student.age;
+  }
+  return student.student_user?.age ?? null;
+}
+
+/**
  * Validate grade level (6-12)
  */
 export function validateGradeLevel(grade: string): boolean {

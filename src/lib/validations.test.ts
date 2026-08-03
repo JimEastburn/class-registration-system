@@ -212,6 +212,32 @@ describe('validations', () => {
         false
       );
     });
+    it('requires an age for students but not for parents/guardians', () => {
+      const student = {
+        firstName: 'Child',
+        lastName: 'One',
+        email: 'child@test.com',
+        relationship: 'Student',
+        grade: 'elementary',
+      };
+
+      expect(familyMemberSchema.safeParse(student).success).toBe(false);
+      expect(
+        familyMemberSchema.safeParse({ ...student, age: '9' }).success
+      ).toBe(true);
+      expect(
+        familyMemberSchema.safeParse({ ...student, age: 'abc' }).success
+      ).toBe(false);
+      expect(
+        familyMemberSchema.safeParse({
+          firstName: 'Adult',
+          lastName: 'One',
+          email: 'adult@test.com',
+          relationship: 'Parent/Guardian',
+        }).success
+      ).toBe(true);
+    });
+
     it('validates optional email', () => {
       expect(
         familyMemberSchema.safeParse({

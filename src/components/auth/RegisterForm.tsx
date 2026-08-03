@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { Eye, EyeOff, Info } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { InfoTooltip } from '@/components/ui/InfoTooltip';
 
 export default function RegisterForm() {
   const [isPending, startTransition] = useTransition();
@@ -251,7 +252,16 @@ export default function RegisterForm() {
                 <Label htmlFor="age" className="text-slate-200">
                   Age
                 </Label>
-                <AgeInfoIcon />
+                <InfoTooltip
+                  label="Why is age necessary?"
+                  title="Why is this necessary?"
+                  className="border-slate-500 bg-slate-900 text-slate-100"
+                  triggerClassName="text-slate-300 focus-visible:ring-teal-400"
+                  testId="age-info"
+                >
+                  Teachers need to know the age of a student to make sure class
+                  content is appropriate.
+                </InfoTooltip>
               </div>
               <Input
                 id="age"
@@ -438,53 +448,5 @@ export default function RegisterForm() {
         </CardFooter>
       </form>
     </Card>
-  );
-}
-
-/**
- * Explains why we ask students for their age. Opens on hover/focus and stays
- * pinned open on click, so it works on touch devices too. The bubble is
- * positioned against the caller's `relative` container so it can't spill
- * outside the form card on narrow screens.
- */
-function AgeInfoIcon() {
-  const [hovered, setHovered] = useState(false);
-  const [pinned, setPinned] = useState(false);
-
-  return (
-    <span className="inline-flex">
-      <button
-        type="button"
-        className="rounded-full text-slate-300 transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:outline-none"
-        aria-label="Why is age necessary?"
-        aria-expanded={hovered || pinned}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        onFocus={() => setHovered(true)}
-        onBlur={() => {
-          setHovered(false);
-          setPinned(false);
-        }}
-        onClick={() => setPinned(!pinned)}
-        data-testid="age-info-trigger"
-      >
-        <Info className="h-4 w-4" />
-      </button>
-      {(hovered || pinned) && (
-        <span
-          role="tooltip"
-          className="absolute bottom-full left-0 z-50 mb-2 w-full max-w-xs rounded-md border border-slate-500 bg-slate-900 p-3 text-sm shadow-lg"
-          data-testid="age-info-tooltip"
-        >
-          <span className="block font-semibold text-white">
-            Why is this necessary?
-          </span>
-          <span className="mt-1 block text-slate-300">
-            Teachers need to know the age of a student to make sure class
-            content is appropriate.
-          </span>
-        </span>
-      )}
-    </span>
   );
 }
