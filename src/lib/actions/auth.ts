@@ -18,6 +18,9 @@ export async function signUp(
   const lastName = formData.get('lastName') as string;
   const role = formData.get('role') as 'parent' | 'teacher' | 'student';
   const phone = (formData.get('phone') as string) || null;
+  // Only collected for self-registering students
+  const ageInput = (formData.get('age') as string) || null;
+  const age = ageInput ? Number(ageInput) : null;
 
   const supabase = await createClient();
 
@@ -32,7 +35,8 @@ export async function signUp(
   if (existingProfile) {
     return {
       success: false,
-      error: 'An account with this email address already exists. Please sign in instead.',
+      error:
+        'An account with this email address already exists. Please sign in instead.',
     };
   }
 
@@ -46,6 +50,7 @@ export async function signUp(
         last_name: lastName,
         role,
         phone,
+        age,
       },
     },
   });
@@ -72,6 +77,7 @@ export async function signUp(
       last_name: lastName,
       role,
       phone,
+      age,
       code_of_conduct_agreed_at: new Date().toISOString(),
     },
     { onConflict: 'id' }

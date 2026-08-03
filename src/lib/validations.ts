@@ -39,6 +39,9 @@ export const registerSchema = z
       message: 'Please select Parent/Guardian or Student or Teacher',
     }),
     phone: z.string().optional(),
+    // Required for students only - teachers use it to confirm class content
+    // is age-appropriate
+    age: z.string().optional(),
     codeOfConduct: z.literal(true, {
       message: 'You must agree to the Community Code of Conduct',
     }),
@@ -49,6 +52,27 @@ export const registerSchema = z
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
+  })
+  .superRefine((data, ctx) => {
+    if (data.role !== 'student') return;
+
+    if (!data.age?.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Age is required',
+        path: ['age'],
+      });
+      return;
+    }
+
+    const age = Number(data.age);
+    if (!Number.isInteger(age) || age < 1 || age > 120) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Please enter a valid age',
+        path: ['age'],
+      });
+    }
   });
 
 export type RegisterFormData = z.infer<typeof registerSchema>;

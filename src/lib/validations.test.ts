@@ -72,6 +72,48 @@ describe('validations', () => {
       });
       expect(result.success).toBe(false);
     });
+
+    it('requires an age for students', () => {
+      const result = registerSchema.safeParse({
+        ...validData,
+        role: 'student',
+      });
+      expect(result.success).toBe(false);
+      expect(
+        !result.success &&
+          result.error.issues.some(
+            (issue) =>
+              issue.path[0] === 'age' && issue.message === 'Age is required'
+          )
+      ).toBe(true);
+    });
+
+    it('accepts a valid student age', () => {
+      const result = registerSchema.safeParse({
+        ...validData,
+        role: 'student',
+        age: '14',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects a nonsensical student age', () => {
+      for (const age of ['0', '-5', 'abc', '13.5', '200']) {
+        const result = registerSchema.safeParse({
+          ...validData,
+          role: 'student',
+          age,
+        });
+        expect(result.success, `age "${age}" should be rejected`).toBe(false);
+      }
+    });
+
+    it('does not require an age for parents or teachers', () => {
+      for (const role of ['parent', 'teacher']) {
+        const result = registerSchema.safeParse({ ...validData, role });
+        expect(result.success, `${role} should not need an age`).toBe(true);
+      }
+    });
   });
 
   describe('resetPasswordSchema', () => {

@@ -450,6 +450,7 @@ export type Database = {
         Row: {
           address_line1: string | null;
           address_line2: string | null;
+          age: number | null;
           avatar_url: string | null;
           bio: string | null;
           city: string | null;
@@ -473,6 +474,7 @@ export type Database = {
         Insert: {
           address_line1?: string | null;
           address_line2?: string | null;
+          age?: number | null;
           avatar_url?: string | null;
           bio?: string | null;
           city?: string | null;
@@ -496,6 +498,7 @@ export type Database = {
         Update: {
           address_line1?: string | null;
           address_line2?: string | null;
+          age?: number | null;
           avatar_url?: string | null;
           bio?: string | null;
           city?: string | null;

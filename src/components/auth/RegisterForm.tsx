@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Info } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
@@ -31,11 +31,15 @@ export default function RegisterForm() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<
+    RegisterFormData['role'] | null
+  >(null);
 
   const {
     register,
     handleSubmit,
     setValue,
+    clearErrors,
     formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -44,6 +48,8 @@ export default function RegisterForm() {
       feeAcknowledgment: false as unknown as true,
     },
   });
+
+  const isStudent = selectedRole === 'student';
 
   useEffect(() => {
     register('role');
@@ -64,6 +70,9 @@ export default function RegisterForm() {
         formData.append('role', data.role);
         if (data.phone) {
           formData.append('phone', data.phone);
+        }
+        if (data.role === 'student' && data.age) {
+          formData.append('age', data.age);
         }
 
         const result = await signUp(formData);
@@ -200,11 +209,17 @@ export default function RegisterForm() {
               I am a...
             </Label>
             <Select
-              onValueChange={(value) =>
-                setValue('role', value as 'parent' | 'teacher' | 'student', {
-                  shouldValidate: true,
-                })
-              }
+              onValueChange={(value) => {
+                const nextRole = value as RegisterFormData['role'];
+                setSelectedRole(nextRole);
+                setValue('role', nextRole, { shouldValidate: true });
+
+                // Age only applies to students - drop any stale value/error
+                if (nextRole !== 'student') {
+                  setValue('age', '');
+                  clearErrors('age');
+                }
+              }}
             >
               <SelectTrigger
                 className="border-white/20 bg-slate-600 text-white"
@@ -228,6 +243,32 @@ export default function RegisterForm() {
               <p className="text-sm text-red-400">{errors.role.message}</p>
             )}
           </div>
+
+          {isStudent && (
+            <div className="space-y-2" data-testid="age-field">
+              {/* relative: anchors the info bubble to the full field width */}
+              <div className="relative flex items-center gap-1.5">
+                <Label htmlFor="age" className="text-slate-200">
+                  Age
+                </Label>
+                <AgeInfoIcon />
+              </div>
+              <Input
+                id="age"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={120}
+                placeholder="e.g. 14"
+                className="border-white/20 bg-slate-600 text-white placeholder:text-slate-400"
+                {...register('age')}
+                data-testid="age-input"
+              />
+              {errors.age && (
+                <p className="text-sm text-red-400">{errors.age.message}</p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="phone" className="text-slate-200">
@@ -361,7 +402,9 @@ export default function RegisterForm() {
                 htmlFor="feeAcknowledgment"
                 className="text-sm leading-none font-medium text-slate-200 peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                I understand that I will pay a nonrefundable $25 deposit for each class, paid directly to the teacher, to hold a space in the class.
+                I understand that I will pay a nonrefundable $25 deposit for
+                each class, paid directly to the teacher, to hold a space in the
+                class.
               </Label>
               {errors.feeAcknowledgment && (
                 <p className="text-sm text-red-400">
@@ -395,5 +438,53 @@ export default function RegisterForm() {
         </CardFooter>
       </form>
     </Card>
+  );
+}
+
+/**
+ * Explains why we ask students for their age. Opens on hover/focus and stays
+ * pinned open on click, so it works on touch devices too. The bubble is
+ * positioned against the caller's `relative` container so it can't spill
+ * outside the form card on narrow screens.
+ */
+function AgeInfoIcon() {
+  const [hovered, setHovered] = useState(false);
+  const [pinned, setPinned] = useState(false);
+
+  return (
+    <span className="inline-flex">
+      <button
+        type="button"
+        className="rounded-full text-slate-300 transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:outline-none"
+        aria-label="Why is age necessary?"
+        aria-expanded={hovered || pinned}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onFocus={() => setHovered(true)}
+        onBlur={() => {
+          setHovered(false);
+          setPinned(false);
+        }}
+        onClick={() => setPinned(!pinned)}
+        data-testid="age-info-trigger"
+      >
+        <Info className="h-4 w-4" />
+      </button>
+      {(hovered || pinned) && (
+        <span
+          role="tooltip"
+          className="absolute bottom-full left-0 z-50 mb-2 w-full max-w-xs rounded-md border border-slate-500 bg-slate-900 p-3 text-sm shadow-lg"
+          data-testid="age-info-tooltip"
+        >
+          <span className="block font-semibold text-white">
+            Why is this necessary?
+          </span>
+          <span className="mt-1 block text-slate-300">
+            Teachers need to know the age of a student to make sure class
+            content is appropriate.
+          </span>
+        </span>
+      )}
+    </span>
   );
 }
