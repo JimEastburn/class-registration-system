@@ -1,6 +1,8 @@
 import { getAllClasses } from '@/lib/actions/classes';
 import { getConflictAlerts } from '@/lib/actions/scheduler';
 import AdminClassTable from '@/components/admin/AdminClassTable';
+import { resolvePageSize } from '@/lib/pagination';
+import { resolveClassSort } from '@/lib/class-table';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
@@ -12,15 +14,22 @@ export const metadata = {
 export default async function AdminClassesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; search?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    search?: string;
+    limit?: string;
+    sort?: string;
+    dir?: string;
+  }>;
 }) {
   const params = await searchParams;
   const page = Number(params.page) || 1;
   const search = params.search || undefined;
-  const limit = 20;
+  const limit = resolvePageSize(params.limit);
+  const sort = resolveClassSort(params.sort, params.dir);
 
   const [result, conflictRes] = await Promise.all([
-    getAllClasses({ page, limit, search }),
+    getAllClasses({ page, limit, search, sort }),
     getConflictAlerts(),
   ]);
 

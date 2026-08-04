@@ -1,6 +1,6 @@
 'use client';
 
-import { ClassWithTeacher } from '@/types';
+import type { ClassWithTeacherAndCount } from '@/lib/actions/classes';
 import {
   Table,
   TableBody,
@@ -10,6 +10,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +26,8 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertTriangle,
+  ArrowDownAZ,
+  ArrowUpAZ,
   CheckCircle2,
   Search,
   X,
@@ -29,9 +38,31 @@ import { useState, useTransition, useEffect } from 'react';
 import { adminDeleteClass } from '@/lib/actions/classes';
 import { toast } from 'sonner';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { PAGE_SIZE_OPTIONS } from '@/lib/pagination';
+import {
+  formatClassBlock,
+  resolveClassSort,
+  type ClassSortKey,
+} from '@/lib/class-table';
+
+/**
+ * Columns that can be sorted, in the order they're shown. Conflict and Actions
+ * are absent on purpose: a conflict comes from the scheduler's scan across the
+ * whole catalog rather than from the class row, so the query can't order by it.
+ */
+const SORTABLE_COLUMNS: { key: ClassSortKey; label: string }[] = [
+  { key: 'name', label: 'Class Name' },
+  { key: 'teacher', label: 'Teacher' },
+  { key: 'block', label: 'Block' },
+  { key: 'status', label: 'Status' },
+  { key: 'enrolled', label: 'Enrolled' },
+  { key: 'waitlisted', label: 'Waitlisted' },
+  { key: 'age_min', label: 'Min Age' },
+  { key: 'age_max', label: 'Max Age' },
+];
 
 interface AdminClassTableProps {
-  initialClasses: ClassWithTeacher[];
+  initialClasses: ClassWithTeacherAndCount[];
   total: number;
   currentPage: number;
   limit: number;
@@ -102,6 +133,33 @@ export default function AdminClassTable({
     });
   };
 
+  // Changing page size invalidates the current offset, so go back to page 1.
+  const handleLimitChange = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('limit', value);
+    params.set('page', '1');
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  // The URL owns the sort so it survives refreshes and back/forward, and so the
+  // server sorts every matching class rather than just this page's rows.
+  const sort = resolveClassSort(
+    searchParams.get('sort') ?? undefined,
+    searchParams.get('dir') ?? undefined
+  );
+
+  // Re-sorting shuffles which rows land where, so the old offset is meaningless.
+  const handleSort = (key: ClassSortKey) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('sort', key);
+    params.set(
+      'dir',
+      sort?.key === key && sort.direction === 'asc' ? 'desc' : 'asc'
+    );
+    params.set('page', '1');
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
   const handleDelete = (classId: string) => {
     // In a real app, use a proper Dialog component instead of confirm
     if (!confirm('Are you sure you want to delete this class?')) return;
@@ -150,15 +208,54 @@ export default function AdminClassTable({
       </div>
 
       <div className="rounded-md border">
-        <Table>
-          <TableHeader>
+        {/* The header sticks to the top of this scroll area. It has to be its
+            own scroll container: sticky positions against the nearest
+            scrollport, and the table wrapper already scrolls horizontally. */}
+        <Table containerClassName="max-h-[max(16rem,calc(100vh-20rem))] overflow-auto">
+          {/* border-collapse (Tailwind preflight) drops a sticky cell's
+              border-b as it detaches, so draw it with an inset shadow. */}
+          <TableHeader className="[&_th]:bg-background [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:shadow-[inset_0_-1px_0_0_var(--border)]">
             <TableRow>
-              <TableHead>Class Name</TableHead>
-              <TableHead>Teacher</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Capacity</TableHead>
-              <TableHead>Min Age</TableHead>
-              <TableHead>Max Age</TableHead>
+              {SORTABLE_COLUMNS.map((column) => {
+                const isActive = sort?.key === column.key;
+                const Icon =
+                  isActive && sort.direction === 'desc'
+                    ? ArrowDownAZ
+                    : ArrowUpAZ;
+
+                return (
+                  <TableHead
+                    key={column.key}
+                    aria-sort={
+                      isActive
+                        ? sort.direction === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : undefined
+                    }
+                  >
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="-ml-2 h-8 px-2"
+                      aria-label={`Sort by ${column.label} ${
+                        isActive && sort.direction === 'asc'
+                          ? 'descending'
+                          : 'ascending'
+                      }`}
+                      onClick={() => handleSort(column.key)}
+                    >
+                      {column.label}
+                      <Icon
+                        className={
+                          isActive ? 'text-foreground' : 'text-muted-foreground'
+                        }
+                      />
+                    </Button>
+                  </TableHead>
+                );
+              })}
               <TableHead>Conflict</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -167,7 +264,7 @@ export default function AdminClassTable({
             {initialClasses.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={10}
                   className="text-muted-foreground h-24 text-center"
                 >
                   No classes found.
@@ -179,6 +276,11 @@ export default function AdminClassTable({
                   <TableCell className="font-medium">{cls.name}</TableCell>
                   <TableCell>
                     {cls.teacher?.first_name} {cls.teacher?.last_name}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {formatClassBlock(cls) ?? (
+                      <span className="text-muted-foreground">TBD</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -195,7 +297,24 @@ export default function AdminClassTable({
                       {cls.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{cls.capacity}</TableCell>
+                  <TableCell>
+                    <span
+                      className={
+                        cls.enrolled_count >= cls.capacity
+                          ? 'font-medium text-amber-600'
+                          : undefined
+                      }
+                    >
+                      {cls.enrolled_count} / {cls.capacity}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    {cls.waitlisted_count > 0 ? (
+                      cls.waitlisted_count
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell>{cls.age_min ?? '—'}</TableCell>
                   <TableCell>{cls.age_max ?? '—'}</TableCell>
                   <TableCell>
@@ -238,11 +357,34 @@ export default function AdminClassTable({
           </TableBody>
         </Table>
 
-        {showPagination && (
-          <div className="flex items-center justify-between border-t p-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t p-4">
+          <div className="flex flex-wrap items-center gap-4">
             <div className="text-muted-foreground text-sm">
               Total Classes: {total}
             </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground text-sm">
+                Rows per page
+              </span>
+              <Select value={String(limit)} onValueChange={handleLimitChange}>
+                <SelectTrigger
+                  size="sm"
+                  aria-label="Rows per page"
+                  data-testid="rows-per-page"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={String(option)}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          {showPagination && (
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
@@ -274,13 +416,8 @@ export default function AdminClassTable({
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
-          </div>
-        )}
-        {!showPagination && (
-          <div className="text-muted-foreground p-4 text-center text-sm">
-            Total Classes: {total}
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

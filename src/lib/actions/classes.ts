@@ -7,6 +7,7 @@ import {
   validateScheduleConfig,
 } from '@/lib/logic/scheduling';
 import { generateClassEvents } from '@/lib/logic/calendar';
+import { sortClasses, type ClassSort } from '@/lib/class-table';
 
 interface ClassFilters {
   status?: ClassStatus;
@@ -1029,6 +1030,57 @@ export type ClassWithTeacherAndCount = ClassWithTeacher & {
   waitlisted_count: number;
 };
 
+type EnrollmentCounts = Pick<
+  ClassWithTeacherAndCount,
+  'enrolled_count' | 'pending_count' | 'confirmed_count' | 'waitlisted_count'
+>;
+
+const EMPTY_COUNTS: EnrollmentCounts = {
+  enrolled_count: 0,
+  pending_count: 0,
+  confirmed_count: 0,
+  waitlisted_count: 0,
+};
+
+/**
+ * Tally enrollments by status for the given classes.
+ *
+ * enrolled_count = confirmed + pending, because both hold a seat. Cancelled
+ * enrollments are excluded entirely. Callers are responsible for authorization;
+ * this reads through whichever client is passed in (RLS-scoped or admin).
+ */
+async function getEnrollmentCountsByClass(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  classIds: string[]
+): Promise<Map<string, EnrollmentCounts>> {
+  const counts = new Map<string, EnrollmentCounts>();
+  if (classIds.length === 0) return counts;
+
+  const { data: enrollments } = await supabase
+    .from('enrollments')
+    .select('class_id, status')
+    .in('class_id', classIds)
+    .in('status', ['confirmed', 'pending', 'waitlisted']);
+
+  for (const { class_id, status } of enrollments || []) {
+    const current = counts.get(class_id) ?? { ...EMPTY_COUNTS };
+
+    if (status === 'confirmed') {
+      current.confirmed_count += 1;
+      current.enrolled_count += 1;
+    } else if (status === 'pending') {
+      current.pending_count += 1;
+      current.enrolled_count += 1;
+    } else if (status === 'waitlisted') {
+      current.waitlisted_count += 1;
+    }
+
+    counts.set(class_id, current);
+  }
+
+  return counts;
+}
+
 /**
  * Get all classes for the current teacher, including enrolled counts
  */
@@ -1067,55 +1119,16 @@ export async function getTeacherClasses(): Promise<
     }
 
     // Fetch enrollment counts by status for all teacher classes
-    const classIds = (classes || []).map((c) => c.id);
-    const enrolledCounts = new Map<string, number>();
-    const pendingCounts = new Map<string, number>();
-    const confirmedCounts = new Map<string, number>();
-    const waitlistedCounts = new Map<string, number>();
-
-    if (classIds.length > 0) {
-      const { data: enrollments } = await supabase
-        .from('enrollments')
-        .select('class_id, status')
-        .in('class_id', classIds)
-        .in('status', ['confirmed', 'pending', 'waitlisted']);
-
-      (enrollments || []).forEach((e) => {
-        // enrolled_count = confirmed + pending (both hold a spot)
-        if (e.status === 'confirmed' || e.status === 'pending') {
-          enrolledCounts.set(
-            e.class_id,
-            (enrolledCounts.get(e.class_id) || 0) + 1
-          );
-        }
-        // Track individual status counts
-        if (e.status === 'confirmed') {
-          confirmedCounts.set(
-            e.class_id,
-            (confirmedCounts.get(e.class_id) || 0) + 1
-          );
-        } else if (e.status === 'pending') {
-          pendingCounts.set(
-            e.class_id,
-            (pendingCounts.get(e.class_id) || 0) + 1
-          );
-        } else if (e.status === 'waitlisted') {
-          waitlistedCounts.set(
-            e.class_id,
-            (waitlistedCounts.get(e.class_id) || 0) + 1
-          );
-        }
-      });
-    }
+    const counts = await getEnrollmentCountsByClass(
+      supabase,
+      (classes || []).map((c) => c.id)
+    );
 
     const classesWithCounts: ClassWithTeacherAndCount[] = (
       classes as ClassWithTeacher[]
     ).map((c) => ({
       ...c,
-      enrolled_count: enrolledCounts.get(c.id) || 0,
-      pending_count: pendingCounts.get(c.id) || 0,
-      confirmed_count: confirmedCounts.get(c.id) || 0,
-      waitlisted_count: waitlistedCounts.get(c.id) || 0,
+      ...(counts.get(c.id) ?? EMPTY_COUNTS),
     }));
 
     return { success: true, data: classesWithCounts };
@@ -1249,8 +1262,10 @@ export async function getAllAacEnrollmentReport(): Promise<
  * Allows viewing all classes regardless of status
  */
 export async function getAllClasses(
-  filters?: ClassFilters & { page?: number; limit?: number }
-): Promise<ActionResult<{ classes: ClassWithTeacher[]; total: number }>> {
+  filters?: ClassFilters & { page?: number; limit?: number; sort?: ClassSort }
+): Promise<
+  ActionResult<{ classes: ClassWithTeacherAndCount[]; total: number }>
+> {
   try {
     const supabase = await createClient();
     const {
@@ -1317,8 +1332,14 @@ export async function getAllClasses(
     // Sort by created_at desc by default
     query = query.order('created_at', { ascending: false });
 
-    // Pagination
-    if (filters?.page && filters?.limit) {
+    // A requested sort has to span every matching class, not just the rows the
+    // current page happens to hold, and half the sortable columns aren't
+    // columns on `classes` at all (teacher name lives on the joined profile;
+    // the block label folds in schedule_config; enrolled/waitlisted are tallied
+    // from enrollments). So sorting means fetching the matches, ordering them
+    // here, then cutting the page — the same read the AAC enrollment report
+    // already does. The unsorted default stays paginated in the database.
+    if (!filters?.sort && filters?.page && filters?.limit) {
       const from = (filters.page - 1) * filters.limit;
       const to = from + filters.limit - 1;
       query = query.range(from, to);
@@ -1331,11 +1352,34 @@ export async function getAllClasses(
       return { success: false, error: error.message };
     }
 
+    const classes = (data || []) as ClassWithTeacher[];
+    const counts = await getEnrollmentCountsByClass(
+      supabase,
+      classes.map((c) => c.id)
+    );
+    const withCounts: ClassWithTeacherAndCount[] = classes.map((c) => ({
+      ...c,
+      ...(counts.get(c.id) ?? EMPTY_COUNTS),
+    }));
+
+    if (!filters?.sort) {
+      return {
+        success: true,
+        data: { classes: withCounts, total: count || 0 },
+      };
+    }
+
+    const sorted = sortClasses(withCounts, filters.sort);
+    const page = filters.page ?? 1;
+    const from = filters.limit ? (page - 1) * filters.limit : 0;
+
     return {
       success: true,
       data: {
-        classes: data as ClassWithTeacher[],
-        total: count || 0,
+        classes: filters.limit
+          ? sorted.slice(from, from + filters.limit)
+          : sorted,
+        total: sorted.length,
       },
     };
   } catch (err) {

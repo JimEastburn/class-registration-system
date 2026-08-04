@@ -217,6 +217,240 @@ describe('Class Actions', () => {
         expect(result.data.total).toBe(0);
       }
     });
+
+    it('returns enrolled and waitlisted counts per class', async () => {
+      seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [ADMIN_PROFILE] as unknown as Record<string, unknown>[],
+          classes: [
+            existingClass,
+            { ...existingClass, id: 'class-2', name: 'Art 101' },
+          ] as unknown as Record<string, unknown>[],
+          enrollments: [
+            {
+              id: 'enr-1',
+              student_id: 'student-a',
+              class_id: 'class-1',
+              status: 'confirmed',
+            },
+            {
+              id: 'enr-2',
+              student_id: 'student-b',
+              class_id: 'class-1',
+              status: 'pending',
+            },
+            {
+              id: 'enr-3',
+              student_id: 'student-c',
+              class_id: 'class-1',
+              status: 'waitlisted',
+              waitlist_position: 1,
+            },
+            {
+              id: 'enr-4',
+              student_id: 'student-d',
+              class_id: 'class-1',
+              status: 'cancelled',
+            },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getAllClasses({ page: 1, limit: 20 });
+
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+
+      const classOne = result.data.classes.find((c) => c.id === 'class-1')!;
+      // confirmed + pending both hold a seat; cancelled does not count
+      expect(classOne.enrolled_count).toBe(2);
+      expect(classOne.waitlisted_count).toBe(1);
+
+      const classTwo = result.data.classes.find((c) => c.id === 'class-2')!;
+      expect(classTwo.enrolled_count).toBe(0);
+      expect(classTwo.waitlisted_count).toBe(0);
+    });
+
+    describe('sorting', () => {
+      // created_at deliberately disagrees with alphabetical order, so a test
+      // can tell "sorted by name" apart from "left in default order".
+      const sortableClasses = [
+        {
+          ...existingClass,
+          id: 'class-1',
+          name: 'Art',
+          created_at: '2026-01-01',
+        },
+        {
+          ...existingClass,
+          id: 'class-2',
+          name: 'Math',
+          created_at: '2026-03-01',
+        },
+        {
+          ...existingClass,
+          id: 'class-3',
+          name: 'Zoology',
+          created_at: '2026-02-01',
+        },
+      ] as unknown as Record<string, unknown>[];
+
+      function seedSortable(enrollments: Record<string, unknown>[] = []): void {
+        seedFake({
+          authUserId: ADMIN_PROFILE.id,
+          data: {
+            profiles: [ADMIN_PROFILE] as unknown as Record<string, unknown>[],
+            classes: sortableClasses,
+            enrollments,
+          },
+        });
+      }
+
+      it('sorts by name ascending', async () => {
+        seedSortable();
+
+        const result = await getAllClasses({
+          page: 1,
+          limit: 20,
+          sort: { key: 'name', direction: 'asc' },
+        });
+
+        expect(result.success).toBe(true);
+        if (!result.success) return;
+        expect(result.data.classes.map((c) => c.name)).toEqual([
+          'Art',
+          'Math',
+          'Zoology',
+        ]);
+      });
+
+      it('sorts by name descending', async () => {
+        seedSortable();
+
+        const result = await getAllClasses({
+          page: 1,
+          limit: 20,
+          sort: { key: 'name', direction: 'desc' },
+        });
+
+        expect(result.success).toBe(true);
+        if (!result.success) return;
+        expect(result.data.classes.map((c) => c.name)).toEqual([
+          'Zoology',
+          'Math',
+          'Art',
+        ]);
+      });
+
+      it('sorts across the whole result set, not just the current page', async () => {
+        seedSortable();
+
+        const firstPage = await getAllClasses({
+          page: 1,
+          limit: 2,
+          sort: { key: 'name', direction: 'desc' },
+        });
+
+        expect(firstPage.success).toBe(true);
+        if (!firstPage.success) return;
+        // Zoology and Math are the two highest names overall — they'd never
+        // land on page 1 if sorting only reordered the page the DB returned.
+        expect(firstPage.data.classes.map((c) => c.name)).toEqual([
+          'Zoology',
+          'Math',
+        ]);
+        expect(firstPage.data.total).toBe(3);
+
+        const secondPage = await getAllClasses({
+          page: 2,
+          limit: 2,
+          sort: { key: 'name', direction: 'desc' },
+        });
+
+        expect(secondPage.success).toBe(true);
+        if (!secondPage.success) return;
+        expect(secondPage.data.classes.map((c) => c.name)).toEqual(['Art']);
+        expect(secondPage.data.total).toBe(3);
+      });
+
+      it('sorts by enrolled count, which is tallied rather than stored', async () => {
+        seedSortable([
+          {
+            id: 'enr-1',
+            student_id: 'student-a',
+            class_id: 'class-3',
+            status: 'confirmed',
+          },
+          {
+            id: 'enr-2',
+            student_id: 'student-b',
+            class_id: 'class-3',
+            status: 'pending',
+          },
+          {
+            id: 'enr-3',
+            student_id: 'student-c',
+            class_id: 'class-2',
+            status: 'confirmed',
+          },
+        ] as unknown as Record<string, unknown>[]);
+
+        const result = await getAllClasses({
+          page: 1,
+          limit: 20,
+          sort: { key: 'enrolled', direction: 'desc' },
+        });
+
+        expect(result.success).toBe(true);
+        if (!result.success) return;
+        expect(
+          result.data.classes.map((c) => [c.name, c.enrolled_count])
+        ).toEqual([
+          ['Zoology', 2],
+          ['Math', 1],
+          ['Art', 0],
+        ]);
+      });
+
+      it('still returns counts for the classes on a sorted page', async () => {
+        seedSortable([
+          {
+            id: 'enr-1',
+            student_id: 'student-a',
+            class_id: 'class-1',
+            status: 'waitlisted',
+            waitlist_position: 1,
+          },
+        ] as unknown as Record<string, unknown>[]);
+
+        const result = await getAllClasses({
+          page: 1,
+          limit: 1,
+          sort: { key: 'name', direction: 'asc' },
+        });
+
+        expect(result.success).toBe(true);
+        if (!result.success) return;
+        expect(result.data.classes).toHaveLength(1);
+        expect(result.data.classes[0].name).toBe('Art');
+        expect(result.data.classes[0].waitlisted_count).toBe(1);
+      });
+
+      it('keeps the newest-first default when no sort is requested', async () => {
+        seedSortable();
+
+        const result = await getAllClasses({ page: 1, limit: 20 });
+
+        expect(result.success).toBe(true);
+        if (!result.success) return;
+        expect(result.data.classes.map((c) => c.name)).toEqual([
+          'Math',
+          'Zoology',
+          'Art',
+        ]);
+      });
+    });
   });
 
   describe('getAllAacEnrollmentReport', () => {
