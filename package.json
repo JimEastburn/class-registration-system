@@ -15,7 +15,7 @@
     "test:api": "npx tsx scripts/test-api.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "db:types": "supabase gen types typescript --project-id nztngdpneuyhhnrkhehq > src/types/database.ts",
+    "db:types": "supabase gen types typescript --project-id nztngdpneuyhhnrkhehq > .database.types.tmp && mv .database.types.tmp src/types/database.ts",
     "test:integration": "vitest --config vitest.integration.config.ts",
     "dev:login": "npx tsx scripts/dev-login.ts"
   },
