@@ -96,6 +96,56 @@ describe('EnrollButton', () => {
     });
   });
 
+  it('reports the waitlist position returned by enroll_student', async () => {
+    (enrollStudent as any).mockResolvedValue({
+      data: { id: mockEnrollmentId, waitlist_position: 3 },
+      status: 'waitlisted',
+      error: null,
+    });
+
+    render(
+      <EnrollButton
+        classId={mockClassId}
+        className="Test Class"
+        available={0}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Class Full - Join Waitlist'));
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText('Loading family members...')
+      ).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('combobox'));
+    fireEvent.click(await screen.findByText('John Doe'));
+    fireEvent.click(screen.getByTestId('pay-later-button'));
+
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith(
+        'Class is full — joined the waitlist at #3'
+      );
+    });
+  });
+
+  it('warns in the dialog that a full class will waitlist the registration', async () => {
+    render(
+      <EnrollButton
+        classId={mockClassId}
+        className="Test Class"
+        available={0}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Class Full - Join Waitlist'));
+
+    expect(
+      await screen.findByText(/this registration will join the waitlist/i)
+    ).toBeInTheDocument();
+  });
+
   it('handles waitlist flow correctly', async () => {
     (enrollStudent as any).mockResolvedValue({
       data: null,
@@ -136,7 +186,7 @@ describe('EnrollButton', () => {
         familyMemberId: 'member-1',
       });
       expect(toast.success).toHaveBeenCalledWith(
-        'Successfully joined waitlist'
+        'Class is full — successfully joined waitlist'
       );
       expect(fetchMock).not.toHaveBeenCalled();
     });
@@ -321,7 +371,7 @@ describe('EnrollButton', () => {
         familyMemberId: 'member-1',
       });
       expect(toast.success).toHaveBeenCalledWith(
-        'Successfully joined waitlist'
+        'Class is full — successfully joined waitlist'
       );
       expect(fetchMock).not.toHaveBeenCalled();
     });
@@ -400,7 +450,7 @@ describe('EnrollButton', () => {
 
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith(
-          'Successfully joined waitlist'
+          'Class is full — successfully joined waitlist'
         );
         expect(fetchMock).not.toHaveBeenCalled();
       });

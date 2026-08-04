@@ -11,6 +11,7 @@ import { getClassDetails, getClassAvailability } from '@/lib/actions/classes';
 import { getEnrollmentsForFamily } from '@/lib/actions/enrollments';
 import { getMaterialsForClass } from '@/lib/actions/materials';
 import { EnrollButton } from '@/components/classes/EnrollButton';
+import { ClassCapacityBadge } from '@/components/classes/ClassCapacityBadge';
 import { ClassMaterialsList } from '@/components/classes/ClassMaterialsList';
 import { BackButton } from '@/components/ui/BackButton';
 import { ScrollToTop } from '@/components/ui/ScrollToTop';
@@ -178,7 +179,10 @@ export default async function ClassDetailPage({
                 <span className="font-medium">{availability.capacity}</span>
               </div>
 
-
+              <ClassCapacityBadge
+                seatsTaken={availability.enrolled}
+                capacity={availability.capacity}
+              />
 
               <EnrollButton
                 classId={classItem.id}

@@ -104,14 +104,17 @@ auth.users (1:1) → profiles (1:N parent_id) → family_members (1:N student_id
 
 **Capacity management:**
 
-- `classes.current_enrollment` automatically maintained by database trigger
-- Trigger: `update_enrollment_count()` increments/decrements on enrollment status changes
-- Only 'confirmed' enrollments count toward capacity
-- Application checks capacity before enrollment: `current_enrollment >= max_students`
+- The capacity column is `classes.capacity`. There is **no** `max_students` column.
+- **The rule:** a seat is held by a `confirmed` **or** a `pending` enrollment; a class is full when `seats_taken >= classes.capacity`
+- Enforced in SQL by `enroll_student()`, which decides `pending` vs `waitlisted` under a `FOR UPDATE` lock on the class row
+- Shared TS derivation lives in `src/lib/logic/class-capacity.ts` (`getCapacityState`, `isClassFull`); the UI indicator is `src/components/classes/ClassCapacityBadge.tsx`
+- **Don't** read `classes.current_enrollment` for capacity. Its `update_enrollment_count()` trigger counts `confirmed` only, so it under-reports (and reads 0 across the board while the enrollment lifecycle stops at `pending`).
+- **Don't** count enrollments through the RLS-scoped client to decide "is it full" — RLS limits a parent to their own family's rows and a full class reports as empty. Use the `get_class_enrollment_counts` RPC (SECURITY DEFINER) via `src/lib/enrollment-counts.ts`.
 
 **Waitlist system:**
 
-- Separate `waitlist` table with position tracking
+- There is **no** separate `waitlist` table. The waitlist is `enrollments` rows with `status = 'waitlisted'` and a `waitlist_position`.
+- Reaching capacity auto-waitlists rather than erroring: `enrollStudent` returns `status: 'waitlisted'`
 - Manual promotion (no automatic processing to avoid race conditions)
 - UNIQUE constraint on (class_id, student_id) prevents duplicates
 

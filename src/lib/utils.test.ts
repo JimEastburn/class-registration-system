@@ -9,8 +9,6 @@ import {
   calculateAge,
   resolveStudentAge,
   validateGradeLevel,
-  calculateSpotsLeft,
-  isClassFull,
   getInitials,
   formatPhoneNumber,
   getNextWaitlistPosition,
@@ -109,17 +107,6 @@ describe('utils', () => {
     it('validates grades', () => {
       expect(validateGradeLevel('elementary')).toBe(true);
       expect(validateGradeLevel('college')).toBe(false);
-    });
-  });
-
-  describe('spots logic', () => {
-    it('calculates spots left', () => {
-      expect(calculateSpotsLeft(10, 5)).toBe(5);
-      expect(calculateSpotsLeft(10, 15)).toBe(0);
-    });
-    it('checks isClassFull', () => {
-      expect(isClassFull(10, 10)).toBe(true);
-      expect(isClassFull(10, 9)).toBe(false);
     });
   });
 

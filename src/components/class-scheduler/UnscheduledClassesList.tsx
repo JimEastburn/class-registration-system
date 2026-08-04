@@ -9,9 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Class } from '@/types';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { ClassCapacityBadge } from '@/components/classes/ClassCapacityBadge';
+import type { EnrollmentCounts } from '@/lib/enrollment-counts';
 
 interface UnscheduledClassesListProps {
-  classes: Class[];
+  classes: (Class & EnrollmentCounts)[];
 }
 
 export function UnscheduledClassesList({
@@ -39,9 +41,11 @@ export function UnscheduledClassesList({
               >
                 <div className="space-y-1">
                   <p className="text-sm leading-none font-medium">{c.name}</p>
-                  <p className="text-muted-foreground text-xs">
-                    Capacity: {c.capacity}
-                  </p>
+                  <ClassCapacityBadge
+                    seatsTaken={c.enrolled_count}
+                    capacity={c.capacity}
+                    waitlistedCount={c.waitlisted_count}
+                  />
                 </div>
                 <Button size="sm" variant="ghost" asChild>
                   <Link href={`/class-scheduler/classes/${c.id}`}>

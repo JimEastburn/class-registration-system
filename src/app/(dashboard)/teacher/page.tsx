@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ClassCapacityBadge } from '@/components/classes/ClassCapacityBadge';
 import { getTeacherDashboardData } from '@/lib/actions/dashboard';
 
 export const metadata = {
@@ -164,15 +165,12 @@ export default async function TeacherDashboardPage() {
                         {cls.block}
                       </p>
                     </div>
-                    <Badge
-                      variant={
-                        cls.enrolledCount >= cls.capacity
-                          ? 'default'
-                          : 'outline'
-                      }
-                    >
-                      {cls.enrolledCount}/{cls.capacity}
-                    </Badge>
+                    <ClassCapacityBadge
+                      seatsTaken={cls.enrolledCount}
+                      capacity={cls.capacity}
+                      variant="compact"
+                      className="justify-end text-sm"
+                    />
                   </div>
                 ))}
               </div>

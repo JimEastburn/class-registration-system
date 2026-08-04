@@ -94,26 +94,6 @@ export function validateGradeLevel(grade: string): boolean {
 }
 
 /**
- * Calculate spots left in a class
- */
-export function calculateSpotsLeft(
-  maxStudents: number,
-  currentEnrollment: number
-): number {
-  return Math.max(0, maxStudents - currentEnrollment);
-}
-
-/**
- * Check if class is full
- */
-export function isClassFull(
-  maxStudents: number,
-  currentEnrollment: number
-): boolean {
-  return currentEnrollment >= maxStudents;
-}
-
-/**
  * Get initials from first and last name
  */
 export function getInitials(firstName: string, lastName: string): string {

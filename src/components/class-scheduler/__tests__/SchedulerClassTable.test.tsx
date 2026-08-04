@@ -3,6 +3,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { SchedulerClassTable } from '../SchedulerClassTable';
 import { Class } from '@/types';
+import type { EnrollmentCounts } from '@/lib/enrollment-counts';
 import { toast } from 'sonner';
 
 // Mock dependencies
@@ -27,8 +28,12 @@ vi.mock('@/lib/actions/scheduler', () => ({
 }));
 
 // Factory for test class data
-function makeClass(overrides: Partial<Class> = {}): Class & { teacher?: { first_name: string | null; last_name: string | null; email: string } } {
+function makeClass(overrides: Partial<Class & EnrollmentCounts> = {}): Class & EnrollmentCounts & { teacher?: { first_name: string | null; last_name: string | null; email: string } } {
   return {
+    enrolled_count: 0,
+    pending_count: 0,
+    confirmed_count: 0,
+    waitlisted_count: 0,
     id: 'cls-1',
     name: 'Test Art Class',
     description: 'A test class',
@@ -57,7 +62,7 @@ function makeClass(overrides: Partial<Class> = {}): Class & { teacher?: { first_
       email: 'jane@example.com',
     },
     ...overrides,
-  } as Class & { teacher?: { first_name: string | null; last_name: string | null; email: string } };
+  } as Class & EnrollmentCounts & { teacher?: { first_name: string | null; last_name: string | null; email: string } };
 }
 
 describe('SchedulerClassTable - Published Toggle', () => {

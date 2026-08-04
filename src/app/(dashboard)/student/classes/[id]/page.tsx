@@ -7,6 +7,9 @@ import { ClassDetailCard } from '@/components/student/ClassDetailCard';
 import { ClassLocationCard } from '@/components/student/ClassLocationCard';
 import { ClassMaterialsList } from '@/components/classes/ClassMaterialsList';
 import { ClassScheduleCard } from '@/components/student/ClassScheduleCard';
+import { ClassCapacityBadge } from '@/components/classes/ClassCapacityBadge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { getClassAvailability } from '@/lib/actions/classes';
 import { resolveStudentFamilyMember } from '@/lib/logic/student-link';
 
 export default async function ClassDetailPage({
@@ -86,6 +89,10 @@ export default async function ClassDetailPage({
     teacher = teacherData;
   }
 
+  // Goes through the SECURITY DEFINER counts RPC, so a student sees the true
+  // class-wide numbers rather than just their own enrollment row.
+  const availability = await getClassAvailability(id);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -132,6 +139,18 @@ export default async function ClassDetailPage({
           />
 
           <ClassLocationCard location={classDetails.location} />
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Class Size</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ClassCapacityBadge
+                seatsTaken={availability.enrolled}
+                capacity={availability.capacity}
+              />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

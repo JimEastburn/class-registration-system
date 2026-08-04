@@ -13,6 +13,10 @@ import type {
 } from '@/types';
 import { checkStudentScheduleConflict } from '@/lib/logic/scheduling';
 import { promoteFromWaitlist } from '@/lib/actions/waitlist';
+import {
+  getEnrollmentCountsByClass,
+  EMPTY_COUNTS,
+} from '@/lib/enrollment-counts';
 
 interface EnrollmentWithClass extends Enrollment {
   class: {
@@ -1062,6 +1066,9 @@ export interface AdminEnrollmentClassOption {
   teacher_name: string | null;
   day: string | null;
   block: string | null;
+  capacity: number;
+  /** Seats held (confirmed + pending) — see lib/logic/class-capacity. */
+  enrolled_count: number;
 }
 
 /**
@@ -1406,7 +1413,9 @@ export async function getAdminEnrollmentClassOptions(search?: string): Promise<{
     const adminClient = await createAdminClient();
     let query = adminClient
       .from('classes')
-      .select('id, name, day, block, teacher:profiles(first_name, last_name)')
+      .select(
+        'id, name, day, block, capacity, teacher:profiles(first_name, last_name)'
+      )
       .eq('status', 'published');
 
     if (search) {
@@ -1419,16 +1428,25 @@ export async function getAdminEnrollmentClassOptions(search?: string): Promise<{
       return { data: null, error: error.message };
     }
 
+    // So the admin can see which classes will waitlist rather than seat the student.
+    const counts = await getEnrollmentCountsByClass(
+      adminClient,
+      (data || []).map((item) => item.id as string)
+    );
+
     const mapped = (data || []).map((item: Record<string, unknown>) => {
       const teacher = item.teacher as unknown as {
         first_name: string | null;
         last_name: string | null;
       } | null;
+      const id = item.id as string;
       return {
-        id: item.id as string,
+        id,
         name: item.name as string,
         day: (item.day as string | null) ?? null,
         block: (item.block as string | null) ?? null,
+        capacity: item.capacity as number,
+        enrolled_count: (counts.get(id) ?? EMPTY_COUNTS).enrolled_count,
         teacher_name: teacher
           ? `${teacher.first_name || ''} ${teacher.last_name || ''}`.trim() ||
             null

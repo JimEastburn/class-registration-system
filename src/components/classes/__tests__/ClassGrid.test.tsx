@@ -38,9 +38,19 @@ vi.mock('@/hooks/useScrollRestore', () => ({
 // Helpers
 // ---------------------------------------------------------------------------
 
+type TestClass = Class & {
+  teacher: { id: string; first_name: string | null; last_name: string | null } | null;
+  enrolled_count: number;
+  waitlisted_count: number;
+};
+
 function makeClass(
-  overrides: Partial<Class> & { teacher?: { id: string; first_name: string | null; last_name: string | null } | null }
-): Class & { teacher: { id: string; first_name: string | null; last_name: string | null } | null } {
+  overrides: Partial<Class> & {
+    teacher?: { id: string; first_name: string | null; last_name: string | null } | null;
+    enrolled_count?: number;
+    waitlisted_count?: number;
+  }
+): TestClass {
   const base: Class = {
     id: overrides.id ?? crypto.randomUUID(),
     teacher_id: 't1',
@@ -71,6 +81,8 @@ function makeClass(
     ...base,
     ...overrides,
     teacher: overrides.teacher ?? { id: 't1', first_name: 'Test', last_name: 'Teacher' },
+    enrolled_count: overrides.enrolled_count ?? 0,
+    waitlisted_count: overrides.waitlisted_count ?? 0,
   };
 }
 

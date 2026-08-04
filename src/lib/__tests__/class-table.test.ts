@@ -4,6 +4,7 @@ import {
   formatClassBlock,
   resolveClassSort,
   sortClasses,
+  withClassListState,
   type SortableClassRow,
 } from '@/lib/class-table';
 
@@ -73,6 +74,50 @@ describe('resolveClassSort', () => {
       });
     }
   );
+});
+
+describe('withClassListState', () => {
+  it('carries the list state onto a link', () => {
+    expect(
+      withClassListState(
+        '/admin/classes/class-1',
+        new URLSearchParams('page=2&limit=10')
+      )
+    ).toBe('/admin/classes/class-1?page=2&limit=10');
+  });
+
+  it('reads the same state from a server searchParams object', () => {
+    expect(
+      withClassListState('/admin/classes', {
+        page: '2',
+        limit: '10',
+        search: 'Art',
+        sort: 'enrolled',
+        dir: 'desc',
+      })
+    ).toBe('/admin/classes?page=2&limit=10&search=Art&sort=enrolled&dir=desc');
+  });
+
+  it('returns a bare path when there is no state to carry', () => {
+    expect(withClassListState('/admin/classes', new URLSearchParams())).toBe(
+      '/admin/classes'
+    );
+  });
+
+  it('drops params that are not part of the list state', () => {
+    expect(
+      withClassListState(
+        '/admin/classes',
+        new URLSearchParams('page=2&redirect=http://evil.test')
+      )
+    ).toBe('/admin/classes?page=2');
+  });
+
+  it('takes the first value when a param is repeated', () => {
+    expect(withClassListState('/admin/classes', { page: ['3', '9'] })).toBe(
+      '/admin/classes?page=3'
+    );
+  });
 });
 
 describe('formatClassBlock', () => {

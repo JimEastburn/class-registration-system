@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ParentCalendarGrid } from '@/components/classes/ParentCalendarGrid';
+import { ClassCapacityBadge } from '@/components/classes/ClassCapacityBadge';
 import type { Class } from '@/types';
 
 interface ClassWithTeacher extends Class {
@@ -26,6 +27,9 @@ interface ClassWithTeacher extends Class {
     first_name: string | null;
     last_name: string | null;
   } | null;
+  /** Seats held (confirmed + pending) — see lib/logic/class-capacity. */
+  enrolled_count: number;
+  waitlisted_count: number;
 }
 
 interface ClassGridProps {
@@ -323,9 +327,13 @@ function ClassCard({ classItem, onNavigateAway }: ClassCardProps) {
             </>
           )}
 
-          <div className="text-muted-foreground flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span>Capacity: {classItem.capacity}</span>
+          <div className="text-muted-foreground flex items-start gap-2">
+            <Users className="mt-0.5 h-4 w-4 shrink-0" />
+            <ClassCapacityBadge
+              seatsTaken={classItem.enrolled_count}
+              capacity={classItem.capacity}
+              waitlistedCount={classItem.waitlisted_count}
+            />
           </div>
 
           <div className="text-muted-foreground flex items-center gap-2">

@@ -51,6 +51,42 @@ export function resolveClassSort(
 }
 
 /**
+ * The search params that make up the class list's view state, in the order they
+ * are written back into a URL.
+ */
+const CLASS_LIST_PARAMS = ['page', 'limit', 'search', 'sort', 'dir'] as const;
+
+/** Search params as Next hands them to a server page, or to a client hook. */
+type SearchParamSource =
+  | URLSearchParams
+  | Record<string, string | string[] | undefined>;
+
+/**
+ * Append the class list's view state to `path`.
+ *
+ * Row links carry it into a detail/edit page so that page's back link can drop
+ * the admin back on the page, sort, and search they left — otherwise every trip
+ * into a class resets the list to page 1. Only the known list params ride along,
+ * so a hand-edited URL can't smuggle anything else back into the list.
+ */
+export function withClassListState(
+  path: string,
+  source: SearchParamSource
+): string {
+  const params = new URLSearchParams();
+
+  for (const key of CLASS_LIST_PARAMS) {
+    const raw =
+      source instanceof URLSearchParams ? source.get(key) : source[key];
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    if (value) params.set(key, value);
+  }
+
+  const query = params.toString();
+  return query ? `${path}?${query}` : path;
+}
+
+/**
  * The Block column's label, or null when the class has no block yet.
  * Asynchronous classes have no block by design; day_block classes may still be
  * unscheduled, since a class can't be published until an admin assigns one.

@@ -1,4 +1,3 @@
-
 /**
  * A fake Supabase client for integration testing.
  * Stores data in-memory and mimics basic Supabase query syntax.
@@ -93,6 +92,28 @@ export class SupabaseFake {
       };
       enrollments.push(row);
       return row;
+    });
+
+    // Mirrors public.get_class_enrollment_counts(): class-wide status tallies.
+    // SECURITY DEFINER in the real database, so it deliberately counts every
+    // enrollment row regardless of who is asking.
+    this.setRpcHandler('get_class_enrollment_counts', (args) => {
+      const classIds = (args.p_class_ids as string[]) || [];
+      const enrollments = this.db['enrollments'] || [];
+      return (this.db['classes'] || [])
+        .filter((c) => classIds.includes(c.id as string))
+        .map((cls) => {
+          const forClass = enrollments.filter((e) => e.class_id === cls.id);
+          const countOf = (status: string) =>
+            forClass.filter((e) => e.status === status).length;
+          return {
+            class_id: cls.id,
+            capacity: cls.capacity,
+            confirmed_count: countOf('confirmed'),
+            pending_count: countOf('pending'),
+            waitlisted_count: countOf('waitlisted'),
+          };
+        });
     });
 
     // Mirrors public.promote_waitlist_one(): atomic, capacity-aware waitlist
@@ -250,7 +271,15 @@ export class SupabaseFake {
       this.authUser = user;
       return { data: { user }, error: null };
     },
-    signUp: async ({ email, options, ..._ }: { email: string; password?: string; options?: Record<string, unknown> }) => {
+    signUp: async ({
+      email,
+      options,
+      ..._
+    }: {
+      email: string;
+      password?: string;
+      options?: Record<string, unknown>;
+    }) => {
       const user: Record<string, unknown> = { id: crypto.randomUUID(), email };
       if (options?.data) {
         user.user_metadata = options.data;
@@ -260,7 +289,10 @@ export class SupabaseFake {
     },
     updateUser: async (updates: Record<string, unknown>) => {
       if (!this.authUser) {
-        return { data: { user: null }, error: { message: 'Not authenticated' } };
+        return {
+          data: { user: null },
+          error: { message: 'Not authenticated' },
+        };
       }
       this.authUser = { ...this.authUser, ...updates };
       return { data: { user: this.authUser }, error: null };
@@ -277,9 +309,15 @@ export class SupabaseFake {
   }
 
   /* RPC stubs — tests register handlers per function name */
-  private rpcHandlers = new Map<string, (args: Record<string, unknown>) => unknown>();
+  private rpcHandlers = new Map<
+    string,
+    (args: Record<string, unknown>) => unknown
+  >();
 
-  setRpcHandler(fn: string, handler: (args: Record<string, unknown>) => unknown) {
+  setRpcHandler(
+    fn: string,
+    handler: (args: Record<string, unknown>) => unknown
+  ) {
     this.rpcHandlers.set(fn, handler);
   }
 
@@ -290,7 +328,11 @@ export class SupabaseFake {
       const data = handler(args);
       return { data, error: null };
     } catch (e: unknown) {
-      const err = e as Error & { hint?: string; code?: string; details?: string };
+      const err = e as Error & {
+        hint?: string;
+        code?: string;
+        details?: string;
+      };
       return {
         data: null,
         error: {
@@ -338,7 +380,9 @@ class FakeQueryBuilder {
   private client: SupabaseFake;
   private selectQuery: string | null = null;
   private selectOpts: SelectOptions = {};
-  private modifiers: ((data: Record<string, unknown>[]) => Record<string, unknown>[])[] = [];
+  private modifiers: ((
+    data: Record<string, unknown>[]
+  ) => Record<string, unknown>[])[] = [];
   private _pendingUpdate: Record<string, unknown> | null = null;
   private _pendingDelete = false;
   private _singleMode: 'single' | 'maybeSingle' | null = null;
@@ -346,7 +390,7 @@ class FakeQueryBuilder {
   constructor(
     data: Record<string, unknown>[],
     tableName: string,
-    client: SupabaseFake,
+    client: SupabaseFake
   ) {
     this.data = [...data];
     this.tableName = tableName;
@@ -378,7 +422,7 @@ class FakeQueryBuilder {
 
   upsert(
     record: Record<string, unknown> | Record<string, unknown>[],
-    opts?: { onConflict?: string },
+    opts?: { onConflict?: string }
   ) {
     if (!this.client.db[this.tableName]) {
       this.client.db[this.tableName] = [];
@@ -389,7 +433,7 @@ class FakeQueryBuilder {
 
     for (const r of records) {
       const existing = this.client.db[this.tableName].find(
-        (row) => row[conflictKey] === r[conflictKey],
+        (row) => row[conflictKey] === r[conflictKey]
       );
       if (existing) {
         Object.assign(existing, r);
@@ -423,7 +467,9 @@ class FakeQueryBuilder {
     if (column.includes('.')) {
       this._addDotPathFilter(column, (v) => v === value);
     } else {
-      this.modifiers.push((rows) => rows.filter((row) => row[column] === value));
+      this.modifiers.push((rows) =>
+        rows.filter((row) => row[column] === value)
+      );
     }
     return this;
   }
@@ -435,14 +481,14 @@ class FakeQueryBuilder {
 
   in(column: string, values: unknown[]) {
     this.modifiers.push((rows) =>
-      rows.filter((row) => values.includes(row[column])),
+      rows.filter((row) => values.includes(row[column]))
     );
     return this;
   }
 
   gt(column: string, value: unknown) {
     this.modifiers.push((rows) =>
-      rows.filter((row) => (row[column] as number) > (value as number)),
+      rows.filter((row) => (row[column] as number) > (value as number))
     );
     return this;
   }
@@ -452,7 +498,7 @@ class FakeQueryBuilder {
       this._addDotPathFilter(column, (v) => String(v) >= String(value));
     } else {
       this.modifiers.push((rows) =>
-        rows.filter((row) => (row[column] as number) >= (value as number)),
+        rows.filter((row) => (row[column] as number) >= (value as number))
       );
     }
     return this;
@@ -460,29 +506,27 @@ class FakeQueryBuilder {
 
   lt(column: string, value: unknown) {
     this.modifiers.push((rows) =>
-      rows.filter((row) => (row[column] as number) < (value as number)),
+      rows.filter((row) => (row[column] as number) < (value as number))
     );
     return this;
   }
 
   lte(column: string, value: unknown) {
     this.modifiers.push((rows) =>
-      rows.filter((row) => (row[column] as number) <= (value as number)),
+      rows.filter((row) => (row[column] as number) <= (value as number))
     );
     return this;
   }
 
   is(column: string, value: unknown) {
-    this.modifiers.push((rows) =>
-      rows.filter((row) => row[column] === value),
-    );
+    this.modifiers.push((rows) => rows.filter((row) => row[column] === value));
     return this;
   }
 
   ilike(column: string, pattern: string) {
     const regex = new RegExp(pattern.replace(/%/g, '.*'), 'i');
     this.modifiers.push((rows) =>
-      rows.filter((row) => regex.test(row[column] as string)),
+      rows.filter((row) => regex.test(row[column] as string))
     );
     return this;
   }
@@ -497,10 +541,12 @@ class FakeQueryBuilder {
   order(column: string, { ascending = true } = {}) {
     this.modifiers.push((rows) =>
       [...rows].sort((a, b) => {
-        if ((a[column] as number) < (b[column] as number)) return ascending ? -1 : 1;
-        if ((a[column] as number) > (b[column] as number)) return ascending ? 1 : -1;
+        if ((a[column] as number) < (b[column] as number))
+          return ascending ? -1 : 1;
+        if ((a[column] as number) > (b[column] as number))
+          return ascending ? 1 : -1;
         return 0;
-      }),
+      })
     );
     return this;
   }
@@ -528,8 +574,12 @@ class FakeQueryBuilder {
   // ── Thenable (makes query awaitable) ──────────────────────────────────
 
   then(
-    resolve: (result: { data: unknown; error: unknown; count?: number }) => void,
-    _reject?: (err: unknown) => void,
+    resolve: (result: {
+      data: unknown;
+      error: unknown;
+      count?: number;
+    }) => void,
+    _reject?: (err: unknown) => void
   ) {
     setTimeout(() => {
       try {
@@ -552,17 +602,21 @@ class FakeQueryBuilder {
             this.client.db[this.tableName] = (
               this.client.db[this.tableName] || []
             ).map((r) =>
-              matchingIds.has(r.id) ? { ...r, ...this._pendingUpdate } : r,
+              matchingIds.has(r.id) ? { ...r, ...this._pendingUpdate } : r
             );
 
             // If .select() was chained after .update(), return the updated rows
             if (this.selectQuery !== null) {
-              const updatedRows = (this.client.db[this.tableName] || [])
-                .filter((r) => matchingIds.has(r.id));
+              const updatedRows = (this.client.db[this.tableName] || []).filter(
+                (r) => matchingIds.has(r.id)
+              );
               // Apply single/maybeSingle if they were chained
               if (this._singleMode === 'single') {
                 if (updatedRows.length !== 1) {
-                  resolve({ data: null, error: { message: 'PGRST116', code: 'PGRST116' } });
+                  resolve({
+                    data: null,
+                    error: { message: 'PGRST116', code: 'PGRST116' },
+                  });
                   return;
                 }
                 resolve({ data: updatedRows[0], error: null });
@@ -621,7 +675,12 @@ class FakeQueryBuilder {
           if (rows.length !== 1) {
             resolve({
               data: null,
-              error: { message: 'PGRST116', code: 'PGRST116', details: 'JSON object requested, multiple (or no) rows returned' },
+              error: {
+                message: 'PGRST116',
+                code: 'PGRST116',
+                details:
+                  'JSON object requested, multiple (or no) rows returned',
+              },
             });
             return;
           }
@@ -633,7 +692,11 @@ class FakeQueryBuilder {
           if (rows.length > 1) {
             resolve({
               data: null,
-              error: { message: 'PGRST116', code: 'PGRST116', details: 'JSON object requested, multiple rows returned' },
+              error: {
+                message: 'PGRST116',
+                code: 'PGRST116',
+                details: 'JSON object requested, multiple rows returned',
+              },
             });
             return;
           }
@@ -641,7 +704,10 @@ class FakeQueryBuilder {
           return;
         }
 
-        const response: { data: unknown; error: null; count?: number } = { data: result, error: null };
+        const response: { data: unknown; error: null; count?: number } = {
+          data: result,
+          error: null,
+        };
         if (this.selectOpts.count === 'exact') {
           response.count = Array.isArray(result) ? result.length : 0;
         }
@@ -694,7 +760,7 @@ class FakeQueryBuilder {
    */
   private _resolveRelations(
     rows: Record<string, unknown>[],
-    relations: ParsedRelation[],
+    relations: ParsedRelation[]
   ): Record<string, unknown>[] {
     let result = rows.map((row) => {
       const enriched = { ...row };
@@ -702,15 +768,19 @@ class FakeQueryBuilder {
         const relatedTable = this.client.db[rel.table] || [];
 
         // 1. Standard FK: row.<singularTable>_id → related.id
-        const standardFk = row[`${singularize(rel.table)}_id`] ?? row[`${rel.table}_id`];
-        let related = standardFk != null
-          ? relatedTable.find((r) => r.id === standardFk)
-          : null;
+        const standardFk =
+          row[`${singularize(rel.table)}_id`] ?? row[`${rel.table}_id`];
+        let related =
+          standardFk != null
+            ? relatedTable.find((r) => r.id === standardFk)
+            : null;
 
         // 2. Fallback: try matching via <singularParent>_id on the child table
         if (!related && row.id != null) {
           const singularParent = singularize(this.tableName);
-          related = relatedTable.find((r) => r[`${singularParent}_id`] === row.id) ?? null;
+          related =
+            relatedTable.find((r) => r[`${singularParent}_id`] === row.id) ??
+            null;
         }
 
         // 3. Broader scan: try any _id column on the row that matches a record in the related table
@@ -771,7 +841,10 @@ class FakeQueryBuilder {
    * Add a filter for dot-path column references like `classes.start_date`.
    * These filter on already-resolved join data.
    */
-  private _addDotPathFilter(dotPath: string, predicate: (val: unknown) => boolean) {
+  private _addDotPathFilter(
+    dotPath: string,
+    predicate: (val: unknown) => boolean
+  ) {
     const [table, column] = dotPath.split('.');
     this.modifiers.push((rows) =>
       rows.filter((row) => {
@@ -782,7 +855,7 @@ class FakeQueryBuilder {
         const related = relatedTable.find((r) => r.id === fk);
         if (!related) return false;
         return predicate(related[column]);
-      }),
+      })
     );
   }
 }

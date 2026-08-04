@@ -5,6 +5,7 @@ import {
   publishClass,
   getAllClasses,
   getAllAacEnrollmentReport,
+  getClassAvailability,
 } from '@/lib/actions/classes';
 import {
   seedFake,
@@ -270,6 +271,56 @@ describe('Class Actions', () => {
       const classTwo = result.data.classes.find((c) => c.id === 'class-2')!;
       expect(classTwo.enrolled_count).toBe(0);
       expect(classTwo.waitlisted_count).toBe(0);
+    });
+
+    /**
+     * Regression guard for the RLS read-path bug: getClassAvailability used to
+     * COUNT enrollments through the RLS-scoped client, so a parent saw only their
+     * own family's rows and a full class reported as wide open — which made
+     * EnrollButton's "Class Full - Join Waitlist" branch unreachable.
+     *
+     * The fake does not enforce RLS, so the bug is modelled directly: the
+     * enrollments table holds only what a parent could see, while the RPC (which
+     * is SECURITY DEFINER in the real database) reports the true class-wide
+     * numbers. Counting via a direct query would report the class as open.
+     */
+    it('reports a full class as full for a parent who owns none of the enrollments', async () => {
+      const fake = seedFake({
+        authUserId: PARENT_PROFILE.id,
+        data: {
+          profiles: [PARENT_PROFILE] as unknown as Record<string, unknown>[],
+          classes: [
+            { ...existingClass, capacity: 12 },
+          ] as unknown as Record<string, unknown>[],
+          // All this parent is allowed to see: a single unrelated row.
+          enrollments: [
+            {
+              id: 'enr-visible',
+              student_id: 'own-child',
+              class_id: 'class-1',
+              status: 'pending',
+            },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      // What the definer-rights function sees: the class is actually full.
+      fake.setRpcHandler('get_class_enrollment_counts', () => [
+        {
+          class_id: 'class-1',
+          capacity: 12,
+          confirmed_count: 5,
+          pending_count: 7,
+          waitlisted_count: 2,
+        },
+      ]);
+
+      const availability = await getClassAvailability('class-1');
+
+      expect(availability.error).toBeNull();
+      expect(availability.capacity).toBe(12);
+      expect(availability.enrolled).toBe(12);
+      expect(availability.available).toBe(0);
     });
 
     describe('sorting', () => {

@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { ClassCapacityBadge } from '@/components/classes/ClassCapacityBadge';
 import { Button } from '@/components/ui/button';
 import {
   Edit,
@@ -42,6 +43,7 @@ import { PAGE_SIZE_OPTIONS } from '@/lib/pagination';
 import {
   formatClassBlock,
   resolveClassSort,
+  withClassListState,
   type ClassSortKey,
 } from '@/lib/class-table';
 
@@ -298,15 +300,11 @@ export default function AdminClassTable({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <span
-                      className={
-                        cls.enrolled_count >= cls.capacity
-                          ? 'font-medium text-amber-600'
-                          : undefined
-                      }
-                    >
-                      {cls.enrolled_count} / {cls.capacity}
-                    </span>
+                    <ClassCapacityBadge
+                      seatsTaken={cls.enrolled_count}
+                      capacity={cls.capacity}
+                      variant="compact"
+                    />
                   </TableCell>
                   <TableCell>
                     {cls.waitlisted_count > 0 ? (
@@ -331,13 +329,27 @@ export default function AdminClassTable({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      {/* Both links carry the list state so the back link on
+                          the page they open returns to this page of results. */}
                       <Button variant="ghost" size="icon" asChild>
-                        <Link href={`/admin/classes/${cls.id}`}>
+                        <Link
+                          href={withClassListState(
+                            `/admin/classes/${cls.id}`,
+                            searchParams
+                          )}
+                          aria-label={`View ${cls.name}`}
+                        >
                           <Eye className="h-4 w-4" />
                         </Link>
                       </Button>
                       <Button variant="ghost" size="icon" asChild>
-                        <Link href={`/admin/classes/${cls.id}/edit`}>
+                        <Link
+                          href={withClassListState(
+                            `/admin/classes/${cls.id}/edit`,
+                            searchParams
+                          )}
+                          aria-label={`Edit ${cls.name}`}
+                        >
                           <Edit className="h-4 w-4" />
                         </Link>
                       </Button>

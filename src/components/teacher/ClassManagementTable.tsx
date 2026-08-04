@@ -40,6 +40,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Card, CardContent } from '@/components/ui/card';
+import { ClassCapacityBadge } from '@/components/classes/ClassCapacityBadge';
 import type { Class } from '@/types';
 import {
   deleteClass,
@@ -207,7 +208,11 @@ export function ClassManagementTable({ classes }: ClassManagementTableProps) {
                   )}
                 </TableCell>
                 <TableCell>
-                  <div>{cls.enrolled_count} / {cls.capacity}</div>
+                  <ClassCapacityBadge
+                    seatsTaken={cls.enrolled_count}
+                    capacity={cls.capacity}
+                    variant="compact"
+                  />
                   <div className="text-muted-foreground mt-0.5 space-y-0 text-[11px] leading-tight">
                     <div>Enrolled: {cls.pending_count}</div>
                     <div>Confirmed: {cls.confirmed_count}</div>

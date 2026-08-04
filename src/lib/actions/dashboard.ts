@@ -444,11 +444,16 @@ export async function getTeacherDashboardData(): Promise<{
         .in('class_id', classIds)
         .in('status', ['confirmed', 'pending', 'waitlisted']);
 
-      // Count enrollments per class (confirmed only for capacity display)
+      // Seats held per class: confirmed + pending, matching enroll_student's
+      // capacity rule. Counting confirmed only under-reported here and made this
+      // dashboard's N/M badge disagree with /teacher/classes for the same class.
       const countMap = new Map<string, number>();
       (enrollments || []).forEach((e) => {
-        if (e.status === 'confirmed') {
+        if (e.status === 'confirmed' || e.status === 'pending') {
           countMap.set(e.class_id, (countMap.get(e.class_id) || 0) + 1);
+        }
+
+        if (e.status === 'confirmed') {
           confirmedStudents++;
         } else if (e.status === 'pending') {
           pendingStudents++;
@@ -467,7 +472,9 @@ export async function getTeacherDashboardData(): Promise<{
       status === 'published';
     const activeClasses =
       classes?.filter((c) => isSchedulableStatus(c.status)).length || 0;
-    const totalStudents = enrollmentCounts.reduce((sum, e) => sum + e.count, 0);
+    // Confirmed only — this stat counts actual students, not held seats.
+    // (enrollmentCounts is seats-taken for capacity display; different question.)
+    const totalStudents = confirmedStudents;
 
     // Today's day of week
     const dayNames = [

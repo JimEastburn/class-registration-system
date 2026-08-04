@@ -36,6 +36,13 @@ interface EnrollButtonProps {
   showPaymentInfo?: boolean;
 }
 
+/** enroll_student assigns the position, so it comes back on the returned row. */
+function waitlistToastMessage(position?: number | null): string {
+  return position
+    ? `Class is full — joined the waitlist at #${position}`
+    : 'Class is full — successfully joined waitlist';
+}
+
 export function EnrollButton({
   classId,
   className,
@@ -95,7 +102,7 @@ export function EnrollButton({
       }
 
       if (status === 'waitlisted') {
-        toast.success('Successfully joined waitlist');
+        toast.success(waitlistToastMessage(enrollment?.waitlist_position));
         setOpen(false);
         setIsLoading(false);
         return;
@@ -149,7 +156,11 @@ export function EnrollButton({
     setIsPayLaterLoading(true);
 
     try {
-      const { status, error } = await enrollStudent({
+      const {
+        data: enrollment,
+        status,
+        error,
+      } = await enrollStudent({
         classId,
         familyMemberId: selectedMember,
       });
@@ -161,7 +172,7 @@ export function EnrollButton({
       }
 
       if (status === 'waitlisted') {
-        toast.success('Successfully joined waitlist');
+        toast.success(waitlistToastMessage(enrollment?.waitlist_position));
         setOpen(false);
         setIsPayLaterLoading(false);
         return;
@@ -252,6 +263,13 @@ export function EnrollButton({
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {isFull && (
+              <div className="rounded-lg border border-[var(--status-waitlisted-border)] bg-[var(--status-waitlisted-bg)] p-3 text-sm text-[var(--status-waitlisted-fg)]">
+                This class is at capacity. This registration will join the
+                waitlist, and you&apos;ll be notified if a spot opens up.
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="family-member">Family Member</Label>
               {loadingMembers ? (

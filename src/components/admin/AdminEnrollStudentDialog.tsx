@@ -22,6 +22,7 @@ import {
   type AdminEnrollmentStudentOption,
   type AdminEnrollmentClassOption,
 } from '@/lib/actions/enrollments';
+import { isClassFull } from '@/lib/logic/class-capacity';
 
 interface AdminEnrollStudentDialogProps {
   trigger?: React.ReactNode;
@@ -161,6 +162,9 @@ export function AdminEnrollStudentDialog({
                     {c.name}
                     {c.teacher_name ? ` - ${c.teacher_name}` : ''}
                     {c.day && c.block ? ` (${c.day} ${c.block})` : ''}
+                    {isClassFull(c.enrolled_count, c.capacity)
+                      ? ' — FULL, will waitlist'
+                      : ''}
                   </option>
                 ))}
               </select>

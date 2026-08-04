@@ -3,6 +3,13 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { Class, ActionResult, ScheduleConfig } from '@/types';
 import {
+  getEnrollmentCountsByClass,
+  EMPTY_COUNTS,
+  type EnrollmentCounts,
+} from '@/lib/enrollment-counts';
+
+export type ClassWithCounts = Class & EnrollmentCounts;
+import {
   checkScheduleConflict,
   checkRoomConflict,
 } from '@/lib/logic/scheduling';
@@ -431,7 +438,7 @@ export async function getConflictAlerts(): Promise<
 export async function getClassesForScheduler(
   page = 1,
   limit = 100
-): Promise<ActionResult<{ classes: Class[]; total: number }>> {
+): Promise<ActionResult<{ classes: ClassWithCounts[]; total: number }>> {
   try {
     const supabase = await createClient();
 
@@ -482,10 +489,21 @@ export async function getClassesForScheduler(
       return { success: false, error: error.message };
     }
 
+    // Seat/waitlist tallies so schedulers can see how full a class is before
+    // they publish it.
+    const classes = (data || []) as Class[];
+    const counts = await getEnrollmentCountsByClass(
+      adminClient,
+      classes.map((c) => c.id)
+    );
+
     return {
       success: true,
       data: {
-        classes: data as Class[],
+        classes: classes.map((c) => ({
+          ...c,
+          ...(counts.get(c.id) ?? EMPTY_COUNTS),
+        })),
         total: count || 0,
       },
     };
@@ -497,7 +515,7 @@ export async function getClassesForScheduler(
 
 export async function getUnscheduledClasses(
   limit = 5
-): Promise<ActionResult<Class[]>> {
+): Promise<ActionResult<ClassWithCounts[]>> {
   try {
     const supabase = await createClient();
 
@@ -535,7 +553,19 @@ export async function getUnscheduledClasses(
       return { success: false, error: error.message };
     }
 
-    return { success: true, data: data as Class[] };
+    const classes = (data || []) as Class[];
+    const counts = await getEnrollmentCountsByClass(
+      adminClient,
+      classes.map((c) => c.id)
+    );
+
+    return {
+      success: true,
+      data: classes.map((c) => ({
+        ...c,
+        ...(counts.get(c.id) ?? EMPTY_COUNTS),
+      })),
+    };
   } catch (err) {
     console.error('Error in getUnscheduledClasses:', err);
     return { success: false, error: 'Internal server error' };

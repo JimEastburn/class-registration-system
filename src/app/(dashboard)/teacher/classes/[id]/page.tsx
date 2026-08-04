@@ -20,6 +20,7 @@ import {
 import { getClassDetails, getClassAvailability } from '@/lib/actions/classes';
 import { getClassRoster } from '@/lib/actions/enrollments';
 import { StudentRosterTable } from '@/components/teacher/StudentRosterTable';
+import { ClassCapacityBadge } from '@/components/classes/ClassCapacityBadge';
 import { computeEnrollmentStatusCounts } from '@/lib/logic/enrollment-helpers';
 
 interface ClassDetailPageProps {
@@ -110,9 +111,18 @@ export default async function ClassDetailPage({
             <div className="text-2xl font-bold">
               {availability.enrolled}/{availability.capacity}
             </div>
-            <p className="text-muted-foreground text-xs">
-              {availability.available} spots remaining for enrollment
-            </p>
+            {availability.available > 0 ? (
+              <p className="text-muted-foreground text-xs">
+                {availability.available} spots remaining for enrollment
+              </p>
+            ) : (
+              <ClassCapacityBadge
+                seatsTaken={availability.enrolled}
+                capacity={availability.capacity}
+                waitlistedCount={statusCounts.waitlisted}
+                className="mt-1"
+              />
+            )}
             <div className="mt-3 space-y-1 border-t pt-3 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Enrolled</span>

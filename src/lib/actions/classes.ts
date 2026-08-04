@@ -8,6 +8,11 @@ import {
 } from '@/lib/logic/scheduling';
 import { generateClassEvents } from '@/lib/logic/calendar';
 import { sortClasses, type ClassSort } from '@/lib/class-table';
+import {
+  getEnrollmentCountsByClass,
+  EMPTY_COUNTS,
+  type EnrollmentCounts,
+} from '@/lib/enrollment-counts';
 
 interface ClassFilters {
   status?: ClassStatus;
@@ -82,7 +87,7 @@ function formatTeacherName(
  */
 export async function getPublishedClasses(
   filters?: ClassFilters
-): Promise<{ data: ClassWithTeacher[] | null; error: string | null }> {
+): Promise<{ data: ClassWithTeacherAndCount[] | null; error: string | null }> {
   try {
     const supabase = await createClient();
 
@@ -132,7 +137,21 @@ export async function getPublishedClasses(
       return { data: null, error: error.message };
     }
 
-    return { data: data as ClassWithTeacher[], error: null };
+    // Seat/waitlist tallies so the browse grid can warn that a class is full
+    // before a family clicks through to it.
+    const classes = (data || []) as ClassWithTeacher[];
+    const counts = await getEnrollmentCountsByClass(
+      supabase,
+      classes.map((c) => c.id)
+    );
+
+    return {
+      data: classes.map((c) => ({
+        ...c,
+        ...(counts.get(c.id) ?? EMPTY_COUNTS),
+      })),
+      error: null,
+    };
   } catch (err) {
     console.error('Unexpected error in getPublishedClasses:', err);
     return { data: null, error: 'An unexpected error occurred' };
@@ -188,14 +207,27 @@ export async function getClassAvailability(classId: string): Promise<{
   try {
     const supabase = await createClient();
 
-    // Get class capacity
-    const { data: classData, error: classError } = await supabase
-      .from('classes')
-      .select('capacity')
-      .eq('id', classId)
-      .single();
+    // Counts come from the SECURITY DEFINER RPC, not a direct enrollments query:
+    // under RLS a parent only sees their own family's rows, which would report a
+    // full class as empty and hide the waitlist warning from the people it's for.
+    const { data: rows, error: countError } = await supabase.rpc(
+      'get_class_enrollment_counts',
+      { p_class_ids: [classId] }
+    );
 
-    if (classError || !classData) {
+    if (countError) {
+      console.error('Error counting enrollments:', countError);
+      return {
+        capacity: 0,
+        enrolled: 0,
+        available: 0,
+        error: countError.message,
+      };
+    }
+
+    const row = rows?.[0];
+
+    if (!row) {
       return {
         capacity: 0,
         enrolled: 0,
@@ -204,28 +236,11 @@ export async function getClassAvailability(classId: string): Promise<{
       };
     }
 
-    // Count enrollments holding a spot (confirmed + pending)
-    const { count: enrolledCount, error: countError } = await supabase
-      .from('enrollments')
-      .select('*', { count: 'exact', head: true })
-      .eq('class_id', classId)
-      .in('status', ['confirmed', 'pending']);
-
-    if (countError) {
-      console.error('Error counting enrollments:', countError);
-      return {
-        capacity: classData.capacity,
-        enrolled: 0,
-        available: classData.capacity,
-        error: countError.message,
-      };
-    }
-
-    const enrolled = enrolledCount || 0;
-    const available = Math.max(0, classData.capacity - enrolled);
+    const enrolled = row.confirmed_count + row.pending_count;
+    const available = Math.max(0, row.capacity - enrolled);
 
     return {
-      capacity: classData.capacity,
+      capacity: row.capacity,
       enrolled,
       available,
       error: null,
@@ -1023,63 +1038,7 @@ export async function completeClass(
   }
 }
 
-export type ClassWithTeacherAndCount = ClassWithTeacher & {
-  enrolled_count: number;
-  pending_count: number;
-  confirmed_count: number;
-  waitlisted_count: number;
-};
-
-type EnrollmentCounts = Pick<
-  ClassWithTeacherAndCount,
-  'enrolled_count' | 'pending_count' | 'confirmed_count' | 'waitlisted_count'
->;
-
-const EMPTY_COUNTS: EnrollmentCounts = {
-  enrolled_count: 0,
-  pending_count: 0,
-  confirmed_count: 0,
-  waitlisted_count: 0,
-};
-
-/**
- * Tally enrollments by status for the given classes.
- *
- * enrolled_count = confirmed + pending, because both hold a seat. Cancelled
- * enrollments are excluded entirely. Callers are responsible for authorization;
- * this reads through whichever client is passed in (RLS-scoped or admin).
- */
-async function getEnrollmentCountsByClass(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  classIds: string[]
-): Promise<Map<string, EnrollmentCounts>> {
-  const counts = new Map<string, EnrollmentCounts>();
-  if (classIds.length === 0) return counts;
-
-  const { data: enrollments } = await supabase
-    .from('enrollments')
-    .select('class_id, status')
-    .in('class_id', classIds)
-    .in('status', ['confirmed', 'pending', 'waitlisted']);
-
-  for (const { class_id, status } of enrollments || []) {
-    const current = counts.get(class_id) ?? { ...EMPTY_COUNTS };
-
-    if (status === 'confirmed') {
-      current.confirmed_count += 1;
-      current.enrolled_count += 1;
-    } else if (status === 'pending') {
-      current.pending_count += 1;
-      current.enrolled_count += 1;
-    } else if (status === 'waitlisted') {
-      current.waitlisted_count += 1;
-    }
-
-    counts.set(class_id, current);
-  }
-
-  return counts;
-}
+export type ClassWithTeacherAndCount = ClassWithTeacher & EnrollmentCounts;
 
 /**
  * Get all classes for the current teacher, including enrolled counts

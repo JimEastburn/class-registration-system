@@ -491,6 +491,50 @@ describe('AdminClassTable', () => {
     });
   });
 
+  describe('row action links', () => {
+    it('carries the list state so returning lands on the same page', () => {
+      mockSearchParams.current = new URLSearchParams(
+        'search=Math&sort=enrolled&dir=desc&page=2&limit=10'
+      );
+      render(
+        <AdminClassTable
+          initialClasses={mockClasses}
+          total={100}
+          currentPage={2}
+          limit={10}
+        />
+      );
+
+      expect(
+        screen.getByRole('link', { name: /view elementary math/i })
+      ).toHaveAttribute(
+        'href',
+        '/admin/classes/class-1?page=2&limit=10&search=Math&sort=enrolled&dir=desc'
+      );
+      expect(
+        screen.getByRole('link', { name: /edit elementary math/i })
+      ).toHaveAttribute(
+        'href',
+        '/admin/classes/class-1/edit?page=2&limit=10&search=Math&sort=enrolled&dir=desc'
+      );
+    });
+
+    it('links plainly when the list is in its default state', () => {
+      render(
+        <AdminClassTable
+          initialClasses={mockClasses}
+          total={2}
+          currentPage={1}
+          limit={20}
+        />
+      );
+
+      expect(
+        screen.getByRole('link', { name: /view advanced science/i })
+      ).toHaveAttribute('href', '/admin/classes/class-2');
+    });
+  });
+
   describe('column sorting', () => {
     const renderTable = () =>
       render(

@@ -17,15 +17,18 @@ import Link from 'next/link';
 import { Edit, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { schedulerUpdateClass } from '@/lib/actions/scheduler';
+import { ClassCapacityBadge } from '@/components/classes/ClassCapacityBadge';
+import type { EnrollmentCounts } from '@/lib/enrollment-counts';
 
 interface SchedulerClassTableProps {
-  classes: (Class & {
-    teacher?: {
-      first_name: string | null;
-      last_name: string | null;
-      email: string;
-    };
-  })[]; // Extended type
+  classes: (Class &
+    EnrollmentCounts & {
+      teacher?: {
+        first_name: string | null;
+        last_name: string | null;
+        email: string;
+      };
+    })[]; // Extended type
   count: number;
   conflictClassIds?: string[];
 }
@@ -77,6 +80,7 @@ export function SchedulerClassTable({ classes, conflictClassIds = [] }: Schedule
             <TableHead>Teacher</TableHead>
             <TableHead>Location</TableHead>
             <TableHead>Schedule</TableHead>
+            <TableHead>Enrolled</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Published</TableHead>
             <TableHead>Conflict</TableHead>
@@ -86,7 +90,7 @@ export function SchedulerClassTable({ classes, conflictClassIds = [] }: Schedule
         <TableBody>
           {classes.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="h-24 text-center">
+              <TableCell colSpan={9} className="h-24 text-center">
                 No classes found.
               </TableCell>
             </TableRow>
@@ -105,6 +109,13 @@ export function SchedulerClassTable({ classes, conflictClassIds = [] }: Schedule
                   </TableCell>
                   <TableCell>{cls.location || 'TBD'}</TableCell>
                   <TableCell>{formatSchedule(cls.schedule_config)}</TableCell>
+                  <TableCell>
+                    <ClassCapacityBadge
+                      seatsTaken={cls.enrolled_count}
+                      capacity={cls.capacity}
+                      variant="compact"
+                    />
+                  </TableCell>
                   <TableCell>
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${

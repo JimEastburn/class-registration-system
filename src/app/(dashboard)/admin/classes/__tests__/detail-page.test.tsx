@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock server dependencies before importing component
 vi.mock('@/lib/actions/classes', () => ({
@@ -62,7 +62,7 @@ describe('AdminClassDetailPage Stats', () => {
     vi.mocked(getClassDetails).mockResolvedValue({ data: mockClass, error: null });
     vi.mocked(getClassRoster).mockResolvedValue({ data: enrollments as never, error: null });
 
-    const page = await AdminClassDetailPage({ params: Promise.resolve({ id: 'test-class-id' }) });
+    const page = await AdminClassDetailPage({ params: Promise.resolve({ id: 'test-class-id' }), searchParams: Promise.resolve({}) });
     render(page);
 
     // 5 confirmed + 3 pending = 8 enrolled; 2 waitlisted should NOT count
@@ -79,7 +79,7 @@ describe('AdminClassDetailPage Stats', () => {
     vi.mocked(getClassDetails).mockResolvedValue({ data: mockClass, error: null });
     vi.mocked(getClassRoster).mockResolvedValue({ data: enrollments as never, error: null });
 
-    const page = await AdminClassDetailPage({ params: Promise.resolve({ id: 'test-class-id' }) });
+    const page = await AdminClassDetailPage({ params: Promise.resolve({ id: 'test-class-id' }), searchParams: Promise.resolve({}) });
     render(page);
 
     expect(screen.getByText('Waitlisted:')).toBeInTheDocument();
@@ -87,5 +87,38 @@ describe('AdminClassDetailPage Stats', () => {
     const waitlistedLabel = screen.getByText('Waitlisted:');
     const waitlistedValue = waitlistedLabel.closest('div')?.querySelector('.text-xl');
     expect(waitlistedValue?.textContent?.trim()).toBe('3');
+  });
+});
+
+describe('AdminClassDetailPage back link', () => {
+  beforeEach(() => {
+    vi.mocked(getClassDetails).mockResolvedValue({ data: mockClass, error: null });
+    vi.mocked(getClassRoster).mockResolvedValue({ data: [], error: null });
+  });
+
+  it('returns to the list page the admin came from', async () => {
+    const page = await AdminClassDetailPage({
+      params: Promise.resolve({ id: 'test-class-id' }),
+      searchParams: Promise.resolve({ page: '2', limit: '10', search: 'Art' }),
+    });
+    render(page);
+
+    expect(screen.getByRole('link', { name: /back to classes/i })).toHaveAttribute(
+      'href',
+      '/admin/classes?page=2&limit=10&search=Art'
+    );
+  });
+
+  it('returns to the plain list when there is no list state', async () => {
+    const page = await AdminClassDetailPage({
+      params: Promise.resolve({ id: 'test-class-id' }),
+      searchParams: Promise.resolve({}),
+    });
+    render(page);
+
+    expect(screen.getByRole('link', { name: /back to classes/i })).toHaveAttribute(
+      'href',
+      '/admin/classes'
+    );
   });
 });
