@@ -181,9 +181,11 @@ export async function removeFromWaitlist(
   }
 
   const classId = enrollment.class_id;
-  const removedPosition = enrollment.waitlist_position;
 
-  // Delete the waitlist entry
+  // Delete the waitlist entry. The on_waitlist_delete_resequence trigger closes
+  // the gap this leaves, atomically and for every removal path — see migration
+  // 20260804100000_resequence_waitlist_on_removal.sql. Reordering here as well
+  // would decrement the remaining positions a second time.
   const { error: deleteError } = await supabase
     .from('enrollments')
     .delete()
@@ -192,11 +194,6 @@ export async function removeFromWaitlist(
   if (deleteError) {
     console.error('Error removing from waitlist:', deleteError);
     return { success: false, error: 'Failed to remove from waitlist' };
-  }
-
-  // Reorder remaining waitlist positions
-  if (removedPosition) {
-    await reorderWaitlistPositions(classId, removedPosition);
   }
 
   // Log audit entry
@@ -208,35 +205,6 @@ export async function removeFromWaitlist(
   revalidatePath(`/parent/browse/${classId}`);
 
   return { success: true, data: undefined };
-}
-
-/**
- * Reorder waitlist positions after a removal
- */
-async function reorderWaitlistPositions(
-  classId: string,
-  removedPosition: number
-): Promise<void> {
-  const supabase = await createClient();
-
-  // Get all waitlisted enrollments with position greater than removed
-  const { data: waitlisted } = await supabase
-    .from('enrollments')
-    .select('id, waitlist_position')
-    .eq('class_id', classId)
-    .eq('status', 'waitlisted')
-    .gt('waitlist_position', removedPosition)
-    .order('waitlist_position', { ascending: true });
-
-  if (!waitlisted?.length) return;
-
-  // Update each position to be one less
-  for (const enrollment of waitlisted) {
-    await supabase
-      .from('enrollments')
-      .update({ waitlist_position: (enrollment.waitlist_position || 1) - 1 })
-      .eq('id', enrollment.id);
-  }
 }
 
 /**
@@ -252,10 +220,12 @@ export async function promoteFromWaitlist(
   const supabase = await createClient();
 
   // Atomic capacity-aware promotion: the SQL function locks the class row
-  // (FOR UPDATE) and performs the seat-count check, the waitlist UPDATE, and
-  // the position reorder under that lock — serializes with enroll_student()
-  // and with concurrent promote_waitlist_one() calls. See migration
-  // 20260522200000_atomic_promote_waitlist.sql.
+  // (FOR UPDATE) and performs the seat-count check and the waitlist UPDATE under
+  // that lock — serializes with enroll_student() and with concurrent
+  // promote_waitlist_one() calls. The gap left by the promoted row is closed by
+  // the on_waitlist_update_resequence trigger. See migrations
+  // 20260522200000_atomic_promote_waitlist.sql and
+  // 20260804100000_resequence_waitlist_on_removal.sql.
   const { data: promoted, error: rpcError } = await supabase.rpc(
     'promote_waitlist_one',
     { p_class_id: classId }
@@ -328,7 +298,9 @@ export async function promoteFromWaitlist(
  */
 export async function promoteWaitlistEntryAsAdmin(
   classId: string
-): Promise<ActionResult<{ enrollmentId: string; familyMemberId: string } | null>> {
+): Promise<
+  ActionResult<{ enrollmentId: string; familyMemberId: string } | null>
+> {
   const supabase = await createClient();
 
   const {

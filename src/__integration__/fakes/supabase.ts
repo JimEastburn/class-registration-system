@@ -63,10 +63,16 @@ export class SupabaseFake {
       let waitlistPosition: number | null = null;
       if (seatsTaken >= (cls.capacity as number)) {
         status = 'waitlisted';
+        // Highest position + 1, not count + 1. Resequencing keeps positions
+        // contiguous in practice, but this must not depend on that: counting
+        // collides with the unique index the moment a gap does exist.
         waitlistPosition =
-          enrollments.filter(
-            (e) => e.class_id === classId && e.status === 'waitlisted'
-          ).length + 1;
+          enrollments
+            .filter((e) => e.class_id === classId && e.status === 'waitlisted')
+            .reduce(
+              (max, e) => Math.max(max, (e.waitlist_position as number) || 0),
+              0
+            ) + 1;
       }
       // Mirror ON CONFLICT (student_id, class_id): reactivate a cancelled row,
       // or reject an active duplicate.
@@ -144,24 +150,12 @@ export class SupabaseFake {
         });
       const target = waitlistedForClass[0];
       if (!target) return null;
-      const oldPosition = target.waitlist_position as number | null;
       target.status = 'pending';
       target.waitlist_position = null;
       target.updated_at = new Date().toISOString();
-      // Shift remaining waitlisted positions down by one. Bump updated_at so
-      // audit trails reflect the shift (mirrors the SQL function).
-      if (oldPosition != null) {
-        const now = new Date().toISOString();
-        for (const e of enrollments) {
-          if (e.class_id === classId && e.status === 'waitlisted') {
-            const pos = e.waitlist_position as number | null;
-            if (pos != null && pos > oldPosition) {
-              e.waitlist_position = pos - 1;
-              e.updated_at = now;
-            }
-          }
-        }
-      }
+      // The SQL function no longer shifts positions by hand: leaving the waitlist
+      // fires on_waitlist_update_resequence, which closes the gap.
+      this.resequenceWaitlist(classId);
       return target;
     });
 
@@ -302,6 +296,28 @@ export class SupabaseFake {
       return { error: null };
     },
   };
+
+  /**
+   * Mirrors public.resequence_class_waitlist(): renumber a class's waitlist to a
+   * contiguous 1..N, preserving current order. In the real database this is driven
+   * by the on_waitlist_{delete,update}_resequence triggers, so it runs no matter
+   * which code path removed the row; the fake invokes it from the same places.
+   */
+  resequenceWaitlist(classId: string) {
+    (this.db['enrollments'] || [])
+      .filter((e) => e.class_id === classId && e.status === 'waitlisted')
+      .sort((a, b) => {
+        const pa = (a.waitlist_position as number | null) ?? Infinity;
+        const pb = (b.waitlist_position as number | null) ?? Infinity;
+        if (pa !== pb) return pa - pb;
+        return String(a.created_at ?? '').localeCompare(
+          String(b.created_at ?? '')
+        );
+      })
+      .forEach((e, i) => {
+        e.waitlist_position = i + 1;
+      });
+  }
 
   /* Query Builder Entry */
   from(table: string) {
@@ -593,16 +609,41 @@ class FakeQueryBuilder {
           }
           const matchingIds = new Set(rowsToMatch.map((r) => r.id));
 
+          // Classes whose waitlist this mutation disturbs, captured before the
+          // rows change. Mirrors the on_waitlist_{delete,update}_resequence
+          // triggers: any row leaving the waitlist resequences its class.
+          const waitlistClassesTouched =
+            this.tableName === 'enrollments'
+              ? new Set(
+                  rowsToMatch
+                    .filter((r) => r.status === 'waitlisted')
+                    .filter(
+                      () =>
+                        this._pendingDelete ||
+                        (this._pendingUpdate!.status !== undefined &&
+                          this._pendingUpdate!.status !== 'waitlisted') ||
+                        this._pendingUpdate!.waitlist_position === null
+                    )
+                    .map((r) => r.class_id as string)
+                )
+              : new Set<string>();
+
           if (this._pendingDelete) {
             this.client.db[this.tableName] = (
               this.client.db[this.tableName] || []
             ).filter((r) => !matchingIds.has(r.id));
+            waitlistClassesTouched.forEach((id) =>
+              this.client.resequenceWaitlist(id)
+            );
             resolve({ data: null, error: null });
           } else if (this._pendingUpdate) {
             this.client.db[this.tableName] = (
               this.client.db[this.tableName] || []
             ).map((r) =>
               matchingIds.has(r.id) ? { ...r, ...this._pendingUpdate } : r
+            );
+            waitlistClassesTouched.forEach((id) =>
+              this.client.resequenceWaitlist(id)
             );
 
             // If .select() was chained after .update(), return the updated rows

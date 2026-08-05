@@ -117,6 +117,8 @@ auth.users (1:1) → profiles (1:N parent_id) → family_members (1:N student_id
 - Reaching capacity auto-waitlists rather than erroring: `enrollStudent` returns `status: 'waitlisted'`
 - Manual promotion (no automatic processing to avoid race conditions)
 - UNIQUE constraint on (class_id, student_id) prevents duplicates
+- Positions are kept contiguous by the `on_waitlist_{delete,update}_resequence` triggers, which call `resequence_class_waitlist()` whenever a row leaves the waitlist — **don't** renumber by hand in a server action, it double-shifts
+- `uq_enrollments_class_waitlist_position` makes duplicate positions impossible; assign new positions with `max(waitlist_position) + 1`, never `count(*) + 1`
 
 **Class blocks:**
 

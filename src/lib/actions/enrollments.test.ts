@@ -211,6 +211,51 @@ describe('Enrollment Actions', () => {
       expect(result.data!.waitlist_position).toBe(2);
     });
 
+    /**
+     * Regression guard: enroll_student used to derive the next position from
+     * count(*) + 1, which is only correct while positions are gapless.
+     * cancelEnrollment hard-deletes a waitlisted row without renumbering, so
+     * positions 1,2,3 become 1,3 and count(*) + 1 returns 3 — colliding with the
+     * existing position 3 and tripping uq_enrollments_class_waitlist_position,
+     * which left the family unable to join the waitlist at all.
+     */
+    it('skips over gaps left by a cancelled waitlist entry', async () => {
+      seed({
+        enrollments: [
+          ...Array.from({ length: 10 }, (_, i) => ({
+            id: `enr-${i}`,
+            student_id: `other-${i}`,
+            class_id: CLASS_ID,
+            status: 'confirmed',
+          })),
+          // Position 2 was cancelled and deleted; 1 and 3 remain.
+          {
+            id: 'enr-wait-1',
+            student_id: 'other-wait-1',
+            class_id: CLASS_ID,
+            status: 'waitlisted',
+            waitlist_position: 1,
+          },
+          {
+            id: 'enr-wait-3',
+            student_id: 'other-wait-3',
+            class_id: CLASS_ID,
+            status: 'waitlisted',
+            waitlist_position: 3,
+          },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+
+      expect(result.status).toBe('waitlisted');
+      // max(3) + 1, not count(2) + 1 — which would have collided with position 3.
+      expect(result.data!.waitlist_position).toBe(4);
+    });
+
     it('blocks enrollment if student is blocked', async () => {
       seed({
         class_blocks: [
@@ -447,6 +492,102 @@ describe('Enrollment Actions', () => {
 
       expect(result.data).toBeNull();
       expect(result.error).toBe('Class not found');
+    });
+  });
+
+  /**
+   * The on_waitlist_{delete,update}_resequence triggers keep positions contiguous
+   * no matter which path removes a waitlisted row — previously only
+   * removeFromWaitlist renumbered, so every other path left a gap and families
+   * saw inflated position numbers. See migration
+   * 20260804100000_resequence_waitlist_on_removal.sql.
+   */
+  describe('waitlist resequencing on removal', () => {
+    // Full class (capacity 10 taken) plus three waitlisted at 1, 2, 3.
+    const seedFullClassWithWaitlist = () =>
+      seed({
+        // The waitlisted students must belong to PARENT_ID for
+        // cancelEnrollment's ownership check to pass.
+        family_members: [
+          mockMember,
+          ...[1, 2, 3].map((n) => ({
+            id: `wait-${n}`,
+            parent_id: PARENT_ID,
+            first_name: `W${n}`,
+            last_name: 'Test',
+            email: `w${n}@test.com`,
+            relationship: 'Student',
+          })),
+        ] as unknown as Record<string, unknown>[],
+        enrollments: [
+          ...Array.from({ length: 10 }, (_, i) => ({
+            id: `seat-${i}`,
+            student_id: `other-${i}`,
+            class_id: CLASS_ID,
+            status: 'confirmed',
+          })),
+          ...[1, 2, 3].map((pos) => ({
+            id: `w-${pos}`,
+            student_id: `wait-${pos}`,
+            class_id: CLASS_ID,
+            status: 'waitlisted',
+            waitlist_position: pos,
+          })),
+        ] as unknown as Record<string, unknown>[],
+      });
+
+    const positions = (fake: ReturnType<typeof seed>) =>
+      fake.db.enrollments
+        .filter((e) => e.status === 'waitlisted')
+        .map((e) => e.waitlist_position)
+        .sort((a, b) => (a as number) - (b as number));
+
+    it('closes the gap when a parent cancels from the middle of the waitlist', async () => {
+      const fake = seedFullClassWithWaitlist();
+
+      const result = await cancelEnrollment('w-2');
+
+      expect(result.success).toBe(true);
+      expect(positions(fake)).toEqual([1, 2]);
+      // The person who was #3 moves up to #2 rather than staying at #3.
+      expect(
+        fake.db.enrollments.find((e) => e.id === 'w-3')?.waitlist_position
+      ).toBe(2);
+    });
+
+    it('preserves relative order when the front of the waitlist leaves', async () => {
+      const fake = seedFullClassWithWaitlist();
+
+      await cancelEnrollment('w-1');
+
+      expect(
+        fake.db.enrollments.find((e) => e.id === 'w-2')?.waitlist_position
+      ).toBe(1);
+      expect(
+        fake.db.enrollments.find((e) => e.id === 'w-3')?.waitlist_position
+      ).toBe(2);
+    });
+
+    it('leaves positions untouched when the last person leaves', async () => {
+      const fake = seedFullClassWithWaitlist();
+
+      await cancelEnrollment('w-3');
+
+      expect(positions(fake)).toEqual([1, 2]);
+    });
+
+    it('keeps positions contiguous for the next person to join', async () => {
+      const fake = seedFullClassWithWaitlist();
+      await cancelEnrollment('w-2');
+
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+
+      expect(result.status).toBe('waitlisted');
+      expect(result.data!.waitlist_position).toBe(3);
+      expect(positions(fake)).toEqual([1, 2, 3]);
     });
   });
 
