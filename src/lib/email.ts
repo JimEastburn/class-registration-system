@@ -14,6 +14,65 @@ const resend = process.env.RESEND_API_KEY
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@austinaac.org';
 const APP_NAME = 'AAC Class Registration';
 
+/**
+ * Result of an attempted send. A discriminated union, unlike the old per-sender
+ * shape which mixed `data` and `error` members and could not be narrowed.
+ */
+export type EmailResult =
+  | { success: true; id: string | null }
+  | { success: false; error: string };
+
+/**
+ * Single choke point for every outgoing email.
+ *
+ * Two things this exists to fix. First, `resend.emails.send()` RESOLVES with
+ * `{ data: null, error }` on an API rejection rather than throwing, and the
+ * error codes include `monthly_quota_exceeded`, `daily_quota_exceeded` and
+ * `rate_limit_exceeded`. Every sender used to `return { success: true }` on that
+ * path, so exhausting the Resend quota looked exactly like delivering. Second,
+ * an unset RESEND_API_KEY produced a `console.log` and a `{ success: false }`
+ * that no caller checked -- which is how a total email outage went unnoticed for
+ * months.
+ *
+ * Every failure is now logged at error level with the template name and the
+ * recipient, so grepping `[email]` in the Vercel logs says what did not go out
+ * and why.
+ */
+async function dispatch(
+  template: string,
+  message: { to: string; subject: string; html: string }
+): Promise<EmailResult> {
+  if (!resend) {
+    console.error(
+      `[email] ${template} -> ${message.to}: NOT SENT, RESEND_API_KEY is not set`
+    );
+    return { success: false, error: 'Email not configured' };
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: `${APP_NAME} <${FROM_EMAIL}>`,
+      ...message,
+    });
+
+    if (error) {
+      // error.name is the machine-readable code, e.g. monthly_quota_exceeded.
+      console.error(
+        `[email] ${template} -> ${message.to}: REJECTED by Resend (${error.name}): ${error.message}`
+      );
+      return { success: false, error: `${error.name}: ${error.message}` };
+    }
+
+    console.log(`[email] ${template} -> ${message.to}: sent (${data?.id})`);
+    return { success: true, id: data?.id ?? null };
+  } catch (err) {
+    // Transport-level failures still throw.
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error(`[email] ${template} -> ${message.to}: THREW: ${detail}`);
+    return { success: false, error: detail };
+  }
+}
+
 export interface EnrollmentEmailData {
   parentEmail: string;
   parentName: string;
@@ -37,17 +96,10 @@ export interface PaymentEmailData {
 }
 
 export async function sendEnrollmentConfirmation(data: EnrollmentEmailData) {
-  if (!resend) {
-    console.log('Email not configured - skipping enrollment confirmation');
-    return { success: false, error: 'Email not configured' };
-  }
-
-  try {
-    const result = await resend.emails.send({
-      from: `${APP_NAME} <${FROM_EMAIL}>`,
-      to: data.parentEmail,
-      subject: `Enrollment Confirmed: ${data.studentName} in ${data.className}`,
-      html: `
+  return dispatch('enrollment-confirmation', {
+    to: data.parentEmail,
+    subject: `Enrollment Confirmed: ${data.studentName} in ${data.className}`,
+    html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -120,27 +172,14 @@ export async function sendEnrollmentConfirmation(data: EnrollmentEmailData) {
         </body>
         </html>
       `,
-    });
-
-    return { success: true, data: result };
-  } catch (error) {
-    console.error('Failed to send enrollment email:', error);
-    return { success: false, error };
-  }
+  });
 }
 
 export async function sendPaymentReceipt(data: PaymentEmailData) {
-  if (!resend) {
-    console.log('Email not configured - skipping payment receipt');
-    return { success: false, error: 'Email not configured' };
-  }
-
-  try {
-    const result = await resend.emails.send({
-      from: `${APP_NAME} <${FROM_EMAIL}>`,
-      to: data.parentEmail,
-      subject: `Payment Receipt: ${data.className}`,
-      html: `
+  return dispatch('payment-receipt', {
+    to: data.parentEmail,
+    subject: `Payment Receipt: ${data.className}`,
+    html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -208,13 +247,79 @@ export async function sendPaymentReceipt(data: PaymentEmailData) {
         </body>
         </html>
       `,
-    });
+  });
+}
 
-    return { success: true, data: result };
-  } catch (error) {
-    console.error('Failed to send payment receipt:', error);
-    return { success: false, error };
-  }
+export interface WaitlistJoinedEmailData {
+  parentEmail: string;
+  parentName: string;
+  studentName: string;
+  className: string;
+  position: number;
+}
+
+/**
+ * Sent when a student lands on a waitlist. Distinct from
+ * sendWaitlistNotification, which fires later when a seat opens and they are
+ * promoted — joining used to be silent, so a family had no confirmation that
+ * anything had happened at all.
+ */
+export async function sendWaitlistJoined(data: WaitlistJoinedEmailData) {
+  return dispatch('waitlist-joined', {
+    to: data.parentEmail,
+    subject: `Waitlisted: ${data.studentName} for ${data.className}`,
+    html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f4f4f5; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .card { background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+            .header { text-align: center; margin-bottom: 24px; }
+            .header h1 { color: #4C7C92; margin: 0; font-size: 24px; }
+            .badge { display: inline-block; background: #fef3c7; color: #b45309; padding: 8px 16px; border-radius: 20px; font-weight: 600; margin-top: 12px; }
+            .position { text-align: center; padding: 24px; margin: 24px 0; }
+            .position-value { font-size: 48px; font-weight: 700; color: #4C7C92; }
+            .position-label { color: #6b7280; font-size: 14px; }
+            .footer { text-align: center; color: #9ca3af; font-size: 14px; margin-top: 24px; }
+            .cta { display: inline-block; background: #4C7C92; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 16px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="card">
+              <div class="header">
+                <h1>${APP_NAME}</h1>
+                <div class="badge">On the Waitlist</div>
+              </div>
+
+              <p>Hi ${data.parentName},</p>
+              <p><strong>${data.className}</strong> is currently full, so <strong>${data.studentName}</strong> has been added to the waitlist.</p>
+
+              <div class="position">
+                <div class="position-value">#${data.position}</div>
+                <div class="position-label">current position on the waitlist</div>
+              </div>
+
+              <p>If a seat opens up we'll move students up in order and email you right away. There's nothing you need to do in the meantime, and there's no charge for holding a waitlist spot.</p>
+
+              <p style="color: #6b7280;">Your position can move up as other families change their plans.</p>
+
+              <div style="text-align: center;">
+                <a href="${process.env.NEXT_PUBLIC_APP_URL}/parent/enrollments" class="cta">View Enrollments</a>
+              </div>
+            </div>
+
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} ${APP_NAME}. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+  });
 }
 
 export interface WaitlistEmailData {
@@ -227,17 +332,10 @@ export interface WaitlistEmailData {
 }
 
 export async function sendWaitlistNotification(data: WaitlistEmailData) {
-  if (!resend) {
-    console.log('Email not configured - skipping waitlist notification');
-    return { success: false, error: 'Email not configured' };
-  }
-
-  try {
-    const result = await resend.emails.send({
-      from: `${APP_NAME} <${FROM_EMAIL}>`,
-      to: data.parentEmail,
-      subject: `Waitlist Opening: ${data.studentName} is now enrolled in ${data.className}`,
-      html: `
+  return dispatch('waitlist-promoted', {
+    to: data.parentEmail,
+    subject: `Waitlist Opening: ${data.studentName} is now enrolled in ${data.className}`,
+    html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -299,13 +397,7 @@ export async function sendWaitlistNotification(data: WaitlistEmailData) {
         </body>
         </html>
       `,
-    });
-
-    return { success: true, data: result };
-  } catch (error) {
-    console.error('Failed to send waitlist notification:', error);
-    return { success: false, error };
-  }
+  });
 }
 
 export interface CancellationEmailData {
@@ -316,17 +408,10 @@ export interface CancellationEmailData {
 }
 
 export async function sendClassCancellation(data: CancellationEmailData) {
-  if (!resend) {
-    console.log('Email not configured - skipping cancellation email');
-    return { success: false, error: 'Email not configured' };
-  }
-
-  try {
-    const result = await resend.emails.send({
-      from: `${APP_NAME} <${FROM_EMAIL}>`,
-      to: data.parentEmail,
-      subject: `Important: Class Cancellation - ${data.className}`,
-      html: `
+  return dispatch('class-cancellation', {
+    to: data.parentEmail,
+    subject: `Important: Class Cancellation - ${data.className}`,
+    html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -363,13 +448,76 @@ export async function sendClassCancellation(data: CancellationEmailData) {
         </body>
         </html>
       `,
-    });
+  });
+}
 
-    return { success: true, data: result };
-  } catch (error) {
-    console.error('Failed to send class cancellation email:', error);
-    return { success: false, error };
-  }
+export interface EnrollmentCancelledEmailData {
+  parentEmail: string;
+  parentName: string;
+  studentName: string;
+  className: string;
+}
+
+/**
+ * Sent when a single enrollment is cancelled — by the parent, an admin, the
+ * teacher, or a refund. Distinct from sendClassCancellation, which fires when
+ * the whole class is called off.
+ *
+ * Losing one seat used to be entirely silent: cancelling a class emailed every
+ * family, but dropping one child from that same class emailed nobody.
+ *
+ * Deliberately says nothing about refunds. The class-cancellation template used
+ * to promise "a full refund will be processed automatically" and no such
+ * automation exists; don't reintroduce that here.
+ */
+export async function sendEnrollmentCancelled(
+  data: EnrollmentCancelledEmailData
+) {
+  return dispatch('enrollment-cancelled', {
+    to: data.parentEmail,
+    subject: `Enrollment Cancelled: ${data.studentName} in ${data.className}`,
+    html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f4f4f5; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .card { background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+            .header { text-align: center; margin-bottom: 24px; }
+            .header h1 { color: #4C7C92; margin: 0; font-size: 24px; }
+            .badge { display: inline-block; background: #fee2e2; color: #dc2626; padding: 8px 16px; border-radius: 20px; font-weight: 600; margin-top: 12px; }
+            .footer { text-align: center; color: #9ca3af; font-size: 14px; margin-top: 24px; }
+            .cta { display: inline-block; background: #4C7C92; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 16px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="card">
+              <div class="header">
+                <h1>${APP_NAME}</h1>
+                <div class="badge">Enrollment Cancelled</div>
+              </div>
+
+              <p>Hi ${data.parentName},</p>
+              <p><strong>${data.studentName}</strong> is no longer enrolled in <strong>${data.className}</strong>. The seat has been released.</p>
+
+              <p>If you weren't expecting this, or you have questions about it, please get in touch and we'll sort it out.</p>
+
+              <div style="text-align: center;">
+                <a href="${process.env.NEXT_PUBLIC_APP_URL}/parent/enrollments" class="cta">View Enrollments</a>
+              </div>
+            </div>
+
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} ${APP_NAME}. All rights reserved.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+  });
 }
 
 export interface ScheduleChangeEmailData {
@@ -387,34 +535,27 @@ export interface ScheduleChangeEmailData {
 export async function sendScheduleChangeNotification(
   data: ScheduleChangeEmailData
 ) {
-  if (!resend) {
-    console.log('Email not configured - skipping schedule change notification');
-    return { success: false, error: 'Email not configured' };
+  const changeList = [];
+  if (data.changes.schedule) {
+    changeList.push(
+      `<li><strong>Schedule:</strong> Changed from "${data.changes.schedule.old}" to "${data.changes.schedule.new}"</li>`
+    );
+  }
+  if (data.changes.location) {
+    changeList.push(
+      `<li><strong>Location:</strong> Changed from "${data.changes.location.old}" to "${data.changes.location.new}"</li>`
+    );
+  }
+  if (data.changes.dates) {
+    changeList.push(
+      `<li><strong>Dates:</strong> Changed from "${data.changes.dates.old}" to "${data.changes.dates.new}"</li>`
+    );
   }
 
-  try {
-    const changeList = [];
-    if (data.changes.schedule) {
-      changeList.push(
-        `<li><strong>Schedule:</strong> Changed from "${data.changes.schedule.old}" to "${data.changes.schedule.new}"</li>`
-      );
-    }
-    if (data.changes.location) {
-      changeList.push(
-        `<li><strong>Location:</strong> Changed from "${data.changes.location.old}" to "${data.changes.location.new}"</li>`
-      );
-    }
-    if (data.changes.dates) {
-      changeList.push(
-        `<li><strong>Dates:</strong> Changed from "${data.changes.dates.old}" to "${data.changes.dates.new}"</li>`
-      );
-    }
-
-    const result = await resend.emails.send({
-      from: `${APP_NAME} <${FROM_EMAIL}>`,
-      to: data.parentEmail,
-      subject: `Schedule Change: ${data.className}`,
-      html: `
+  return dispatch('schedule-change', {
+    to: data.parentEmail,
+    subject: `Schedule Change: ${data.className}`,
+    html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -464,13 +605,7 @@ export async function sendScheduleChangeNotification(
         </body>
         </html>
       `,
-    });
-
-    return { success: true, data: result };
-  } catch (error) {
-    console.error('Failed to send schedule change email:', error);
-    return { success: false, error };
-  }
+  });
 }
 
 export interface TeacherEnrollmentEmailData {
@@ -483,17 +618,10 @@ export interface TeacherEnrollmentEmailData {
 export async function sendTeacherEnrollmentNotification(
   data: TeacherEnrollmentEmailData
 ) {
-  if (!resend) {
-    console.log('Email not configured - skipping teacher enrollment notification');
-    return { success: false, error: 'Email not configured' };
-  }
-
-  try {
-    const result = await resend.emails.send({
-      from: `${APP_NAME} <${FROM_EMAIL}>`,
-      to: data.teacherEmail,
-      subject: `New Enrollment: ${data.studentName} joined ${data.className}`,
-      html: `
+  return dispatch('teacher-enrollment', {
+    to: data.teacherEmail,
+    subject: `New Enrollment: ${data.studentName} joined ${data.className}`,
+    html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -548,13 +676,7 @@ export async function sendTeacherEnrollmentNotification(
         </body>
         </html>
       `,
-    });
-
-    return { success: true, data: result };
-  } catch (error) {
-    console.error('Failed to send teacher enrollment notification:', error);
-    return { success: false, error };
-  }
+  });
 }
 
 export interface TeacherUnenrollmentEmailData {
@@ -567,17 +689,10 @@ export interface TeacherUnenrollmentEmailData {
 export async function sendTeacherUnenrollmentNotification(
   data: TeacherUnenrollmentEmailData
 ) {
-  if (!resend) {
-    console.log('Email not configured - skipping teacher unenrollment notification');
-    return { success: false, error: 'Email not configured' };
-  }
-
-  try {
-    const result = await resend.emails.send({
-      from: `${APP_NAME} <${FROM_EMAIL}>`,
-      to: data.teacherEmail,
-      subject: `Enrollment Removed: ${data.studentName} left ${data.className}`,
-      html: `
+  return dispatch('teacher-unenrollment', {
+    to: data.teacherEmail,
+    subject: `Enrollment Removed: ${data.studentName} left ${data.className}`,
+    html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -632,11 +747,5 @@ export async function sendTeacherUnenrollmentNotification(
         </body>
         </html>
       `,
-    });
-
-    return { success: true, data: result };
-  } catch (error) {
-    console.error('Failed to send teacher unenrollment notification:', error);
-    return { success: false, error };
-  }
+  });
 }

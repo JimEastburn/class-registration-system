@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { sendWaitlistNotification } from '@/lib/email';
+import { notifyWaitlistJoined } from '@/lib/notifications/waitlist-joined';
 import type { ActionResult, Enrollment } from '@/types';
 
 /**
@@ -124,6 +125,10 @@ export async function addToWaitlist(
     family_member_id: familyMemberId,
     position,
   });
+
+  // Confirm the placement. Joining used to be silent — families only heard from
+  // us if and when they were promoted.
+  await notifyWaitlistJoined(classId, familyMemberId, position);
 
   revalidatePath('/parent/enrollments');
   revalidatePath(`/parent/browse/${classId}`);

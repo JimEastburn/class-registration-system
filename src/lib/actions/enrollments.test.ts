@@ -16,6 +16,8 @@ import {
   getAllEnrollments,
 } from '@/lib/actions/enrollments';
 import { promoteFromWaitlist } from '@/lib/actions/waitlist';
+import { notifyWaitlistJoined } from '@/lib/notifications/waitlist-joined';
+import { notifyEnrollmentCancelled } from '@/lib/notifications/enrollment-cancelled';
 import { checkStudentScheduleConflict } from '@/lib/logic/scheduling';
 import { logAuditAction } from '@/lib/actions/audit';
 import {
@@ -46,6 +48,12 @@ vi.mock('@/lib/email', () => ({
 vi.mock('@/lib/notifications/teacher-enrollment', () => ({
   notifyTeacherOfEnrollment: vi.fn().mockResolvedValue(undefined),
   notifyTeacherOfUnenrollment: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('@/lib/notifications/waitlist-joined', () => ({
+  notifyWaitlistJoined: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('@/lib/notifications/enrollment-cancelled', () => ({
+  notifyEnrollmentCancelled: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('@/lib/actions/waitlist', () => ({
   promoteFromWaitlist: vi.fn().mockResolvedValue({ success: true, data: null }),
@@ -154,10 +162,13 @@ describe('Enrollment Actions', () => {
       expect(fake.db.enrollments).toEqual([]);
     });
 
-    it('does not notify the teacher when pending seat notifications are paused', async () => {
+    it('notifies the teacher when a student takes a seat', async () => {
       seed();
       await enrollStudent({ classId: CLASS_ID, familyMemberId: CHILD_ID });
-      expect(notifyTeacherOfEnrollment).not.toHaveBeenCalled();
+      expect(notifyTeacherOfEnrollment).toHaveBeenCalledWith(
+        CLASS_ID,
+        CHILD_ID
+      );
     });
 
     it('does not notify the teacher when the student is waitlisted', async () => {
@@ -235,6 +246,44 @@ describe('Enrollment Actions', () => {
       });
       expect(result.status).toBe('waitlisted');
       expect(result.data!.waitlist_position).toBe(2);
+    });
+
+    /**
+     * Joining a waitlist used to be silent — families only heard from us later,
+     * if a seat opened and they were promoted. enroll_student() auto-waitlists
+     * when a class is full, so this path has to notify just like the explicit
+     * addToWaitlist button does, or which button a parent happened to press
+     * decides whether they hear anything.
+     */
+    it('emails the family when a full class puts the student on the waitlist', async () => {
+      seed({
+        enrollments: Array.from({ length: 10 }, (_, i) => ({
+          id: `enr-${i}`,
+          student_id: `other-${i}`,
+          class_id: CLASS_ID,
+          status: 'confirmed',
+        })) as unknown as Record<string, unknown>[],
+      });
+
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+
+      expect(result.status).toBe('waitlisted');
+      expect(notifyWaitlistJoined).toHaveBeenCalledWith(CLASS_ID, CHILD_ID, 1);
+    });
+
+    it('does not send the waitlist email when a seat was available', async () => {
+      seed();
+
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+
+      expect(result.status).toBe('pending');
+      expect(notifyWaitlistJoined).not.toHaveBeenCalled();
     });
 
     /**
@@ -647,7 +696,7 @@ describe('Enrollment Actions', () => {
       expect(promoteFromWaitlist).toHaveBeenCalledWith(CLASS_ID);
     });
 
-    it('logs the un-enrollment but does not notify the teacher while notifications are paused', async () => {
+    it('logs the un-enrollment and notifies both the teacher and the family', async () => {
       seed({
         enrollments: [
           {
@@ -672,7 +721,16 @@ describe('Enrollment Actions', () => {
           previous_status: 'pending',
         })
       );
-      expect(notifyTeacherOfUnenrollment).not.toHaveBeenCalled();
+      expect(notifyTeacherOfUnenrollment).toHaveBeenCalledWith(
+        CLASS_ID,
+        CHILD_ID
+      );
+      // Losing one seat used to be silent for the family: cancelling a whole
+      // class emailed everyone, dropping one child from it emailed nobody.
+      expect(notifyEnrollmentCancelled).toHaveBeenCalledWith(
+        CLASS_ID,
+        CHILD_ID
+      );
     });
 
     it('logs but does not email the teacher when a waitlisted seat is cancelled', async () => {
@@ -823,7 +881,7 @@ describe('Enrollment Actions', () => {
       expect(promoteFromWaitlist).toHaveBeenCalledWith(CLASS_ID);
     });
 
-    it('does not notify the teacher when cancelling a confirmed seat while notifications are paused', async () => {
+    it('notifies the teacher and the family when cancelling a confirmed seat', async () => {
       seedFake({
         authUserId: ADMIN_ID,
         data: {
@@ -852,7 +910,14 @@ describe('Enrollment Actions', () => {
         refund: false,
       });
       expect(result.success).toBe(true);
-      expect(notifyTeacherOfUnenrollment).not.toHaveBeenCalled();
+      expect(notifyTeacherOfUnenrollment).toHaveBeenCalledWith(
+        CLASS_ID,
+        CHILD_ID
+      );
+      expect(notifyEnrollmentCancelled).toHaveBeenCalledWith(
+        CLASS_ID,
+        CHILD_ID
+      );
     });
   });
 

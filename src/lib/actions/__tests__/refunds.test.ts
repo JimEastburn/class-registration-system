@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { processRefund } from '../refunds';
 import { stripe } from '@/lib/stripe';
+import { notifyTeacherOfUnenrollment } from '@/lib/notifications/teacher-enrollment';
+import { notifyEnrollmentCancelled } from '@/lib/notifications/enrollment-cancelled';
 import {
   seedFake,
   ADMIN_PROFILE,
@@ -23,6 +25,12 @@ vi.mock('@/lib/actions/waitlist', () => ({
   promoteFromWaitlist: vi.fn().mockResolvedValue({ success: true, data: null }),
 }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
+vi.mock('@/lib/notifications/teacher-enrollment', () => ({
+  notifyTeacherOfUnenrollment: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('@/lib/notifications/enrollment-cancelled', () => ({
+  notifyEnrollmentCancelled: vi.fn().mockResolvedValue(undefined),
+}));
 
 // ── Seed Data ───────────────────────────────────────────────────────────────
 
@@ -76,6 +84,30 @@ describe('processRefund', () => {
     // Verify state
     expect(fake.db.payments.find((p) => p.id === 'pay-123')?.status).toBe('refunded');
     expect(fake.db.enrollments.find((e) => e.id === 'enr-456')?.status).toBe('cancelled');
+  });
+
+  /**
+   * A refund silently cancelled the seat: refunds.ts contained no email calls at
+   * all, so the family lost their place and heard nothing, and the teacher's
+   * roster changed without notice.
+   */
+  it('notifies the family and the teacher that the seat was cancelled', async () => {
+    seed('admin-123');
+
+    await processRefund({ paymentId: 'pay-123' });
+
+    expect(notifyEnrollmentCancelled).toHaveBeenCalled();
+    expect(notifyTeacherOfUnenrollment).toHaveBeenCalled();
+  });
+
+  it('sends nothing when the refund is rejected', async () => {
+    seed('parent-123'); // not an admin
+
+    const result = await processRefund({ paymentId: 'pay-123' });
+
+    expect(result.success).toBe(false);
+    expect(notifyEnrollmentCancelled).not.toHaveBeenCalled();
+    expect(notifyTeacherOfUnenrollment).not.toHaveBeenCalled();
   });
 
   it('should fail if user is not authorized', async () => {

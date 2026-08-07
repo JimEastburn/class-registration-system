@@ -17,6 +17,12 @@ import {
   getEnrollmentCountsByClass,
   EMPTY_COUNTS,
 } from '@/lib/enrollment-counts';
+import { notifyWaitlistJoined } from '@/lib/notifications/waitlist-joined';
+import { notifyEnrollmentCancelled } from '@/lib/notifications/enrollment-cancelled';
+import {
+  notifyTeacherOfEnrollment,
+  notifyTeacherOfUnenrollment,
+} from '@/lib/notifications/teacher-enrollment';
 
 interface EnrollmentWithClass extends Enrollment {
   class: {
@@ -397,11 +403,21 @@ export async function enrollStudent(input: EnrollStudentInput): Promise<{
     revalidatePath('/parent/browse');
     revalidatePath(`/parent/browse/${input.classId}`);
 
-    // Teacher enrollment notification temporarily disabled. Keep the helper in
-    // src/lib/notifications/teacher-enrollment.ts so this can be restored later.
-    // if (data.status === 'pending') {
-    //   await notifyTeacherOfEnrollment(input.classId, input.familyMemberId);
-    // }
+    if (data.status === 'pending') {
+      await notifyTeacherOfEnrollment(input.classId, input.familyMemberId);
+    }
+
+    // enroll_student() auto-waitlists instead of erroring when a class is full,
+    // so this path puts families on a waitlist just as addToWaitlist does — and
+    // it needs the same confirmation, or which button they happened to press
+    // decides whether they hear from us.
+    if (data.status === 'waitlisted') {
+      await notifyWaitlistJoined(
+        input.classId,
+        input.familyMemberId,
+        data.waitlist_position ?? 0
+      );
+    }
 
     return {
       data,
@@ -507,14 +523,21 @@ export async function cancelEnrollment(
       }
     );
 
-    // Teacher unenrollment notification temporarily disabled. Keep the helper in
-    // src/lib/notifications/teacher-enrollment.ts so this can be restored later.
-    // if (enrollment.status === 'pending' || enrollment.status === 'confirmed') {
-    //   await notifyTeacherOfUnenrollment(
-    //     enrollment.class_id,
-    //     enrollment.student_id
-    //   );
-    // }
+    // Both notifications are gated on an actual seat. Leaving a waitlist is not
+    // "no longer enrolled" -- they never were -- and it is not news to the
+    // teacher either.
+    if (enrollment.status === 'pending' || enrollment.status === 'confirmed') {
+      await notifyTeacherOfUnenrollment(
+        enrollment.class_id,
+        enrollment.student_id
+      );
+      // The family gets a confirmation whoever initiated it. Uses ids captured
+      // before the delete above -- the enrollment row is gone by now.
+      await notifyEnrollmentCancelled(
+        enrollment.class_id,
+        enrollment.student_id
+      );
+    }
 
     // Promote from waitlist if there are waitlisted students
     await promoteFromWaitlist(enrollment.class_id);
@@ -842,14 +865,17 @@ export async function adminCancelEnrollment(
       { refund: options.refund }
     );
 
-    // Teacher unenrollment notification temporarily disabled. Keep the helper in
-    // src/lib/notifications/teacher-enrollment.ts so this can be restored later.
-    // if (enrollment.status === 'pending' || enrollment.status === 'confirmed') {
-    //   await notifyTeacherOfUnenrollment(
-    //     enrollment.class_id,
-    //     enrollment.student_id
-    //   );
-    // }
+    // Gated on an actual seat, same as the parent-initiated path.
+    if (enrollment.status === 'pending' || enrollment.status === 'confirmed') {
+      await notifyTeacherOfUnenrollment(
+        enrollment.class_id,
+        enrollment.student_id
+      );
+      await notifyEnrollmentCancelled(
+        enrollment.class_id,
+        enrollment.student_id
+      );
+    }
 
     // Promote waitlisted student if not using refund path
     // (refund path handles its own promotion via processRefund → promoteFromWaitlist)
@@ -966,6 +992,17 @@ export async function teacherCancelEnrollment(
       enrollmentId,
       { class_id: classData.id }
     );
+
+    // Gated on an actual seat, same as the other cancellation paths.
+    if (enrollment.status === 'pending' || enrollment.status === 'confirmed') {
+      // Only tell the teacher if someone else did it. This action is reachable
+      // by an admin as well as the class's own teacher, and mailing a teacher
+      // about a removal they just performed is pure noise.
+      if (classData.teacher_id !== user.id) {
+        await notifyTeacherOfUnenrollment(classData.id, enrollment.student_id);
+      }
+      await notifyEnrollmentCancelled(classData.id, enrollment.student_id);
+    }
 
     // Promote waitlisted student
     await promoteFromWaitlist(classData.id);
@@ -1203,11 +1240,9 @@ export async function adminEnrollStudent(
       revalidatePath(`/parent/browse/${input.classId}`);
       revalidatePath(`/admin/classes/${input.classId}`);
 
-      // Teacher enrollment notification temporarily disabled. Keep the helper in
-      // src/lib/notifications/teacher-enrollment.ts so this can be restored later.
-      // if ((updated as Enrollment).status === 'pending') {
-      //   await notifyTeacherOfEnrollment(input.classId, input.studentId);
-      // }
+      if ((updated as Enrollment).status === 'pending') {
+        await notifyTeacherOfEnrollment(input.classId, input.studentId);
+      }
 
       return {
         data: updated as Enrollment,
@@ -1302,11 +1337,9 @@ export async function adminEnrollStudent(
     revalidatePath(`/parent/browse/${input.classId}`);
     revalidatePath(`/admin/classes/${input.classId}`);
 
-    // Teacher enrollment notification temporarily disabled. Keep the helper in
-    // src/lib/notifications/teacher-enrollment.ts so this can be restored later.
-    // if (data.status === 'pending') {
-    //   await notifyTeacherOfEnrollment(input.classId, input.studentId);
-    // }
+    if (data.status === 'pending') {
+      await notifyTeacherOfEnrollment(input.classId, input.studentId);
+    }
 
     return {
       data: data as Enrollment,

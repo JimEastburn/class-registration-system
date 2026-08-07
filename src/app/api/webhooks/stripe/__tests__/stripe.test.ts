@@ -3,6 +3,7 @@ import { POST } from '../route';
 import { stripe } from '@/lib/stripe';
 import { sendPaymentReceipt, sendEnrollmentConfirmation } from '@/lib/email';
 import { notifyTeacherOfUnenrollment } from '@/lib/notifications/teacher-enrollment';
+import { notifyEnrollmentCancelled } from '@/lib/notifications/enrollment-cancelled';
 import { createClient } from '@supabase/supabase-js';
 
 // Mock the dependencies
@@ -27,6 +28,10 @@ vi.mock('@/lib/zoho', () => ({
 vi.mock('@/lib/email', () => ({
   sendPaymentReceipt: vi.fn().mockResolvedValue({ success: true }),
   sendEnrollmentConfirmation: vi.fn().mockResolvedValue({ success: true }),
+}));
+
+vi.mock('@/lib/notifications/enrollment-cancelled', () => ({
+  notifyEnrollmentCancelled: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/lib/notifications/teacher-enrollment', () => ({
@@ -380,8 +385,11 @@ describe('Stripe Webhook API Route', () => {
     expect(fakeSupabase.getTable('payments')[0].status).toBe('refunded');
     expect(fakeSupabase.getTable('enrollments')[0].status).toBe('cancelled');
 
-    // Teacher notification emails are temporarily paused.
-    expect(notifyTeacherOfUnenrollment).not.toHaveBeenCalled();
+    // A refund cancels the seat, so both the teacher and the family hear about
+    // it, same as any other cancellation. This branch handles refunds issued
+    // outside the app; processRefund() sends its own for admin-initiated ones.
+    expect(notifyTeacherOfUnenrollment).toHaveBeenCalled();
+    expect(notifyEnrollmentCancelled).toHaveBeenCalled();
 
     // Verify Zoho refund sync was triggered
     const { syncRefundToZoho } = await import('@/lib/zoho');

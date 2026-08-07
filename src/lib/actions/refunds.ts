@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { stripe } from '@/lib/stripe';
 import { logAuditAction } from '@/lib/actions/audit';
 import { promoteFromWaitlist } from '@/lib/actions/waitlist';
+import { notifyTeacherOfUnenrollment } from '@/lib/notifications/teacher-enrollment';
+import { notifyEnrollmentCancelled } from '@/lib/notifications/enrollment-cancelled';
 import { ActionResult } from '@/types';
 import { revalidatePath } from 'next/cache';
 
@@ -90,10 +92,10 @@ export async function processRefund(
 
     // Cancel enrollment and promote from waitlist
     if (payment.enrollment_id) {
-      // Get class_id first
+      // student_id as well as class_id: both notifications below need it.
       const { data: enrollmentData } = await supabase
         .from('enrollments')
-        .select('class_id')
+        .select('class_id, student_id')
         .eq('id', payment.enrollment_id)
         .single();
 
@@ -110,6 +112,19 @@ export async function processRefund(
         payment.enrollment_id,
         { paymentId: input.paymentId }
       );
+
+      // A refund cancels the seat, so the family and the teacher both hear
+      // about it the same way they would for any other cancellation.
+      if (enrollmentData?.class_id && enrollmentData.student_id) {
+        await notifyTeacherOfUnenrollment(
+          enrollmentData.class_id,
+          enrollmentData.student_id
+        );
+        await notifyEnrollmentCancelled(
+          enrollmentData.class_id,
+          enrollmentData.student_id
+        );
+      }
 
       // Promote next waitlisted student (handles email, audit, reorder)
       if (enrollmentData?.class_id) {

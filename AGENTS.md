@@ -299,10 +299,32 @@ ZOHO_INVOICE_SUBJECT="AAC Fall '26 Registration"
 
 **Note**: `BYPASS_EMAIL_CONFIRMATION` can be set to `true` in development to skip email verification (not in `.env.example` but supported).
 
-**Email is not configured in any deployed environment.** Neither `RESEND_API_KEY` nor `FROM_EMAIL` is set in Vercel (Production, Preview, or Development), so `src/lib/email.ts` builds a `null` Resend client and every sender — confirmations, receipts, cancellations, waitlist notices — logs "Email not configured" and returns `{ success: false }`. Don't assume an email was delivered because the code path ran; nothing has ever been sent. Two constraints when wiring it up:
+**Email (Resend).** Live in Production and Preview since 2026-08-06, verified end to end. Two constraints:
 
 - The variable is `FROM_EMAIL`. `EMAIL_FROM_ADDRESS` appears in some older notes and is read by nothing.
 - `FROM_EMAIL` must be an address on a Resend-verified domain. `austinaac.org` is verified; `class-registration.austinaac.org` is **not** — Resend treats a subdomain as a separate domain, and the DNS is on Wix, which won't create the subdomain MX record Resend's SPF check requires.
+
+Both vars are typed `sensitive` in Vercel, so they are write-only: `vercel env pull` returns them empty and the value cannot be read back. Don't read that as "unset" — compare against a control var.
+
+**All sends go through `dispatch()` in `src/lib/email.ts`.** Add new templates by calling it, never `resend.emails.send` directly. It exists because `resend.emails.send()` **resolves** with `{ data: null, error }` on API rejections rather than throwing — the codes include `monthly_quota_exceeded`, `daily_quota_exceeded` and `rate_limit_exceeded` — so the old per-sender code returned `{ success: true }` when a send was actually refused. `dispatch()` checks `error`, returns a discriminated `EmailResult`, and logs every failure as `[email] <template> -> <recipient>: ...`. Grep `[email]` in the Vercel logs to see what didn't go out and why.
+
+Resend's free tier is 3,000/month **and 100/day** — the daily cap is the one that bites on bulk sends.
+
+**Password resets do not use Resend.** `ForgotPasswordForm` calls `supabase.auth.resetPasswordForEmail`, so that mail comes from Supabase Auth's own SMTP config.
+
+**What sends email:**
+
+| Trigger | Recipient |
+| --- | --- |
+| Enrolled (seat taken) | teacher |
+| Joined a waitlist — via the button *or* an auto-waitlist from a full class | family |
+| Promoted off the waitlist | family |
+| Single enrollment cancelled — parent, admin, teacher, or refund | family + teacher |
+| Whole class cancelled | each enrolled family |
+| Schedule/location/date changed | confirmed + pending families |
+| Payment received | family (receipt + enrollment confirmation) |
+
+Notification helpers live in `src/lib/notifications/`, are fire-and-forget, and swallow their own errors so a mail problem can never fail the operation that triggered it. Cancellation notices are gated on `pending`/`confirmed` — leaving a waitlist is not "no longer enrolled" and is not news to the teacher. `blocking.ts` still cancels enrollments silently; that message needs care and is deliberately unwritten.
 
 ## Key Files & Directories
 

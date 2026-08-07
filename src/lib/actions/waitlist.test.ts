@@ -8,6 +8,7 @@ import {
   getClassWaitlist,
 } from '@/lib/actions/waitlist';
 import { sendWaitlistNotification } from '@/lib/email';
+import { notifyWaitlistJoined } from '@/lib/notifications/waitlist-joined';
 import {
   seedFake,
   ADMIN_PROFILE,
@@ -23,6 +24,9 @@ vi.mock('@/lib/supabase/server', () => ({
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('@/lib/email', () => ({
   sendWaitlistNotification: vi.fn().mockResolvedValue({ success: true }),
+}));
+vi.mock('@/lib/notifications/waitlist-joined', () => ({
+  notifyWaitlistJoined: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ── Seed Data ───────────────────────────────────────────────────────────────
@@ -295,6 +299,39 @@ describe('addToWaitlist', () => {
     if (result.success) {
       expect(result.data.position).toBe(3);
     }
+  });
+
+  /**
+   * Joining used to be silent: the only waitlist email was the promotion one,
+   * sent later if a seat opened. A family got no confirmation that pressing
+   * "Join Waitlist" had done anything.
+   */
+  it('emails the family confirming the placement and position', async () => {
+    seed();
+
+    await addToWaitlist(CLASS_ID, CHILD_ID);
+
+    expect(notifyWaitlistJoined).toHaveBeenCalledWith(CLASS_ID, CHILD_ID, 1);
+  });
+
+  it('does not email when the request is rejected', async () => {
+    seed({
+      enrollments: [
+        FILLER_ENROLLMENT,
+        {
+          id: 'dupe',
+          student_id: CHILD_ID,
+          class_id: CLASS_ID,
+          status: 'waitlisted',
+          waitlist_position: 1,
+        },
+      ] as unknown as Record<string, unknown>[],
+    });
+
+    const result = await addToWaitlist(CLASS_ID, CHILD_ID);
+
+    expect(result.success).toBe(false);
+    expect(notifyWaitlistJoined).not.toHaveBeenCalled();
   });
 
   it('rejects when not authenticated', async () => {

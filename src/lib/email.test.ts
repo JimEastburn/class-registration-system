@@ -17,11 +17,112 @@ describe('Email Templates', () => {
     vi.clearAllMocks();
     process.env.RESEND_API_KEY = 'test-key';
     process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
-    mockSend.mockResolvedValue({ id: 'test-email-id' });
+    // The real SDK resolves with { data, error } — it does not throw on API
+    // rejections. Mirroring that shape here is what makes the quota test below
+    // meaningful.
+    mockSend.mockResolvedValue({ data: { id: 'test-email-id' }, error: null });
   });
 
   afterEach(() => {
     delete process.env.RESEND_API_KEY;
+  });
+
+  /**
+   * Regression guard for the bug the dispatch() wrapper was written to fix:
+   * resend.emails.send() RESOLVES with { data: null, error } when the API
+   * rejects a send — quota exhaustion, rate limits, a bad from-address. The old
+   * per-sender code only caught thrown exceptions, so it returned
+   * { success: true } on every one of those and a blown quota was
+   * indistinguishable from delivery.
+   */
+  describe('dispatch (shared send path)', () => {
+    it('reports failure when Resend rejects the send', async () => {
+      mockSend.mockResolvedValue({
+        data: null,
+        error: {
+          name: 'monthly_quota_exceeded',
+          message: 'You have reached your monthly quota',
+          statusCode: 429,
+        },
+      });
+      const { sendClassCancellation } = await import('./email');
+
+      const result = await sendClassCancellation({
+        parentEmail: 'parent@test.com',
+        parentName: 'A Parent',
+        studentName: 'A Student',
+        className: 'Art 101',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toContain('monthly_quota_exceeded');
+      }
+    });
+
+    it('logs the template name and recipient when a send fails', async () => {
+      const errorLog = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
+      mockSend.mockResolvedValue({
+        data: null,
+        error: {
+          name: 'rate_limit_exceeded',
+          message: 'Too many requests',
+          statusCode: 429,
+        },
+      });
+      const { sendClassCancellation } = await import('./email');
+
+      await sendClassCancellation({
+        parentEmail: 'parent@test.com',
+        parentName: 'A Parent',
+        studentName: 'A Student',
+        className: 'Art 101',
+      });
+
+      const logged = errorLog.mock.calls.flat().join(' ');
+      expect(logged).toContain('class-cancellation');
+      expect(logged).toContain('parent@test.com');
+      expect(logged).toContain('rate_limit_exceeded');
+      errorLog.mockRestore();
+    });
+
+    it('reports failure, loudly, when the API key is missing', async () => {
+      vi.resetModules();
+      delete process.env.RESEND_API_KEY;
+      const errorLog = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
+      const { sendClassCancellation } = await import('./email');
+
+      const result = await sendClassCancellation({
+        parentEmail: 'parent@test.com',
+        parentName: 'A Parent',
+        studentName: 'A Student',
+        className: 'Art 101',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) expect(result.error).toBe('Email not configured');
+      // console.error, not console.log: a silent outage is the failure mode.
+      expect(errorLog).toHaveBeenCalled();
+      errorLog.mockRestore();
+    });
+
+    it('returns the Resend message id on success', async () => {
+      const { sendClassCancellation } = await import('./email');
+
+      const result = await sendClassCancellation({
+        parentEmail: 'parent@test.com',
+        parentName: 'A Parent',
+        studentName: 'A Student',
+        className: 'Art 101',
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.id).toBe('test-email-id');
+    });
   });
 
   describe('Other Templates (Smoke Tests)', () => {
@@ -137,7 +238,7 @@ describe('Email Templates', () => {
 
       const result = await sendTeacherEnrollmentNotification(data);
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Email not configured');
+      if (!result.success) expect(result.error).toBe('Email not configured');
       expect(mockSend).not.toHaveBeenCalled();
     });
   });
@@ -176,7 +277,7 @@ describe('Email Templates', () => {
 
       const result = await sendTeacherUnenrollmentNotification(data);
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Email not configured');
+      if (!result.success) expect(result.error).toBe('Email not configured');
       expect(mockSend).not.toHaveBeenCalled();
     });
   });
