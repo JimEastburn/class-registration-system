@@ -7,12 +7,28 @@ describe('volunteer admin route access', () => {
     expect(hasRouteAccess('/admin/volunteers', 'parent', true)).toBe(true);
   });
 
+  it.each(['parent', 'student', 'teacher', 'admin', 'super_admin'] as const)(
+    'opens the volunteer board to %s',
+    (role) => {
+      expect(hasRouteAccess('/volunteer', role, false)).toBe(true);
+    }
+  );
+
+  it('keeps class schedulers off the volunteer board', () => {
+    expect(hasRouteAccess('/volunteer', 'class_scheduler', false)).toBe(false);
+  });
+
+  it('does not open the admin volunteer config to parents or students', () => {
+    expect(hasRouteAccess('/admin/volunteers', 'parent', false)).toBe(false);
+    expect(hasRouteAccess('/admin/volunteers', 'student', false)).toBe(false);
+  });
+
   it.each([
     '/volunteer-version-2',
     '/volunteer-version-3',
     '/volunteer-version-4',
     '/volunteer-version-5',
-  ])('gates the alternate volunteer board %s like the original', (route) => {
+  ])('keeps the alternate volunteer layout %s staff-only', (route) => {
     expect(hasRouteAccess(route, 'teacher', false)).toBe(true);
     expect(hasRouteAccess(route, 'admin', false)).toBe(true);
     expect(hasRouteAccess(route, 'super_admin', false)).toBe(true);

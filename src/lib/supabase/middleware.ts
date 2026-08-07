@@ -7,10 +7,11 @@ import type { UserRole } from '@/types';
  * Maps route prefixes to allowed roles
  */
 const ROUTE_ROLE_MAP: Record<string, UserRole[]> = {
-  // Temporarily limited to staff testers while the volunteer board is piloted.
-  '/volunteer': ['teacher', 'admin', 'super_admin'],
-  // Alternate layouts of the same board; `/volunteer` is not a prefix of these,
-  // so each needs its own entry to stay behind the same gate.
+  // Open to everyone who volunteers. Class schedulers are the one role left
+  // out; they reach the board through `is_volunteer_admin` if they need it.
+  '/volunteer': ['parent', 'student', 'teacher', 'admin', 'super_admin'],
+  // Alternate layouts of the same board, kept staff-only as design variants.
+  // `/volunteer` is not a prefix of these, so each needs its own entry.
   '/volunteer-version-2': ['teacher', 'admin', 'super_admin'],
   '/volunteer-version-3': ['teacher', 'admin', 'super_admin'],
   '/volunteer-version-4': ['teacher', 'admin', 'super_admin'],

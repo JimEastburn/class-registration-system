@@ -93,6 +93,14 @@ export const TEACHER_PROFILE: SeedProfile = {
   email: 'teacher@test.com',
 };
 
+export const STUDENT_PROFILE: SeedProfile = {
+  id: 'student-123',
+  first_name: 'Student',
+  last_name: 'User',
+  role: 'student',
+  email: 'student@test.com',
+};
+
 export const SCHEDULER_PROFILE: SeedProfile = {
   id: 'scheduler-123',
   first_name: 'Scheduler',

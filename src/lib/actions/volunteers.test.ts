@@ -16,6 +16,7 @@ import {
   ADMIN_PROFILE,
   PARENT_PROFILE,
   SCHEDULER_PROFILE,
+  STUDENT_PROFILE,
   TEACHER_PROFILE,
   seedFake,
 } from '@/__integration__/fakes/fixtures';
@@ -51,6 +52,7 @@ function seedVolunteerFake(authUserId: string | null = ADMIN_PROFILE.id) {
         ADMIN_PROFILE,
         PARENT_PROFILE,
         SCHEDULER_PROFILE,
+        STUDENT_PROFILE,
         TEACHER_PROFILE,
         VOLUNTEER_ADMIN_PARENT,
       ] as unknown as Record<string, unknown>[],
@@ -167,15 +169,24 @@ describe('volunteer actions', () => {
     ).toMatchObject({ role: 'parent', is_volunteer_admin: true });
   });
 
-  it('limits volunteer board access to teachers and admins during the pilot', async () => {
+  it('opens volunteer board access to parents, students, and teachers', async () => {
     seedVolunteerFake(PARENT_PROFILE.id);
-    const parentResult = await getVolunteerBoard();
-    expect(parentResult.success).toBe(false);
-    expect(parentResult.error).toBe('Unauthorized');
+    expect(await getVolunteerBoard()).toMatchObject({ success: true });
+
+    seedVolunteerFake(STUDENT_PROFILE.id);
+    expect(await getVolunteerBoard()).toMatchObject({ success: true });
 
     seedVolunteerFake(TEACHER_PROFILE.id);
-    const teacherResult = await getVolunteerBoard();
-    expect(teacherResult.success).toBe(true);
+    expect(await getVolunteerBoard()).toMatchObject({ success: true });
+  });
+
+  it('keeps class schedulers off the volunteer board', async () => {
+    seedVolunteerFake(SCHEDULER_PROFILE.id);
+
+    const result = await getVolunteerBoard();
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Unauthorized');
   });
 
   it('lets volunteer admins read the paginated activity log', async () => {
@@ -331,8 +342,30 @@ describe('volunteer actions', () => {
     expect(revalidatePath).toHaveBeenCalledWith('/admin/volunteers');
   });
 
-  it('prevents parents from claiming volunteer slots during the pilot', async () => {
-    seedVolunteerFake(PARENT_PROFILE.id);
+  it('lets parents and students claim volunteer slots', async () => {
+    const parentFake = seedVolunteerFake(PARENT_PROFILE.id);
+    const parentResult = await claimVolunteerSlot(SLOT_1);
+
+    expect(parentResult).toMatchObject({ success: true });
+    expect(parentFake.db.volunteer_signups[0]).toMatchObject({
+      slot_id: SLOT_1,
+      user_id: PARENT_PROFILE.id,
+      display_name: 'Parent User',
+    });
+
+    const studentFake = seedVolunteerFake(STUDENT_PROFILE.id);
+    const studentResult = await claimVolunteerSlot(SLOT_2);
+
+    expect(studentResult).toMatchObject({ success: true });
+    expect(studentFake.db.volunteer_signups[0]).toMatchObject({
+      slot_id: SLOT_2,
+      user_id: STUDENT_PROFILE.id,
+      display_name: 'Student User',
+    });
+  });
+
+  it('prevents class schedulers from claiming volunteer slots', async () => {
+    seedVolunteerFake(SCHEDULER_PROFILE.id);
 
     const result = await claimVolunteerSlot(SLOT_1);
 

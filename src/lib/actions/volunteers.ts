@@ -64,11 +64,20 @@ function hasVolunteerAdminAccess(profile: {
   );
 }
 
-function isVolunteerTester(profile: {
+/**
+ * Roles that can view the board and manage their own signups. Class schedulers
+ * are excluded; they reach the board through `is_volunteer_admin` if needed.
+ */
+const VOLUNTEER_BOARD_ROLES = ['parent', 'student', 'teacher'];
+
+function canUseVolunteerBoard(profile: {
   role?: UserRole | string | null;
   is_volunteer_admin?: boolean | null;
 }) {
-  return profile.role === 'teacher' || hasVolunteerAdminAccess(profile);
+  return (
+    VOLUNTEER_BOARD_ROLES.includes(profile.role ?? '') ||
+    hasVolunteerAdminAccess(profile)
+  );
 }
 
 function formatDisplayName(profile: {
@@ -172,10 +181,10 @@ async function requireVolunteerAdmin() {
   return context;
 }
 
-async function requireVolunteerTester() {
+async function requireVolunteerBoardAccess() {
   const context = await requireAuthenticated();
   if (context.error) return context;
-  if (!context.profile || !isVolunteerTester(context.profile)) {
+  if (!context.profile || !canUseVolunteerBoard(context.profile)) {
     return { ...context, error: 'Unauthorized' };
   }
   return context;
@@ -245,7 +254,7 @@ export async function getVolunteerBoard(): Promise<
   ActionResult<VolunteerBoardData>
 > {
   try {
-    const context = await requireVolunteerTester();
+    const context = await requireVolunteerBoardAccess();
     if (context.error || !context.user) {
       return { success: false, error: context.error ?? 'Not authenticated' };
     }
@@ -671,7 +680,7 @@ export async function claimVolunteerSlot(
   slotId: string
 ): Promise<ActionResult<VolunteerSignup>> {
   try {
-    const context = await requireVolunteerTester();
+    const context = await requireVolunteerBoardAccess();
     if (context.error || !context.user || !context.profile) {
       return { success: false, error: context.error ?? 'Not authenticated' };
     }
@@ -751,7 +760,7 @@ export async function releaseVolunteerSignup(
   signupId: string
 ): Promise<ActionResult> {
   try {
-    const context = await requireVolunteerTester();
+    const context = await requireVolunteerBoardAccess();
     if (context.error || !context.user) {
       return { success: false, error: context.error ?? 'Not authenticated' };
     }

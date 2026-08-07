@@ -45,8 +45,7 @@ const navItems: NavItem[] = [
     href: '/volunteer',
     label: 'Volunteer Board',
     icon: HeartHandshake,
-    // Temporarily limited to staff testers while the volunteer board is piloted.
-    roles: ['teacher', 'admin', 'super_admin'],
+    roles: ['parent', 'student', 'teacher', 'admin', 'super_admin'],
     exact: true,
   },
 
