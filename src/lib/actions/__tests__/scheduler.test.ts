@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getSchedulerStats, getUnscheduledClasses, schedulerCreateClass } from '../scheduler';
+import {
+  getSchedulerStats,
+  getUnscheduledClasses,
+  schedulerCreateClass,
+  schedulerUpdateClass,
+} from '../scheduler';
 import {
   seedFake,
   SCHEDULER_PROFILE,
@@ -15,6 +20,9 @@ vi.mock('@/lib/supabase/server', () => ({
 
 vi.mock('@/lib/logic/scheduling', () => ({
   checkScheduleConflict: vi.fn().mockReturnValue(null),
+  // schedulerUpdateClass also calls checkRoomConflict; without it here the
+  // import is undefined and any update carrying a location throws.
+  checkRoomConflict: vi.fn().mockReturnValue(null),
 }));
 
 // ── Seed Data ───────────────────────────────────────────────────────────────
@@ -132,6 +140,65 @@ describe('Scheduler Actions', () => {
         age_min: 5,
         age_max: 12,
       });
+    });
+  });
+
+  /**
+   * schedulerUpdateClass is a generic Partial<Class> passthrough running on the
+   * admin client, so a `status: 'cancelled'` in the payload used to flip the
+   * class and tell nobody. Cancellation belongs to cancelClass(), which also
+   * cancels enrollments and emails families. See
+   * 20260806120000_cancel_enrollments_with_class.sql.
+   */
+  describe('schedulerUpdateClass', () => {
+    const seedScheduler = (classes: SeedClass[]) =>
+      seedFake({
+        authUserId: SCHEDULER_PROFILE.id,
+        data: {
+          profiles: [SCHEDULER_PROFILE] as unknown as Record<string, unknown>[],
+          classes: classes as unknown as Record<string, unknown>[],
+        },
+      });
+
+    it('rejects a status change to cancelled', async () => {
+      const fake = seedScheduler([scheduledClass1]);
+
+      const result = await schedulerUpdateClass('class-1', {
+        status: 'cancelled',
+      });
+
+      expect(result.success).toBe(false);
+      if (!result.success) expect(result.error).toContain('Cancel Class');
+      expect(fake.db.classes.find((c) => c.id === 'class-1')!.status).toBe(
+        'published'
+      );
+    });
+
+    it('still allows publishing and un-publishing', async () => {
+      const fake = seedScheduler([scheduledClass2]);
+
+      const result = await schedulerUpdateClass('class-2', {
+        status: 'published',
+      });
+
+      expect(result.success).toBe(true);
+      expect(fake.db.classes.find((c) => c.id === 'class-2')!.status).toBe(
+        'published'
+      );
+    });
+
+    it('still allows editing a class that is already cancelled', async () => {
+      const fake = seedScheduler([cancelledClass]);
+
+      const result = await schedulerUpdateClass('class-4', {
+        name: 'Cancelled Class (renamed)',
+        status: 'cancelled',
+      });
+
+      expect(result.success).toBe(true);
+      expect(fake.db.classes.find((c) => c.id === 'class-4')!.name).toBe(
+        'Cancelled Class (renamed)'
+      );
     });
   });
 });

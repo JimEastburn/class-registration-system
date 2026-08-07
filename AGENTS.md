@@ -120,10 +120,18 @@ auth.users (1:1) → profiles (1:N parent_id) → family_members (1:N student_id
 - Positions are kept contiguous by the `on_waitlist_{delete,update}_resequence` triggers, which call `resequence_class_waitlist()` whenever a row leaves the waitlist — **don't** renumber by hand in a server action, it double-shifts
 - `uq_enrollments_class_waitlist_position` makes duplicate positions impossible; assign new positions with `max(waitlist_position) + 1`, never `count(*) + 1`
 
+**Class cancellation:**
+
+- **A cancelled class holds no active enrollments.** Enforced in the database by `on_class_cancel_cascade_enrollments`, which cancels every `confirmed`/`pending`/`waitlisted` row and nulls `waitlist_position` whenever `classes.status` becomes `cancelled` (`20260806120000_cancel_enrollments_with_class.sql`)
+- `on_enrollment_reject_cancelled_class` rejects any row *entering* an active status in a cancelled class, with HINT `EN_CLASS_CANCELLED`. This is what covers the direct writers that never touch `enroll_student()`: the Stripe webhook, `checkout/verify-session`, and both spots in `actions/payments.ts`
+- `cancelClass` is the **only** supported way to cancel a class — a trigger cannot send the `sendClassCancellation` emails. `updateClass`, `adminUpdateClass`, and `schedulerUpdateClass` reject the transition and point at it. Guard the *transition* (`input.status === 'cancelled' && existing.status !== 'cancelled'`), not the value: the admin and scheduler forms both round-trip the current status on every save
+- **Don't** cancel enrollments through the RLS client. `enrollments` has no teacher UPDATE policy and `is_admin()` excludes teachers, so a teacher's update silently matches zero rows *and returns no error* — that is exactly how live enrollments ended up stranded in cancelled classes in production. Use `createAdminClient()`, as `cancelClass` and `teacherCancelEnrollment` do
+- Un-cancelling a class does **not** restore its enrollments; those families have to re-enroll
+
 **Class blocks:**
 
 - Teachers can block specific students from their classes
-- Trigger automatically cancels enrollments when block is added
+- Enrollments are cancelled in `blocking.ts`, **not** by a trigger — `handle_new_block()` in `20260201205605_create_class_blocks.sql` is dead code, never attached to a `CREATE TRIGGER` and referencing a `class_blocks.class_id` column that does not exist (blocks are teacher-wide)
 - Checked before new enrollments are created
 
 ### Payment & Stripe Integration
@@ -290,6 +298,11 @@ ZOHO_INVOICE_SUBJECT="AAC Fall '26 Registration"
 ```
 
 **Note**: `BYPASS_EMAIL_CONFIRMATION` can be set to `true` in development to skip email verification (not in `.env.example` but supported).
+
+**Email is not configured in any deployed environment.** Neither `RESEND_API_KEY` nor `FROM_EMAIL` is set in Vercel (Production, Preview, or Development), so `src/lib/email.ts` builds a `null` Resend client and every sender — confirmations, receipts, cancellations, waitlist notices — logs "Email not configured" and returns `{ success: false }`. Don't assume an email was delivered because the code path ran; nothing has ever been sent. Two constraints when wiring it up:
+
+- The variable is `FROM_EMAIL`. `EMAIL_FROM_ADDRESS` appears in some older notes and is read by nothing.
+- `FROM_EMAIL` must be an address on a Resend-verified domain. `austinaac.org` is verified; `class-registration.austinaac.org` is **not** — Resend treats a subdomain as a separate domain, and the DNS is on Wix, which won't create the subdomain MX record Resend's SPF check requires.
 
 ## Key Files & Directories
 

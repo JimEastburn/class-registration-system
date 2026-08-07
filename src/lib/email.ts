@@ -5,7 +5,13 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@class-registration.austinaac.org';
+// Must be an address on a domain verified in Resend. `austinaac.org` is the
+// verified one; the subdomain this used to default to
+// (class-registration.austinaac.org) is a separate, unverified domain in Resend,
+// so every send from it was rejected. Verifying the subdomain is not a realistic
+// fix either -- the DNS is on Wix, which will not create the subdomain MX record
+// Resend's SPF check needs.
+const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@austinaac.org';
 const APP_NAME = 'AAC Class Registration';
 
 export interface EnrollmentEmailData {

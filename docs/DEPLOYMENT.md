@@ -87,10 +87,20 @@ Environment variables are scoped per environment in the Vercel Dashboard. Go to 
 
 #### Resend (Emails)
 
-| Variable             | Description                                             |
-| -------------------- | ------------------------------------------------------- |
-| `RESEND_API_KEY`     | API Key from Resend Dashboard                           |
-| `EMAIL_FROM_ADDRESS` | Verified sender address (e.g., `onboarding@resend.dev`) |
+| Variable         | Description                                                                     |
+| ---------------- | ------------------------------------------------------------------------------- |
+| `RESEND_API_KEY` | API Key from Resend Dashboard                                                   |
+| `FROM_EMAIL`     | Sender address on a Resend-verified domain (e.g., `noreply@austinaac.org`)       |
+
+> **Both are required.** `src/lib/email.ts` builds its Resend client only when
+> `RESEND_API_KEY` is set, and every sender silently returns `{ success: false }`
+> otherwise — no exception, nothing in the UI. `FROM_EMAIL` must be an address on a
+> domain that is verified in Resend (currently `austinaac.org`); a subdomain counts
+> as a separate domain there and will be rejected.
+>
+> The variable is `FROM_EMAIL`. This table previously named `EMAIL_FROM_ADDRESS`,
+> which the code never reads — setting that one looks like configuration and changes
+> nothing.
 
 #### Zoho Books (Accounting)
 

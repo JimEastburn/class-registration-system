@@ -176,6 +176,122 @@ describe('SupabaseFake', () => {
     });
   });
 
+  /**
+   * Mirrors the on_class_cancel_cascade_enrollments trigger from
+   * 20260806120000_cancel_enrollments_with_class.sql: cancelling a class cancels
+   * every active enrollment in it, whatever code path did the cancelling.
+   */
+  describe('Class cancellation cascade', () => {
+    beforeEach(() => {
+      client = new SupabaseFake({
+        classes: [
+          { id: 'class-1', name: 'Art 101', status: 'published', capacity: 2 },
+          { id: 'class-2', name: 'Music 201', status: 'published', capacity: 2 },
+        ],
+        enrollments: [
+          { id: 'e-1', class_id: 'class-1', status: 'confirmed' },
+          { id: 'e-2', class_id: 'class-1', status: 'pending' },
+          {
+            id: 'e-3',
+            class_id: 'class-1',
+            status: 'waitlisted',
+            waitlist_position: 1,
+          },
+          { id: 'e-4', class_id: 'class-1', status: 'cancelled' },
+          { id: 'e-5', class_id: 'class-2', status: 'confirmed' },
+        ],
+      });
+    });
+
+    const statusOf = (id: string) =>
+      client.db.enrollments.find((e) => e.id === id)?.status;
+
+    it('cancels active enrollments when a class is cancelled', async () => {
+      await client
+        .from('classes')
+        .update({ status: 'cancelled' })
+        .eq('id', 'class-1');
+
+      expect(statusOf('e-1')).toBe('cancelled');
+      expect(statusOf('e-2')).toBe('cancelled');
+      expect(statusOf('e-3')).toBe('cancelled');
+    });
+
+    it('nulls waitlist_position on the cancelled waitlist entries', async () => {
+      await client
+        .from('classes')
+        .update({ status: 'cancelled' })
+        .eq('id', 'class-1');
+
+      expect(
+        client.db.enrollments.find((e) => e.id === 'e-3')!.waitlist_position
+      ).toBeNull();
+    });
+
+    it('leaves other classes untouched', async () => {
+      await client
+        .from('classes')
+        .update({ status: 'cancelled' })
+        .eq('id', 'class-1');
+
+      expect(statusOf('e-5')).toBe('confirmed');
+    });
+
+    it('does not cascade when the update leaves the status alone', async () => {
+      await client
+        .from('classes')
+        .update({ name: 'Art 102' })
+        .eq('id', 'class-1');
+
+      expect(statusOf('e-1')).toBe('confirmed');
+    });
+
+    it('does not cascade when the class was already cancelled', async () => {
+      // Matches the trigger's WHEN clause: OLD.status IS DISTINCT FROM
+      // 'cancelled'. Re-saving a cancelled class must not re-run the cascade.
+      client.db.classes.find((c) => c.id === 'class-1')!.status = 'cancelled';
+      client.db.enrollments.find((e) => e.id === 'e-1')!.status = 'confirmed';
+
+      await client
+        .from('classes')
+        .update({ status: 'cancelled' })
+        .eq('id', 'class-1');
+
+      expect(statusOf('e-1')).toBe('confirmed');
+    });
+
+    it('refuses to enroll into a cancelled class via the enroll_student RPC', async () => {
+      client.db.classes.find((c) => c.id === 'class-2')!.status = 'cancelled';
+
+      const { data, error } = await client.rpc('enroll_student', {
+        p_student_id: 'fm-new',
+        p_class_id: 'class-2',
+      });
+
+      expect(data).toBeNull();
+      expect((error as { hint?: string } | null)?.hint).toBe(
+        'EN_CLASS_CANCELLED'
+      );
+    });
+
+    it('promotes nobody from a cancelled class', async () => {
+      client.db.classes.find((c) => c.id === 'class-2')!.status = 'cancelled';
+      client.db.enrollments.push({
+        id: 'e-6',
+        class_id: 'class-2',
+        status: 'waitlisted',
+        waitlist_position: 1,
+      });
+
+      const { data } = await client.rpc('promote_waitlist_one', {
+        p_class_id: 'class-2',
+      });
+
+      expect(data).toBeNull();
+      expect(statusOf('e-6')).toBe('waitlisted');
+    });
+  });
+
   describe('Relational Joins', () => {
     beforeEach(async () => {
       // Seed related tables

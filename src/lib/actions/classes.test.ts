@@ -2,11 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   createClass,
   updateClass,
+  adminUpdateClass,
+  cancelClass,
   publishClass,
   getAllClasses,
   getAllAacEnrollmentReport,
   getClassAvailability,
 } from '@/lib/actions/classes';
+import { sendClassCancellation } from '@/lib/email';
 import {
   seedFake,
   TEACHER_PROFILE,
@@ -169,6 +172,291 @@ describe('Class Actions', () => {
       expect(
         fake.db.classes.find((c) => c.id === 'class-1')!.location
       ).toBeNull();
+    });
+
+    /**
+     * The admin class form used to be able to cancel a class through its status
+     * dropdown, which flipped classes.status without cancelling a single
+     * enrollment or emailing anybody. That is how the Ecology class ended up
+     * cancelled in production with a live enrollment still attached.
+     */
+    it('rejects a status change to cancelled and points at the cancel action', async () => {
+      const fake = seed({
+        profiles: [ADMIN_PROFILE] as unknown as Record<string, unknown>[],
+        classes: [
+          { ...existingClass, status: 'published' },
+        ] as unknown as Record<string, unknown>[],
+        enrollments: [
+          { id: 'e-1', student_id: 'fm-1', class_id: 'class-1', status: 'confirmed' },
+        ] as unknown as Record<string, unknown>[],
+      });
+      fake.setAuthUser({ id: ADMIN_PROFILE.id });
+
+      const result = await updateClass('class-1', { status: 'cancelled' });
+
+      expect(result.success).toBe(false);
+      if (!result.success) expect(result.error).toContain('Cancel Class');
+      expect(fake.db.classes.find((c) => c.id === 'class-1')!.status).toBe(
+        'published'
+      );
+      expect(fake.db.enrollments.find((e) => e.id === 'e-1')!.status).toBe(
+        'confirmed'
+      );
+    });
+
+    /**
+     * Regression guard for the guard itself: the form posts status on every
+     * save, so this has to key off the transition rather than the value, or
+     * an already-cancelled class becomes uneditable.
+     */
+    it('still allows editing a class that is already cancelled', async () => {
+      const fake = seed({
+        profiles: [ADMIN_PROFILE] as unknown as Record<string, unknown>[],
+        classes: [
+          { ...existingClass, status: 'cancelled' },
+        ] as unknown as Record<string, unknown>[],
+      });
+      fake.setAuthUser({ id: ADMIN_PROFILE.id });
+
+      const result = await updateClass('class-1', {
+        name: 'Math 101 (cancelled)',
+        status: 'cancelled',
+      });
+
+      expect(result.success).toBe(true);
+      expect(fake.db.classes.find((c) => c.id === 'class-1')!.name).toBe(
+        'Math 101 (cancelled)'
+      );
+    });
+  });
+
+  describe('adminUpdateClass', () => {
+    it('rejects a status change to cancelled', async () => {
+      const fake = seed({
+        profiles: [ADMIN_PROFILE] as unknown as Record<string, unknown>[],
+        classes: [
+          { ...existingClass, status: 'published' },
+        ] as unknown as Record<string, unknown>[],
+      });
+      fake.setAuthUser({ id: ADMIN_PROFILE.id });
+
+      const result = await adminUpdateClass('class-1', { status: 'cancelled' });
+
+      expect(result.success).toBe(false);
+      if (!result.success) expect(result.error).toContain('Cancel Class');
+      expect(fake.db.classes.find((c) => c.id === 'class-1')!.status).toBe(
+        'published'
+      );
+    });
+
+    it('still allows editing a class that is already cancelled', async () => {
+      const fake = seed({
+        profiles: [ADMIN_PROFILE] as unknown as Record<string, unknown>[],
+        classes: [
+          { ...existingClass, status: 'cancelled' },
+        ] as unknown as Record<string, unknown>[],
+      });
+      fake.setAuthUser({ id: ADMIN_PROFILE.id });
+
+      const result = await adminUpdateClass('class-1', {
+        name: 'Renamed',
+        status: 'cancelled',
+      });
+
+      expect(result.success).toBe(true);
+      expect(fake.db.classes.find((c) => c.id === 'class-1')!.name).toBe(
+        'Renamed'
+      );
+    });
+  });
+
+  /**
+   * A cancelled class holds no active enrollments.
+   *
+   * Production accumulated three violations of this: cancelClass ran its
+   * enrollment UPDATE through the RLS client, and enrollments has no teacher
+   * UPDATE policy, so a teacher cancelling their own class matched zero rows and
+   * returned no error while the class still flipped to cancelled. Every
+   * teacher-initiated class.cancelled in the audit log recorded
+   * affectedEnrollments: 0; the one super_admin cancellation recorded 4.
+   *
+   * Caveat worth knowing when reading these: SupabaseFake models no RLS, so
+   * these tests cannot prove the admin-client fix itself -- the buggy version
+   * would pass them. They pin the observable contract around it. The RLS half is
+   * covered by supabase/tests/database/cancel_class_cascade.test.sql and by
+   * cancelling a class as a teacher against a real database.
+   */
+  describe('cancelClass', () => {
+    const emailOk = { success: true } as Awaited<
+      ReturnType<typeof sendClassCancellation>
+    >;
+
+    beforeEach(() => {
+      vi.mocked(sendClassCancellation).mockResolvedValue(emailOk);
+    });
+
+    const seedForCancel = (
+      classOverrides: Record<string, unknown> = {}
+    ) =>
+      seed({
+        profiles: [
+          TEACHER_PROFILE,
+          PARENT_PROFILE,
+        ] as unknown as Record<string, unknown>[],
+        classes: [
+          { ...existingClass, status: 'published', ...classOverrides },
+          { ...existingClass, id: 'class-2', status: 'published' },
+        ] as unknown as Record<string, unknown>[],
+        family_members: [1, 2, 3, 4].map((n) => ({
+          id: `fm-${n}`,
+          parent_id: PARENT_PROFILE.id,
+          first_name: `Kid${n}`,
+          last_name: 'Test',
+          email: `kid${n}@test.com`,
+          relationship: 'Student',
+        })) as unknown as Record<string, unknown>[],
+        enrollments: [
+          {
+            id: 'e-confirmed',
+            student_id: 'fm-1',
+            class_id: 'class-1',
+            status: 'confirmed',
+          },
+          {
+            id: 'e-pending',
+            student_id: 'fm-2',
+            class_id: 'class-1',
+            status: 'pending',
+          },
+          {
+            id: 'e-waitlisted',
+            student_id: 'fm-3',
+            class_id: 'class-1',
+            status: 'waitlisted',
+            waitlist_position: 1,
+          },
+          {
+            id: 'e-other-class',
+            student_id: 'fm-4',
+            class_id: 'class-2',
+            status: 'confirmed',
+          },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+    it('cancels every active enrollment in the class', async () => {
+      const fake = seedForCancel();
+
+      const result = await cancelClass('class-1');
+
+      expect(result.success).toBe(true);
+      for (const id of ['e-confirmed', 'e-pending', 'e-waitlisted']) {
+        expect(fake.db.enrollments.find((e) => e.id === id)!.status).toBe(
+          'cancelled'
+        );
+      }
+      expect(fake.db.classes.find((c) => c.id === 'class-1')!.status).toBe(
+        'cancelled'
+      );
+    });
+
+    it('leaves no active enrollment behind - the invariant itself', async () => {
+      const fake = seedForCancel();
+
+      await cancelClass('class-1');
+
+      const stillActive = fake.db.enrollments.filter(
+        (e) =>
+          e.class_id === 'class-1' &&
+          ['confirmed', 'pending', 'waitlisted'].includes(e.status as string)
+      );
+      expect(stillActive).toEqual([]);
+    });
+
+    it('clears waitlist_position on cancelled waitlist entries', async () => {
+      const fake = seedForCancel();
+
+      await cancelClass('class-1');
+
+      expect(
+        fake.db.enrollments.find((e) => e.id === 'e-waitlisted')!
+          .waitlist_position
+      ).toBeNull();
+    });
+
+    it('leaves enrollments in other classes alone', async () => {
+      const fake = seedForCancel();
+
+      await cancelClass('class-1');
+
+      expect(
+        fake.db.enrollments.find((e) => e.id === 'e-other-class')!.status
+      ).toBe('confirmed');
+      expect(fake.db.classes.find((c) => c.id === 'class-2')!.status).toBe(
+        'published'
+      );
+    });
+
+    it('reports how many enrollments it cancelled', async () => {
+      seedForCancel();
+
+      const result = await cancelClass('class-1');
+
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.affectedEnrollments).toBe(3);
+    });
+
+    it('sends one cancellation email per affected family', async () => {
+      seedForCancel();
+
+      await cancelClass('class-1');
+
+      expect(sendClassCancellation).toHaveBeenCalledTimes(3);
+      expect(sendClassCancellation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parentEmail: PARENT_PROFILE.email,
+          className: 'Math 101',
+        })
+      );
+    });
+
+    /**
+     * "Applied Financial Math" was cancelled three times in production and
+     * "Anatomy & Physiology" twice, each re-running the whole email loop.
+     */
+    it('is a no-op when the class is already cancelled', async () => {
+      const fake = seedForCancel({ status: 'cancelled' });
+
+      const result = await cancelClass('class-1');
+
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.affectedEnrollments).toBe(0);
+      expect(sendClassCancellation).not.toHaveBeenCalled();
+      // The seeded rows are left exactly as they were: repairing pre-existing
+      // violations is the migration's backfill job, not a re-cancel side effect.
+      expect(fake.db.enrollments.find((e) => e.id === 'e-confirmed')!.status).toBe(
+        'confirmed'
+      );
+    });
+
+    /**
+     * One unreachable address must not abort the loop. Before the per-send
+     * try/catch, a rejection propagated to the outer catch and left the class
+     * published with its enrollments already cancelled.
+     */
+    it('still cancels the class when an email send throws', async () => {
+      const fake = seedForCancel();
+      vi.mocked(sendClassCancellation).mockRejectedValueOnce(
+        new Error('smtp exploded')
+      );
+
+      const result = await cancelClass('class-1');
+
+      expect(result.success).toBe(true);
+      expect(fake.db.classes.find((c) => c.id === 'class-1')!.status).toBe(
+        'cancelled'
+      );
+      expect(sendClassCancellation).toHaveBeenCalledTimes(3);
     });
   });
 

@@ -128,6 +128,32 @@ describe('Enrollment Actions', () => {
       expect(newEnrollment!.status).toBe('pending');
     });
 
+    /**
+     * A cancelled class holds no active enrollments, so it must not accept new
+     * ones either. The parent path is also blocked incidentally today, by the
+     * "Anyone can view published classes" RLS policy making the class lookup
+     * return nothing -- but SupabaseFake models no RLS, which is exactly why the
+     * action checks status explicitly rather than leaning on a policy that could
+     * change. See 20260806120000_cancel_enrollments_with_class.sql.
+     */
+    it('refuses to enroll a student into a cancelled class', async () => {
+      const fake = seed({
+        classes: [{ ...mockClass, status: 'cancelled' }] as unknown as Record<
+          string,
+          unknown
+        >[],
+      });
+
+      const result = await enrollStudent({
+        classId: CLASS_ID,
+        familyMemberId: CHILD_ID,
+      });
+
+      expect(result.status).toBeNull();
+      expect(result.error).toBe('This class has been cancelled');
+      expect(fake.db.enrollments).toEqual([]);
+    });
+
     it('does not notify the teacher when pending seat notifications are paused', async () => {
       seed();
       await enrollStudent({ classId: CLASS_ID, familyMemberId: CHILD_ID });
@@ -879,6 +905,68 @@ describe('Enrollment Actions', () => {
       });
       expect(result.data).toBeNull();
       expect(result.error).toBe('Not authenticated');
+    });
+
+    /**
+     * This path runs on the admin client, which bypasses RLS entirely, so the
+     * explicit status check is the only thing between an admin and a student
+     * enrolled in a class that is not running. The class picker only offers
+     * published classes, but the action must not trust its caller for that.
+     */
+    it('refuses to enroll a student into a cancelled class', async () => {
+      const fake = seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [ADMIN_PROFILE, TEACHER_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
+          classes: [
+            { ...ADMIN_CLASS, status: 'cancelled' },
+          ] as unknown as Record<string, unknown>[],
+          family_members: [STUDENT_MEMBER] as unknown as Record<
+            string,
+            unknown
+          >[],
+          enrollments: [],
+        },
+      });
+
+      const result = await adminEnrollStudent({
+        studentId: STUDENT_MEMBER.id,
+        classId: ADMIN_CLASS.id,
+      });
+
+      expect(result.data).toBeNull();
+      expect(result.error).toContain('cancelled');
+      expect(fake.db.enrollments).toEqual([]);
+    });
+
+    /**
+     * Pins the fake's enroll_student handler against the SQL function's own
+     * rejection, so the action-level checks above are not the only thing
+     * standing between a regression and a silent re-enrollment.
+     */
+    it('surfaces EN_CLASS_CANCELLED from the enroll_student RPC', async () => {
+      const fake = seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          classes: [
+            { ...ADMIN_CLASS, status: 'cancelled' },
+          ] as unknown as Record<string, unknown>[],
+          enrollments: [],
+        },
+      });
+
+      const { data, error } = await fake.rpc('enroll_student', {
+        p_student_id: STUDENT_MEMBER.id,
+        p_class_id: ADMIN_CLASS.id,
+      });
+
+      expect(data).toBeNull();
+      expect((error as { hint?: string } | null)?.hint).toBe(
+        'EN_CLASS_CANCELLED'
+      );
     });
 
     it('rejects parent', async () => {

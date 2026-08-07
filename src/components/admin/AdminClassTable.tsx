@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { ClassCapacityBadge } from '@/components/classes/ClassCapacityBadge';
 import { Button } from '@/components/ui/button';
 import {
+  Ban,
   Edit,
   Trash2,
   Eye,
@@ -36,7 +37,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useTransition, useEffect } from 'react';
-import { adminDeleteClass } from '@/lib/actions/classes';
+import { adminDeleteClass, cancelClass } from '@/lib/actions/classes';
 import { toast } from 'sonner';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { PAGE_SIZE_OPTIONS } from '@/lib/pagination';
@@ -162,17 +163,51 @@ export default function AdminClassTable({
     router.push(`${pathname}?${params.toString()}`);
   };
 
-  const handleDelete = (classId: string) => {
+  // Delete is offered for drafts only. deleteClass() hard-deletes a draft but
+  // silently routes anything else into cancelClass(), so the old single
+  // "Delete" button was really a cancel button wearing the wrong label and the
+  // wrong warning ("cannot be undone" for an action that emails families).
+  const handleDelete = (cls: ClassWithTeacherAndCount) => {
     // In a real app, use a proper Dialog component instead of confirm
-    if (!confirm('Are you sure you want to delete this class?')) return;
+    if (
+      !confirm(
+        `Permanently delete the draft "${cls.name}"? This cannot be undone.`
+      )
+    )
+      return;
 
     startDeleteTransition(async () => {
-      const res = await adminDeleteClass(classId);
+      const res = await adminDeleteClass(cls.id);
       if (res.success) {
         toast.success('Class deleted successfully');
         router.refresh();
       } else {
         toast.error(res.error || 'Failed to delete class');
+      }
+    });
+  };
+
+  const handleCancel = (cls: ClassWithTeacherAndCount) => {
+    const affected = cls.enrolled_count + cls.waitlisted_count;
+    const consequence =
+      affected > 0
+        ? `This cancels ${affected} enrollment${affected === 1 ? '' : 's'} and emails the affected families.`
+        : 'This class has no enrollments.';
+
+    if (!confirm(`Cancel "${cls.name}"?\n\n${consequence}`)) return;
+
+    startDeleteTransition(async () => {
+      const res = await cancelClass(cls.id);
+      if (res.success) {
+        const count = res.data.affectedEnrollments;
+        toast.success(
+          count > 0
+            ? `Class cancelled — ${count} enrollment${count === 1 ? '' : 's'} cancelled`
+            : 'Class cancelled'
+        );
+        router.refresh();
+      } else {
+        toast.error(res.error || 'Failed to cancel class');
       }
     });
   };
@@ -353,14 +388,29 @@ export default function AdminClassTable({
                           <Edit className="h-4 w-4" />
                         </Link>
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(cls.id)}
-                        disabled={isDeletePending}
-                      >
-                        <Trash2 className="text-destructive h-4 w-4" />
-                      </Button>
+                      {cls.status === 'draft' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(cls)}
+                          disabled={isDeletePending}
+                          aria-label={`Delete ${cls.name}`}
+                        >
+                          <Trash2 className="text-destructive h-4 w-4" />
+                        </Button>
+                      )}
+                      {(cls.status === 'published' ||
+                        cls.status === 'completed') && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleCancel(cls)}
+                          disabled={isDeletePending}
+                          aria-label={`Cancel ${cls.name}`}
+                        >
+                          <Ban className="text-destructive h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

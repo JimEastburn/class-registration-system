@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { POST } from '../route';
 import { stripe } from '@/lib/stripe';
-import { sendPaymentReceipt } from '@/lib/email';
+import { sendPaymentReceipt, sendEnrollmentConfirmation } from '@/lib/email';
 import { notifyTeacherOfUnenrollment } from '@/lib/notifications/teacher-enrollment';
 import { createClient } from '@supabase/supabase-js';
 
@@ -146,6 +146,7 @@ describe('Stripe Webhook API Route', () => {
     fakeSupabase = new FakeSupabase({
       payments: [],
       enrollments: [],
+      classes: [],
       profiles: [],
     });
     (createClient as Mock).mockReturnValue(fakeSupabase);
@@ -225,6 +226,79 @@ describe('Stripe Webhook API Route', () => {
     expect(fakeSupabase.getTable('payments')[0].status).toBe('completed');
     expect(fakeSupabase.getTable('enrollments')[0].status).toBe('confirmed');
     expect(sendPaymentReceipt).toHaveBeenCalled();
+  });
+
+  /**
+   * A class can be cancelled while the parent sits on the Stripe checkout page,
+   * or between the charge and a webhook retry. Confirming here would put an
+   * active enrollment back into a cancelled class, which the
+   * on_enrollment_reject_cancelled_class trigger refuses outright -- so the
+   * route checks first and still returns 200. A 500 would make Stripe retry an
+   * event that can never succeed, for days.
+   */
+  it('leaves the enrollment cancelled when the class was cancelled mid-checkout', async () => {
+    const mockEvent = {
+      type: 'checkout.session.completed',
+      data: {
+        object: {
+          id: 'cs_123',
+          metadata: { enrollmentId: 'enroll123' },
+          payment_intent: 'pi_123',
+        },
+      },
+    };
+
+    (stripe.webhooks.constructEvent as Mock).mockReturnValue(mockEvent);
+    fakeSupabase = new FakeSupabase({
+      payments: [
+        { id: 'payment123', transaction_id: 'cs_123', status: 'pending' },
+      ],
+      enrollments: [
+        {
+          id: 'enroll123',
+          status: 'cancelled',
+          class_id: 'class-cancelled',
+          student: {
+            first_name: 'Jane',
+            last_name: 'Smith',
+            parent_id: 'parent123',
+          },
+          class: {
+            name: 'Art 101',
+            fee: 150,
+            day: 2,
+            block: 1,
+            location: 'Room A',
+            start_date: '2024-01-10',
+            teacher: null,
+          },
+        },
+      ],
+      classes: [{ id: 'class-cancelled', status: 'cancelled' }],
+      profiles: [
+        { id: 'parent123', first_name: 'John', email: 'john@example.com' },
+      ],
+    });
+    (createClient as Mock).mockReturnValue(fakeSupabase);
+
+    const request = new Request('http://localhost:3000/api/webhooks/stripe', {
+      method: 'POST',
+      body: 'payload',
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.received).toBe(true);
+    // The money moved, so the payment is recorded and the admin refund flow can
+    // find it -- but no seat is granted.
+    expect(fakeSupabase.getTable('payments')[0].status).toBe('completed');
+    expect(fakeSupabase.getTable('enrollments')[0].status).toBe('cancelled');
+    // They were charged, so they still get a receipt. They do not get a
+    // "you're enrolled" email for a class that is not running.
+    expect(sendPaymentReceipt).toHaveBeenCalled();
+    expect(sendEnrollmentConfirmation).not.toHaveBeenCalled();
   });
 
   it('should handle checkout.session.expired and update payment status', async () => {

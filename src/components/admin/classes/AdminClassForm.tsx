@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -443,9 +444,27 @@ export function AdminClassForm({ initialData, teachers }: AdminClassFormProps) {
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem value="published">Published</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  {/* Cancelling from here would flip the status without
+                      cancelling enrollments or telling the affected families,
+                      which is how live enrollments ended up stranded in
+                      cancelled classes. updateClass() now rejects the
+                      transition too. Kept but disabled rather than removed, so
+                      an already-cancelled class still renders its own status
+                      instead of an empty trigger. */}
+                  <SelectItem
+                    value="cancelled"
+                    disabled={initialData?.status !== 'cancelled'}
+                  >
+                    Cancelled
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              {initialData?.status !== 'cancelled' && (
+                <FormDescription>
+                  To cancel a class, use the Cancel action on the classes list —
+                  it also cancels enrollments and notifies families.
+                </FormDescription>
+              )}
               <FormMessage />
             </FormItem>
           )}

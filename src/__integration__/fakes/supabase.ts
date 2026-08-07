@@ -52,6 +52,11 @@ export class SupabaseFake {
       const classId = args.p_class_id as string;
       const cls = (this.db['classes'] || []).find((c) => c.id === classId);
       if (!cls) return null;
+      // Mirrors the cancelled-class rejection added in
+      // 20260806120000_cancel_enrollments_with_class.sql.
+      if (cls.status === 'cancelled') {
+        throw makeRpcError('This class has been cancelled', 'EN_CLASS_CANCELLED');
+      }
       if (!this.db['enrollments']) this.db['enrollments'] = [];
       const enrollments = this.db['enrollments'];
       const seatsTaken = enrollments.filter(
@@ -129,6 +134,11 @@ export class SupabaseFake {
       const classId = args.p_class_id as string;
       const cls = (this.db['classes'] || []).find((c) => c.id === classId);
       if (!cls) return null;
+      // A cancelled class has nobody to promote -- the cascade already emptied
+      // its waitlist. NULL rather than throwing, matching the SQL function:
+      // callers invoke this as a side effect of refunds and cancellations,
+      // where raising would surface a spurious error.
+      if (cls.status === 'cancelled') return null;
       if (!this.db['enrollments']) this.db['enrollments'] = [];
       const enrollments = this.db['enrollments'];
       const seatsTaken = enrollments.filter(
@@ -316,6 +326,28 @@ export class SupabaseFake {
       })
       .forEach((e, i) => {
         e.waitlist_position = i + 1;
+      });
+  }
+
+  /**
+   * Mirrors public.cancel_enrollments_on_class_cancel(): cancelling a class
+   * cancels every active enrollment in it. In the real database this is the
+   * on_class_cancel_cascade_enrollments trigger, so it runs no matter which code
+   * path cancelled the class; the fake invokes it from the same place. See
+   * migration 20260806120000_cancel_enrollments_with_class.sql.
+   */
+  cancelEnrollmentsForClass(classId: string) {
+    const now = new Date().toISOString();
+    (this.db['enrollments'] || [])
+      .filter(
+        (e) =>
+          e.class_id === classId &&
+          ['confirmed', 'pending', 'waitlisted'].includes(e.status as string)
+      )
+      .forEach((e) => {
+        e.status = 'cancelled';
+        e.waitlist_position = null;
+        e.updated_at = now;
       });
   }
 
@@ -628,6 +660,19 @@ class FakeQueryBuilder {
                 )
               : new Set<string>();
 
+          // Classes this mutation moves into 'cancelled', captured before the
+          // rows change. Mirrors on_class_cancel_cascade_enrollments, whose WHEN
+          // clause is OLD.status IS DISTINCT FROM 'cancelled' AND
+          // NEW.status = 'cancelled' -- so a class already cancelled does not
+          // re-cascade.
+          const classesCancelled =
+            this.tableName === 'classes' &&
+            this._pendingUpdate?.status === 'cancelled'
+              ? rowsToMatch
+                  .filter((r) => r.status !== 'cancelled')
+                  .map((r) => r.id as string)
+              : [];
+
           if (this._pendingDelete) {
             this.client.db[this.tableName] = (
               this.client.db[this.tableName] || []
@@ -644,6 +689,10 @@ class FakeQueryBuilder {
             );
             waitlistClassesTouched.forEach((id) =>
               this.client.resequenceWaitlist(id)
+            );
+            // After the class row is written, mirroring AFTER UPDATE semantics.
+            classesCancelled.forEach((id) =>
+              this.client.cancelEnrollmentsForClass(id)
             );
 
             // If .select() was chained after .update(), return the updated rows
@@ -849,7 +898,15 @@ class FakeQueryBuilder {
 
           const picked: Record<string, unknown> = {};
           for (const col of requestedCols) {
-            picked[col] = related[col];
+            // PostgREST expands '*' to every column of the related row.
+            // Without this, `student:family_members(*)` resolved to
+            // { '*': undefined } and every field read off the join came back
+            // undefined -- silently, since the join itself looked successful.
+            if (col === '*') {
+              Object.assign(picked, related);
+            } else {
+              picked[col] = related[col];
+            }
           }
 
           // Resolve nested relations recursively

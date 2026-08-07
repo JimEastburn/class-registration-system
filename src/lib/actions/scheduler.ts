@@ -131,6 +131,18 @@ export async function schedulerUpdateClass(
       return { success: false, error: 'Class not found' };
     }
 
+    // Cancellation belongs to cancelClass(), which also cancels enrollments and
+    // notifies families; a generic passthrough on the admin client would flip
+    // the status and tell nobody. Checked before conflict detection so a
+    // rejected cancellation never depends on the schedule being valid.
+    if (updates.status === 'cancelled' && existingClass.status !== 'cancelled') {
+      return {
+        success: false,
+        error:
+          'Use the Cancel Class action to cancel a class - it cancels enrollments and notifies families.',
+      };
+    }
+
     // 2. Merge updates to create "Proposed State"
     const proposedState = { ...existingClass, ...updates } as Class;
 

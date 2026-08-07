@@ -77,11 +77,41 @@ export async function POST(request: Request) {
           .select('id')
           .single();
 
-        // Update enrollment status to confirmed
-        await supabaseAdmin
+        // A checkout can land after the class was cancelled: the parent had the
+        // Stripe page open, or this is a delivery retry. Confirming would put an
+        // active enrollment back into a cancelled class, which the
+        // on_enrollment_reject_cancelled_class trigger now refuses outright.
+        // Checking here means this returns 200 with an actionable log instead of
+        // throwing and sending Stripe into a retry loop that can never succeed.
+        const { data: enrollmentClass } = await supabaseAdmin
           .from('enrollments')
-          .update({ status: 'confirmed' })
-          .eq('id', enrollmentId);
+          .select('class_id')
+          .eq('id', enrollmentId)
+          .single();
+
+        let classCancelled = false;
+        if (enrollmentClass?.class_id) {
+          const { data: enrolledClass } = await supabaseAdmin
+            .from('classes')
+            .select('status')
+            .eq('id', enrollmentClass.class_id)
+            .single();
+          classCancelled = enrolledClass?.status === 'cancelled';
+        }
+
+        if (classCancelled) {
+          // The payment stays 'completed' deliberately -- the money moved, and
+          // the admin refund flow keys off that row.
+          console.error(
+            `[stripe] Payment ${session.id} landed for enrollment ${enrollmentId} in a cancelled class. Enrollment left cancelled; this payment needs a manual refund.`
+          );
+        } else {
+          // Update enrollment status to confirmed
+          await supabaseAdmin
+            .from('enrollments')
+            .update({ status: 'confirmed' })
+            .eq('id', enrollmentId);
+        }
 
         // Trigger Zoho Sync asynchronously (don't block the webhook response)
         if (updatedPayment?.id) {
@@ -152,32 +182,36 @@ export async function POST(request: Request) {
               console.error('Failed to send receipt:', emailError);
             }
 
-            try {
-              // 2. Send Enrollment Confirmation
-              const teacherName = classData.teacher
-                ? `${classData.teacher.first_name} ${classData.teacher.last_name}`
-                : 'TBA';
+            // The receipt above is unconditional -- they were charged either
+            // way -- but do not confirm a seat in a class that is not running.
+            if (!classCancelled) {
+              try {
+                // 2. Send Enrollment Confirmation
+                const teacherName = classData.teacher
+                  ? `${classData.teacher.first_name} ${classData.teacher.last_name}`
+                  : 'TBA';
 
-              const startDate = classData.start_date
-                ? format(new Date(classData.start_date), 'MMMM do, yyyy')
-                : 'TBA';
+                const startDate = classData.start_date
+                  ? format(new Date(classData.start_date), 'MMMM do, yyyy')
+                  : 'TBA';
 
-              await sendEnrollmentConfirmation({
-                parentEmail: parent.email,
-                parentName: parent.first_name,
-                studentName: studentName,
-                className: classData.name,
-                teacherName: teacherName,
-                schedule: `Day ${classData.day}, Block ${classData.block}`,
-                location: classData.location || 'TBA',
-                startDate: startDate,
-                fee: classData.fee,
-              });
-            } catch (emailError) {
-              console.error(
-                'Failed to send enrollment confirmation:',
-                emailError
-              );
+                await sendEnrollmentConfirmation({
+                  parentEmail: parent.email,
+                  parentName: parent.first_name,
+                  studentName: studentName,
+                  className: classData.name,
+                  teacherName: teacherName,
+                  schedule: `Day ${classData.day}, Block ${classData.block}`,
+                  location: classData.location || 'TBA',
+                  startDate: startDate,
+                  fee: classData.fee,
+                });
+              } catch (emailError) {
+                console.error(
+                  'Failed to send enrollment confirmation:',
+                  emailError
+                );
+              }
             }
           }
         }

@@ -309,12 +309,21 @@ export async function enrollStudent(input: EnrollStudentInput): Promise<{
     // Check for teacher blocks
     const { data: classData, error: classError } = await supabase
       .from('classes')
-      .select('id, capacity, teacher_id, schedule_config')
+      .select('id, status, capacity, teacher_id, schedule_config')
       .eq('id', input.classId)
       .single();
 
     if (classError || !classData) {
       return { data: null, status: null, error: 'Class not found' };
+    }
+
+    // Explicit, rather than leaning on RLS. The "Anyone can view published
+    // classes" policy already makes the select above miss a cancelled class for
+    // a parent, but that is incidental protection: it is invisible to the test
+    // suite (the fake has no RLS) and would evaporate the day someone adds a
+    // policy letting parents read classes they are enrolled in.
+    if (classData.status === 'cancelled') {
+      return { data: null, status: null, error: 'This class has been cancelled' };
     }
 
     // Student schedule conflict check
@@ -1123,12 +1132,24 @@ export async function adminEnrollStudent(
     // Verify class exists
     const { data: classData, error: classError } = await adminClient
       .from('classes')
-      .select('id, name, capacity, teacher_id, schedule_config')
+      .select('id, name, status, capacity, teacher_id, schedule_config')
       .eq('id', input.classId)
       .maybeSingle();
 
     if (classError || !classData) {
       return { data: null, status: null, error: 'Class not found' };
+    }
+
+    // The admin client bypasses RLS entirely, so this is the only thing keeping
+    // an admin from enrolling a student into a class that no longer runs. The
+    // class picker only offers published classes, but the action must not rely
+    // on its caller for that.
+    if (classData.status === 'cancelled') {
+      return {
+        data: null,
+        status: null,
+        error: 'This class has been cancelled - students cannot be enrolled in it',
+      };
     }
 
     // Check for existing enrollment

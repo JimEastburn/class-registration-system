@@ -80,7 +80,7 @@ In the Vercel dashboard, scope **Production** env vars to the new Supabase proje
 | `NEXT_PUBLIC_APP_URL`                | `https://class-registration.austinaac.org` | Production domain                |
 | `BYPASS_EMAIL_CONFIRMATION`          | `false`                                    | Must be disabled for production  |
 | `RESEND_API_KEY`                     | Resend dashboard                           | Same or different account        |
-| `FROM_EMAIL`                         | Verified sender                            | e.g. `noreply@austinaac.org`     |
+| `FROM_EMAIL`                         | Sender on the Resend-verified domain       | `noreply@austinaac.org` — apex only, a subdomain is a separate Resend domain and Wix DNS cannot verify one |
 | `ZOHO_CLIENT_ID`                     | Zoho dashboard                             | Same or different org            |
 | `ZOHO_CLIENT_SECRET`                 | Zoho dashboard                             | Same or different org            |
 | `ZOHO_REFRESH_TOKEN`                 | Zoho dashboard                             | Same or different org            |

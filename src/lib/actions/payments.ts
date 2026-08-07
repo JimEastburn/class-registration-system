@@ -178,6 +178,32 @@ export async function updatePaymentStatus(
       payment.status !== 'completed' &&
       payment.enrollment_id
     ) {
+      // Never confirm a seat in a cancelled class. The
+      // on_enrollment_reject_cancelled_class trigger rejects it outright; this
+      // check turns that into a usable message rather than a raw database
+      // error, and keeps the payment update itself successful.
+      const { data: enrollmentRow } = await supabase
+        .from('enrollments')
+        .select('class_id')
+        .eq('id', payment.enrollment_id)
+        .single();
+
+      if (enrollmentRow?.class_id) {
+        const { data: enrolledClass } = await supabase
+          .from('classes')
+          .select('status')
+          .eq('id', enrollmentRow.class_id)
+          .single();
+
+        if (enrolledClass?.status === 'cancelled') {
+          return {
+            success: true,
+            error:
+              'Payment updated, but the class has been cancelled so the enrollment was not confirmed',
+          };
+        }
+      }
+
       const { error: enrollError } = await supabase
         .from('enrollments')
         .update({ status: 'confirmed' })
@@ -237,10 +263,32 @@ export async function cleanupCancelledCheckout(
       .eq('transaction_id', sessionId)
       .eq('enrollment_id', enrollmentId);
 
-    await adminClient
+    // If the class was cancelled while the parent sat in checkout, leaving the
+    // enrollment cancelled is the correct outcome -- and the enrollments guard
+    // trigger would reject this update anyway. The stale payment row is still
+    // cleaned up above either way.
+    const { data: enrollmentClass } = await adminClient
       .from('enrollments')
-      .update({ status: 'pending' })
-      .eq('id', enrollmentId);
+      .select('class_id')
+      .eq('id', enrollmentId)
+      .single();
+
+    let classCancelled = false;
+    if (enrollmentClass?.class_id) {
+      const { data: enrolledClass } = await adminClient
+        .from('classes')
+        .select('status')
+        .eq('id', enrollmentClass.class_id)
+        .single();
+      classCancelled = enrolledClass?.status === 'cancelled';
+    }
+
+    if (!classCancelled) {
+      await adminClient
+        .from('enrollments')
+        .update({ status: 'pending' })
+        .eq('id', enrollmentId);
+    }
 
     return { success: true, error: null };
   } catch (err) {

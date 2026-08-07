@@ -474,6 +474,19 @@ export async function updateClass(
       return { success: false, error: 'Not authorized to update this class' };
     }
 
+    // Cancelling is not a column write. It has to cancel every active
+    // enrollment and notify the affected families, which lives in cancelClass(),
+    // so the generic updater refuses to half-do it. Guard the *transition*, not
+    // the value: the admin form posts status on every save, so rejecting
+    // 'cancelled' outright would make an already-cancelled class uneditable.
+    if (input.status === 'cancelled' && existingClass.status !== 'cancelled') {
+      return {
+        success: false,
+        error:
+          'Use the Cancel Class action to cancel a class - it cancels enrollments and notifies families.',
+      };
+    }
+
     // Build update object
     const updateData: Record<string, unknown> = {};
     if (input.name !== undefined) updateData.name = input.name;
@@ -903,43 +916,99 @@ export async function cancelClass(
       }
     }
 
-    // 1. Fetch details for emails
+    // Idempotent. A cancelled class has already had its enrollments cancelled
+    // and its families emailed, so re-running must not send a second round.
+    // Success rather than an error, because deleteClass() routes every
+    // non-draft delete through here.
+    if (existingClass.status === 'cancelled') {
+      return { success: true, data: { affectedEnrollments: 0 } };
+    }
+
+    // 1. Fetch the families to notify. This has to happen before the
+    //    cancellation -- afterwards there are no active rows left to find. The
+    //    RLS client is right for this read: teachers can SELECT their own
+    //    class's enrollments, admins can SELECT everything.
     const { data: enrollmentsToNotify } = await supabase
       .from('enrollments')
       .select('*, student:family_members(*), class:classes(name)')
       .eq('class_id', classId)
       .in('status', ['confirmed', 'pending', 'waitlisted']);
 
-    // 2. Cancel all relevant enrollments (Update status)
-    const { data: affectedEnrollments } = await supabase
-      .from('enrollments')
-      .update({ status: 'cancelled' })
-      .eq('class_id', classId)
-      .in('status', ['confirmed', 'pending', 'waitlisted'])
-      .select('id');
+    // 2. Cancel every active enrollment. This MUST use the admin client:
+    //    public.enrollments has no UPDATE policy for teachers (SELECT only --
+    //    see 20260201205611_enable_rls.sql, and is_admin() does not include
+    //    'teacher'), so on the teacher-owner path -- the common one -- the RLS
+    //    client silently matches zero rows and returns no error, leaving the
+    //    class cancelled with live enrollments. That produced real orphaned
+    //    enrollments in production. Same reason teacherCancelEnrollment reaches
+    //    for the admin client.
+    const adminClient = await createAdminClient();
+    const { data: affectedEnrollments, error: enrollmentError } =
+      await adminClient
+        .from('enrollments')
+        .update({ status: 'cancelled', waitlist_position: null })
+        .eq('class_id', classId)
+        .in('status', ['confirmed', 'pending', 'waitlisted'])
+        .select('id');
 
-    // Send Cancellation Emails
+    if (enrollmentError) {
+      console.error('Error cancelling enrollments for class:', enrollmentError);
+      return { success: false, error: enrollmentError.message };
+    }
+
+    // 3. Notify the families. Each send is isolated so one bad address cannot
+    //    abort the loop and strand the class published with its enrollments
+    //    already cancelled. sendClassCancellation returns { success: false }
+    //    rather than throwing when RESEND_API_KEY is unset, so count both
+    //    outcomes -- a silent email outage belongs in the audit log, not in
+    //    nobody's inbox.
+    let emailsSent = 0;
+    let emailsFailed = 0;
+
     for (const enrollment of enrollmentsToNotify || []) {
-      if (enrollment.student?.parent_id) {
-        // Need to fetch parent email
+      if (!enrollment.student?.parent_id) continue;
+
+      try {
         const { data: parent } = await supabase
           .from('profiles')
           .select('email, first_name, last_name')
           .eq('id', enrollment.student.parent_id)
           .single();
 
-        if (parent) {
-          await sendClassCancellation({
-            parentEmail: parent.email,
-            parentName: `${parent.first_name} ${parent.last_name}`,
-            studentName: `${enrollment.student.first_name} ${enrollment.student.last_name}`,
-            className: enrollment.class?.name || existingClass.name,
-          });
+        if (!parent) {
+          emailsFailed++;
+          continue;
         }
+
+        const result = await sendClassCancellation({
+          parentEmail: parent.email,
+          parentName: `${parent.first_name} ${parent.last_name}`,
+          studentName: `${enrollment.student.first_name} ${enrollment.student.last_name}`,
+          className: enrollment.class?.name || existingClass.name,
+        });
+
+        if (result.success) {
+          emailsSent++;
+        } else {
+          emailsFailed++;
+          console.error(
+            `Class cancellation email not sent for enrollment ${enrollment.id} - is RESEND_API_KEY configured?`
+          );
+        }
+      } catch (emailError) {
+        emailsFailed++;
+        console.error('Failed to send class cancellation email:', emailError);
       }
     }
 
-    // Update class status
+    // 4. Flip the class row last. If this fails, the enrollments are already
+    //    cancelled and the families already told: the invariant still holds,
+    //    and a retry sends no duplicate emails because the active list is empty
+    //    by then. Flipping first would risk the opposite -- a cancelled class
+    //    with live enrollments, which is the thing this whole change exists to
+    //    prevent. The on_class_cancel_cascade_enrollments trigger fires here
+    //    too, but finds nothing left to do; it is the safety net for paths that
+    //    do not come through this action.
     const { error } = await supabase
       .from('classes')
       .update({ status: 'cancelled' })
@@ -953,9 +1022,12 @@ export async function cancelClass(
     await logAuditAction(user.id, 'class.cancelled', 'class', classId, {
       name: existingClass.name,
       affectedEnrollments: affectedEnrollments?.length || 0,
+      emailsSent,
+      emailsFailed,
     });
     revalidatePath('/teacher/classes');
     revalidatePath('/parent/enrollments');
+    revalidatePath('/admin/classes');
 
     return {
       success: true,
@@ -1379,12 +1451,22 @@ export async function adminUpdateClass(
     // Fetch existing class details for comparison
     const { data: existingClass } = await supabase
       .from('classes')
-      .select('name, location, schedule_config, start_date, end_date')
+      .select('name, status, location, schedule_config, start_date, end_date')
       .eq('id', classId)
       .single();
 
     if (!existingClass) {
       return { success: false, error: 'Class not found' };
+    }
+
+    // Cancellation belongs to cancelClass(), which also cancels enrollments and
+    // notifies families. See the matching guard in updateClass().
+    if (input.status === 'cancelled' && existingClass.status !== 'cancelled') {
+      return {
+        success: false,
+        error:
+          'Use the Cancel Class action to cancel a class - it cancels enrollments and notifies families.',
+      };
     }
 
     // Update class
