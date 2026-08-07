@@ -24,49 +24,6 @@ describe('Email Templates', () => {
     delete process.env.RESEND_API_KEY;
   });
 
-  describe('sendPasswordReset', () => {
-    it('should generate correct HTML with reset link', async () => {
-      // Dynamic import
-      const { sendPasswordReset } = await import('./email');
-
-      const data = {
-        email: 'test@example.com',
-        resetLink: 'http://localhost:3000/reset-password?token=xyz',
-      };
-
-      const result = await sendPasswordReset(data);
-
-      expect(result.success).toBe(true);
-      expect(mockSend).toHaveBeenCalledWith(
-        expect.objectContaining({
-          to: data.email,
-          subject: 'Reset your password',
-        })
-      );
-
-      const htmlCall = mockSend.mock.calls[0][0].html;
-      expect(htmlCall).toContain(data.resetLink);
-      expect(htmlCall).toContain('Reset Password');
-      expect(htmlCall).toContain('Hi there,');
-    });
-
-    it('should handle missing API key', async () => {
-      vi.resetModules();
-      delete process.env.RESEND_API_KEY;
-
-      const { sendPasswordReset } = await import('./email');
-
-      const data = {
-        email: 'test@example.com',
-        resetLink: 'http://link',
-      };
-
-      const result = await sendPasswordReset(data);
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Email not configured');
-    });
-  });
-
   describe('Other Templates (Smoke Tests)', () => {
     it('sendEnrollmentConfirmation should contain student name', async () => {
       const { sendEnrollmentConfirmation } = await import('./email');

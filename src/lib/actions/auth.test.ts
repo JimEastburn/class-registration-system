@@ -21,10 +21,6 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }));
 
-vi.mock('@/lib/email', () => ({
-  sendPasswordReset: vi.fn(),
-}));
-
 // ── Seed data ───────────────────────────────────────────────────────────────
 
 const AUTH_USER_ID = 'user-123';

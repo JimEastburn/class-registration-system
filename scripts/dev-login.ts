@@ -15,6 +15,9 @@
  * Open the printed URL in the browser. It sets the session cookies and
  * redirects, so the session lasts until it expires.
  *
+ * Localhost only - --app rejects anything else. Deployed environments reject
+ * these tokens at /auth/confirm; use their login form instead.
+ *
  * The Supabase project it acts on is whatever .env.local points at - the script
  * prints the host before doing anything, so check it before passing --create.
  */
@@ -61,6 +64,21 @@ async function main() {
     getArg('app') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const next = getArg('next');
   const shouldCreate = process.argv.includes('--create');
+
+  // Local only. Pointed at a deployed URL the link is minted happily and then
+  // dies at /auth/confirm with "Email verification failed" - the same token
+  // verifies fine against the same Supabase project from a plain supabase-js
+  // client and works end to end on localhost, so the cause is something about
+  // the deployed runtime that has not been tracked down. Failing here, loudly,
+  // beats burning twenty minutes on a link that was never going to work.
+  const appHost = new URL(appUrl).hostname;
+  if (!['localhost', '127.0.0.1', '[::1]', '::1'].includes(appHost)) {
+    throw new Error(
+      `--app must point at a local dev server; got "${appHost}".\n` +
+        `Magic links from this script only work against localhost. To reach a ` +
+        `deployed environment, sign in through its login form instead.`
+    );
+  }
 
   console.log(`Supabase:    ${new URL(supabaseUrl).host}`);
   console.log(`App:         ${appUrl}`);

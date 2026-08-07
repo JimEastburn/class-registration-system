@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import { sendPasswordReset } from '@/lib/email';
 import type { ActionResult, Profile } from '@/types';
 
 /**
@@ -191,38 +190,13 @@ export async function signOut(): Promise<{ error?: string }> {
   redirect('/login');
 }
 
-/**
- * Send a password reset email
- */
-export async function resetPassword(
-  formData: FormData
-): Promise<ActionResult<void>> {
-  const supabase = await createAdminClient();
-
-  const email = formData.get('email') as string;
-
-  const { data, error } = await supabase.auth.admin.generateLink({
-    type: 'recovery',
-    email,
-    options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`,
-    },
-  });
-
-  if (error) {
-    return { success: false, error: error.message };
-  }
-
-  // Send the custom email
-  if (data?.properties?.action_link) {
-    await sendPasswordReset({
-      email,
-      resetLink: data.properties.action_link,
-    });
-  }
-
-  return { success: true, data: undefined };
-}
+// Password resets do not go through Resend. ForgotPasswordForm calls
+// supabase.auth.resetPasswordForEmail() directly, so the mail is sent by
+// Supabase Auth's own SMTP configuration. A resetPassword() action that
+// generated a recovery link and mailed it via sendPasswordReset() used to live
+// here; nothing ever called it, and its presence implied a Resend path that did
+// not exist. Removed 2026-08-06 - recover it from git history if the app ever
+// takes ownership of this email.
 
 /**
  * Update password (for password reset flow)

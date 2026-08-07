@@ -351,9 +351,7 @@ export async function sendClassCancellation(data: CancellationEmailData) {
               
               <p>Hi ${data.parentName},</p>
               <p>We regret to inform you that the class <strong>${data.className}</strong> scheduled for <strong>${data.studentName}</strong> has been cancelled.</p>
-              
-              <p>If you have already made a payment, a full refund will be processed automatically.</p>
-              
+
               <p>We apologize for any inconvenience this may cause. Please check our catalog for other available classes.</p>
               
             </div>
@@ -370,70 +368,6 @@ export async function sendClassCancellation(data: CancellationEmailData) {
     return { success: true, data: result };
   } catch (error) {
     console.error('Failed to send class cancellation email:', error);
-    return { success: false, error };
-  }
-}
-
-export interface PasswordResetEmailData {
-  email: string;
-  resetLink: string;
-}
-
-export async function sendPasswordReset(data: PasswordResetEmailData) {
-  if (!resend) {
-    console.log('Email not configured - skipping password reset email');
-    return { success: false, error: 'Email not configured' };
-  }
-
-  try {
-    const result = await resend.emails.send({
-      from: `${APP_NAME} <${FROM_EMAIL}>`,
-      to: data.email,
-      subject: 'Reset your password',
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: #f4f4f5; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .card { background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-            .header { text-align: center; margin-bottom: 24px; }
-            .header h1 { color: #7c3aed; margin: 0; font-size: 24px; }
-            .footer { text-align: center; color: #9ca3af; font-size: 14px; margin-top: 24px; }
-            .cta { display: inline-block; background: linear-gradient(to right, #7c3aed, #db2777); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 24px; margin-bottom: 24px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="card">
-              <div class="header">
-                <h1>${APP_NAME}</h1>
-              </div>
-              
-              <p>Hi there,</p>
-              <p>We received a request to reset your password. Click the button below to choose a new password:</p>
-              
-              <div style="text-align: center;">
-                <a href="${data.resetLink}" class="cta">Reset Password</a>
-              </div>
-              
-              <p>If you didn't ask for this, you can safely ignore this email.</p>
-            </div>
-            
-            <div class="footer">
-              <p>© ${new Date().getFullYear()} ${APP_NAME}. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `,
-    });
-
-    return { success: true, data: result };
-  } catch (error) {
-    console.error('Failed to send password reset email:', error);
     return { success: false, error };
   }
 }
