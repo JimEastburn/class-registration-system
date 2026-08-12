@@ -1,5 +1,7 @@
 import { getVolunteerBoard } from '@/lib/actions/volunteers';
 import { VolunteerBoardV2Client } from '@/components/volunteers/VolunteerBoardV2Client';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CalendarRange } from 'lucide-react';
 
 export const metadata = {
   title: 'Volunteer Board',
@@ -31,6 +33,20 @@ export default async function VolunteerPage() {
           slots.
         </p>
       </div>
+
+      <Alert className="border-[#bb4d00]/30 bg-[#bb4d00]/5">
+        <CalendarRange className="text-[#bb4d00]" />
+        <AlertTitle className="line-clamp-none text-[#bb4d00]">
+          Volunteer slots are for the whole semester
+        </AlertTitle>
+        <AlertDescription>
+          <p>
+            When you claim a slot, you are signing up to volunteer for that
+            role, day, and block every week for the entire semester — not just a
+            single day.
+          </p>
+        </AlertDescription>
+      </Alert>
 
       {result.success ? (
         <VolunteerBoardV2Client board={result.data} />
