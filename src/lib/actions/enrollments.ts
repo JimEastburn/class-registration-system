@@ -64,6 +64,106 @@ export type AdminEnrollmentView = RosterEnrollment & {
   } | null;
 };
 
+export type AdminEnrollmentStatusCounts = Record<EnrollmentStatus, number>;
+
+const ADMIN_ENROLLMENT_TIME_ZONE = 'America/Chicago';
+const ADMIN_ENROLLMENT_STATUSES: EnrollmentStatus[] = [
+  'confirmed',
+  'pending',
+  'waitlisted',
+  'cancelled',
+];
+
+function emptyAdminEnrollmentStatusCounts(): AdminEnrollmentStatusCounts {
+  return {
+    confirmed: 0,
+    pending: 0,
+    waitlisted: 0,
+    cancelled: 0,
+  };
+}
+
+function isValidDateInput(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return (
+    !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === value
+  );
+}
+
+function addUtcCalendarDay(value: string): string {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
+/** Convert midnight in the AAC business timezone to an exact UTC instant. */
+function zonedMidnightToUtc(value: string): string {
+  const utcGuess = new Date(`${value}T00:00:00.000Z`);
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: ADMIN_ENROLLMENT_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  });
+  const parts = Object.fromEntries(
+    formatter
+      .formatToParts(utcGuess)
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, Number(part.value)])
+  );
+  const localGuessAsUtc = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second
+  );
+  const offset = localGuessAsUtc - utcGuess.getTime();
+
+  return new Date(utcGuess.getTime() - offset).toISOString();
+}
+
+function resolveAdminEnrollmentDateRange(filters?: {
+  startDate?: string;
+  endDate?: string;
+}): {
+  startAt?: string;
+  endBefore?: string;
+  filterError: string | null;
+} {
+  const startDate = filters?.startDate || undefined;
+  const endDate = filters?.endDate || undefined;
+
+  if (
+    (startDate && !isValidDateInput(startDate)) ||
+    (endDate && !isValidDateInput(endDate))
+  ) {
+    return { filterError: 'Enter a valid enrollment date.' };
+  }
+
+  if (startDate && endDate && startDate > endDate) {
+    return {
+      filterError: 'Start date must be on or before end date.',
+    };
+  }
+
+  return {
+    startAt: startDate ? zonedMidnightToUtc(startDate) : undefined,
+    endBefore: endDate
+      ? zonedMidnightToUtc(addUtcCalendarDay(endDate))
+      : undefined,
+    filterError: null,
+  };
+}
+
 /**
  * Get enrollments for a specific family member
  */
@@ -329,7 +429,11 @@ export async function enrollStudent(input: EnrollStudentInput): Promise<{
     // suite (the fake has no RLS) and would evaporate the day someone adds a
     // policy letting parents read classes they are enrolled in.
     if (classData.status === 'cancelled') {
-      return { data: null, status: null, error: 'This class has been cancelled' };
+      return {
+        data: null,
+        status: null,
+        error: 'This class has been cancelled',
+      };
     }
 
     // Student schedule conflict check
@@ -1185,7 +1289,8 @@ export async function adminEnrollStudent(
       return {
         data: null,
         status: null,
-        error: 'This class has been cancelled - students cannot be enrolled in it',
+        error:
+          'This class has been cancelled - students cannot be enrolled in it',
       };
     }
 
@@ -1525,11 +1630,15 @@ export async function getAllEnrollments(
     classId?: string;
     status?: EnrollmentStatus | 'all';
     search?: string; // Search student name
+    startDate?: string;
+    endDate?: string;
   }
 ): Promise<{
   data: AdminEnrollmentView[] | null;
   count: number;
+  statusCounts: AdminEnrollmentStatusCounts;
   error: string | null;
+  filterError: string | null;
 }> {
   try {
     const supabase = await createClient();
@@ -1538,7 +1647,13 @@ export async function getAllEnrollments(
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return { data: null, count: 0, error: 'Not authenticated' };
+      return {
+        data: null,
+        count: 0,
+        statusCounts: emptyAdminEnrollmentStatusCounts(),
+        error: 'Not authenticated',
+        filterError: null,
+      };
     }
 
     // Check Admin privilege (or class scheduler? task 8.5 is Admin)
@@ -1551,7 +1666,24 @@ export async function getAllEnrollments(
     const isAdmin = ['admin', 'super_admin'].includes(profile?.role || '');
 
     if (!isAdmin) {
-      return { data: null, count: 0, error: 'Access denied' };
+      return {
+        data: null,
+        count: 0,
+        statusCounts: emptyAdminEnrollmentStatusCounts(),
+        error: 'Access denied',
+        filterError: null,
+      };
+    }
+
+    const dateRange = resolveAdminEnrollmentDateRange(filters);
+    if (dateRange.filterError) {
+      return {
+        data: [],
+        count: 0,
+        statusCounts: emptyAdminEnrollmentStatusCounts(),
+        error: null,
+        filterError: dateRange.filterError,
+      };
     }
 
     const offset = (page - 1) * limit;
@@ -1586,6 +1718,14 @@ export async function getAllEnrollments(
       query = query.eq('status', filters.status);
     }
 
+    if (dateRange.startAt) {
+      query = query.gte('created_at', dateRange.startAt);
+    }
+
+    if (dateRange.endBefore) {
+      query = query.lt('created_at', dateRange.endBefore);
+    }
+
     if (filters?.search) {
       // Search on student name (family_members)
       // Note: referenced tables search syntax: 'student.first_name.ilike.%search%'
@@ -1595,24 +1735,96 @@ export async function getAllEnrollments(
       );
     }
 
-    const { data, count, error } = await query
-      .range(offset, offset + limit - 1)
-      .order('created_at', { ascending: false });
+    const statusCountQueries = ADMIN_ENROLLMENT_STATUSES.map((status) => {
+      let countQuery = supabase.from('enrollments').select(
+        `
+          id,
+          student:family_members!inner (
+            first_name,
+            last_name
+          )
+        `,
+        { count: 'exact', head: true }
+      );
+
+      if (filters?.classId && filters.classId !== 'all') {
+        countQuery = countQuery.eq('class_id', filters.classId);
+      }
+
+      if (dateRange.startAt) {
+        countQuery = countQuery.gte('created_at', dateRange.startAt);
+      }
+
+      if (dateRange.endBefore) {
+        countQuery = countQuery.lt('created_at', dateRange.endBefore);
+      }
+
+      if (filters?.search) {
+        countQuery = countQuery.or(
+          `first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%`,
+          { foreignTable: 'student' }
+        );
+      }
+
+      return countQuery.eq('status', status);
+    });
+
+    const [pageResult, ...countResults] = await Promise.all([
+      query
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1),
+      ...statusCountQueries,
+    ]);
+
+    const { data, count, error } = pageResult;
 
     if (error) {
       console.error('Error fetching all enrollments:', error);
-      return { data: null, count: 0, error: error.message };
+      return {
+        data: null,
+        count: 0,
+        statusCounts: emptyAdminEnrollmentStatusCounts(),
+        error: error.message,
+        filterError: null,
+      };
+    }
+
+    const failedCount = countResults.find((result) => result.error);
+    if (failedCount?.error) {
+      console.error(
+        'Error fetching admin enrollment status totals:',
+        failedCount.error
+      );
+      return {
+        data: null,
+        count: 0,
+        statusCounts: emptyAdminEnrollmentStatusCounts(),
+        error: failedCount.error.message,
+        filterError: null,
+      };
     }
 
     const mappedData = data;
+    const statusCounts = emptyAdminEnrollmentStatusCounts();
+    ADMIN_ENROLLMENT_STATUSES.forEach((status, index) => {
+      statusCounts[status] = countResults[index]?.count || 0;
+    });
 
     return {
       data: mappedData as AdminEnrollmentView[],
       count: count || 0,
+      statusCounts,
       error: null,
+      filterError: null,
     };
   } catch (err) {
     console.error('Unexpected error in getAllEnrollments:', err);
-    return { data: null, count: 0, error: 'An unexpected error occurred' };
+    return {
+      data: null,
+      count: 0,
+      statusCounts: emptyAdminEnrollmentStatusCounts(),
+      error: 'An unexpected error occurred',
+      filterError: null,
+    };
   }
 }

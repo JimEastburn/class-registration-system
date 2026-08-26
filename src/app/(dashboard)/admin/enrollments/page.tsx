@@ -16,6 +16,8 @@ export default async function AdminEnrollmentsPage({
     search?: string;
     status?: string;
     classId?: string;
+    startDate?: string;
+    endDate?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -23,6 +25,8 @@ export default async function AdminEnrollmentsPage({
   const search = params.search || '';
   const status = params.status || 'all';
   const classId = params.classId || 'all';
+  const startDate = params.startDate || '';
+  const endDate = params.endDate || '';
   const limit = 20;
 
   const supabase = await createClient();
@@ -46,11 +50,15 @@ export default async function AdminEnrollmentsPage({
   const {
     data: enrollments,
     count,
+    statusCounts,
     error,
+    filterError,
   } = await getAllEnrollments(page, limit, {
     search,
     status: status as EnrollmentStatus | 'all',
     classId,
+    startDate,
+    endDate,
   });
 
   if (error) {
@@ -62,16 +70,20 @@ export default async function AdminEnrollmentsPage({
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">
+        <h2 className="text-3xl font-bold text-balance">
           Enrollment Management
         </h2>
       </div>
 
       <EnrollmentManagementTable
+        key={`${search}|${status}|${classId}|${startDate}|${endDate}`}
         enrollments={enrollments || []}
-        totalCount={count}
+        matchingCount={count}
+        statusCounts={statusCounts}
         currentPage={page}
         totalPages={totalPages}
+        pageSize={limit}
+        filterError={filterError}
       />
     </div>
   );

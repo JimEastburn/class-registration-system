@@ -55,7 +55,10 @@ export class SupabaseFake {
       // Mirrors the cancelled-class rejection added in
       // 20260806120000_cancel_enrollments_with_class.sql.
       if (cls.status === 'cancelled') {
-        throw makeRpcError('This class has been cancelled', 'EN_CLASS_CANCELLED');
+        throw makeRpcError(
+          'This class has been cancelled',
+          'EN_CLASS_CANCELLED'
+        );
       }
       if (!this.db['enrollments']) this.db['enrollments'] = [];
       const enrollments = this.db['enrollments'];
@@ -579,8 +582,53 @@ class FakeQueryBuilder {
     return this;
   }
 
-  or(_filterStr: string) {
-    // Basic no-op; returns all rows. Sufficient for current test needs.
+  or(filterStr: string, options?: { foreignTable?: string }) {
+    const clauses = filterStr
+      .split(',')
+      .map((clause) => clause.match(/^([^.]+)\.(eq|ilike)\.(.*)$/))
+      .filter((match): match is RegExpMatchArray => match !== null);
+
+    const matchesClause = (
+      row: Record<string, unknown>,
+      match: RegExpMatchArray
+    ) => {
+      const [, column, operator, expected] = match;
+      const actual = row[column];
+      if (operator === 'eq') return String(actual) === expected;
+
+      const escapedPattern = expected
+        .split('%')
+        .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+        .join('.*');
+      return new RegExp(`^${escapedPattern}$`, 'i').test(String(actual ?? ''));
+    };
+
+    this.modifiers.push((rows) =>
+      rows.filter((row) => {
+        let candidate = row;
+
+        if (options?.foreignTable) {
+          const relation = this._parseRelations(this.selectQuery || '*').find(
+            (item) => item.alias === options.foreignTable
+          );
+          if (!relation) return false;
+
+          const foreignKey =
+            row[`${singularize(relation.alias)}_id`] ??
+            row[`${relation.alias}_id`] ??
+            row[`${singularize(relation.table)}_id`] ??
+            row[`${relation.table}_id`];
+          const related = (this.client.db[relation.table] || []).find(
+            (item) => item.id === foreignKey
+          );
+          if (!related) return false;
+          candidate = related;
+        }
+
+        return clauses.some((clause) => matchesClause(candidate, clause));
+      })
+    );
+
     return this;
   }
 
@@ -818,7 +866,7 @@ class FakeQueryBuilder {
     const relations: ParsedRelation[] = [];
     // Match: alias:tableName!inner(columns) or tableName(columns) or tableName!fk_hint(columns)
     // Columns can include nested relations, so we need balanced paren matching
-    const regex = /(?:(\w+):)?(\w+)(!\w+)?\(/g;
+    const regex = /(?:(\w+):)?(\w+)(!\w+)?\s*\(/g;
     let match: RegExpExecArray | null;
 
     while ((match = regex.exec(query)) !== null) {

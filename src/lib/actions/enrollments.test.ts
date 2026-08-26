@@ -2412,7 +2412,7 @@ describe('Enrollment Actions', () => {
   });
 
   describe('getAllEnrollments', () => {
-    it('returns paginated enrollments for an admin caller', async () => {
+    it('returns paginated enrollments and a complete status breakdown for an admin caller', async () => {
       seedFake({
         authUserId: ADMIN_PROFILE.id,
         data: {
@@ -2436,6 +2436,18 @@ describe('Enrollment Actions', () => {
               class_id: CLASS_ID,
               status: 'confirmed',
             },
+            {
+              id: 'a-3',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'waitlisted',
+            },
+            {
+              id: 'a-4',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'cancelled',
+            },
           ] as unknown as Record<string, unknown>[],
         },
       });
@@ -2445,6 +2457,272 @@ describe('Enrollment Actions', () => {
       expect(result.error).toBeNull();
       expect(result.data).not.toBeNull();
       expect(result.data?.length).toBeGreaterThanOrEqual(1);
+      expect(result.statusCounts).toEqual({
+        confirmed: 1,
+        pending: 1,
+        waitlisted: 1,
+        cancelled: 1,
+      });
+    });
+
+    it('keeps all status totals visible while filtering the table to one status', async () => {
+      seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [ADMIN_PROFILE, PARENT_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            {
+              id: 'a-1',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'pending',
+            },
+            {
+              id: 'a-2',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+            },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getAllEnrollments(1, 20, { status: 'pending' });
+
+      expect(result.data?.map((enrollment) => enrollment.status)).toEqual([
+        'pending',
+      ]);
+      expect(result.count).toBe(1);
+      expect(result.statusCounts).toEqual({
+        confirmed: 1,
+        pending: 1,
+        waitlisted: 0,
+        cancelled: 0,
+      });
+    });
+
+    it('applies class, student search, and enrollment-date filters to status totals', async () => {
+      const otherMember = {
+        ...mockMember,
+        id: 'child-other',
+        first_name: 'Alice',
+        last_name: 'Jones',
+      };
+      const otherClass = { ...mockClass, id: 'class-other', name: 'Art' };
+
+      seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [ADMIN_PROFILE, PARENT_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
+          family_members: [mockMember, otherMember] as unknown as Record<
+            string,
+            unknown
+          >[],
+          classes: [mockClass, otherClass] as unknown as Record<
+            string,
+            unknown
+          >[],
+          enrollments: [
+            {
+              id: 'before-range',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+              created_at: '2026-08-01T04:59:59.999Z',
+            },
+            {
+              id: 'range-start',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'pending',
+              created_at: '2026-08-01T05:00:00.000Z',
+            },
+            {
+              id: 'range-end',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'waitlisted',
+              created_at: '2026-08-03T04:59:59.999Z',
+            },
+            {
+              id: 'after-range',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'cancelled',
+              created_at: '2026-08-03T05:00:00.000Z',
+            },
+            {
+              id: 'wrong-student',
+              student_id: otherMember.id,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+              created_at: '2026-08-02T12:00:00.000Z',
+            },
+            {
+              id: 'wrong-class',
+              student_id: CHILD_ID,
+              class_id: otherClass.id,
+              status: 'confirmed',
+              created_at: '2026-08-02T12:00:00.000Z',
+            },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getAllEnrollments(1, 20, {
+        classId: CLASS_ID,
+        search: mockMember.first_name,
+        startDate: '2026-08-01',
+        endDate: '2026-08-02',
+      });
+
+      expect(result.filterError).toBeNull();
+      expect(result.data?.map((enrollment) => enrollment.id)).toEqual([
+        'range-end',
+        'range-start',
+      ]);
+      expect(result.statusCounts).toEqual({
+        confirmed: 0,
+        pending: 1,
+        waitlisted: 1,
+        cancelled: 0,
+      });
+    });
+
+    it('supports open-ended enrollment-date ranges', async () => {
+      seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [ADMIN_PROFILE, PARENT_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            {
+              id: 'old',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+              created_at: '2026-07-15T12:00:00.000Z',
+            },
+            {
+              id: 'new',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'pending',
+              created_at: '2026-08-15T12:00:00.000Z',
+            },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const afterStart = await getAllEnrollments(1, 20, {
+        startDate: '2026-08-01',
+      });
+      const beforeEnd = await getAllEnrollments(1, 20, {
+        endDate: '2026-07-31',
+      });
+
+      expect(afterStart.data?.map((enrollment) => enrollment.id)).toEqual([
+        'new',
+      ]);
+      expect(beforeEnd.data?.map((enrollment) => enrollment.id)).toEqual([
+        'old',
+      ]);
+    });
+
+    it('uses Austin calendar-day boundaries across daylight-saving changes', async () => {
+      seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [ADMIN_PROFILE, PARENT_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            {
+              id: 'before-local-day',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+              created_at: '2026-03-08T05:59:59.999Z',
+            },
+            {
+              id: 'local-day-start',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'pending',
+              created_at: '2026-03-08T06:00:00.000Z',
+            },
+            {
+              id: 'local-day-end',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'waitlisted',
+              created_at: '2026-03-09T04:59:59.999Z',
+            },
+            {
+              id: 'after-local-day',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'cancelled',
+              created_at: '2026-03-09T05:00:00.000Z',
+            },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getAllEnrollments(1, 20, {
+        startDate: '2026-03-08',
+        endDate: '2026-03-08',
+      });
+
+      expect(result.data?.map((enrollment) => enrollment.id)).toEqual([
+        'local-day-end',
+        'local-day-start',
+      ]);
+      expect(result.statusCounts).toEqual({
+        confirmed: 0,
+        pending: 1,
+        waitlisted: 1,
+        cancelled: 0,
+      });
+    });
+
+    it('returns an inline filter error for invalid date ranges', async () => {
+      seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [ADMIN_PROFILE] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const reversed = await getAllEnrollments(1, 20, {
+        startDate: '2026-08-10',
+        endDate: '2026-08-01',
+      });
+      const malformed = await getAllEnrollments(1, 20, {
+        startDate: 'August 1',
+      });
+
+      expect(reversed.error).toBeNull();
+      expect(reversed.filterError).toBe(
+        'Start date must be on or before end date.'
+      );
+      expect(reversed.data).toEqual([]);
+      expect(malformed.filterError).toBe('Enter a valid enrollment date.');
     });
 
     it('rejects non-admin users with Access denied', async () => {
