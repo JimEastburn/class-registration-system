@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useTransition } from 'react';
 import {
   User,
   Calendar,
@@ -13,7 +14,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import type { FamilyMember } from '@/types';
+import { updatePhotoConsent } from '@/lib/actions/family';
+import { toast } from 'sonner';
 import { EditFamilyMemberDialog } from './EditFamilyMemberDialog';
 import { DeleteFamilyMemberDialog } from './DeleteFamilyMemberDialog';
 import { LinkStudentDialog } from './LinkStudentDialog';
@@ -101,6 +105,14 @@ function FamilyMemberCard({ member }: FamilyMemberCardProps) {
           )}
         </div>
 
+        {member.relationship === 'Student' && (
+          <PhotoConsentCheckbox
+            familyMemberId={member.id}
+            studentName={fullName}
+            initialConsent={member.photo_consent}
+          />
+        )}
+
         <div className="mt-4 flex flex-wrap gap-2">
           {member.relationship === 'Student' && !member.student_user_id && (
             <LinkStudentDialog
@@ -142,6 +154,66 @@ function FamilyMemberCard({ member }: FamilyMemberCardProps) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+interface PhotoConsentCheckboxProps {
+  familyMemberId: string;
+  studentName: string;
+  initialConsent: boolean;
+}
+
+function PhotoConsentCheckbox({
+  familyMemberId,
+  studentName,
+  initialConsent,
+}: PhotoConsentCheckboxProps) {
+  const [checked, setChecked] = useState(initialConsent);
+  const [isPending, startTransition] = useTransition();
+  const checkboxId = `photo-consent-${familyMemberId}`;
+
+  const handleCheckedChange = (value: boolean | 'indeterminate') => {
+    const nextChecked = value === true;
+    const previousChecked = checked;
+    setChecked(nextChecked);
+
+    startTransition(async () => {
+      try {
+        const result = await updatePhotoConsent(familyMemberId, nextChecked);
+
+        if (!result.success) {
+          setChecked(previousChecked);
+          toast.error(result.error || 'Failed to update photo consent');
+          return;
+        }
+
+        toast.success('Photo consent updated.');
+      } catch {
+        setChecked(previousChecked);
+        toast.error('An unexpected error occurred.');
+      }
+    });
+  };
+
+  return (
+    <div className="mt-4 border-t pt-4">
+      <div className="flex items-start gap-3">
+        <Checkbox
+          id={checkboxId}
+          checked={checked}
+          disabled={isPending}
+          onCheckedChange={handleCheckedChange}
+          className="mt-0.5"
+        />
+        <label
+          htmlFor={checkboxId}
+          className="text-sm leading-snug font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+        >
+          I consent to photographs of {studentName} being posted on AAC social
+          media platforms and used in other marketing materials.
+        </label>
+      </div>
+    </div>
   );
 }
 

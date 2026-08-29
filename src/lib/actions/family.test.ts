@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createFamilyMember, updateFamilyMember, deleteFamilyMember } from '@/lib/actions/family';
+import {
+  createFamilyMember,
+  updateFamilyMember,
+  updatePhotoConsent,
+  deleteFamilyMember,
+} from '@/lib/actions/family';
 import { revalidatePath } from 'next/cache';
 import {
   seedFake,
@@ -13,15 +18,25 @@ vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 // ── Seed Data ───────────────────────────────────────────────────────────────
 
 const childMember: SeedFamilyMember = {
-  id: 'child-1', parent_id: 'parent-123',
-  first_name: 'Kid', last_name: 'User', email: 'kid@example.com', relationship: 'Student',
+  id: 'child-1',
+  parent_id: 'parent-123',
+  first_name: 'Kid',
+  last_name: 'User',
+  email: 'kid@example.com',
+  relationship: 'Student',
 };
 
-function seed(authUserId: string | null, overrides: Record<string, Record<string, unknown>[]> = {}) {
+function seed(
+  authUserId: string | null,
+  overrides: Record<string, Record<string, unknown>[]> = {}
+) {
   return seedFake({
     authUserId,
     data: {
-      profiles: [{ ...PARENT_PROFILE, is_parent: true }] as unknown as Record<string, unknown>[],
+      profiles: [{ ...PARENT_PROFILE, is_parent: true }] as unknown as Record<
+        string,
+        unknown
+      >[],
       family_members: [] as Record<string, unknown>[],
       audit_logs: [] as Record<string, unknown>[],
       ...overrides,
@@ -32,13 +47,18 @@ function seed(authUserId: string | null, overrides: Record<string, Record<string
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 describe('Family Actions', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   describe('createFamilyMember', () => {
     it('creates member successfully', async () => {
       const fake = seed('parent-123');
       const result = await createFamilyMember({
-        firstName: 'Kid', lastName: 'Doe', email: 'kid@example.com', relationship: 'Student',
+        firstName: 'Kid',
+        lastName: 'Doe',
+        email: 'kid@example.com',
+        relationship: 'Student',
       });
       expect(result.data).toBeDefined();
       expect(result.data?.first_name).toBe('Kid');
@@ -51,7 +71,10 @@ describe('Family Actions', () => {
     it('enforces ownership by assigning the authenticated user as parent_id', async () => {
       const fake = seed('parent-123');
       await createFamilyMember({
-        firstName: 'Kid', lastName: 'Doe', email: 'kid@example.com', relationship: 'Student',
+        firstName: 'Kid',
+        lastName: 'Doe',
+        email: 'kid@example.com',
+        relationship: 'Student',
       });
       expect(fake.db.family_members[0].parent_id).toBe('parent-123');
     });
@@ -59,7 +82,10 @@ describe('Family Actions', () => {
     it('handles unauthenticated user', async () => {
       seed(null);
       const result = await createFamilyMember({
-        firstName: 'Kid', lastName: 'Doe', email: 'kid@example.com', relationship: 'Student',
+        firstName: 'Kid',
+        lastName: 'Doe',
+        email: 'kid@example.com',
+        relationship: 'Student',
       });
       expect(result.error).toBe('Not authenticated');
     });
@@ -70,16 +96,103 @@ describe('Family Actions', () => {
       const fake = seed('parent-123', {
         family_members: [childMember] as unknown as Record<string, unknown>[],
       });
-      const result = await updateFamilyMember({ id: 'child-1', firstName: 'Updated' });
+      const result = await updateFamilyMember({
+        id: 'child-1',
+        firstName: 'Updated',
+      });
       expect(result.data?.first_name).toBe('Updated');
       expect(result.error).toBeNull();
-      expect(fake.db.family_members.find((m) => m.id === 'child-1')?.first_name).toBe('Updated');
+      expect(
+        fake.db.family_members.find((m) => m.id === 'child-1')?.first_name
+      ).toBe('Updated');
     });
 
     it('fails if member not found or not owned', async () => {
       seed('parent-123');
-      const result = await updateFamilyMember({ id: 'other-child', firstName: 'Updated' });
+      const result = await updateFamilyMember({
+        id: 'other-child',
+        firstName: 'Updated',
+      });
       expect(result.error).toContain('not found or you do not have permission');
+    });
+  });
+
+  describe('updatePhotoConsent', () => {
+    it('persists photo consent for a student owned by the parent', async () => {
+      const fake = seed('parent-123', {
+        family_members: [
+          { ...childMember, photo_consent: false },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+      const result = await updatePhotoConsent('child-1', true);
+
+      expect(result).toEqual({ success: true, error: null });
+      expect(
+        fake.db.family_members.find((member) => member.id === 'child-1')
+          ?.photo_consent
+      ).toBe(true);
+      expect(revalidatePath).toHaveBeenCalledWith('/parent/family');
+    });
+
+    it('allows a parent to revoke previously granted consent', async () => {
+      const fake = seed('parent-123', {
+        family_members: [
+          { ...childMember, photo_consent: true },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+      const result = await updatePhotoConsent('child-1', false);
+
+      expect(result.success).toBe(true);
+      expect(
+        fake.db.family_members.find((member) => member.id === 'child-1')
+          ?.photo_consent
+      ).toBe(false);
+    });
+
+    it("rejects changes to another parent's family member", async () => {
+      seed('parent-123', {
+        family_members: [
+          { ...childMember, parent_id: 'other-parent', photo_consent: false },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+      const result = await updatePhotoConsent('child-1', true);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('not found or you do not have permission');
+    });
+
+    it('rejects consent changes for non-student family members', async () => {
+      seed('parent-123', {
+        family_members: [
+          {
+            ...childMember,
+            relationship: 'Parent/Guardian',
+            photo_consent: false,
+          },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+      const result = await updatePhotoConsent('child-1', true);
+
+      expect(result).toEqual({
+        success: false,
+        error: 'Photo consent can only be set for students',
+      });
+    });
+
+    it('rejects unauthenticated changes', async () => {
+      seed(null, {
+        family_members: [
+          { ...childMember, photo_consent: false },
+        ] as unknown as Record<string, unknown>[],
+      });
+
+      const result = await updatePhotoConsent('child-1', true);
+
+      expect(result).toEqual({ success: false, error: 'Not authenticated' });
     });
   });
 

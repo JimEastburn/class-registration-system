@@ -341,6 +341,7 @@ export type Database = {
           id: string;
           last_name: string;
           parent_id: string;
+          photo_consent: boolean;
           relationship: string;
           student_user_id: string | null;
           updated_at: string | null;
@@ -355,6 +356,7 @@ export type Database = {
           id?: string;
           last_name: string;
           parent_id: string;
+          photo_consent?: boolean;
           relationship?: string;
           student_user_id?: string | null;
           updated_at?: string | null;
@@ -369,6 +371,7 @@ export type Database = {
           id?: string;
           last_name?: string;
           parent_id?: string;
+          photo_consent?: boolean;
           relationship?: string;
           student_user_id?: string | null;
           updated_at?: string | null;

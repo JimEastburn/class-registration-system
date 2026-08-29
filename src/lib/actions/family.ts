@@ -264,6 +264,83 @@ export async function updateFamilyMember(
 }
 
 /**
+ * Grant or revoke photo consent for a student owned by the authenticated parent.
+ */
+export async function updatePhotoConsent(
+  familyMemberId: string,
+  photoConsent: boolean
+): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    if (typeof photoConsent !== 'boolean') {
+      return { success: false, error: 'Invalid photo consent value' };
+    }
+
+    const { data: existing, error: checkError } = await supabase
+      .from('family_members')
+      .select('id, relationship, photo_consent')
+      .eq('id', familyMemberId)
+      .eq('parent_id', user.id)
+      .single();
+
+    if (checkError || !existing) {
+      return {
+        success: false,
+        error: 'Family member not found or you do not have permission',
+      };
+    }
+
+    if (existing.relationship !== 'Student') {
+      return {
+        success: false,
+        error: 'Photo consent can only be set for students',
+      };
+    }
+
+    const { data: updated, error } = await supabase
+      .from('family_members')
+      .update({ photo_consent: photoConsent })
+      .eq('id', familyMemberId)
+      .eq('parent_id', user.id)
+      .select('id')
+      .single();
+
+    if (error || !updated) {
+      console.error('Error updating photo consent:', error);
+      return {
+        success: false,
+        error: error?.message || 'Failed to update photo consent',
+      };
+    }
+
+    await logAuditEntry(
+      user.id,
+      'family_member.photo_consent_updated',
+      familyMemberId,
+      {
+        previous_photo_consent: existing.photo_consent,
+        photo_consent: photoConsent,
+      }
+    );
+
+    revalidatePath('/parent/family');
+
+    return { success: true, error: null };
+  } catch (err) {
+    console.error('Unexpected error in updatePhotoConsent:', err);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
  * Delete a family member (with ownership check)
  */
 export async function deleteFamilyMember(

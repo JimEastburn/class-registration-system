@@ -89,6 +89,7 @@ export interface FamilyMember {
   grade: string | null;
   dob: string | null; // ISO date string
   age: number | null; // Required for Student members
+  photo_consent: boolean;
   created_at: string;
   updated_at: string;
 }
