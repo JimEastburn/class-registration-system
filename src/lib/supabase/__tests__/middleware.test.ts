@@ -47,3 +47,28 @@ describe('volunteer admin route access', () => {
     );
   });
 });
+
+describe('photo consent admin route access', () => {
+  it('grants only the photo consent page to an additive administrator', () => {
+    expect(hasRouteAccess('/admin/photo-consents', 'parent', false, true)).toBe(
+      true
+    );
+    expect(hasRouteAccess('/admin', 'parent', false, true)).toBe(false);
+    expect(hasRouteAccess('/admin/users', 'parent', false, true)).toBe(false);
+  });
+
+  it('denies the photo consent page without role or additive access', () => {
+    expect(
+      hasRouteAccess('/admin/photo-consents', 'parent', false, false)
+    ).toBe(false);
+  });
+
+  it('preserves admin and super admin access', () => {
+    expect(hasRouteAccess('/admin/photo-consents', 'admin', false, false)).toBe(
+      true
+    );
+    expect(
+      hasRouteAccess('/admin/photo-consents', 'super_admin', false, false)
+    ).toBe(true);
+  });
+});

@@ -2,7 +2,7 @@
 
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { logAuditAction } from '@/lib/actions/audit';
-import { AuditLog, AuditLogWithUser } from '@/types';
+import type { AuditLog, AuditLogWithUser, Profile, UserRole } from '@/types';
 import { revalidatePath } from 'next/cache';
 
 export interface SystemStats {
@@ -10,6 +10,15 @@ export interface SystemStats {
   totalClasses: number;
   totalEnrollments: number;
   totalRevenue: number;
+}
+
+export interface PhotoConsentRosterMember {
+  id: string;
+  studentName: string;
+  grade: string | null;
+  photoConsent: boolean;
+  parentName: string;
+  parentEmail: string;
 }
 
 export async function getSystemStats(): Promise<{
@@ -110,8 +119,6 @@ export async function getRecentActivity(
   }
 }
 
-import { Profile } from '@/types';
-
 // 8.2.2 getAllUsers
 export async function getAllUsers(
   page = 1,
@@ -140,7 +147,12 @@ export async function getAllUsers(
 
     const offset = (page - 1) * limit;
 
-    let query = db.from('profiles').select('*, is_volunteer_admin', { count: 'exact' }).neq('is_banned', true);
+    let query = db
+      .from('profiles')
+      .select('*, is_volunteer_admin, is_photo_consent_admin', {
+        count: 'exact',
+      })
+      .neq('is_banned', true);
 
     if (search) {
       query = query.or(
@@ -198,8 +210,6 @@ export async function getUserById(userId: string) {
 }
 
 // 8.2.4 updateUserRole
-import { UserRole } from '@/types';
-
 export async function updateUserRole(
   targetUserId: string,
   newRole: UserRole
@@ -350,6 +360,137 @@ export async function updateVolunteerAdminStatus(
       success: false,
       error: 'Failed to update volunteer administrator access',
     };
+  }
+}
+
+export async function updatePhotoConsentAdminStatus(
+  targetUserId: string,
+  isPhotoConsentAdmin: boolean
+): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    const { data: adminProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    if (
+      !adminProfile ||
+      !['admin', 'super_admin'].includes(adminProfile.role)
+    ) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const db = await createAdminClient();
+    const { data: updated, error } = await db
+      .from('profiles')
+      .update({ is_photo_consent_admin: isPhotoConsentAdmin })
+      .eq('id', targetUserId)
+      .select('id')
+      .single();
+    if (error || !updated) {
+      throw error || new Error('User not found');
+    }
+
+    await logAuditAction(
+      user.id,
+      'update_photo_consent_admin_status',
+      'profile',
+      targetUserId,
+      { is_photo_consent_admin: isPhotoConsentAdmin }
+    );
+
+    revalidatePath('/admin/users');
+    revalidatePath(`/admin/users/${targetUserId}`);
+    revalidatePath('/', 'layout');
+    return { success: true, error: null };
+  } catch (err) {
+    console.error('Error updating photo consent admin status:', err);
+    return {
+      success: false,
+      error: 'Failed to update photo consent administrator access',
+    };
+  }
+}
+
+export async function getPhotoConsentRoster(): Promise<{
+  data: PhotoConsentRosterMember[] | null;
+  error: string | null;
+}> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: 'Not authenticated' };
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, is_photo_consent_admin')
+      .eq('id', user.id)
+      .single();
+
+    if (
+      !profile ||
+      (!['admin', 'super_admin'].includes(profile.role) &&
+        profile.is_photo_consent_admin !== true)
+    ) {
+      return { data: null, error: 'Unauthorized' };
+    }
+
+    // Delegated administrators do not receive broad family-member RLS access.
+    // Use the service-role client only after the explicit permission check.
+    const db = await createAdminClient();
+    const { data: students, error: studentsError } = await db
+      .from('family_members')
+      .select(
+        'id, parent_id, first_name, last_name, grade, photo_consent, relationship'
+      )
+      .eq('relationship', 'Student')
+      .order('last_name', { ascending: true })
+      .order('first_name', { ascending: true });
+
+    if (studentsError) throw studentsError;
+    if (!students?.length) return { data: [], error: null };
+
+    const parentIds = [
+      ...new Set(students.map((student) => student.parent_id)),
+    ];
+    const { data: parents, error: parentsError } = await db
+      .from('profiles')
+      .select('id, first_name, last_name, email')
+      .in('id', parentIds);
+
+    if (parentsError) throw parentsError;
+
+    const parentsById = new Map(
+      (parents || []).map((parent) => [parent.id, parent])
+    );
+
+    return {
+      data: students.map((student) => {
+        const parent = parentsById.get(student.parent_id);
+        return {
+          id: student.id,
+          studentName: `${student.first_name} ${student.last_name}`,
+          grade: student.grade,
+          photoConsent: student.photo_consent,
+          parentName: parent
+            ? `${parent.first_name} ${parent.last_name}`
+            : 'Unknown',
+          parentEmail: parent?.email || 'Unknown',
+        };
+      }),
+      error: null,
+    };
+  } catch (err) {
+    console.error('Error fetching photo consent roster:', err);
+    return { data: null, error: 'Failed to fetch photo consent records' };
   }
 }
 

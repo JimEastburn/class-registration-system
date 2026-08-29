@@ -16,6 +16,7 @@ import {
   CalendarClock,
   User,
   HeartHandshake,
+  Camera,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { UserRole } from '@/types';
@@ -24,6 +25,7 @@ interface SidebarProps {
   userRole: UserRole;
   isParent: boolean;
   isVolunteerAdmin: boolean;
+  isPhotoConsentAdmin: boolean;
   className?: string;
 }
 
@@ -145,6 +147,12 @@ const navItems: NavItem[] = [
     roles: ['admin', 'super_admin'],
   },
   {
+    href: '/admin/photo-consents',
+    label: 'Photo Consents',
+    icon: Camera,
+    roles: ['admin', 'super_admin'],
+  },
+  {
     href: '/admin/classes',
     label: 'All Classes',
     icon: BookOpen,
@@ -215,7 +223,8 @@ const navItems: NavItem[] = [
 function getNavItemsForRole(
   role: UserRole,
   isParent: boolean,
-  isVolunteerAdmin: boolean
+  isVolunteerAdmin: boolean,
+  isPhotoConsentAdmin: boolean
 ): NavItem[] {
   return navItems.filter((item) => {
     // Check if role is explicitly allowed
@@ -231,6 +240,10 @@ function getNavItemsForRole(
       return true;
     }
 
+    if (isPhotoConsentAdmin && item.href === '/admin/photo-consents') {
+      return true;
+    }
+
     return false;
   });
 }
@@ -239,13 +252,15 @@ export function Sidebar({
   userRole,
   isParent,
   isVolunteerAdmin,
+  isPhotoConsentAdmin,
   className,
 }: SidebarProps) {
   const pathname = usePathname();
   const filteredNavItems = getNavItemsForRole(
     userRole,
     isParent,
-    isVolunteerAdmin
+    isVolunteerAdmin,
+    isPhotoConsentAdmin
   );
 
   // Group items by portal

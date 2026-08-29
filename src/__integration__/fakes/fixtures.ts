@@ -8,7 +8,14 @@
 import { vi } from 'vitest';
 import { SupabaseFake } from '@/__integration__/fakes/supabase';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-import type { Profile, FamilyMember, Enrollment, Payment, Class, ClassBlock } from '@/types';
+import type {
+  Profile,
+  FamilyMember,
+  Enrollment,
+  Payment,
+  Class,
+  ClassBlock,
+} from '@/types';
 import type { Tables } from '@/types/database';
 
 // ── Seed Type Aliases ───────────────────────────────────────────────────────
@@ -17,17 +24,18 @@ import type { Tables } from '@/types/database';
 export type SeedProfile = Pick<
   Profile,
   'id' | 'first_name' | 'last_name' | 'role' | 'email'
-> & { is_parent?: boolean; is_volunteer_admin?: boolean };
+> & {
+  is_parent?: boolean;
+  is_volunteer_admin?: boolean;
+  is_photo_consent_admin?: boolean;
+};
 
 export type SeedFamilyMember = Pick<
   FamilyMember,
   'id' | 'parent_id' | 'first_name' | 'last_name' | 'email' | 'relationship'
 >;
 
-export type SeedClass = Pick<
-  Class,
-  'id' | 'name' | 'teacher_id' | 'status'
-> & {
+export type SeedClass = Pick<Class, 'id' | 'name' | 'teacher_id' | 'status'> & {
   price?: number;
   capacity?: number;
   day?: string | null;
@@ -135,18 +143,31 @@ export interface SeedFakeOptions {
  * });
  * ```
  */
-export function seedFake({ authUserId, data = {} }: SeedFakeOptions): SupabaseFake {
+export function seedFake({
+  authUserId,
+  data = {},
+}: SeedFakeOptions): SupabaseFake {
   const fake = new SupabaseFake(data);
 
   if (authUserId) {
     fake.setAuthUser({ id: authUserId });
   }
 
-  const fakeClient = fake as unknown as Awaited<ReturnType<typeof createClient>>;
+  const fakeClient = fake as unknown as Awaited<
+    ReturnType<typeof createClient>
+  >;
 
   // Wire to both client mocks (either may be used by the action under test)
-  try { vi.mocked(createClient).mockResolvedValue(fakeClient); } catch { /* not mocked in this test */ }
-  try { vi.mocked(createAdminClient).mockResolvedValue(fakeClient); } catch { /* not mocked in this test */ }
+  try {
+    vi.mocked(createClient).mockResolvedValue(fakeClient);
+  } catch {
+    /* not mocked in this test */
+  }
+  try {
+    vi.mocked(createAdminClient).mockResolvedValue(fakeClient);
+  } catch {
+    /* not mocked in this test */
+  }
 
   return fake;
 }

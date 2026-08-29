@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import {
   updateParentStatus,
+  updatePhotoConsentAdminStatus,
   updateVolunteerAdminStatus,
 } from '@/lib/actions/admin';
 import { toast } from 'sonner';
@@ -18,6 +19,7 @@ interface UserPermissionsEditorProps {
   currentRole: UserRole;
   isParent: boolean;
   isVolunteerAdmin: boolean;
+  isPhotoConsentAdmin: boolean;
 }
 
 export function UserPermissionsEditor({
@@ -25,6 +27,7 @@ export function UserPermissionsEditor({
   currentRole,
   isParent,
   isVolunteerAdmin,
+  isPhotoConsentAdmin,
 }: UserPermissionsEditorProps) {
   const router = useRouter();
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
@@ -35,6 +38,10 @@ export function UserPermissionsEditor({
     useState(false);
   const [localIsVolunteerAdmin, setLocalIsVolunteerAdmin] =
     useState(isVolunteerAdmin);
+  const [photoConsentAdminToggleLoading, setPhotoConsentAdminToggleLoading] =
+    useState(false);
+  const [localIsPhotoConsentAdmin, setLocalIsPhotoConsentAdmin] =
+    useState(isPhotoConsentAdmin);
 
   const handleRoleChange = (newRole: UserRole) => {
     if (newRole === currentRole) return;
@@ -88,6 +95,35 @@ export function UserPermissionsEditor({
       toast.error('An unexpected error occurred');
     } finally {
       setParentToggleLoading(false);
+    }
+  };
+
+  const handlePhotoConsentAdminToggle = async (checked: boolean) => {
+    setPhotoConsentAdminToggleLoading(true);
+    setLocalIsPhotoConsentAdmin(checked);
+    try {
+      const { success, error } = await updatePhotoConsentAdminStatus(
+        userId,
+        checked
+      );
+      if (success) {
+        toast.success(
+          checked
+            ? 'Photo consent administrator access enabled'
+            : 'Photo consent administrator access disabled'
+        );
+        router.refresh();
+      } else {
+        setLocalIsPhotoConsentAdmin(!checked);
+        toast.error(
+          error || 'Failed to update photo consent administrator access'
+        );
+      }
+    } catch {
+      setLocalIsPhotoConsentAdmin(!checked);
+      toast.error('An unexpected error occurred');
+    } finally {
+      setPhotoConsentAdminToggleLoading(false);
     }
   };
 
@@ -145,6 +181,27 @@ export function UserPermissionsEditor({
           onCheckedChange={handleVolunteerAdminToggle}
           disabled={volunteerAdminToggleLoading}
           data-testid="volunteer-admin-access-toggle"
+        />
+      </div>
+
+      <div className="flex items-center justify-between border-b pb-2">
+        <div className="space-y-0.5">
+          <Label
+            htmlFor="photo-consent-admin-toggle"
+            className="text-sm font-medium"
+          >
+            Photo Consent Administrator Access
+          </Label>
+          <p className="text-muted-foreground text-xs">
+            Allow this user to view student photo consent records
+          </p>
+        </div>
+        <Switch
+          id="photo-consent-admin-toggle"
+          checked={localIsPhotoConsentAdmin}
+          onCheckedChange={handlePhotoConsentAdminToggle}
+          disabled={photoConsentAdminToggleLoading}
+          data-testid="photo-consent-admin-access-toggle"
         />
       </div>
 

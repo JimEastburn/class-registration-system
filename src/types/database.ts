@@ -468,6 +468,7 @@ export type Database = {
           id: string;
           is_banned: boolean;
           is_parent: boolean;
+          is_photo_consent_admin: boolean;
           is_volunteer_admin: boolean;
           last_name: string;
           phone: string | null;
@@ -492,6 +493,7 @@ export type Database = {
           id: string;
           is_banned?: boolean;
           is_parent?: boolean;
+          is_photo_consent_admin?: boolean;
           is_volunteer_admin?: boolean;
           last_name?: string;
           phone?: string | null;
@@ -516,6 +518,7 @@ export type Database = {
           id?: string;
           is_banned?: boolean;
           is_parent?: boolean;
+          is_photo_consent_admin?: boolean;
           is_volunteer_admin?: boolean;
           last_name?: string;
           phone?: string | null;
@@ -810,6 +813,7 @@ export type Database = {
         Returns: boolean;
       };
       is_admin: { Args: never; Returns: boolean };
+      is_photo_consent_admin: { Args: never; Returns: boolean };
       is_volunteer_admin: { Args: never; Returns: boolean };
       move_volunteer_block: {
         Args: { p_block_id: string; p_direction: string };

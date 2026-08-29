@@ -12,6 +12,7 @@ interface MobileNavProps {
   userRole: UserRole;
   isParent: boolean;
   isVolunteerAdmin: boolean;
+  isPhotoConsentAdmin: boolean;
 }
 
 interface NavItem {
@@ -45,6 +46,7 @@ const navItemsByRole: Record<UserRole, NavItem[]> = {
   admin: [
     { href: '/volunteer', label: 'Volunteer Board' },
     { href: '/admin', label: 'Dashboard' },
+    { href: '/admin/photo-consents', label: 'Photo Consents' },
     { href: '/admin/classes', label: 'Classes' },
     { href: '/admin/enrollments', label: 'Enrollments' },
     { href: '/admin/volunteers', label: 'Volunteer Config' },
@@ -58,6 +60,7 @@ const navItemsByRole: Record<UserRole, NavItem[]> = {
   super_admin: [
     { href: '/volunteer', label: 'Volunteer Board' },
     { href: '/admin', label: 'Admin' },
+    { href: '/admin/photo-consents', label: 'Photo Consents' },
     { href: '/admin/volunteers', label: 'Volunteer Config' },
     { href: '/class-scheduler', label: 'Scheduler' },
     { href: '/teacher', label: 'Teacher' },
@@ -70,6 +73,7 @@ export function MobileNav({
   userRole,
   isParent,
   isVolunteerAdmin,
+  isPhotoConsentAdmin,
 }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
@@ -87,6 +91,16 @@ export function MobileNav({
         label: 'Volunteer Configuration',
       });
     }
+  }
+
+  if (
+    isPhotoConsentAdmin &&
+    !navItems.some((item) => item.href === '/admin/photo-consents')
+  ) {
+    navItems.push({
+      href: '/admin/photo-consents',
+      label: 'Photo Consents',
+    });
   }
 
   // Add Parent Link if user is also a parent (and not already seeing parent view as primary)

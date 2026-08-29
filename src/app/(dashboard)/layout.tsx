@@ -25,7 +25,7 @@ export default async function DashboardLayout({
   const { data: profile } = await supabase
     .from('profiles')
     .select(
-      'id, email, first_name, last_name, role, avatar_url, is_parent, is_volunteer_admin'
+      'id, email, first_name, last_name, role, avatar_url, is_parent, is_volunteer_admin, is_photo_consent_admin'
     )
     .eq('id', user.id)
     .single();
@@ -44,6 +44,7 @@ export default async function DashboardLayout({
         userRole={userRole}
         isParent={profile.is_parent === true}
         isVolunteerAdmin={profile.is_volunteer_admin === true}
+        isPhotoConsentAdmin={profile.is_photo_consent_admin === true}
         className="hidden lg:flex"
       />
 
@@ -66,6 +67,7 @@ export default async function DashboardLayout({
           userRole={userRole}
           isParent={profile.is_parent === true}
           isVolunteerAdmin={profile.is_volunteer_admin === true}
+          isPhotoConsentAdmin={profile.is_photo_consent_admin === true}
         />
 
         {/* Main content */}

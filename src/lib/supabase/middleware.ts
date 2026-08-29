@@ -22,6 +22,8 @@ const ROUTE_ROLE_MAP: Record<string, UserRole[]> = {
   // Keep the narrow volunteer route before /admin so it can grant additive
   // volunteer-admin access without opening the rest of the admin portal.
   '/admin/volunteers': ['admin', 'super_admin'],
+  // This route can also be unlocked by the additive photo-consent permission.
+  '/admin/photo-consents': ['admin', 'super_admin'],
   '/admin': ['admin', 'super_admin'],
   '/class-scheduler': ['class_scheduler', 'super_admin'],
 };
@@ -38,6 +40,8 @@ const VOLUNTEER_ADMIN_ROUTES = [
   '/volunteer-version-5',
   '/admin/volunteers',
 ];
+
+const PHOTO_CONSENT_ADMIN_ROUTES = ['/admin/photo-consents'];
 
 /**
  * Default redirect paths based on user role
@@ -92,9 +96,14 @@ function getProtectedRoutePrefix(pathname: string): string | null {
 export function hasRouteAccess(
   routePrefix: string,
   userRole: UserRole,
-  isVolunteerAdmin = false
+  isVolunteerAdmin = false,
+  isPhotoConsentAdmin = false
 ): boolean {
   if (isVolunteerAdmin && VOLUNTEER_ADMIN_ROUTES.includes(routePrefix)) {
+    return true;
+  }
+
+  if (isPhotoConsentAdmin && PHOTO_CONSENT_ADMIN_ROUTES.includes(routePrefix)) {
     return true;
   }
 
@@ -170,7 +179,7 @@ export async function updateSession(request: NextRequest) {
     // Fetch user profile to get role
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role, is_parent, is_volunteer_admin')
+      .select('role, is_parent, is_volunteer_admin, is_photo_consent_admin')
       .eq('id', user.id)
       .single();
 
@@ -184,9 +193,17 @@ export async function updateSession(request: NextRequest) {
     const userRole = profile.role as UserRole;
     const isParent = Boolean(profile.is_parent);
     const isVolunteerAdmin = Boolean(profile.is_volunteer_admin);
+    const isPhotoConsentAdmin = Boolean(profile.is_photo_consent_admin);
 
     // Check if user has access to this route
-    if (!hasRouteAccess(routePrefix, userRole, isVolunteerAdmin)) {
+    if (
+      !hasRouteAccess(
+        routePrefix,
+        userRole,
+        isVolunteerAdmin,
+        isPhotoConsentAdmin
+      )
+    ) {
       // User doesn't have permission, redirect to their default dashboard
       const url = request.nextUrl.clone();
       url.pathname = getDefaultPathForRole(userRole);

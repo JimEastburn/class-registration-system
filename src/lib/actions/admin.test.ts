@@ -3,6 +3,8 @@ import {
   updateUserRole,
   updateParentStatus,
   updateVolunteerAdminStatus,
+  updatePhotoConsentAdminStatus,
+  getPhotoConsentRoster,
   deleteUser,
   getSystemStats,
   getAllUsers,
@@ -29,14 +31,21 @@ const ADMIN_ID = 'admin-123';
 const TARGET_ID = 'user-456';
 
 const targetProfile: SeedProfile = {
-  id: TARGET_ID, first_name: 'Target', last_name: 'User', role: 'parent', email: 'target@test.com',
+  id: TARGET_ID,
+  first_name: 'Target',
+  last_name: 'User',
+  role: 'parent',
+  email: 'target@test.com',
 };
 
 function seed(overrides: Record<string, Record<string, unknown>[]> = {}) {
   return seedFake({
     authUserId: ADMIN_ID,
     data: {
-      profiles: [ADMIN_PROFILE, targetProfile] as unknown as Record<string, unknown>[],
+      profiles: [ADMIN_PROFILE, targetProfile] as unknown as Record<
+        string,
+        unknown
+      >[],
       classes: [],
       enrollments: [],
       payments: [],
@@ -48,7 +57,9 @@ function seed(overrides: Record<string, Record<string, unknown>[]> = {}) {
 // ── Tests ───────────────────────────────────────────────────────────────────
 
 describe('Admin Actions', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   describe('updateUserRole', () => {
     it('allows admin to update user role', async () => {
@@ -68,7 +79,14 @@ describe('Admin Actions', () => {
       const fake = seedFake({
         authUserId: 'teacher-1',
         data: {
-          profiles: [{ id: 'teacher-1', first_name: 'Teacher', last_name: 'User', role: 'teacher' }] as unknown as Record<string, unknown>[],
+          profiles: [
+            {
+              id: 'teacher-1',
+              first_name: 'Teacher',
+              last_name: 'User',
+              role: 'teacher',
+            },
+          ] as unknown as Record<string, unknown>[],
         },
       });
       const result = await updateUserRole(TARGET_ID, 'admin');
@@ -82,7 +100,9 @@ describe('Admin Actions', () => {
       const fake = seed();
       const result = await deleteUser(TARGET_ID);
       expect(result.success).toBe(true);
-      expect(fake.db.profiles.filter((p) => p.id === TARGET_ID)).toHaveLength(0);
+      expect(fake.db.profiles.filter((p) => p.id === TARGET_ID)).toHaveLength(
+        0
+      );
     });
   });
 
@@ -93,10 +113,25 @@ describe('Admin Actions', () => {
         { id: 'pay-2', amount: 30, status: 'completed' },
       ];
       seed({
-        profiles: [ADMIN_PROFILE, targetProfile] as unknown as Record<string, unknown>[],
+        profiles: [ADMIN_PROFILE, targetProfile] as unknown as Record<
+          string,
+          unknown
+        >[],
         classes: [
-          { id: 'c1', name: 'Art', price: 30, teacher_id: ADMIN_ID, status: 'published' },
-          { id: 'c2', name: 'Music', price: 30, teacher_id: ADMIN_ID, status: 'published' },
+          {
+            id: 'c1',
+            name: 'Art',
+            price: 30,
+            teacher_id: ADMIN_ID,
+            status: 'published',
+          },
+          {
+            id: 'c2',
+            name: 'Music',
+            price: 30,
+            teacher_id: ADMIN_ID,
+            status: 'published',
+          },
         ],
         enrollments: [
           { id: 'e1', student_id: 's1', class_id: 'c1', status: 'confirmed' },
@@ -130,7 +165,14 @@ describe('Admin Actions', () => {
       const fake = seedFake({
         authUserId: 'teacher-1',
         data: {
-          profiles: [{ id: 'teacher-1', first_name: 'Teacher', last_name: 'User', role: 'teacher' }] as unknown as Record<string, unknown>[],
+          profiles: [
+            {
+              id: 'teacher-1',
+              first_name: 'Teacher',
+              last_name: 'User',
+              role: 'teacher',
+            },
+          ] as unknown as Record<string, unknown>[],
         },
       });
       const result = await updateParentStatus(TARGET_ID, true);
@@ -177,6 +219,102 @@ describe('Admin Actions', () => {
       const result = await updateVolunteerAdminStatus(TARGET_ID, true);
 
       expect(result).toMatchObject({ success: false, error: 'Unauthorized' });
+    });
+  });
+
+  describe('updatePhotoConsentAdminStatus', () => {
+    it('lets an admin grant additive photo consent administration access', async () => {
+      const fake = seed();
+
+      const result = await updatePhotoConsentAdminStatus(TARGET_ID, true);
+
+      expect(result.success).toBe(true);
+      expect(
+        fake.db.profiles.find((profile) => profile.id === TARGET_ID)
+      ).toMatchObject({ role: 'parent', is_photo_consent_admin: true });
+      expect(revalidatePath).toHaveBeenCalledWith('/', 'layout');
+    });
+
+    it('denies non-admin users', async () => {
+      seedFake({
+        authUserId: 'teacher-1',
+        data: {
+          profiles: [
+            {
+              id: 'teacher-1',
+              first_name: 'Teacher',
+              last_name: 'User',
+              role: 'teacher',
+            },
+          ],
+        },
+      });
+
+      const result = await updatePhotoConsentAdminStatus(TARGET_ID, true);
+
+      expect(result).toMatchObject({ success: false, error: 'Unauthorized' });
+    });
+  });
+
+  describe('getPhotoConsentRoster', () => {
+    it('allows a delegated photo consent administrator to view student consent', async () => {
+      seedFake({
+        authUserId: TARGET_ID,
+        data: {
+          profiles: [
+            {
+              ...targetProfile,
+              is_photo_consent_admin: true,
+            },
+            {
+              id: 'parent-2',
+              first_name: 'Family',
+              last_name: 'Parent',
+              email: 'family@example.com',
+              role: 'parent',
+            },
+          ] as unknown as Record<string, unknown>[],
+          family_members: [
+            {
+              id: 'student-1',
+              parent_id: 'parent-2',
+              first_name: 'Student',
+              last_name: 'One',
+              email: 'student@example.com',
+              relationship: 'Student',
+              grade: 'elementary',
+              photo_consent: true,
+            },
+          ],
+        },
+      });
+
+      const result = await getPhotoConsentRoster();
+
+      expect(result.error).toBeNull();
+      expect(result.data).toEqual([
+        expect.objectContaining({
+          id: 'student-1',
+          studentName: 'Student One',
+          parentName: 'Family Parent',
+          parentEmail: 'family@example.com',
+          photoConsent: true,
+        }),
+      ]);
+    });
+
+    it('denies users without admin role or delegated access', async () => {
+      seedFake({
+        authUserId: TARGET_ID,
+        data: {
+          profiles: [targetProfile] as unknown as Record<string, unknown>[],
+          family_members: [],
+        },
+      });
+
+      const result = await getPhotoConsentRoster();
+
+      expect(result).toEqual({ data: null, error: 'Unauthorized' });
     });
   });
 

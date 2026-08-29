@@ -33,7 +33,7 @@ export default async function UserDetailPage({
 
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('*, is_volunteer_admin')
+    .select('*, is_volunteer_admin, is_photo_consent_admin')
     .eq('id', id)
     .single();
 
@@ -98,6 +98,7 @@ export default async function UserDetailPage({
               currentRole={profile.role}
               isParent={profile.is_parent}
               isVolunteerAdmin={profile.is_volunteer_admin}
+              isPhotoConsentAdmin={profile.is_photo_consent_admin}
             />
           </CardContent>
         </Card>
