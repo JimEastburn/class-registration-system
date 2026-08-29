@@ -1,13 +1,5 @@
-import { Badge } from '@/components/ui/badge';
+import { PhotoConsentTable } from '@/components/admin/PhotoConsentTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { getPhotoConsentRoster } from '@/lib/actions/admin';
 
 export const metadata = {
@@ -78,36 +70,7 @@ export default async function PhotoConsentsPage() {
               No students have been added yet.
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Grade</TableHead>
-                  <TableHead>Parent or Guardian</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Photo Consent</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {students.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell className="font-medium">
-                      {student.studentName}
-                    </TableCell>
-                    <TableCell>{student.grade || '—'}</TableCell>
-                    <TableCell>{student.parentName}</TableCell>
-                    <TableCell>{student.parentEmail}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={student.photoConsent ? 'default' : 'secondary'}
-                      >
-                        {student.photoConsent ? 'Granted' : 'Not granted'}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <PhotoConsentTable rows={students} />
           )}
         </CardContent>
       </Card>
