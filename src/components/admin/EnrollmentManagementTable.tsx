@@ -46,6 +46,7 @@ import {
 import { useState, useTransition } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { AdminEnrollStudentDialog } from './AdminEnrollStudentDialog';
+import { ExportCsvButton } from './ExportCsvButton';
 import { CancelEnrollmentDialog } from './CancelEnrollmentDialog';
 import { adminRemoveEnrollment } from '@/lib/actions/enrollments';
 import { cn } from '@/lib/utils';
@@ -264,7 +265,15 @@ export function EnrollmentManagementTable({
               cancelled records do not.
             </p>
           </div>
-          <AdminEnrollStudentDialog />
+          <div className="flex flex-wrap items-center gap-2">
+            <ExportCsvButton
+              type="enrollments"
+              currentParams={searchParams.toString()}
+              matchingCount={matchingCount}
+              disabled={isPending}
+            />
+            <AdminEnrollStudentDialog />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

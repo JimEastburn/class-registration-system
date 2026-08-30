@@ -26,7 +26,17 @@ export interface ClassSort {
 }
 
 /** A class row carrying the enrollment tallies the table sorts on. */
-export type SortableClassRow = ClassWithTeacher & {
+export type SortableClassRow = Pick<
+  ClassWithTeacher,
+  | 'name'
+  | 'status'
+  | 'age_min'
+  | 'age_max'
+  | 'block'
+  | 'schedule_config'
+  | 'schedule_display_mode'
+> & {
+  teacher: ClassWithTeacher['teacher'] | null;
   enrolled_count: number;
   waitlisted_count: number;
 };

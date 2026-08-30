@@ -45,34 +45,52 @@ test.describe('Admin Export Functionality', () => {
     }
   });
 
-  test('Admin can export classes CSV', async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     // Login
     await page.goto('/login');
     await page.fill('input[name="email"]', adminEmail);
     await page.fill('input[name="password"]', adminPassword);
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL('/admin');
+  });
 
-    // Check for Export Button
-    const exportButton = page.getByRole('button', { name: 'Export Data' });
+  test('Admin can export all classes CSV from the classes page', async ({
+    page,
+  }) => {
+    await page.goto('/admin/classes');
+
+    const exportButton = page.getByRole('button', {
+      name: 'Export all classes',
+    });
     await expect(exportButton).toBeVisible();
 
-    // Click Export Button
-    await exportButton.click();
-
-    // Wait for download event
     const downloadPromise = page.waitForEvent('download');
-
-    // Click Export Classes
-    await page.getByRole('menuitem', { name: 'Export Classes' }).click();
-
+    await exportButton.click();
     const download = await downloadPromise;
 
-    // Verify filename
-    expect(download.suggestedFilename()).toContain('classes_export');
-    expect(download.suggestedFilename()).toContain('.csv');
+    expect(download.suggestedFilename()).toContain('classes_all_');
+    expect(download.suggestedFilename()).toMatch(/\.csv$/);
+  });
 
-    // Optional: Verify content if needed, but file system access might be tricky in pure e2e context without save
-    // We trust the filename for now as indication of success
+  test('Admin can export users matching the current search', async ({
+    page,
+  }) => {
+    await page.goto(`/admin/users?search=${encodeURIComponent(adminEmail)}`);
+
+    const exportButton = page.getByRole('button', { name: 'Export CSV' });
+    await expect(exportButton).toBeVisible();
+    await exportButton.click();
+
+    const matchingExport = page.getByRole('menuitem', {
+      name: /Export \d+ matching users/i,
+    });
+    await expect(matchingExport).toBeVisible();
+
+    const downloadPromise = page.waitForEvent('download');
+    await matchingExport.click();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toContain('users_matching_');
+    expect(download.suggestedFilename()).toMatch(/\.csv$/);
   });
 });

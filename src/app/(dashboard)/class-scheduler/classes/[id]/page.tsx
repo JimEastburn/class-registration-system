@@ -11,6 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { EnrollmentStatusBadge } from '@/components/classes/EnrollmentStatusBadge';
+import { ExportCsvButton } from '@/components/admin/ExportCsvButton';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -56,7 +57,18 @@ export default async function EditClassPage({ params }: PageProps) {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-2xl font-semibold">Enrolled Students</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-2xl font-semibold">Enrolled Students</h2>
+          <ExportCsvButton
+            type="enrollments"
+            currentParams=""
+            fixedParams={{ classId: id, roster: 'active' }}
+            matchingCount={enrollments.length}
+            buttonLabel="Export roster"
+            matchingLabel={`Export this class roster (${enrollments.length})`}
+            allLabel="Export all enrollments"
+          />
+        </div>
         <div className="rounded-md border">
           <Table>
             <TableHeader>

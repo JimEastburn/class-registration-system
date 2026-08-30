@@ -47,6 +47,7 @@ import {
   withClassListState,
   type ClassSortKey,
 } from '@/lib/class-table';
+import { ExportCsvButton } from '@/components/admin/ExportCsvButton';
 
 /**
  * Columns that can be sorted, in the order they're shown. Conflict and Actions
@@ -241,6 +242,14 @@ export default function AdminClassTable({
               <X className="h-4 w-4" />
             </button>
           )}
+        </div>
+        <div className="ml-auto">
+          <ExportCsvButton
+            type="classes"
+            currentParams={searchParams.toString()}
+            matchingCount={total}
+            disabled={isSearchPending}
+          />
         </div>
       </div>
 

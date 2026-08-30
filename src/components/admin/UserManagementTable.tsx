@@ -25,6 +25,7 @@ import { ChangeRoleDialog } from './ChangeRoleDialog';
 import { DeleteUserDialog } from './DeleteUserDialog';
 import { useState, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { ExportCsvButton } from './ExportCsvButton';
 
 interface UserManagementTableProps {
   users: Profile[];
@@ -117,6 +118,13 @@ export function UserManagementTable({
         <Button variant="outline" onClick={() => handleSearch(search)}>
           Search
         </Button>
+        <div className="ml-auto">
+          <ExportCsvButton
+            type="users"
+            currentParams={searchParams.toString()}
+            matchingCount={totalCount}
+          />
+        </div>
       </div>
 
       <div className="rounded-md border" data-testid="user-management-table">
