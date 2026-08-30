@@ -452,6 +452,51 @@ export type Database = {
           },
         ];
       };
+      photo_consent_activity_log: {
+        Row: {
+          action: string;
+          created_at: string;
+          id: string;
+          parent_id: string | null;
+          parent_name: string;
+          student_id: string | null;
+          student_name: string;
+        };
+        Insert: {
+          action: string;
+          created_at?: string;
+          id?: string;
+          parent_id?: string | null;
+          parent_name: string;
+          student_id?: string | null;
+          student_name: string;
+        };
+        Update: {
+          action?: string;
+          created_at?: string;
+          id?: string;
+          parent_id?: string | null;
+          parent_name?: string;
+          student_id?: string | null;
+          student_name?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'photo_consent_activity_log_parent_id_fkey';
+            columns: ['parent_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'photo_consent_activity_log_student_id_fkey';
+            columns: ['student_id'];
+            isOneToOne: false;
+            referencedRelation: 'family_members';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       profiles: {
         Row: {
           address_line1: string | null;

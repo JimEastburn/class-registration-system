@@ -1,14 +1,31 @@
+import { PhotoConsentActivityLog } from '@/components/admin/PhotoConsentActivityLog';
 import { PhotoConsentTable } from '@/components/admin/PhotoConsentTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getPhotoConsentRoster } from '@/lib/actions/admin';
+import {
+  getPhotoConsentActivityLog,
+  getPhotoConsentRoster,
+} from '@/lib/actions/admin';
 
 export const metadata = {
   title: 'Photo Consents | Class Registration System',
   description: 'Review student photo consent records',
 };
 
-export default async function PhotoConsentsPage() {
-  const { data: students, error } = await getPhotoConsentRoster();
+export default async function PhotoConsentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ photoConsentLogPage?: string }>;
+}) {
+  const params = await searchParams;
+  const activityLogPage = Math.max(
+    1,
+    Number(params.photoConsentLogPage || '1') || 1
+  );
+  const [rosterResult, activityLogResult] = await Promise.all([
+    getPhotoConsentRoster(),
+    getPhotoConsentActivityLog(activityLogPage),
+  ]);
+  const { data: students, error } = rosterResult;
 
   if (error || !students) {
     return (
@@ -74,6 +91,11 @@ export default async function PhotoConsentsPage() {
           )}
         </CardContent>
       </Card>
+
+      <PhotoConsentActivityLog
+        activityLog={activityLogResult.data}
+        activityLogError={activityLogResult.error}
+      />
     </div>
   );
 }

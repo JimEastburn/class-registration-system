@@ -4,6 +4,7 @@ import {
   updateParentStatus,
   updateVolunteerAdminStatus,
   updatePhotoConsentAdminStatus,
+  getPhotoConsentActivityLog,
   getPhotoConsentRoster,
   deleteUser,
   getSystemStats,
@@ -313,6 +314,71 @@ describe('Admin Actions', () => {
       });
 
       const result = await getPhotoConsentRoster();
+
+      expect(result).toEqual({ data: null, error: 'Unauthorized' });
+    });
+  });
+
+  describe('getPhotoConsentActivityLog', () => {
+    it('allows a delegated photo consent administrator to view consent history', async () => {
+      seedFake({
+        authUserId: TARGET_ID,
+        data: {
+          profiles: [
+            {
+              ...targetProfile,
+              is_photo_consent_admin: true,
+            },
+          ] as unknown as Record<string, unknown>[],
+          photo_consent_activity_log: [
+            {
+              id: 'activity-1',
+              action: 'consent',
+              parent_id: 'parent-1',
+              student_id: 'student-1',
+              parent_name: 'Family Parent',
+              student_name: 'Student One',
+              created_at: '2026-08-30T12:00:00Z',
+            },
+            {
+              id: 'activity-2',
+              action: 'removed_consent',
+              parent_id: 'parent-1',
+              student_id: 'student-1',
+              parent_name: 'Family Parent',
+              student_name: 'Student One',
+              created_at: '2026-08-30T13:00:00Z',
+            },
+          ],
+        },
+      });
+
+      const result = await getPhotoConsentActivityLog(1);
+
+      expect(result.error).toBeNull();
+      expect(result.data).toMatchObject({
+        totalCount: 2,
+        currentPage: 1,
+        totalPages: 1,
+        limit: 20,
+      });
+      expect(result.data?.entries[0]).toMatchObject({
+        action: 'removed_consent',
+        parent_name: 'Family Parent',
+        student_name: 'Student One',
+      });
+    });
+
+    it('denies users without admin role or delegated access', async () => {
+      seedFake({
+        authUserId: TARGET_ID,
+        data: {
+          profiles: [targetProfile] as unknown as Record<string, unknown>[],
+          photo_consent_activity_log: [],
+        },
+      });
+
+      const result = await getPhotoConsentActivityLog();
 
       expect(result).toEqual({ data: null, error: 'Unauthorized' });
     });

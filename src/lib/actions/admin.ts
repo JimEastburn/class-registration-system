@@ -2,7 +2,14 @@
 
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { logAuditAction } from '@/lib/actions/audit';
-import type { AuditLog, AuditLogWithUser, Profile, UserRole } from '@/types';
+import type {
+  AuditLog,
+  AuditLogWithUser,
+  PhotoConsentActivityLog,
+  PhotoConsentActivityLogPage,
+  Profile,
+  UserRole,
+} from '@/types';
 import { revalidatePath } from 'next/cache';
 
 export interface SystemStats {
@@ -20,6 +27,8 @@ export interface PhotoConsentRosterMember {
   parentName: string;
   parentEmail: string;
 }
+
+const PHOTO_CONSENT_ACTIVITY_LIMIT = 20;
 
 export async function getSystemStats(): Promise<{
   data: SystemStats | null;
@@ -491,6 +500,70 @@ export async function getPhotoConsentRoster(): Promise<{
   } catch (err) {
     console.error('Error fetching photo consent roster:', err);
     return { data: null, error: 'Failed to fetch photo consent records' };
+  }
+}
+
+export async function getPhotoConsentActivityLog(page = 1): Promise<{
+  data: PhotoConsentActivityLogPage | null;
+  error: string | null;
+}> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: 'Not authenticated' };
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, is_photo_consent_admin')
+      .eq('id', user.id)
+      .single();
+
+    if (
+      !profile ||
+      (!['admin', 'super_admin'].includes(profile.role) &&
+        profile.is_photo_consent_admin !== true)
+    ) {
+      return { data: null, error: 'Unauthorized' };
+    }
+
+    const currentPage =
+      Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const from = (currentPage - 1) * PHOTO_CONSENT_ACTIVITY_LIMIT;
+    const to = from + PHOTO_CONSENT_ACTIVITY_LIMIT - 1;
+
+    // Delegated administrators do not receive broad table access. Use the
+    // service-role client only after the explicit permission check above.
+    const db = await createAdminClient();
+    const { data, error, count } = await db
+      .from('photo_consent_activity_log')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (error) throw error;
+
+    const totalCount = count ?? 0;
+    return {
+      data: {
+        entries: (data ?? []) as PhotoConsentActivityLog[],
+        totalCount,
+        currentPage,
+        totalPages: Math.max(
+          1,
+          Math.ceil(totalCount / PHOTO_CONSENT_ACTIVITY_LIMIT)
+        ),
+        limit: PHOTO_CONSENT_ACTIVITY_LIMIT,
+      },
+      error: null,
+    };
+  } catch (err) {
+    console.error('Error fetching photo consent activity log:', err);
+    return {
+      data: null,
+      error: 'Failed to fetch photo consent activity log',
+    };
   }
 }
 

@@ -308,6 +308,26 @@ export interface VolunteerActivityLogPage {
   limit: number;
 }
 
+export type PhotoConsentActivityAction = 'consent' | 'removed_consent';
+
+export interface PhotoConsentActivityLog {
+  id: string;
+  action: PhotoConsentActivityAction;
+  parent_id: string | null;
+  student_id: string | null;
+  parent_name: string;
+  student_name: string;
+  created_at: string;
+}
+
+export interface PhotoConsentActivityLogPage {
+  entries: PhotoConsentActivityLog[];
+  totalCount: number;
+  currentPage: number;
+  totalPages: number;
+  limit: number;
+}
+
 export interface VolunteerBoardData {
   roles: VolunteerRole[];
   blocks: VolunteerBlock[];
