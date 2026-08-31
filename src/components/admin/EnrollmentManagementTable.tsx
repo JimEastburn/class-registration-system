@@ -16,7 +16,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Search, MoreHorizontal, XCircle, Trash2 } from 'lucide-react';
+import {
+  ArrowRight,
+  Search,
+  MoreHorizontal,
+  XCircle,
+  Trash2,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -262,7 +268,7 @@ export function EnrollmentManagementTable({
             </h3>
             <p className="text-muted-foreground text-sm text-pretty">
               Confirmed and pending enrollments hold seats; waitlisted and
-              cancelled records do not.
+              cancelled records do not. Dates filter the latest status activity.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -352,7 +358,7 @@ export function EnrollmentManagementTable({
           </div>
 
           <div className="w-full space-y-1.5 sm:w-40">
-            <Label htmlFor="enrollment-start-date">Start date</Label>
+            <Label htmlFor="enrollment-start-date">Activity from</Label>
             <Input
               id="enrollment-start-date"
               type="date"
@@ -368,7 +374,7 @@ export function EnrollmentManagementTable({
           </div>
 
           <div className="w-full space-y-1.5 sm:w-40">
-            <Label htmlFor="enrollment-end-date">End date</Label>
+            <Label htmlFor="enrollment-end-date">Activity through</Label>
             <Input
               id="enrollment-end-date"
               type="date"
@@ -416,15 +422,16 @@ export function EnrollmentManagementTable({
               <TableHead>Student</TableHead>
               <TableHead>Class</TableHead>
               <TableHead>Parent</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>Status change</TableHead>
               <TableHead>Enrollment date</TableHead>
+              <TableHead>Changed on</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {enrollments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center">
+                <TableCell colSpan={7} className="h-32 text-center">
                   <div className="flex flex-col items-center gap-3">
                     <p className="text-muted-foreground text-pretty">
                       {hasAppliedFilters
@@ -463,8 +470,9 @@ export function EnrollmentManagementTable({
                       : 'N/A'}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge
+                    <StatusChange
                       status={enrollment.status}
+                      statusChange={enrollment.status_change}
                       waitlistPosition={enrollment.waitlist_position}
                     />
                   </TableCell>
@@ -473,6 +481,15 @@ export function EnrollmentManagementTable({
                       'en-US',
                       { timeZone: 'America/Chicago' }
                     )}
+                  </TableCell>
+                  <TableCell className="tabular-nums">
+                    {enrollment.status_change?.to === enrollment.status
+                      ? new Date(
+                          enrollment.status_change.changed_at
+                        ).toLocaleDateString('en-US', {
+                          timeZone: 'America/Chicago',
+                        })
+                      : '—'}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -635,5 +652,43 @@ function StatusBadge({
     <Badge variant="outline" className={config.className}>
       {label}
     </Badge>
+  );
+}
+
+const transitionLabels: Record<EnrollmentStatus, string> = {
+  confirmed: 'Paid',
+  pending: 'Pending',
+  waitlisted: 'Waitlisted',
+  cancelled: 'Cancelled',
+};
+
+function StatusChange({
+  status,
+  statusChange,
+  waitlistPosition,
+}: {
+  status: EnrollmentStatus;
+  statusChange?: AdminEnrollmentView['status_change'];
+  waitlistPosition?: number | null;
+}) {
+  if (!statusChange || statusChange.to !== status) {
+    return <StatusBadge status={status} waitlistPosition={waitlistPosition} />;
+  }
+
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 whitespace-nowrap"
+      aria-label={`${transitionLabels[statusChange.from]} to ${transitionLabels[statusChange.to]}`}
+    >
+      <Badge variant="outline">{transitionLabels[statusChange.from]}</Badge>
+      <ArrowRight
+        aria-hidden="true"
+        className="text-muted-foreground size-3.5"
+      />
+      <StatusBadge
+        status={statusChange.to}
+        waitlistPosition={waitlistPosition}
+      />
+    </span>
   );
 }

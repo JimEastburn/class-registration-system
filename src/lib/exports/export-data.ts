@@ -456,7 +456,7 @@ async function exportEnrollments(
   const enrollments = await collectBatches<EnrollmentExportRow>(
     async (from, to) => {
       let query = supabase.from('enrollments').select(`
-        id, status, waitlist_position, deposit_paid, created_at,
+        id, status, waitlist_position, deposit_paid, created_at, updated_at,
         class:classes(id, name, price),
         student:family_members!inner(
           first_name, last_name, email, grade, age,
@@ -473,10 +473,10 @@ async function exportEnrollments(
           query = query.in('status', ['confirmed', 'pending', 'waitlisted']);
         }
         if (dateRange.startAt) {
-          query = query.gte('created_at', dateRange.startAt);
+          query = query.gte('updated_at', dateRange.startAt);
         }
         if (dateRange.endBefore) {
-          query = query.lt('created_at', dateRange.endBefore);
+          query = query.lt('updated_at', dateRange.endBefore);
         }
         if (request.search) {
           query = query.or(
@@ -487,7 +487,7 @@ async function exportEnrollments(
       }
 
       return (await query
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .range(from, to)) as unknown as QueryResult<EnrollmentExportRow>;
     }
   );
@@ -505,6 +505,7 @@ async function exportEnrollments(
         'Status',
         'Waitlist Position',
         'Enrollment Date',
+        'Status Activity Date',
       ]
     : [
         'Enrollment ID',
@@ -521,6 +522,7 @@ async function exportEnrollments(
         'Deposit Paid',
         'Class Fee',
         'Enrollment Date',
+        'Status Activity Date',
       ];
 
   const values = enrollments.map((enrollment) => {
@@ -537,7 +539,11 @@ async function exportEnrollments(
     ];
 
     if (scheduler) {
-      return [...shared, formatDate(enrollment.created_at)];
+      return [
+        ...shared,
+        formatDate(enrollment.created_at),
+        formatDate(enrollment.updated_at),
+      ];
     }
 
     return [
@@ -548,6 +554,7 @@ async function exportEnrollments(
       yesNo(enrollment.deposit_paid),
       enrollment.class?.price?.toFixed(2) ?? '',
       formatDate(enrollment.created_at),
+      formatDate(enrollment.updated_at),
     ];
   });
 

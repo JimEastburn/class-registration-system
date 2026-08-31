@@ -63,7 +63,7 @@ export function resolveAdminEnrollmentDateRange(filters?: {
     (startDate && !isValidDateInput(startDate)) ||
     (endDate && !isValidDateInput(endDate))
   ) {
-    return { filterError: 'Enter a valid enrollment date.' };
+    return { filterError: 'Enter a valid status activity date.' };
   }
 
   if (startDate && endDate && startDate > endDate) {

@@ -2506,7 +2506,93 @@ describe('Enrollment Actions', () => {
       });
     });
 
-    it('applies class, student search, and enrollment-date filters to status totals', async () => {
+    it('returns the latest audited status transition and its timestamp', async () => {
+      seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [ADMIN_PROFILE, PARENT_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            {
+              id: 'paid-enrollment',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+              created_at: '2026-08-20T12:00:00.000Z',
+              updated_at: '2026-08-25T15:00:00.000Z',
+            },
+          ] as unknown as Record<string, unknown>[],
+          audit_logs: [
+            {
+              id: 'status-change',
+              target_type: 'enrollment',
+              target_id: 'paid-enrollment',
+              action: 'UPDATE_ENROLLMENT_STATUS',
+              details: {
+                old_status: 'pending',
+                new_status: 'confirmed',
+              },
+              created_at: '2026-08-25T15:00:00.000Z',
+            },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getAllEnrollments();
+
+      expect(result.data?.[0]?.status_change).toEqual({
+        from: 'pending',
+        to: 'confirmed',
+        changed_at: '2026-08-25T15:00:00.000Z',
+      });
+    });
+
+    it('filters by latest enrollment activity rather than the original enrollment date', async () => {
+      seedFake({
+        authUserId: ADMIN_PROFILE.id,
+        data: {
+          profiles: [ADMIN_PROFILE, PARENT_PROFILE] as unknown as Record<
+            string,
+            unknown
+          >[],
+          family_members: [mockMember] as unknown as Record<string, unknown>[],
+          classes: [mockClass] as unknown as Record<string, unknown>[],
+          enrollments: [
+            {
+              id: 'changed-in-range',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'confirmed',
+              created_at: '2026-07-15T12:00:00.000Z',
+              updated_at: '2026-08-15T12:00:00.000Z',
+            },
+            {
+              id: 'created-in-range-but-changed-before',
+              student_id: CHILD_ID,
+              class_id: CLASS_ID,
+              status: 'cancelled',
+              created_at: '2026-08-15T12:00:00.000Z',
+              updated_at: '2026-07-15T12:00:00.000Z',
+            },
+          ] as unknown as Record<string, unknown>[],
+        },
+      });
+
+      const result = await getAllEnrollments(1, 20, {
+        startDate: '2026-08-01',
+        endDate: '2026-08-31',
+      });
+
+      expect(result.data?.map((enrollment) => enrollment.id)).toEqual([
+        'changed-in-range',
+      ]);
+    });
+
+    it('applies class, student search, and status-activity filters to status totals', async () => {
       const otherMember = {
         ...mockMember,
         id: 'child-other',
@@ -2537,6 +2623,7 @@ describe('Enrollment Actions', () => {
               class_id: CLASS_ID,
               status: 'confirmed',
               created_at: '2026-08-01T04:59:59.999Z',
+              updated_at: '2026-08-01T04:59:59.999Z',
             },
             {
               id: 'range-start',
@@ -2544,6 +2631,7 @@ describe('Enrollment Actions', () => {
               class_id: CLASS_ID,
               status: 'pending',
               created_at: '2026-08-01T05:00:00.000Z',
+              updated_at: '2026-08-01T05:00:00.000Z',
             },
             {
               id: 'range-end',
@@ -2551,6 +2639,7 @@ describe('Enrollment Actions', () => {
               class_id: CLASS_ID,
               status: 'waitlisted',
               created_at: '2026-08-03T04:59:59.999Z',
+              updated_at: '2026-08-03T04:59:59.999Z',
             },
             {
               id: 'after-range',
@@ -2558,6 +2647,7 @@ describe('Enrollment Actions', () => {
               class_id: CLASS_ID,
               status: 'cancelled',
               created_at: '2026-08-03T05:00:00.000Z',
+              updated_at: '2026-08-03T05:00:00.000Z',
             },
             {
               id: 'wrong-student',
@@ -2565,6 +2655,7 @@ describe('Enrollment Actions', () => {
               class_id: CLASS_ID,
               status: 'confirmed',
               created_at: '2026-08-02T12:00:00.000Z',
+              updated_at: '2026-08-02T12:00:00.000Z',
             },
             {
               id: 'wrong-class',
@@ -2572,6 +2663,7 @@ describe('Enrollment Actions', () => {
               class_id: otherClass.id,
               status: 'confirmed',
               created_at: '2026-08-02T12:00:00.000Z',
+              updated_at: '2026-08-02T12:00:00.000Z',
             },
           ] as unknown as Record<string, unknown>[],
         },
@@ -2597,7 +2689,7 @@ describe('Enrollment Actions', () => {
       });
     });
 
-    it('supports open-ended enrollment-date ranges', async () => {
+    it('supports open-ended status-activity ranges', async () => {
       seedFake({
         authUserId: ADMIN_PROFILE.id,
         data: {
@@ -2614,6 +2706,7 @@ describe('Enrollment Actions', () => {
               class_id: CLASS_ID,
               status: 'confirmed',
               created_at: '2026-07-15T12:00:00.000Z',
+              updated_at: '2026-07-15T12:00:00.000Z',
             },
             {
               id: 'new',
@@ -2621,6 +2714,7 @@ describe('Enrollment Actions', () => {
               class_id: CLASS_ID,
               status: 'pending',
               created_at: '2026-08-15T12:00:00.000Z',
+              updated_at: '2026-08-15T12:00:00.000Z',
             },
           ] as unknown as Record<string, unknown>[],
         },
@@ -2658,6 +2752,7 @@ describe('Enrollment Actions', () => {
               class_id: CLASS_ID,
               status: 'confirmed',
               created_at: '2026-03-08T05:59:59.999Z',
+              updated_at: '2026-03-08T05:59:59.999Z',
             },
             {
               id: 'local-day-start',
@@ -2665,6 +2760,7 @@ describe('Enrollment Actions', () => {
               class_id: CLASS_ID,
               status: 'pending',
               created_at: '2026-03-08T06:00:00.000Z',
+              updated_at: '2026-03-08T06:00:00.000Z',
             },
             {
               id: 'local-day-end',
@@ -2672,6 +2768,7 @@ describe('Enrollment Actions', () => {
               class_id: CLASS_ID,
               status: 'waitlisted',
               created_at: '2026-03-09T04:59:59.999Z',
+              updated_at: '2026-03-09T04:59:59.999Z',
             },
             {
               id: 'after-local-day',
@@ -2679,6 +2776,7 @@ describe('Enrollment Actions', () => {
               class_id: CLASS_ID,
               status: 'cancelled',
               created_at: '2026-03-09T05:00:00.000Z',
+              updated_at: '2026-03-09T05:00:00.000Z',
             },
           ] as unknown as Record<string, unknown>[],
         },
@@ -2722,7 +2820,7 @@ describe('Enrollment Actions', () => {
         'Start date must be on or before end date.'
       );
       expect(reversed.data).toEqual([]);
-      expect(malformed.filterError).toBe('Enter a valid enrollment date.');
+      expect(malformed.filterError).toBe('Enter a valid status activity date.');
     });
 
     it('rejects non-admin users with Access denied', async () => {

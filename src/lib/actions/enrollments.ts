@@ -63,7 +63,14 @@ export type AdminEnrollmentView = RosterEnrollment & {
     teacher_id: string;
     price: number | null;
   } | null;
+  status_change: AdminEnrollmentStatusChange | null;
 };
+
+export interface AdminEnrollmentStatusChange {
+  from: EnrollmentStatus;
+  to: EnrollmentStatus;
+  changed_at: string;
+}
 
 export type AdminEnrollmentStatusCounts = Record<EnrollmentStatus, number>;
 
@@ -81,6 +88,51 @@ function emptyAdminEnrollmentStatusCounts(): AdminEnrollmentStatusCounts {
     waitlisted: 0,
     cancelled: 0,
   };
+}
+
+function isEnrollmentStatus(value: unknown): value is EnrollmentStatus {
+  return (
+    typeof value === 'string' &&
+    ADMIN_ENROLLMENT_STATUSES.includes(value as EnrollmentStatus)
+  );
+}
+
+async function getLatestEnrollmentStatusChanges(
+  enrollmentIds: string[]
+): Promise<{
+  changes: Map<string, AdminEnrollmentStatusChange>;
+  error: string | null;
+}> {
+  const changes = new Map<string, AdminEnrollmentStatusChange>();
+  if (enrollmentIds.length === 0) return { changes, error: null };
+
+  const adminClient = await createAdminClient();
+  const { data, error } = await adminClient
+    .from('audit_logs')
+    .select('target_id, details, created_at')
+    .eq('target_type', 'enrollment')
+    .eq('action', 'UPDATE_ENROLLMENT_STATUS')
+    .in('target_id', enrollmentIds)
+    .order('created_at', { ascending: false });
+
+  if (error) return { changes, error: error.message };
+
+  for (const row of data || []) {
+    if (!row.target_id || changes.has(row.target_id)) continue;
+
+    const details = row.details as Record<string, unknown> | null;
+    const from = details?.old_status;
+    const to = details?.new_status;
+    if (!isEnrollmentStatus(from) || !isEnrollmentStatus(to)) continue;
+
+    changes.set(row.target_id, {
+      from,
+      to,
+      changed_at: row.created_at,
+    });
+  }
+
+  return { changes, error: null };
 }
 
 /**
@@ -1638,11 +1690,11 @@ export async function getAllEnrollments(
     }
 
     if (dateRange.startAt) {
-      query = query.gte('created_at', dateRange.startAt);
+      query = query.gte('updated_at', dateRange.startAt);
     }
 
     if (dateRange.endBefore) {
-      query = query.lt('created_at', dateRange.endBefore);
+      query = query.lt('updated_at', dateRange.endBefore);
     }
 
     if (filters?.search) {
@@ -1671,11 +1723,11 @@ export async function getAllEnrollments(
       }
 
       if (dateRange.startAt) {
-        countQuery = countQuery.gte('created_at', dateRange.startAt);
+        countQuery = countQuery.gte('updated_at', dateRange.startAt);
       }
 
       if (dateRange.endBefore) {
-        countQuery = countQuery.lt('created_at', dateRange.endBefore);
+        countQuery = countQuery.lt('updated_at', dateRange.endBefore);
       }
 
       if (filters?.search) {
@@ -1690,7 +1742,7 @@ export async function getAllEnrollments(
 
     const [pageResult, ...countResults] = await Promise.all([
       query
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .range(offset, offset + limit - 1),
       ...statusCountQueries,
     ]);
@@ -1723,7 +1775,29 @@ export async function getAllEnrollments(
       };
     }
 
-    const mappedData = data;
+    const { changes, error: changesError } =
+      await getLatestEnrollmentStatusChanges(
+        (data || []).map((enrollment) => enrollment.id)
+      );
+
+    if (changesError) {
+      console.error(
+        'Error fetching admin enrollment status changes:',
+        changesError
+      );
+      return {
+        data: null,
+        count: 0,
+        statusCounts: emptyAdminEnrollmentStatusCounts(),
+        error: changesError,
+        filterError: null,
+      };
+    }
+
+    const mappedData = (data || []).map((enrollment) => ({
+      ...enrollment,
+      status_change: changes.get(enrollment.id) || null,
+    }));
     const statusCounts = emptyAdminEnrollmentStatusCounts();
     ADMIN_ENROLLMENT_STATUSES.forEach((status, index) => {
       statusCounts[status] = countResults[index]?.count || 0;

@@ -65,6 +65,32 @@ const waitlistedEnrollment = {
   },
 } as unknown as AdminEnrollmentView;
 
+const paidEnrollment = {
+  ...waitlistedEnrollment,
+  id: 'enrollment-paid',
+  status: 'confirmed',
+  waitlist_position: null,
+  updated_at: '2026-08-26T15:00:00.000Z',
+  status_change: {
+    from: 'pending',
+    to: 'confirmed',
+    changed_at: '2026-08-26T15:00:00.000Z',
+  },
+} as AdminEnrollmentView;
+
+const cancelledEnrollment = {
+  ...waitlistedEnrollment,
+  id: 'enrollment-cancelled',
+  status: 'cancelled',
+  waitlist_position: null,
+  updated_at: '2026-08-27T15:00:00.000Z',
+  status_change: {
+    from: 'pending',
+    to: 'cancelled',
+    changed_at: '2026-08-27T15:00:00.000Z',
+  },
+} as AdminEnrollmentView;
+
 function renderTable(
   overrides: Partial<
     React.ComponentProps<typeof EnrollmentManagementTable>
@@ -112,10 +138,28 @@ describe('EnrollmentManagementTable', () => {
     expect(
       screen.getByRole('columnheader', { name: 'Enrollment date' })
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: 'Status change' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', { name: 'Changed on' })
+    ).toBeInTheDocument();
     expect(screen.getByText('#3 on Waitlist')).toBeInTheDocument();
     expect(
       screen.getByText('Showing 1–1 of 1 matching record')
     ).toBeInTheDocument();
+  });
+
+  it('shows pending-to-paid and pending-to-cancelled transitions with their change dates', () => {
+    renderTable({
+      enrollments: [paidEnrollment, cancelledEnrollment],
+      matchingCount: 2,
+    });
+
+    expect(screen.getByLabelText('Pending to Paid')).toBeInTheDocument();
+    expect(screen.getByLabelText('Pending to Cancelled')).toBeInTheDocument();
+    expect(screen.getByText('8/26/2026')).toBeInTheDocument();
+    expect(screen.getByText('8/27/2026')).toBeInTheDocument();
   });
 
   it('filters from a status card and toggles the selected card back to all statuses', async () => {
@@ -142,15 +186,15 @@ describe('EnrollmentManagementTable', () => {
     expect(mockReplace).toHaveBeenCalledWith('/admin/enrollments?page=1');
   });
 
-  it('applies inclusive enrollment-date URL filters and resets pagination', async () => {
+  it('applies inclusive status-activity URL filters and resets pagination', async () => {
     const user = userEvent.setup();
     mockSearchParams.current = new URLSearchParams('page=3&status=waitlisted');
     renderTable();
 
-    fireEvent.change(screen.getByLabelText('Start date'), {
+    fireEvent.change(screen.getByLabelText('Activity from'), {
       target: { value: '2026-08-01' },
     });
-    fireEvent.change(screen.getByLabelText('End date'), {
+    fireEvent.change(screen.getByLabelText('Activity through'), {
       target: { value: '2026-08-31' },
     });
     await user.click(screen.getByRole('button', { name: 'Apply filters' }));
@@ -167,10 +211,10 @@ describe('EnrollmentManagementTable', () => {
     const user = userEvent.setup();
     renderTable();
 
-    fireEvent.change(screen.getByLabelText('Start date'), {
+    fireEvent.change(screen.getByLabelText('Activity from'), {
       target: { value: '2026-08-31' },
     });
-    fireEvent.change(screen.getByLabelText('End date'), {
+    fireEvent.change(screen.getByLabelText('Activity through'), {
       target: { value: '2026-08-01' },
     });
     await user.click(screen.getByRole('button', { name: 'Apply filters' }));

@@ -101,6 +101,7 @@ const enrollments = [
     waitlist_position: null,
     deposit_paid: true,
     created_at: '2026-08-01T15:00:00.000Z',
+    updated_at: '2026-08-03T15:00:00.000Z',
   },
   {
     id: 'enrollment-waitlisted',
@@ -110,6 +111,7 @@ const enrollments = [
     waitlist_position: 1,
     deposit_paid: false,
     created_at: '2026-08-02T15:00:00.000Z',
+    updated_at: '2026-08-02T15:00:00.000Z',
   },
 ] as unknown as Record<string, unknown>[];
 
@@ -287,6 +289,21 @@ describe('Export API Route', () => {
     expect(header).toContain('Parent Phone');
     expect(header).toContain('Deposit Paid');
     expect(header).toContain('Class Fee');
+    expect(header).toContain('Status Activity Date');
+  });
+
+  it('filters matching enrollment exports by status activity date', async () => {
+    seed('admin');
+
+    const response = await GET(
+      new Request(
+        'http://localhost/api/export?type=enrollments&scope=matching&startDate=2026-08-03&endDate=2026-08-03'
+      )
+    );
+    const csv = await response.text();
+
+    expect(csv).toContain('Jane Doe');
+    expect(csv).not.toContain('John Doe');
   });
 
   it('uses a reduced enrollment roster for class schedulers', async () => {
