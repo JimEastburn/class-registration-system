@@ -37,6 +37,18 @@ interface ChangeSummary {
   after: unknown;
 }
 
+interface CancelledStudentSummary {
+  enrollmentId: string | null;
+  enrollmentStatus: string | null;
+  studentId: string | null;
+  studentName: string;
+}
+
+interface ClassCancellationSummary {
+  className: string | null;
+  students: CancelledStudentSummary[];
+}
+
 function humanize(value: string | null): string {
   if (!value) return 'Not recorded';
 
@@ -132,7 +144,55 @@ function getChangeSummaries(
   return summaries;
 }
 
+function stringValue(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function getClassCancellationSummary(
+  log: AuditLogWithUser
+): ClassCancellationSummary | null {
+  if (log.action !== 'class.cancelled') return null;
+
+  const details = log.details || {};
+  const students = Array.isArray(details.students)
+    ? details.students.flatMap((value): CancelledStudentSummary[] => {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+          return [];
+        }
+
+        const student = value as Record<string, unknown>;
+        const studentName = stringValue(student.studentName);
+        if (!studentName) return [];
+
+        return [
+          {
+            enrollmentId: stringValue(student.enrollmentId),
+            enrollmentStatus: stringValue(student.enrollmentStatus),
+            studentId: stringValue(student.studentId),
+            studentName,
+          },
+        ];
+      })
+    : [];
+
+  return {
+    // `name` keeps older cancellation records useful; new records use the
+    // explicit `className` key.
+    className: stringValue(details.className) || stringValue(details.name),
+    students,
+  };
+}
+
 function detailsSummary(log: AuditLogWithUser): string {
+  const cancellation = getClassCancellationSummary(log);
+  if (cancellation) {
+    return cancellation.students.length > 0
+      ? `Students: ${cancellation.students
+          .map((student) => student.studentName)
+          .join(', ')}`
+      : 'Students: None recorded';
+  }
+
   const change = getChangeSummaries(log.details)[0];
   if (change) {
     return `${change.label}: ${formatChangeValue(change.before)} → ${formatChangeValue(change.after)}`;
@@ -288,6 +348,7 @@ export function AuditLogTable({
             ) : (
               data.map((log) => {
                 const actorInfo = actorDetails(log);
+                const cancellation = getClassCancellationSummary(log);
                 return (
                   <TableRow
                     key={log.id}
@@ -317,7 +378,22 @@ export function AuditLogTable({
                     <TableCell className="font-medium">
                       {humanize(log.action)}
                     </TableCell>
-                    <TableCell>{humanize(log.target_type)}</TableCell>
+                    <TableCell>
+                      {cancellation?.className ? (
+                        <div>
+                          <div className="font-medium">
+                            {cancellation.className}
+                          </div>
+                          {log.target_id && (
+                            <div className="text-muted-foreground font-mono text-xs">
+                              {log.target_id}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        humanize(log.target_type)
+                      )}
+                    </TableCell>
                     <TableCell className="text-muted-foreground max-w-[360px] truncate">
                       {detailsSummary(log)}
                     </TableCell>
@@ -378,6 +454,10 @@ function AuditLogDetailDialog({
 
   const actor = actorDetails(log);
   const changes = getChangeSummaries(log.details);
+  const cancellation = getClassCancellationSummary(log);
+  const detailEntries = Object.entries(log.details || {}).filter(
+    ([key]) => !cancellation || !['className', 'name', 'students'].includes(key)
+  );
 
   return (
     <Dialog open={!!log} onOpenChange={onOpenChange}>
@@ -414,6 +494,54 @@ function AuditLogDetailDialog({
               <Detail label="Audit log ID" value={log.id} monospace />
             </section>
 
+            {cancellation && (
+              <section className="space-y-3">
+                <h3 className="font-semibold">Cancellation details</h3>
+                <Detail
+                  label="Class name"
+                  value={cancellation.className || 'Not recorded'}
+                />
+                <div className="space-y-2">
+                  <h4 className="text-muted-foreground text-xs font-medium">
+                    Students
+                  </h4>
+                  {cancellation.students.length > 0 ? (
+                    <ul className="divide-y rounded-md border">
+                      {cancellation.students.map((student, index) => (
+                        <li
+                          key={
+                            student.enrollmentId ||
+                            `${student.studentName}-${index}`
+                          }
+                          className="grid gap-1 p-3 sm:grid-cols-[1fr_auto] sm:items-center"
+                        >
+                          <div>
+                            <div className="text-sm font-medium">
+                              {student.studentName}
+                            </div>
+                            {student.studentId && (
+                              <div className="text-muted-foreground font-mono text-xs">
+                                {student.studentId}
+                              </div>
+                            )}
+                          </div>
+                          {student.enrollmentStatus && (
+                            <span className="text-muted-foreground text-sm">
+                              {humanize(student.enrollmentStatus)}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">
+                      No student names were recorded for this cancellation.
+                    </p>
+                  )}
+                </div>
+              </section>
+            )}
+
             <section className="space-y-2">
               <h3 className="font-semibold">What changed</h3>
               {changes.length > 0 ? (
@@ -439,9 +567,9 @@ function AuditLogDetailDialog({
                     </div>
                   ))}
                 </div>
-              ) : log.details && Object.keys(log.details).length > 0 ? (
+              ) : detailEntries.length > 0 ? (
                 <dl className="divide-y rounded-md border">
-                  {Object.entries(log.details).map(([key, value]) => (
+                  {detailEntries.map(([key, value]) => (
                     <div
                       key={key}
                       className="grid gap-1 p-3 sm:grid-cols-[180px_1fr]"

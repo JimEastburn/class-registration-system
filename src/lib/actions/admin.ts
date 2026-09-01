@@ -11,6 +11,7 @@ import type {
 } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { resolveAdminEnrollmentDateRange } from '@/lib/admin-enrollment-filters';
+import { getAuditActionFilterTerms } from '@/lib/audit-filters';
 
 export interface SystemStats {
   totalUsers: number;
@@ -695,8 +696,8 @@ export async function getAuditLogs(
     if (actorIds) {
       query = query.in('user_id', actorIds);
     }
-    if (filters?.action) {
-      query = query.ilike('action', `%${filters.action}%`);
+    for (const term of getAuditActionFilterTerms(filters?.action)) {
+      query = query.ilike('action', `%${term}%`);
     }
     if (dateRange.startAt) {
       query = query.gte('created_at', dateRange.startAt);

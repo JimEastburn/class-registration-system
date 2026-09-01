@@ -934,6 +934,17 @@ export async function cancelClass(
       .eq('class_id', classId)
       .in('status', ['confirmed', 'pending', 'waitlisted']);
 
+    const affectedStudents = (enrollmentsToNotify || []).map((enrollment) => ({
+      enrollmentId: enrollment.id,
+      enrollmentStatus: enrollment.status,
+      studentId: enrollment.student_id,
+      studentName:
+        [enrollment.student?.first_name, enrollment.student?.last_name]
+          .filter(Boolean)
+          .join(' ')
+          .trim() || 'Unknown student',
+    }));
+
     // 2. Cancel every active enrollment. This MUST use the admin client:
     //    public.enrollments has no UPDATE policy for teachers (SELECT only --
     //    see 20260201205611_enable_rls.sql, and is_admin() does not include
@@ -1021,6 +1032,8 @@ export async function cancelClass(
 
     await logAuditAction(user.id, 'class.cancelled', 'class', classId, {
       name: existingClass.name,
+      className: existingClass.name,
+      students: affectedStudents,
       affectedEnrollments: affectedEnrollments?.length || 0,
       emailsSent,
       emailsFailed,

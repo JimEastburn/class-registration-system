@@ -3,6 +3,7 @@ import type { Database, Json } from '@/types/database';
 import type { Class, EnrollmentStatus, UserRole } from '@/types';
 import { encodeCsv } from '@/lib/exports/csv';
 import { resolveAdminEnrollmentDateRange } from '@/lib/admin-enrollment-filters';
+import { getAuditActionFilterTerms } from '@/lib/audit-filters';
 import {
   formatClassBlock,
   resolveClassSort,
@@ -745,8 +746,8 @@ async function exportAuditLogs(
 
     if (request.scope === 'matching') {
       if (matchingActorIds) query = query.in('user_id', matchingActorIds);
-      if (request.action) {
-        query = query.ilike('action', `%${request.action}%`);
+      for (const term of getAuditActionFilterTerms(request.action)) {
+        query = query.ilike('action', `%${term}%`);
       }
       if (dateRange.startAt) {
         query = query.gte('created_at', dateRange.startAt);

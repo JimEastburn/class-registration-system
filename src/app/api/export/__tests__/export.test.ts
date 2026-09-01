@@ -369,7 +369,7 @@ describe('Export API Route', () => {
 
     const response = await GET(
       new Request(
-        'http://localhost/api/export?type=audit&scope=matching&actor=Admin+User&action=UPDATE_ENROLLMENT_STATUS&startDate=2026-08-31&endDate=2026-08-31'
+        'http://localhost/api/export?type=audit&scope=matching&actor=Admin+User&action=Update+enrollment+status&startDate=2026-08-31&endDate=2026-08-31'
       )
     );
     const csv = await response.text();

@@ -10,6 +10,7 @@ import {
   getClassAvailability,
 } from '@/lib/actions/classes';
 import { sendClassCancellation } from '@/lib/email';
+import { logAuditAction } from '@/lib/actions/audit';
 import {
   seedFake,
   TEACHER_PROFILE,
@@ -187,7 +188,12 @@ describe('Class Actions', () => {
           { ...existingClass, status: 'published' },
         ] as unknown as Record<string, unknown>[],
         enrollments: [
-          { id: 'e-1', student_id: 'fm-1', class_id: 'class-1', status: 'confirmed' },
+          {
+            id: 'e-1',
+            student_id: 'fm-1',
+            class_id: 'class-1',
+            status: 'confirmed',
+          },
         ] as unknown as Record<string, unknown>[],
       });
       fake.setAuthUser({ id: ADMIN_PROFILE.id });
@@ -295,14 +301,12 @@ describe('Class Actions', () => {
       vi.mocked(sendClassCancellation).mockResolvedValue(emailOk);
     });
 
-    const seedForCancel = (
-      classOverrides: Record<string, unknown> = {}
-    ) =>
+    const seedForCancel = (classOverrides: Record<string, unknown> = {}) =>
       seed({
-        profiles: [
-          TEACHER_PROFILE,
-          PARENT_PROFILE,
-        ] as unknown as Record<string, unknown>[],
+        profiles: [TEACHER_PROFILE, PARENT_PROFILE] as unknown as Record<
+          string,
+          unknown
+        >[],
         classes: [
           { ...existingClass, status: 'published', ...classOverrides },
           { ...existingClass, id: 'class-2', status: 'published' },
@@ -406,6 +410,42 @@ describe('Class Actions', () => {
       if (result.success) expect(result.data.affectedEnrollments).toBe(3);
     });
 
+    it('records the class name and affected students in the audit log', async () => {
+      seedForCancel();
+
+      await cancelClass('class-1');
+
+      expect(logAuditAction).toHaveBeenCalledWith(
+        TEACHER_ID,
+        'class.cancelled',
+        'class',
+        'class-1',
+        expect.objectContaining({
+          className: 'Math 101',
+          students: [
+            {
+              enrollmentId: 'e-confirmed',
+              enrollmentStatus: 'confirmed',
+              studentId: 'fm-1',
+              studentName: 'Kid1 Test',
+            },
+            {
+              enrollmentId: 'e-pending',
+              enrollmentStatus: 'pending',
+              studentId: 'fm-2',
+              studentName: 'Kid2 Test',
+            },
+            {
+              enrollmentId: 'e-waitlisted',
+              enrollmentStatus: 'waitlisted',
+              studentId: 'fm-3',
+              studentName: 'Kid3 Test',
+            },
+          ],
+        })
+      );
+    });
+
     it('sends one cancellation email per affected family', async () => {
       seedForCancel();
 
@@ -434,9 +474,9 @@ describe('Class Actions', () => {
       expect(sendClassCancellation).not.toHaveBeenCalled();
       // The seeded rows are left exactly as they were: repairing pre-existing
       // violations is the migration's backfill job, not a re-cancel side effect.
-      expect(fake.db.enrollments.find((e) => e.id === 'e-confirmed')!.status).toBe(
-        'confirmed'
-      );
+      expect(
+        fake.db.enrollments.find((e) => e.id === 'e-confirmed')!.status
+      ).toBe('confirmed');
     });
 
     /**
@@ -577,9 +617,10 @@ describe('Class Actions', () => {
         authUserId: PARENT_PROFILE.id,
         data: {
           profiles: [PARENT_PROFILE] as unknown as Record<string, unknown>[],
-          classes: [
-            { ...existingClass, capacity: 12 },
-          ] as unknown as Record<string, unknown>[],
+          classes: [{ ...existingClass, capacity: 12 }] as unknown as Record<
+            string,
+            unknown
+          >[],
           // All this parent is allowed to see: a single unrelated row.
           enrollments: [
             {

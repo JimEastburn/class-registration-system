@@ -460,5 +460,36 @@ describe('Admin Actions', () => {
 
       expect(result).toEqual({ data: [], count: 0, error: null });
     });
+
+    it('filters actions using the human-readable text shown in the table', async () => {
+      seed({
+        audit_logs: [
+          {
+            id: 'audit-status',
+            user_id: ADMIN_ID,
+            action: 'UPDATE_ENROLLMENT_STATUS',
+            target_type: 'enrollment',
+            target_id: 'enrollment-1',
+            details: null,
+            created_at: '2026-08-31T15:00:00.000Z',
+          },
+          {
+            id: 'audit-class',
+            user_id: ADMIN_ID,
+            action: 'class.created',
+            target_type: 'class',
+            target_id: 'class-1',
+            details: null,
+            created_at: '2026-08-31T14:00:00.000Z',
+          },
+        ],
+      });
+
+      const result = await getAuditLogs(1, 20, { action: 'Class created' });
+
+      expect(result.error).toBeNull();
+      expect(result.count).toBe(1);
+      expect(result.data?.map((log) => log.id)).toEqual(['audit-class']);
+    });
   });
 });

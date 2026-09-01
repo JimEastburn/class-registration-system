@@ -33,6 +33,38 @@ const statusChangeLog: AuditLogWithUser = {
   },
 };
 
+const classCancellationLog: AuditLogWithUser = {
+  id: 'audit-cancel',
+  user_id: 'teacher-123',
+  action: 'class.cancelled',
+  target_type: 'class',
+  target_id: 'class-1',
+  details: {
+    className: 'Math 101',
+    affectedEnrollments: 2,
+    students: [
+      {
+        enrollmentId: 'enrollment-1',
+        enrollmentStatus: 'confirmed',
+        studentId: 'student-1',
+        studentName: 'Alex Rivera',
+      },
+      {
+        enrollmentId: 'enrollment-2',
+        enrollmentStatus: 'pending',
+        studentId: 'student-2',
+        studentName: 'Jordan Lee',
+      },
+    ],
+  },
+  created_at: '2026-08-31T16:00:00.000Z',
+  profiles: {
+    first_name: 'Terry',
+    last_name: 'Teacher',
+    email: 'terry@example.com',
+  },
+};
+
 function renderTable(data: AuditLogWithUser[] = [statusChangeLog]) {
   return render(
     <AuditLogTable data={data} count={data.length} page={1} limit={20} />
@@ -83,6 +115,31 @@ describe('AuditLogTable', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows the cancelled class name and enrolled students clearly', async () => {
+    const user = userEvent.setup();
+    renderTable([classCancellationLog]);
+
+    expect(screen.getByText('Math 101')).toBeInTheDocument();
+    expect(
+      screen.getByText('Students: Alex Rivera, Jordan Lee')
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByLabelText(
+        'View audit details for Class cancelled by Terry Teacher'
+      )
+    );
+
+    const dialog = screen.getByRole('dialog', { name: 'Audit log details' });
+    expect(within(dialog).getByText('Class name')).toBeInTheDocument();
+    expect(within(dialog).getByText('Math 101')).toBeInTheDocument();
+    expect(within(dialog).getByText('Students')).toBeInTheDocument();
+    expect(within(dialog).getByText('Alex Rivera')).toBeInTheDocument();
+    expect(within(dialog).getByText('Jordan Lee')).toBeInTheDocument();
+    expect(within(dialog).getByText('Confirmed')).toBeInTheDocument();
+    expect(within(dialog).getByText('Pending')).toBeInTheDocument();
+  });
+
   it('filters by person name or email', async () => {
     const user = userEvent.setup();
     renderTable();
@@ -91,5 +148,20 @@ describe('AuditLogTable', () => {
     await user.click(screen.getByRole('button', { name: 'Apply filters' }));
 
     expect(mockPush).toHaveBeenCalledWith('?page=1&actor=Ada+Admin');
+  });
+
+  it('applies the visible action text as an action filter', async () => {
+    const user = userEvent.setup();
+    renderTable();
+
+    await user.type(
+      screen.getByLabelText('Action'),
+      'Update enrollment status'
+    );
+    await user.click(screen.getByRole('button', { name: 'Apply filters' }));
+
+    expect(mockPush).toHaveBeenCalledWith(
+      '?page=1&action=Update+enrollment+status'
+    );
   });
 });
