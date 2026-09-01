@@ -4,7 +4,7 @@ import { AuditLogTable } from '@/components/admin/AuditLogTable';
 interface PageProps {
   searchParams: Promise<{
     page?: string;
-    userId?: string;
+    actor?: string;
     action?: string;
     startDate?: string;
     endDate?: string;
@@ -17,7 +17,7 @@ export default async function AuditLogPage({ searchParams }: PageProps) {
   const limit = 20;
 
   const { data, count } = await getAuditLogs(page, limit, {
-    userId: params.userId,
+    actor: params.actor,
     action: params.action,
     startDate: params.startDate,
     endDate: params.endDate,

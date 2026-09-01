@@ -3,7 +3,6 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { logAuditAction } from '@/lib/actions/audit';
 import type {
-  AuditLog,
   AuditLogWithUser,
   PhotoConsentActivityLog,
   PhotoConsentActivityLogPage,
@@ -624,12 +623,16 @@ export async function getAuditLogs(
   page = 1,
   limit = 20,
   filters?: {
-    userId?: string;
+    actor?: string;
     action?: string;
     startDate?: string;
     endDate?: string;
   }
-): Promise<{ data: AuditLog[] | null; count: number; error: string | null }> {
+): Promise<{
+  data: AuditLogWithUser[] | null;
+  count: number;
+  error: string | null;
+}> {
   try {
     const supabase = await createClient();
     const {
@@ -650,10 +653,38 @@ export async function getAuditLogs(
 
     const offset = (page - 1) * limit;
 
+    let actorIds: string[] | null = null;
+    if (filters?.actor?.trim()) {
+      const actorTerms = filters.actor
+        .trim()
+        .split(/\s+/)
+        .map((term) => term.replace(/[,()]/g, ''))
+        .filter(Boolean);
+
+      if (actorTerms.length === 0) {
+        return { data: [], count: 0, error: null };
+      }
+
+      let actorQuery = db.from('profiles').select('id');
+      for (const term of actorTerms) {
+        actorQuery = actorQuery.or(
+          `first_name.ilike.%${term}%,last_name.ilike.%${term}%,email.ilike.%${term}%`
+        );
+      }
+
+      const { data: actors, error: actorError } = await actorQuery;
+      if (actorError) throw actorError;
+
+      actorIds = (actors || []).map((actor) => actor.id);
+      if (actorIds.length === 0) {
+        return { data: [], count: 0, error: null };
+      }
+    }
+
     let query = db.from('audit_logs').select('*', { count: 'exact' });
 
-    if (filters?.userId) {
-      query = query.eq('user_id', filters.userId);
+    if (actorIds) {
+      query = query.in('user_id', actorIds);
     }
     if (filters?.action) {
       query = query.ilike('action', `%${filters.action}%`);
@@ -674,7 +705,40 @@ export async function getAuditLogs(
 
     if (error) throw error;
 
-    return { data: data as AuditLog[], count: count || 0, error: null };
+    const userIds = Array.from(
+      new Set((data || []).map((log) => log.user_id).filter(Boolean))
+    ) as string[];
+    const actorsById = new Map<
+      string,
+      { first_name: string; last_name: string; email: string }
+    >();
+
+    if (userIds.length > 0) {
+      const { data: actors, error: actorsError } = await db
+        .from('profiles')
+        .select('id, first_name, last_name, email')
+        .in('id', userIds);
+      if (actorsError) throw actorsError;
+
+      for (const actor of actors || []) {
+        actorsById.set(actor.id, {
+          first_name: actor.first_name,
+          last_name: actor.last_name,
+          email: actor.email,
+        });
+      }
+    }
+
+    const logs = (data || []).map((log) => ({
+      ...log,
+      profiles: log.user_id ? actorsById.get(log.user_id) || null : null,
+    }));
+
+    return {
+      data: logs as AuditLogWithUser[],
+      count: count || 0,
+      error: null,
+    };
   } catch (err) {
     console.error('Error fetching audit logs:', err);
     return { data: null, count: 0, error: 'Failed to fetch logs' };

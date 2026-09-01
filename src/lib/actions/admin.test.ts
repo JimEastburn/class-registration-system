@@ -9,6 +9,7 @@ import {
   deleteUser,
   getSystemStats,
   getAllUsers,
+  getAuditLogs,
 } from '@/lib/actions/admin';
 import { revalidatePath } from 'next/cache';
 import {
@@ -408,6 +409,56 @@ describe('Admin Actions', () => {
       expect(result.data).toHaveLength(2);
       expect(result.data?.find((u) => u.id === 'banned-user')).toBeUndefined();
       expect(result.count).toBe(2);
+    });
+  });
+
+  describe('getAuditLogs', () => {
+    it('joins the actor profile and filters by the actor name', async () => {
+      seed({
+        audit_logs: [
+          {
+            id: 'audit-target',
+            user_id: TARGET_ID,
+            action: 'update_role',
+            target_type: 'profile',
+            target_id: 'another-user',
+            details: { newRole: 'teacher' },
+            created_at: '2026-08-31T15:00:00.000Z',
+          },
+          {
+            id: 'audit-admin',
+            user_id: ADMIN_ID,
+            action: 'class.created',
+            target_type: 'class',
+            target_id: 'class-1',
+            details: { name: 'Art' },
+            created_at: '2026-08-31T14:00:00.000Z',
+          },
+        ],
+      });
+
+      const result = await getAuditLogs(1, 20, { actor: 'Target User' });
+
+      expect(result.error).toBeNull();
+      expect(result.count).toBe(1);
+      expect(result.data).toEqual([
+        expect.objectContaining({
+          id: 'audit-target',
+          profiles: expect.objectContaining({
+            first_name: 'Target',
+            last_name: 'User',
+            email: 'target@test.com',
+          }),
+        }),
+      ]);
+    });
+
+    it('returns an empty page when no actor matches', async () => {
+      seed({ audit_logs: [] });
+
+      const result = await getAuditLogs(1, 20, { actor: 'Nobody Here' });
+
+      expect(result).toEqual({ data: [], count: 0, error: null });
     });
   });
 });
