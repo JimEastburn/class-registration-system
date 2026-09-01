@@ -253,7 +253,7 @@ export function AuditLogTable({
 
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <p className="text-muted-foreground text-sm">
-          Select a row to see the complete audit record and recorded changes.
+          Click a row to see the complete audit record and recorded changes.
         </p>
         <ExportCsvButton
           type="audit"
