@@ -11,12 +11,14 @@ const FILTER_KEYS: Record<ExportType, readonly string[]> = {
     'endDate',
     'roster',
   ],
+  audit: ['actor', 'action', 'startDate', 'endDate'],
 };
 
 const PERSISTENT_KEYS: Record<ExportType, readonly string[]> = {
   users: [],
   classes: ['sort', 'dir'],
   enrollments: [],
+  audit: [],
 };
 
 interface ExportUrlOptions {

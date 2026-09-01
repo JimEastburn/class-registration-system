@@ -1,5 +1,5 @@
 import type { createClient } from '@/lib/supabase/server';
-import type { Database } from '@/types/database';
+import type { Database, Json } from '@/types/database';
 import type { Class, EnrollmentStatus, UserRole } from '@/types';
 import { encodeCsv } from '@/lib/exports/csv';
 import { resolveAdminEnrollmentDateRange } from '@/lib/admin-enrollment-filters';
@@ -15,7 +15,12 @@ import {
   type EnrollmentCounts,
 } from '@/lib/enrollment-counts';
 
-export const EXPORT_TYPES = ['users', 'classes', 'enrollments'] as const;
+export const EXPORT_TYPES = [
+  'users',
+  'classes',
+  'enrollments',
+  'audit',
+] as const;
 export type ExportType = (typeof EXPORT_TYPES)[number];
 export type ExportScope = 'matching' | 'all';
 
@@ -23,6 +28,8 @@ export interface ExportRequest {
   type: ExportType;
   scope: ExportScope;
   search?: string;
+  actor?: string;
+  action?: string;
   status?: EnrollmentStatus;
   classId?: string;
   startDate?: string;
@@ -44,6 +51,7 @@ type QueryResult<T> = { data: T[] | null; error: QueryError };
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type ClassRow = Database['public']['Tables']['classes']['Row'];
 type EnrollmentRow = Database['public']['Tables']['enrollments']['Row'];
+type AuditLogRow = Database['public']['Tables']['audit_logs']['Row'];
 type FamilyMemberRow = Database['public']['Tables']['family_members']['Row'];
 
 type ClassExportRow = Class & {
@@ -70,8 +78,14 @@ type EnrollmentExportRow = EnrollmentRow & {
     | null;
 };
 
+type AuditActorProfile = Pick<
+  ProfileRow,
+  'id' | 'first_name' | 'last_name' | 'email'
+>;
+
 const EXPORT_BATCH_SIZE = 500;
 const SAFE_SEARCH = /^[\p{L}\p{N}\s@.+\-']+$/u;
+const SAFE_AUDIT_FILTER = /^[\p{L}\p{N}\s@.+_\-']+$/u;
 const ENROLLMENT_STATUSES: EnrollmentStatus[] = [
   'confirmed',
   'pending',
@@ -88,6 +102,18 @@ function readOptionalSearch(params: URLSearchParams): string | undefined {
     throw new ExportRequestError('Invalid search value');
   }
   return search;
+}
+
+function readOptionalAuditFilter(
+  params: URLSearchParams,
+  key: 'actor' | 'action'
+): string | undefined {
+  const value = params.get(key)?.trim();
+  if (!value) return undefined;
+  if (value.length > 100 || !SAFE_AUDIT_FILTER.test(value)) {
+    throw new ExportRequestError(`Invalid audit ${key}`);
+  }
+  return value;
 }
 
 export function parseExportRequest(params: URLSearchParams): ExportRequest {
@@ -137,6 +163,8 @@ export function parseExportRequest(params: URLSearchParams): ExportRequest {
     type: type as ExportType,
     scope,
     search: readOptionalSearch(params),
+    actor: readOptionalAuditFilter(params, 'actor'),
+    action: readOptionalAuditFilter(params, 'action'),
     status: status as EnrollmentStatus | undefined,
     classId,
     startDate,
@@ -147,7 +175,7 @@ export function parseExportRequest(params: URLSearchParams): ExportRequest {
 }
 
 export function canExport(role: UserRole, type: ExportType): boolean {
-  if (type === 'users') {
+  if (type === 'users' || type === 'audit') {
     return role === 'admin' || role === 'super_admin';
   }
 
@@ -179,6 +207,8 @@ function filtersForAudit(request: ExportRequest): Record<string, string> {
   return Object.fromEntries(
     [
       ['search', request.search],
+      ['actor', request.actor],
+      ['action', request.action],
       ['status', request.status],
       ['classId', request.classId],
       ['startDate', request.startDate],
@@ -220,7 +250,8 @@ function fullName(
 }
 
 function filename(type: ExportType, scope: ExportScope): string {
-  return `${type}_${scope}_${new Date().toISOString().slice(0, 10)}.csv`;
+  const exportName = type === 'audit' ? 'audit_logs' : type;
+  return `${exportName}_${scope}_${new Date().toISOString().slice(0, 10)}.csv`;
 }
 
 async function exportUsers(
@@ -566,6 +597,205 @@ async function exportEnrollments(
   };
 }
 
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Chicago',
+    dateStyle: 'short',
+    timeStyle: 'medium',
+  }).format(date);
+}
+
+function asJsonRecord(value: Json | null | undefined): {
+  [key: string]: Json | undefined;
+} | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return value;
+}
+
+function formatJsonValue(value: Json | undefined): string {
+  if (value === undefined) return '';
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value);
+}
+
+function auditChangeSummary(details: Json | null): string {
+  const record = asJsonRecord(details);
+  if (!record) return '';
+
+  const changes: string[] = [];
+  const pairs: Array<[string, string, string]> = [
+    ['Status', 'old_status', 'new_status'],
+    ['Role', 'old_role', 'new_role'],
+    ['Status', 'oldStatus', 'newStatus'],
+    ['Role', 'oldRole', 'newRole'],
+  ];
+
+  for (const [label, oldKey, newKey] of pairs) {
+    if (oldKey in record && newKey in record) {
+      changes.push(
+        `${label}: ${formatJsonValue(record[oldKey])} → ${formatJsonValue(record[newKey])}`
+      );
+    }
+  }
+
+  for (const [key, value] of Object.entries(record)) {
+    const nested = asJsonRecord(value);
+    if (nested && 'old' in nested && 'new' in nested) {
+      changes.push(
+        `${key}: ${formatJsonValue(nested.old)} → ${formatJsonValue(nested.new)}`
+      );
+    }
+  }
+
+  if (changes.length > 0) return changes.join(' | ');
+
+  return Object.entries(record)
+    .map(([key, value]) => `${key}: ${formatJsonValue(value)}`)
+    .join(' | ');
+}
+
+async function getAuditActorIds(
+  adminClient: SupabaseClient,
+  actor: string
+): Promise<string[]> {
+  const terms = actor.trim().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return [];
+
+  const actors = await collectBatches<Pick<ProfileRow, 'id'>>(
+    async (from, to) => {
+      let query = adminClient.from('profiles').select('id');
+      for (const term of terms) {
+        query = query.or(
+          `first_name.ilike.%${term}%,last_name.ilike.%${term}%,email.ilike.%${term}%`
+        );
+      }
+
+      return (await query
+        .order('id', { ascending: true })
+        .range(from, to)) as unknown as QueryResult<Pick<ProfileRow, 'id'>>;
+    }
+  );
+
+  return actors.map((actorProfile) => actorProfile.id);
+}
+
+async function getAuditActors(
+  adminClient: SupabaseClient,
+  userIds: string[]
+): Promise<Map<string, AuditActorProfile>> {
+  const actors = new Map<string, AuditActorProfile>();
+
+  for (let from = 0; from < userIds.length; from += EXPORT_BATCH_SIZE) {
+    const ids = userIds.slice(from, from + EXPORT_BATCH_SIZE);
+    const { data, error } = await adminClient
+      .from('profiles')
+      .select('id, first_name, last_name, email')
+      .in('id', ids);
+    if (error) throw new Error(error.message);
+
+    for (const actor of data || []) actors.set(actor.id, actor);
+  }
+
+  return actors;
+}
+
+function auditHeaders(): string[] {
+  return [
+    'Audit Log ID',
+    'Timestamp (UTC)',
+    'Date / Time (America/Chicago)',
+    'Person',
+    'Person Email',
+    'User ID',
+    'Action',
+    'Target Type',
+    'Target ID',
+    'What Changed',
+    'Details JSON',
+  ];
+}
+
+async function exportAuditLogs(
+  adminClient: SupabaseClient,
+  request: ExportRequest
+): Promise<CsvExport> {
+  const dateRange =
+    request.scope === 'matching'
+      ? resolveAdminEnrollmentDateRange(request)
+      : { filterError: null };
+  let matchingActorIds: string[] | undefined;
+  if (request.scope === 'matching' && request.actor) {
+    matchingActorIds = await getAuditActorIds(adminClient, request.actor);
+    if (matchingActorIds.length === 0) {
+      return {
+        csv: encodeCsv(auditHeaders(), []),
+        filename: filename('audit', request.scope),
+        rowCount: 0,
+        filters: filtersForAudit(request),
+      };
+    }
+  }
+
+  const logs = await collectBatches<AuditLogRow>(async (from, to) => {
+    let query = adminClient.from('audit_logs').select('*');
+
+    if (request.scope === 'matching') {
+      if (matchingActorIds) query = query.in('user_id', matchingActorIds);
+      if (request.action) {
+        query = query.ilike('action', `%${request.action}%`);
+      }
+      if (dateRange.startAt) {
+        query = query.gte('created_at', dateRange.startAt);
+      }
+      if (dateRange.endBefore) {
+        query = query.lt('created_at', dateRange.endBefore);
+      }
+    }
+
+    return (await query
+      .order('created_at', { ascending: false })
+      .range(from, to)) as unknown as QueryResult<AuditLogRow>;
+  });
+
+  const userIds = Array.from(
+    new Set(logs.map((log) => log.user_id).filter(Boolean))
+  ) as string[];
+  const actors = await getAuditActors(adminClient, userIds);
+  const values = logs.map((log) => {
+    const actor = log.user_id ? actors.get(log.user_id) : null;
+    const actorName = actor
+      ? fullName(actor) || actor.email
+      : log.user_id
+        ? 'Unknown user'
+        : 'System';
+
+    return [
+      log.id,
+      log.created_at,
+      formatDateTime(log.created_at),
+      actorName,
+      actor?.email,
+      log.user_id,
+      log.action,
+      log.target_type,
+      log.target_id,
+      auditChangeSummary(log.details),
+      log.details ? JSON.stringify(log.details) : '',
+    ];
+  });
+
+  return {
+    csv: encodeCsv(auditHeaders(), values),
+    filename: filename('audit', request.scope),
+    rowCount: logs.length,
+    filters: filtersForAudit(request),
+  };
+}
+
 export async function createCsvExport(
   supabase: SupabaseClient,
   adminClient: SupabaseClient,
@@ -579,5 +809,7 @@ export async function createCsvExport(
       return exportClasses(supabase, adminClient, request);
     case 'enrollments':
       return exportEnrollments(supabase, role, request);
+    case 'audit':
+      return exportAuditLogs(adminClient, request);
   }
 }

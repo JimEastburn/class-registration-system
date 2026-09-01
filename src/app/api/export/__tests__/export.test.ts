@@ -115,6 +115,31 @@ const enrollments = [
   },
 ] as unknown as Record<string, unknown>[];
 
+const auditLogs = [
+  {
+    id: 'audit-status-change',
+    user_id: ADMIN_PROFILE.id,
+    action: 'UPDATE_ENROLLMENT_STATUS',
+    target_type: 'enrollment',
+    target_id: 'enrollment-confirmed',
+    details: {
+      old_status: 'pending',
+      new_status: 'confirmed',
+      payment_id: 'payment-123',
+    },
+    created_at: '2026-08-31T15:00:00.000Z',
+  },
+  {
+    id: 'audit-class-created',
+    user_id: PARENT_PROFILE.id,
+    action: 'class.created',
+    target_type: 'class',
+    target_id: 'class-art',
+    details: { name: 'Art 101' },
+    created_at: '2026-08-30T15:00:00.000Z',
+  },
+] as unknown as Record<string, unknown>[];
+
 function seed(role: 'admin' | 'class_scheduler' | 'parent' | null) {
   const authUserId =
     role === 'admin'
@@ -132,7 +157,7 @@ function seed(role: 'admin' | 'class_scheduler' | 'parent' | null) {
       classes,
       family_members: familyMembers,
       enrollments,
-      audit_logs: [],
+      audit_logs: auditLogs,
     },
   });
 }
@@ -156,7 +181,7 @@ describe('Export API Route', () => {
     expect(forbidden.status).toBe(403);
   });
 
-  it('allows schedulers to export classes and enrollments but not users', async () => {
+  it('allows schedulers to export classes and enrollments but not users or audit logs', async () => {
     seed('class_scheduler');
 
     const classesResponse = await GET(
@@ -168,10 +193,14 @@ describe('Export API Route', () => {
     const usersResponse = await GET(
       new Request('http://localhost/api/export?type=users')
     );
+    const auditResponse = await GET(
+      new Request('http://localhost/api/export?type=audit')
+    );
 
     expect(classesResponse.status).toBe(200);
     expect(enrollmentsResponse.status).toBe(200);
     expect(usersResponse.status).toBe(403);
+    expect(auditResponse.status).toBe(403);
   });
 
   it('exports matching users, excludes banned profiles, and sets download headers', async () => {
@@ -335,6 +364,32 @@ describe('Export API Route', () => {
     expect(csv).toContain('"Art 101"');
   });
 
+  it('exports matching audit logs with actor identity, changes, and raw details', async () => {
+    seed('admin');
+
+    const response = await GET(
+      new Request(
+        'http://localhost/api/export?type=audit&scope=matching&actor=Admin+User&action=UPDATE_ENROLLMENT_STATUS&startDate=2026-08-31&endDate=2026-08-31'
+      )
+    );
+    const csv = await response.text();
+    const header = csv.split('\r\n')[0];
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-disposition')).toContain(
+      'audit_logs_matching_'
+    );
+    expect(header).toContain('Audit Log ID');
+    expect(header).toContain('Person Email');
+    expect(header).toContain('What Changed');
+    expect(header).toContain('Details JSON');
+    expect(csv).toContain('Admin User');
+    expect(csv).toContain('admin@test.com');
+    expect(csv).toContain('Status: pending → confirmed');
+    expect(csv).toContain('payment-123');
+    expect(csv).not.toContain('audit-class-created');
+  });
+
   it('rejects invalid types, scopes, statuses, and date ranges', async () => {
     seed('admin');
 
@@ -343,6 +398,7 @@ describe('Export API Route', () => {
       'type=users&scope=page',
       'type=enrollments&status=unknown',
       'type=enrollments&startDate=2026-08-10&endDate=2026-08-01',
+      'type=audit&actor=Admin%2CUser',
     ]) {
       const response = await GET(
         new Request(`http://localhost/api/export?${query}`)

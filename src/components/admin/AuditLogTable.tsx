@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ExportCsvButton } from '@/components/admin/ExportCsvButton';
 
 interface AuditLogTableProps {
   data: AuditLogWithUser[];
@@ -250,9 +251,18 @@ export function AuditLogTable({
         </div>
       </div>
 
-      <p className="text-muted-foreground text-sm">
-        Select a row to see the complete audit record and recorded changes.
-      </p>
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <p className="text-muted-foreground text-sm">
+          Select a row to see the complete audit record and recorded changes.
+        </p>
+        <ExportCsvButton
+          type="audit"
+          currentParams={searchParams.toString()}
+          matchingCount={count}
+          matchingLabel={`Export ${count} matching audit ${count === 1 ? 'log' : 'logs'}`}
+          allLabel="Export all audit logs"
+        />
+      </div>
 
       <div className="rounded-md border">
         <Table>

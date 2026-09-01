@@ -56,6 +56,9 @@ describe('AuditLogTable', () => {
     expect(screen.getByText('ada@example.com')).toBeInTheDocument();
     expect(screen.getByText('Status: Pending → Confirmed')).toBeInTheDocument();
     expect(screen.queryByText('admin-123')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Export all audit logs' })
+    ).toBeInTheDocument();
   });
 
   it('opens complete row details including IDs, raw details, and what changed', async () => {

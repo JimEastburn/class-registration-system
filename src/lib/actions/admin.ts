@@ -10,6 +10,7 @@ import type {
   UserRole,
 } from '@/types';
 import { revalidatePath } from 'next/cache';
+import { resolveAdminEnrollmentDateRange } from '@/lib/admin-enrollment-filters';
 
 export interface SystemStats {
   totalUsers: number;
@@ -652,6 +653,14 @@ export async function getAuditLogs(
       profile.role === 'super_admin' ? await createAdminClient() : supabase;
 
     const offset = (page - 1) * limit;
+    const dateRange = resolveAdminEnrollmentDateRange(filters);
+    if (dateRange.filterError) {
+      return {
+        data: [],
+        count: 0,
+        error: dateRange.filterError,
+      };
+    }
 
     let actorIds: string[] | null = null;
     if (filters?.actor?.trim()) {
@@ -689,14 +698,11 @@ export async function getAuditLogs(
     if (filters?.action) {
       query = query.ilike('action', `%${filters.action}%`);
     }
-    if (filters?.startDate) {
-      query = query.gte('created_at', filters.startDate);
+    if (dateRange.startAt) {
+      query = query.gte('created_at', dateRange.startAt);
     }
-    if (filters?.endDate) {
-      // Add time to end date to include the full day
-      const endDateTime = new Date(filters.endDate);
-      endDateTime.setHours(23, 59, 59, 999);
-      query = query.lte('created_at', endDateTime.toISOString());
+    if (dateRange.endBefore) {
+      query = query.lt('created_at', dateRange.endBefore);
     }
 
     const { data, count, error } = await query

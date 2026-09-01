@@ -60,4 +60,28 @@ describe('export URLs', () => {
       hasExportFilters('classes', 'page=2&limit=50&sort=name&dir=asc')
     ).toBe(false);
   });
+
+  it('keeps audit person, action, and date filters for matching exports', () => {
+    const url = new URL(
+      buildExportUrl({
+        type: 'audit',
+        scope: 'matching',
+        currentParams:
+          'actor=Ada+Admin&action=UPDATE_ENROLLMENT_STATUS&startDate=2026-08-01&endDate=2026-08-31&page=2',
+      }),
+      'https://example.test'
+    );
+
+    expect(url.searchParams.get('actor')).toBe('Ada Admin');
+    expect(url.searchParams.get('action')).toBe('UPDATE_ENROLLMENT_STATUS');
+    expect(url.searchParams.get('startDate')).toBe('2026-08-01');
+    expect(url.searchParams.get('endDate')).toBe('2026-08-31');
+    expect(url.searchParams.has('page')).toBe(false);
+    expect(
+      hasExportFilters(
+        'audit',
+        'actor=Ada+Admin&action=UPDATE_ENROLLMENT_STATUS'
+      )
+    ).toBe(true);
+  });
 });
