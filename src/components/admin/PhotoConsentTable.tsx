@@ -1,7 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,7 +14,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { PhotoConsentRosterMember } from '@/lib/actions/admin';
+import {
+  adminUpdatePhotoConsent,
+  type PhotoConsentRosterMember,
+} from '@/lib/actions/admin';
 
 interface PhotoConsentTableProps {
   rows: PhotoConsentRosterMember[];
@@ -59,6 +64,9 @@ function compareValues(
 }
 
 export function PhotoConsentTable({ rows }: PhotoConsentTableProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [pendingStudentId, setPendingStudentId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('studentName');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
@@ -84,6 +92,28 @@ export function PhotoConsentTable({ rows }: PhotoConsentTableProps) {
 
     setSortKey(key);
     setSortDirection('asc');
+  };
+
+  const handleConsentChange = (student: PhotoConsentRosterMember) => {
+    const nextConsent = !student.photoConsent;
+    setPendingStudentId(student.id);
+
+    startTransition(async () => {
+      try {
+        const result = await adminUpdatePhotoConsent(student.id, nextConsent);
+        if (!result.success) {
+          toast.error(result.error || 'Failed to update photo consent');
+          return;
+        }
+
+        toast.success(
+          nextConsent ? 'Photo consent granted.' : 'Photo consent removed.'
+        );
+        startTransition(() => router.refresh());
+      } catch {
+        toast.error('Failed to update photo consent. Please try again.');
+      }
+    });
   };
 
   return (
@@ -126,6 +156,7 @@ export function PhotoConsentTable({ rows }: PhotoConsentTableProps) {
               </TableHead>
             );
           })}
+          <TableHead className="text-right">Manage Consent</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -139,6 +170,22 @@ export function PhotoConsentTable({ rows }: PhotoConsentTableProps) {
               <Badge variant={student.photoConsent ? 'default' : 'secondary'}>
                 {student.photoConsent ? 'Granted' : 'Not granted'}
               </Badge>
+            </TableCell>
+            <TableCell className="text-right">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isPending}
+                aria-label={`${student.photoConsent ? 'Remove' : 'Grant'} photo consent for ${student.studentName}`}
+                onClick={() => handleConsentChange(student)}
+              >
+                {isPending && pendingStudentId === student.id
+                  ? 'Saving...'
+                  : student.photoConsent
+                    ? 'Remove consent'
+                    : 'Grant consent'}
+              </Button>
             </TableCell>
           </TableRow>
         ))}

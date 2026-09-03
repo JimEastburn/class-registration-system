@@ -8,7 +8,7 @@ import {
 
 export const metadata = {
   title: 'Photo Consents | Class Registration System',
-  description: 'Review student photo consent records',
+  description: 'Review and manage student photo consent records',
 };
 
 export default async function PhotoConsentsPage({
@@ -51,8 +51,8 @@ export default async function PhotoConsentsPage({
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Photo Consents</h1>
         <p className="text-muted-foreground mt-2">
-          Review the photo consent status submitted by each student&apos;s
-          parent or guardian.
+          Review, grant, or remove photo consent for any student. Changes are
+          recorded in the Photo Consent Activity Log.
         </p>
       </div>
 

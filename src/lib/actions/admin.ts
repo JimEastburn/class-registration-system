@@ -504,6 +504,82 @@ export async function getPhotoConsentRoster(): Promise<{
   }
 }
 
+export async function adminUpdatePhotoConsent(
+  familyMemberId: string,
+  photoConsent: boolean
+): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, is_photo_consent_admin')
+      .eq('id', user.id)
+      .single();
+
+    if (
+      !profile ||
+      (!['admin', 'super_admin'].includes(profile.role) &&
+        profile.is_photo_consent_admin !== true)
+    ) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    if (typeof photoConsent !== 'boolean') {
+      return { success: false, error: 'Invalid photo consent value' };
+    }
+
+    // Delegated administrators do not have family-member UPDATE access via
+    // RLS. Use the service-role client after checking the caller's permission.
+    const db = await createAdminClient();
+    const { data: existing, error: checkError } = await db
+      .from('family_members')
+      .select('id, photo_consent')
+      .eq('id', familyMemberId)
+      .eq('relationship', 'Student')
+      .maybeSingle();
+
+    if (checkError) throw checkError;
+    if (!existing) return { success: false, error: 'Student not found' };
+
+    if (existing.photo_consent !== photoConsent) {
+      // The database's log_photo_consent_activity_after_update trigger writes
+      // the Photo Consent Activity Log entry atomically with this change.
+      const { data: updated, error } = await db
+        .from('family_members')
+        .update({ photo_consent: photoConsent })
+        .eq('id', familyMemberId)
+        .eq('relationship', 'Student')
+        .select('id')
+        .single();
+
+      if (error || !updated) throw error || new Error('Student not found');
+
+      await logAuditAction(
+        user.id,
+        'family_member.photo_consent_updated',
+        'family_member',
+        familyMemberId,
+        {
+          previous_photo_consent: existing.photo_consent,
+          photo_consent: photoConsent,
+        }
+      );
+    }
+
+    revalidatePath('/admin/photo-consents');
+    revalidatePath('/parent/family');
+    return { success: true, error: null };
+  } catch (err) {
+    console.error('Error updating photo consent:', err);
+    return { success: false, error: 'Failed to update photo consent' };
+  }
+}
+
 export async function getPhotoConsentActivityLog(page = 1): Promise<{
   data: PhotoConsentActivityLogPage | null;
   error: string | null;

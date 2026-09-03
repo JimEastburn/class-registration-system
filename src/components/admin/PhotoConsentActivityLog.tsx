@@ -39,7 +39,8 @@ export function PhotoConsentActivityLog({
       <div>
         <h2 className="text-xl font-semibold">Photo Consent Activity Log</h2>
         <p className="text-muted-foreground text-sm">
-          Consent and removal history submitted by parents and guardians.
+          Consent and removal history submitted by parents, guardians, and
+          administrators.
         </p>
       </div>
 
